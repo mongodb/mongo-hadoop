@@ -1,0 +1,71 @@
+<?xml version='1.0'?>
+<project name="mongo-hadoop" default="compile" basedir=".">
+
+  <path id="classpath">
+    <fileset dir="lib">
+      <include name="**/*.jar"/>
+    </fileset>
+    <pathelement path="build/main" />
+    <pathelement path="build/examples" />
+<!--    <pathelement path="build/test" /> -->
+
+  </path>
+
+  <target name="init">
+    <mkdir dir="build" />
+    <mkdir dir="build/main" />
+<!--    <mkdir dir="build/test" /> -->
+    <mkdir dir="build/examples" />
+  </target>
+
+  <target name="clean">
+    <delete dir="build"/>
+  </target>
+
+  <target name="compile" depends="init">
+
+    <javac srcdir="src/main"
+           destdir="build/main"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           target="1.5"
+           encoding="ISO-8859-1"
+           memoryMaximumSize="256M"
+           fork="true"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+
+<!--
+    <javac srcdir="src/test"
+           destdir="build/test"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+-->
+
+    <javac srcdir="src/examples"
+           destdir="build/examples"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+
+
+  </target>
+
+  <target name="word" depends="compile">
+    <java classname="WordCount" >
+      <classpath refid="classpath"/>
+    </java>
+  </target>
+
+</project>
