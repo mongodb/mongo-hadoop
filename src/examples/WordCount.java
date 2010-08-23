@@ -54,8 +54,8 @@ public class WordCount {
         throws Exception {
         
         Configuration conf = new Configuration();
-        MongoConfig.setInput( conf , "test" , "in" );
-        MongoConfig.setOutput( conf , "test" , "out2" );
+        MongoConfig.setInput( conf , "localhost" , "test" , "in" );
+        MongoConfig.setOutput( conf , "localhost" , "test" , "out2" );
         
         Job job = new Job(conf, "word count");
 
