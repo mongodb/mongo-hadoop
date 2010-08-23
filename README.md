@@ -1,0 +1,4 @@
+
+MongoDB Hadoop Adapater
+=======================
+
