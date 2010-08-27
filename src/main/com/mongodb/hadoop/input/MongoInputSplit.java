@@ -51,7 +51,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
     }
 
     DBCursor cursor(){
-        return _config.collection().find();
+        return _config.collection().find().limit( _config.limit() );
     }
 
     private MongoConfig _config;

@@ -6,6 +6,7 @@ import java.io.*;
 
 import org.bson.*;
 import com.mongodb.*;
+import com.mongodb.hadoop.*;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
@@ -33,8 +34,16 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K,V> {
     public void write (K key, V value)
         throws IOException {
         DBObject o = new BasicDBObject();
-        o.put( "_id" , toBSON(key) );
-        o.put( "value" , toBSON( value ) );
+        
+        if ( key instanceof MongoOutput )
+            ((MongoOutput)key).appendAsKey( o );
+        else
+            o.put( "_id" , toBSON(key) );
+
+        if ( value instanceof MongoOutput )
+            ((MongoOutput)value).appendAsValue( o );
+        else
+            o.put( "value" , toBSON( value ) );
         
         try {
             _collection.save( o );
