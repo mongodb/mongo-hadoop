@@ -11,6 +11,13 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
+/**
+ * test.in
+ db.in.insert( { x : "eliot was here" } )
+ db.in.insert( { x : "eliot is here" } )
+ db.in.insert( { x : "who is here" } )
+  =
+ */
 public class WordCount {
 
 
@@ -54,8 +61,8 @@ public class WordCount {
         throws Exception {
         
         Configuration conf = new Configuration();
-        MongoConfig.setInput( conf , "localhost" , "test" , "in" );
-        MongoConfig.setOutput( conf , "localhost" , "test" , "out2" );
+        conf.set( "MONGO_INPUT" , "mongodb://localhost/test.in" );
+        conf.set( "MONGO_OUTPUT" , "mongodb://localhost/test.out" );
         
         Job job = new Job(conf, "word count");
 
