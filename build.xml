@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<project name="mongo-hadoop" default="compile" basedir=".">
+<project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
 
   <path id="classpath">
     <fileset dir="lib">
@@ -18,11 +18,15 @@
     <mkdir dir="build/examples" />
   </target>
 
-  <target name="clean">
+  <target name="resolve" description="--> retrieve dependencies with ivy">
+    <ivy:retrieve/>
+  </target>
+
+  <target name="clean" description="--> clean up project">
     <delete dir="build"/>
   </target>
 
-  <target name="compile" depends="init">
+  <target name="compile" depends="init" description="--> compile all artifacts">
 
     <javac srcdir="src/main"
            destdir="build/main"
@@ -62,7 +66,7 @@
 
   </target>
 
-  <target name="word" depends="compile">
+  <target name="word" depends="compile" description="--> Run the wordcount example">
     <java classname="WordCount" >
       <classpath refid="classpath"/>
     </java>
