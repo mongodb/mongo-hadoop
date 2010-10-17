@@ -54,7 +54,7 @@ public class MongoConfig {
         _limit = context.getConfiguration().getInt( "MONGO_LIMIT" , 0 );
         
         try {
-            _collection = _uri.connectCollection();
+            _collection = _uri.connectCollection( _mongos.connect( _uri ) );
         }
         catch ( Exception e ){
             throw new IllegalArgumentException( "bad uri: " + _uriString , e );
@@ -69,7 +69,7 @@ public class MongoConfig {
         _limit = in.readInt();
 
         try {
-            _collection = _uri.connectCollection();
+            _collection = _uri.connectCollection( _mongos.connect( _uri ) );
         }
         catch ( Exception e ){
             throw new IllegalArgumentException( "bad uri: " + _uriString , e );
@@ -96,5 +96,6 @@ public class MongoConfig {
     final int _limit;
 
     final DBCollection _collection;
-    
+
+    private final static Mongo.Holder _mongos = new Mongo.Holder();
 }
