@@ -9,11 +9,16 @@ import com.mongodb.*;
 
 import com.mongodb.hadoop.output.*;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 
 public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
+    private static final Log log =
+      LogFactory.getLog(MongoOutputFormat.class);
 
     public MongoOutputFormat(){
     }
@@ -37,8 +42,9 @@ public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
         if ( _config == null )
             _config = new MongoConfig( context , MongoConfig.OUTPUT );
 
-        // TODO: should make sure its the same
+        log.debug("Initialized OutputFormat with " + _config);
 
+        // TODO: should make sure its the same
     }
 
     MongoConfig _config;

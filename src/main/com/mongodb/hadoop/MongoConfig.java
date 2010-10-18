@@ -5,6 +5,9 @@ package com.mongodb.hadoop;
 import java.io.*;
 import java.util.*;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.bson.*;
 import com.mongodb.*;
 
@@ -15,6 +18,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 
 public class MongoConfig {
+  private static final Log log =
+    LogFactory.getLog(MongoConfig.class);
+
 
     static final String INPUT = "INPUT";
     static final String OUTPUT = "OUTPUT";
@@ -98,4 +104,9 @@ public class MongoConfig {
     final DBCollection _collection;
 
     private final static Mongo.Holder _mongos = new Mongo.Holder();
+
+    @Override
+    public String toString() {
+      return "{ _uriString: " + _uriString + ", _uri: " + _uri + ", _collection: " + _collection + ", _limit: " + _limit + "}";
+    }
 }
