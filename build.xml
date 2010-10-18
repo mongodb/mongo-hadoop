@@ -1,5 +1,8 @@
 <?xml version='1.0'?>
 <project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+  <property name="ivy.install.version" value="2.0.0-beta1" />
+  <property name="ivy.jar.dir" value="${basedir}/ivy" />
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
   <path id="classpath">
     <fileset dir="lib">
@@ -10,8 +13,48 @@
 <!--    <pathelement path="build/test" /> -->
 
   </path>
+    
+  <target name="download-ivy" unless="skip.download">
+    <mkdir dir="${ivy.jar.dir}"/>
+		<!-- download Ivy from web site so that it can be used even without any special installation -->
+		<echo message="installing ivy..."/>
+      <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+    		   dest="${ivy.jar.file}" usetimestamp="true"/>
+  </target>
+    
+  <!-- ================================= 
+        target: install-ivy         
+          this target is not necessary if you put ivy.jar in your ant lib directory
+          if you already have ivy in your ant lib, you can simply remove this
+          target and the dependency the 'go' target has on it
+       ================================= -->
+  <target name="install-ivy" depends="download-ivy" description="--> install ivy">
+    <!-- try to load ivy here from local ivy dir, in case the user has not already dropped
+          it into ant's lib dir (note that the latter copy will always take precedence).
+          We will not fail as long as local lib dir exists (it may be empty) and
+          ivy is in at least one of ant's lib dir or the local lib dir. -->
+    <path id="ivy.lib.path">
+        <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+    </path>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml"
+              uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+  </target>    
+  <!-- ================================= 
+          target: clean-ivy              
+         ================================= -->
+	<target name="clean-ivy" description="--> clean the ivy installation">
+		<delete dir="${ivy.jar.dir}"/>
+	</target>
+	
+    <!-- ================================= 
+          target: clean-cache              
+         ================================= -->
+	<target name="clean-cache" depends="install-ivy" 
+			description="--> clean the ivy cache">
+		<ivy:cleancache />
+	</target>
 
-  <target name="init">
+  <target name="init" depends="install-ivy">
     <mkdir dir="build" />
     <mkdir dir="build/main" />
 <!--    <mkdir dir="build/test" /> -->
@@ -70,6 +113,12 @@
     <java classname="WordCount" >
       <classpath refid="classpath"/>
     </java>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar destfile="mongo-hadoop.jar"
+         basedir="."
+         includes="**/*.class" />
   </target>
 
 </project>
