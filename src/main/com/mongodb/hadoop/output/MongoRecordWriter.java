@@ -38,11 +38,15 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K,V> {
         
         if ( key instanceof MongoOutput )
             ((MongoOutput)key).appendAsKey( o );
+        else if (key instanceof BSONObject) 
+            o.put( "_id", (BSONObject) key );
         else
             o.put( "_id" , toBSON(key) );
 
         if ( value instanceof MongoOutput )
             ((MongoOutput)value).appendAsValue( o );
+        else if ( value instanceof BSONObject ) 
+            o.putAll( (BSONObject) value );
         else
             o.put( "value" , toBSON( value ) );
         
