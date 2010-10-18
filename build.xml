@@ -67,6 +67,7 @@
 
   <target name="clean" description="--> clean up project">
     <delete dir="build"/>
+    <delete file="mongo-hadoop.jar"/>
   </target>
 
   <target name="compile" depends="init" description="--> compile all artifacts">
@@ -117,7 +118,7 @@
 
   <target name="jar" depends="compile">
     <jar destfile="mongo-hadoop.jar"
-         basedir="."
+         basedir="build/main"
          includes="**/*.class" />
   </target>
 

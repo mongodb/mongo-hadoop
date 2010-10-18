@@ -21,7 +21,10 @@ import java.util.Arrays;
 
 
 
-class MongoDBStorage extends StoreFunc implements StoreMetadata {
+public class MongoStorage extends StoreFunc implements StoreMetadata {
+
+  public MongoStorage() {
+  }
 
   private String udfContextSignature = null;
   private MongoRecordWriter recordWriter = null;
