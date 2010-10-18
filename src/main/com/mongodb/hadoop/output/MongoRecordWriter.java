@@ -13,8 +13,9 @@ import org.apache.hadoop.mapreduce.*;
 
 public class MongoRecordWriter<K,V> extends RecordWriter<K,V> {
         
-    public MongoRecordWriter( DBCollection c ){
+    public MongoRecordWriter(DBCollection c, TaskAttemptContext ctx) {
         _collection = c;
+        _context = ctx;
     }
     
     public void close(TaskAttemptContext context){
@@ -53,6 +54,11 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K,V> {
         }
     }
     
+    public TaskAttemptContext getContext() {
+      return _context;
+    }
+
     final DBCollection _collection;
+    final TaskAttemptContext _context;
 }
 

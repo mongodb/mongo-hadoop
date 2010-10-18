@@ -30,7 +30,7 @@ public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
     
     public RecordWriter<K,V> getRecordWriter(TaskAttemptContext context){
         _init( context );
-        return new MongoRecordWriter( _config.collection() );
+        return new MongoRecordWriter( _config.collection(), context );
     }
 
     void _init( JobContext context ){
