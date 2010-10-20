@@ -2,6 +2,18 @@
 MongoDB Hadoop Adapter
 =======================
 
+State of the Adapter
+---------
+This is currently under development and is not feature complete.
+
+Issue tracking: https://github.com/mongodb/mongo-hadoop/issues
+
+Discussion: http://groups.google.com/group/mongodb-user/
+
+Examples
+----------
+src/examples/WordCount.java
+
 Testing Pig
 -----------
 
