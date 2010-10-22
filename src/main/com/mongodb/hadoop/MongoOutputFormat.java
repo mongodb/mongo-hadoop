@@ -40,7 +40,7 @@ public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
 
     void _init( JobContext context ){
         if ( _config == null )
-            _config = new MongoConfig( context , MongoConfig.OUTPUT );
+            _config = new MongoConfig( context , MongoConfig.Mode.OUTPUT );
 
         log.debug("Initialized OutputFormat with " + _config);
 

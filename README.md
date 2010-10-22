@@ -39,5 +39,5 @@ TODO
 - Use sharding chunks as splits when sharded
 - Pick reasonable split points for non-sharded collections
 - Support and document XML Job configurations
-- Elastic map/reduce support?
+- [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
 

@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.*;
 
 public class MongoInputFormat extends InputFormat<Object,BSONObject> {
 
+    private MongoConfig _config;
 
     public RecordReader<Object,BSONObject> createRecordReader(InputSplit split, TaskAttemptContext context){
         if ( ! ( split instanceof MongoInputSplit ) )
@@ -26,14 +27,13 @@ public class MongoInputFormat extends InputFormat<Object,BSONObject> {
     }
     
     public List<InputSplit> getSplits(JobContext context){
-        _config = new MongoConfig( context , MongoConfig.INPUT );
+        _config = new MongoConfig( context , MongoConfig.Mode.INPUT );
         
         List<InputSplit> l = new ArrayList<InputSplit>();
         l.add( new MongoInputSplit( _config ) );
         return l;
     }
 
-    private MongoConfig _config;
 }
 
 
