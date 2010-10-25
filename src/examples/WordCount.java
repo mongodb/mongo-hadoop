@@ -1,7 +1,8 @@
-// WordCount.java
-
+package com.mongodb.hadoop.examples;
 import java.io.*;
 import java.util.*;
+
+import org.apache.hadoop.util.ToolRunner;
 
 import org.bson.*;
 import com.mongodb.*;
@@ -11,6 +12,11 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
+import com.mongodb.hadoop.util.MongoTool;
+
+// WordCount.java
+
+
 /**
  * test.in
  db.in.insert( { x : "eliot was here" } )
@@ -18,7 +24,7 @@ import org.apache.hadoop.mapreduce.*;
  db.in.insert( { x : "who is here" } )
   =
  */
-public class WordCount {
+public class WordCount extends MongoTool {
 
 
     public static class TokenizerMapper extends Mapper<Object, BSONObject, Text, IntWritable>{
@@ -56,29 +62,15 @@ public class WordCount {
             context.write(key, result);
         }
     }
+
+    static {
+        // Load the XML config defined in hadoop-local.xml
+        Configuration.addDefaultResource("src/examples/hadoop-local.xml");
+        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
+    }
     
-    public static void main(String[] args) 
-        throws Exception {
-        
-        Configuration conf = new Configuration();
-        conf.set( "MONGO_INPUT" , "mongodb://localhost/test.in" );
-        conf.set( "MONGO_OUTPUT" , "mongodb://localhost/test.out" );
-        
-        Job job = new Job(conf, "word count");
-
-        job.setJarByClass(WordCount.class);
-
-        job.setMapperClass(TokenizerMapper.class);
-
-        job.setCombinerClass(IntSumReducer.class);
-        job.setReducerClass(IntSumReducer.class);
-        
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
-        
-        job.setInputFormatClass( MongoInputFormat.class );
-        job.setOutputFormatClass( MongoOutputFormat.class );
-        
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new WordCount(), args);
+        System.exit(exitCode);
     }
 }

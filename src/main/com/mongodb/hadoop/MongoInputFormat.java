@@ -5,6 +5,11 @@ package com.mongodb.hadoop;
 import java.io.*;
 import java.util.*;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.apache.hadoop.conf.Configuration;
+
 import org.bson.*;
 import com.mongodb.*;
 
@@ -14,8 +19,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 public class MongoInputFormat extends InputFormat<Object,BSONObject> {
-
-    private MongoConfig _config;
+    private static final Log log = LogFactory.getLog(MongoInputFormat.class);
 
     public RecordReader<Object,BSONObject> createRecordReader(InputSplit split, TaskAttemptContext context){
         if ( ! ( split instanceof MongoInputSplit ) )
@@ -27,10 +31,8 @@ public class MongoInputFormat extends InputFormat<Object,BSONObject> {
     }
     
     public List<InputSplit> getSplits(JobContext context){
-        _config = new MongoConfig( context , MongoConfig.Mode.INPUT );
-        
         List<InputSplit> l = new ArrayList<InputSplit>();
-        l.add( new MongoInputSplit( _config ) );
+        l.add( new MongoInputSplit( context.getConfiguration() ) );
         return l;
     }
 

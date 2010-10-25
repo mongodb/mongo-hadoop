@@ -61,7 +61,7 @@
     <mkdir dir="build/examples" />
   </target>
 
-  <target name="resolve" description="--> retrieve dependencies with ivy">
+  <target name="resolve" depends="init" description="--> retrieve dependencies with ivy">
     <ivy:retrieve/>
   </target>
 
@@ -111,15 +111,20 @@
   </target>
 
   <target name="word" depends="compile" description="--> Run the wordcount example">
-    <java classname="WordCount" >
+    <java classname="com.mongodb.hadoop.examples.WordCount" >
       <classpath refid="classpath"/>
+      <arg line="-conf src/examples/mongo-wordcount.xml"/>
+      <arg line="-Dlog4j.debug"/>
     </java>
   </target>
 
   <target name="jar" depends="compile">
-    <jar destfile="mongo-hadoop.jar"
-         basedir="build/main"
+    <jar destfile="mongo-hadoop.jar">
+      <fileset dir="build/main"
          includes="**/*.class" />
+      <fileset dir="build/examples"
+         includes="**/*.class" />
+   </jar>
   </target>
 
 </project>

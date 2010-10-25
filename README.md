@@ -37,7 +37,15 @@ TODO
 - Specify sort as json
 - Set slave ok by default?
 - Use sharding chunks as splits when sharded
+  * Read from slaves, again for parallelized inputting?
+  * See how I did luau, with threads spun up to suck in multiple inputs at once (IIRC)
 - Pick reasonable split points for non-sharded collections
 - Support and document XML Job configurations
 - [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
-
+- Support for "Merge" Jobs (e.g. combine results of multiple map/reduces esp. from diff. inputs in a single join job - this is supported by Hadoop w/ implementation of special interfaces)
+- Support Streaming for Python/Ruby implementation
+- Full support for appropriate 'alternate' Hadoop Interfaces
+  * We already support Pig for Output (get input working)
+  * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
+- Do we need support for Compression? (e.g. how compressed is BSON by default versus what we can achieve on a compression<->performance ratio balance with something like LZO)
+- Add a sourcecode filter which detects usages of the deprecated api namespace (org.apache.hadoop.mapred) and errors out for safety reasons

@@ -15,17 +15,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
 public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
-    private static final Log log =
-      LogFactory.getLog(MongoOutputFormat.class);
+    private static final Log log = LogFactory.getLog(MongoOutputFormat.class);
 
     public MongoOutputFormat(){
     }
     
     public void checkOutputSpecs(JobContext context){
-        // should check to make sure don't override here
-        _init( context );
     }
     
     public OutputCommitter getOutputCommitter(TaskAttemptContext context){
@@ -34,18 +32,7 @@ public class MongoOutputFormat<K,V> extends OutputFormat<K,V> {
     
     
     public RecordWriter<K,V> getRecordWriter(TaskAttemptContext context){
-        _init( context );
-        return new MongoRecordWriter( _config.collection(), context );
+        return new MongoRecordWriter( MongoConfigUtil.getOutputCollection(context.getConfiguration()), context );
     }
 
-    void _init( JobContext context ){
-        if ( _config == null )
-            _config = new MongoConfig( context , MongoConfig.Mode.OUTPUT );
-
-        log.debug("Initialized OutputFormat with " + _config);
-
-        // TODO: should make sure its the same
-    }
-
-    MongoConfig _config;
 }
