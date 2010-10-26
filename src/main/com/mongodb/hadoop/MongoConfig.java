@@ -265,11 +265,11 @@ public class MongoConfig {
         MongoConfigUtil.setSkip(_conf, skip);
     }
 
-    public long getSplitSize() {
+    public int getSplitSize() {
         return MongoConfigUtil.getSplitSize(_conf);
     }
 
-    public void setSplitSize(long value) {
+    public void setSplitSize(int value) {
         MongoConfigUtil.setSplitSize(_conf, value);
     }
 

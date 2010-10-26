@@ -63,7 +63,7 @@ public class MongoConfigUtil {
 
 
     // Number of *documents*, not bytes, to split on
-    public static final long DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
+    public static final int DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
 
     public static boolean isJobVerbose(Configuration conf) {
         return conf.getBoolean(JOB_VERBOSE, false);
@@ -177,9 +177,7 @@ public class MongoConfigUtil {
 
     public static MongoURI getMongoURI(Configuration conf, String key) {
         String raw = conf.get(key);
-        log.info("RAW: " + raw + " For " + key);
         if (raw != null && !raw.trim().isEmpty()) {
-            log.info("Constructing a new MongoURI object for URI '" + raw + "'");
             return new MongoURI(raw);
         }
         else {
@@ -191,10 +189,19 @@ public class MongoConfigUtil {
         return getMongoURI(conf, INPUT_URI);
     }
 
+    public static DBCollection getCollection(MongoURI uri) {
+        try {
+            return uri.connectCollection(_mongos.connect(uri));
+        } 
+        catch (Exception e) {
+            throw new IllegalArgumentException("Unable to connect to collection.", e);
+        }
+    }
+
     public static DBCollection getOutputCollection(Configuration conf) {
         try {
             MongoURI _uri = getOutputURI(conf);
-            return _uri.connectCollection(_mongos.connect(_uri));
+            return getCollection(_uri);
         } 
         catch (Exception e) {
             throw new IllegalArgumentException("Unable to connect to MongoDB Output Collection.", e);
@@ -204,7 +211,7 @@ public class MongoConfigUtil {
     public static DBCollection getInputCollection(Configuration conf) {
         try {
             MongoURI _uri = getInputURI(conf);
-            return _uri.connectCollection(_mongos.connect(_uri));
+            return getCollection(_uri);
         } 
         catch (Exception e) {
             throw new IllegalArgumentException("Unable to connect to MongoDB Input Collection at '" + getInputURI(conf) + "'", e);
@@ -256,7 +263,7 @@ public class MongoConfigUtil {
         }
         catch (Exception e) {
             log.error("Cannot parse JSON...", e);
-            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.");
+            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.", e);
         }
     }
 
@@ -266,7 +273,7 @@ public class MongoConfigUtil {
             return (DBObject) JSON.parse(json);
         }
         catch (Exception e) {
-            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.");
+            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.", e);
         }
     }
 
@@ -343,12 +350,12 @@ public class MongoConfigUtil {
         conf.setInt(INPUT_SKIP, skip);
     }
 
-    public static long getSplitSize(Configuration conf) {
-        return conf.getLong(INPUT_SPLIT_SIZE, DEFAULT_SPLIT_SIZE);
+    public static int getSplitSize(Configuration conf) {
+        return conf.getInt(INPUT_SPLIT_SIZE, DEFAULT_SPLIT_SIZE);
     }
 
-    public static void setSplitSize(Configuration conf, long value) {
-        conf.setLong(INPUT_SPLIT_SIZE, value);
+    public static void setSplitSize(Configuration conf, int value) {
+        conf.setInt(INPUT_SPLIT_SIZE, value);
     }
 
 }
