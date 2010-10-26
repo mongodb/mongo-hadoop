@@ -23,7 +23,7 @@
   <property>
     <!-- The query, in JSON, to execute [OPTIONAL] -->
     <name>mongo.input.query</name>
-    <value>{x: {$exists: 1}}</value>
+    <value>{"x": {"$regex": "^eliot", "$options": ""}}</value>
   </property>
   <property>
     <!-- The fields, in JSON, to read [OPTIONAL] -->
@@ -49,12 +49,12 @@
   <property>
     <!-- Class for the mapper -->
     <name>mongo.job.mapper</name>
-    <value>com.mongodb.hadoop.examples.WordCount$TokenizerMapper</value>
+    <value>com.mongodb.hadoop.examples.WordCountXMLConfig$TokenizerMapper</value>
   </property>
   <property>
     <!-- Reducer class -->
     <name>mongo.job.reducer</name>
-    <value>com.mongodb.hadoop.examples.WordCount$IntSumReducer</value>
+    <value>com.mongodb.hadoop.examples.WordCountXMLConfig$IntSumReducer</value>
   </property>
   <property>
     <!-- InputFormat Class -->
@@ -89,7 +89,7 @@
   <property>
     <!-- Class for the combiner [optional] -->
     <name>mongo.job.combiner</name>
-    <value>com.mongodb.hadoop.examples.WordCount$IntSumReducer</value>
+    <value>com.mongodb.hadoop.examples.WordCountXMLConfig$IntSumReducer</value>
   </property>
   <property>
     <!-- Partitioner class [optional] -->

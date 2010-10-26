@@ -49,3 +49,8 @@ TODO
   * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
 - Do we need support for Compression? (e.g. how compressed is BSON by default versus what we can achieve on a compression<->performance ratio balance with something like LZO)
 - Add a sourcecode filter which detects usages of the deprecated api namespace (org.apache.hadoop.mapred) and errors out for safety reasons
+
+KNOWN ISSUES
+--------------
+
+You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.  Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes
