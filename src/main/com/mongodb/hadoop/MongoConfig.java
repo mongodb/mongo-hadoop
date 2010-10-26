@@ -203,12 +203,12 @@ public class MongoConfig {
         MongoConfigUtil.setJSON(_conf, key, value);
     }
 
-    public BSONObject getBSONObject(String key) {
-        return MongoConfigUtil.getBSONObject(_conf, key);
+    public DBObject getDBObject(String key) {
+        return MongoConfigUtil.getDBObject(_conf, key);
     }
 
-    public void setBSONObject(String key, BSONObject value) {
-        MongoConfigUtil.setBSONObject(_conf, key, value);
+    public void setDBObject(String key, DBObject value) {
+        MongoConfigUtil.setDBObject(_conf, key, value);
     }
 
 
@@ -216,11 +216,11 @@ public class MongoConfig {
         MongoConfigUtil.setQuery(_conf, query);
     }
 
-    public void setQuery( BSONObject query) {
+    public void setQuery( DBObject query) {
         MongoConfigUtil.setQuery(_conf, query);
     }
 
-    public BSONObject getQuery() {
+    public DBObject getQuery() {
         return MongoConfigUtil.getQuery(_conf);
     }
 
@@ -229,11 +229,11 @@ public class MongoConfig {
         MongoConfigUtil.setFields(_conf, fields);
     }
 
-    public void setFields( BSONObject fields) {
+    public void setFields( DBObject fields) {
         MongoConfigUtil.setFields(_conf, fields);
     }
 
-    public BSONObject getFields() {
+    public DBObject getFields() {
         return MongoConfigUtil.getFields(_conf);
     }
 
@@ -241,11 +241,11 @@ public class MongoConfig {
         MongoConfigUtil.setSort(_conf, sort);
     }
 
-    public void setSort(BSONObject sort) {
+    public void setSort(DBObject sort) {
         MongoConfigUtil.setSort(_conf, sort);
     }
 
-    public BSONObject getSort() {
+    public DBObject getSort() {
         return MongoConfigUtil.getSort(_conf);
     }
 

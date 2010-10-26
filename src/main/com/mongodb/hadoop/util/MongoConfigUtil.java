@@ -247,30 +247,30 @@ public class MongoConfigUtil {
     }
 
     /**
-     * Set JSON but first validate it's parseable into a BSON Object
+     * Set JSON but first validate it's parseable into a DBObject
      */
     public static void setJSON(Configuration conf, String key, String value) {
         try {
             Object dbObj = JSON.parse(value);
-            setBSONObject(conf, key, (BSONObject) dbObj);
+            setDBObject(conf, key, (DBObject) dbObj);
         }
         catch (Exception e) {
             log.error("Cannot parse JSON...", e);
-            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a BSONObject.");
+            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.");
         }
     }
 
-    public static BSONObject getBSONObject(Configuration conf, String key) {
+    public static DBObject getDBObject(Configuration conf, String key) {
         try {
             String json = conf.get(key);
-            return (BSONObject) JSON.parse(json);
+            return (DBObject) JSON.parse(json);
         }
         catch (Exception e) {
-            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a BSONObject.");
+            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.");
         }
     }
 
-    public static void setBSONObject(Configuration conf, String key, BSONObject value) {
+    public static void setDBObject(Configuration conf, String key, DBObject value) {
         conf.set(key, JSON.serialize(value)); 
     }
 
@@ -279,17 +279,17 @@ public class MongoConfigUtil {
         setJSON(conf, INPUT_QUERY, query); 
     }
 
-    public static void setQuery(Configuration conf, BSONObject query) {
-        setBSONObject(conf, INPUT_QUERY, query);
+    public static void setQuery(Configuration conf, DBObject query) {
+        setDBObject(conf, INPUT_QUERY, query);
     }
 
     /**
-     * Returns the configured query as a BSONObject...
+     * Returns the configured query as a DBObject...
      * If you want a string call toString() on the returned object.
      * or use JSON.serialize()
      **/
-    public static BSONObject getQuery(Configuration conf) {
-        return getBSONObject(conf, INPUT_QUERY);
+    public static DBObject getQuery(Configuration conf) {
+        return getDBObject(conf, INPUT_QUERY);
     }
 
 
@@ -297,34 +297,34 @@ public class MongoConfigUtil {
         setJSON(conf, INPUT_FIELDS, fields); 
     }
 
-    public static void setFields(Configuration conf, BSONObject fields) {
-        setBSONObject(conf, INPUT_FIELDS, fields);
+    public static void setFields(Configuration conf, DBObject fields) {
+        setDBObject(conf, INPUT_FIELDS, fields);
     }
 
     /**
-     * Returns the configured fields as a BSONObject...
+     * Returns the configured fields as a DBObject...
      * If you want a string call toString() on the returned object.
      * or use JSON.serialize()
      **/
-    public static BSONObject getFields(Configuration conf) {
-        return getBSONObject(conf, INPUT_FIELDS);
+    public static DBObject getFields(Configuration conf) {
+        return getDBObject(conf, INPUT_FIELDS);
     }
 
     public static void setSort(Configuration conf, String sort) {
         setJSON(conf, INPUT_SORT, sort); 
     }
 
-    public static void setSort(Configuration conf, BSONObject sort) {
-        setBSONObject(conf, INPUT_SORT, sort);
+    public static void setSort(Configuration conf, DBObject sort) {
+        setDBObject(conf, INPUT_SORT, sort);
     }
 
     /**
-     * Returns the configured sort as a BSONObject...
+     * Returns the configured sort as a DBObject...
      * If you want a string call toString() on the returned object.
      * or use JSON.serialize()
      **/
-    public static BSONObject getSort(Configuration conf) {
-        return getBSONObject(conf, INPUT_SORT);
+    public static DBObject getSort(Configuration conf) {
+        return getDBObject(conf, INPUT_SORT);
     }
 
     public static int getLimit(Configuration conf) {
