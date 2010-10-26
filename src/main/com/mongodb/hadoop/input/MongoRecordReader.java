@@ -12,7 +12,7 @@ public class MongoRecordReader extends RecordReader<Object,BSONObject>{
     public MongoRecordReader( MongoInputSplit split ){
         _split = split;
         //try {
-        _cursor = _split.cursor();
+        _cursor = _split.getCursor();
             /*        }
         catch ( Exception e ){
             throw new RuntimeException( "blah" , e );
