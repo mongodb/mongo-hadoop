@@ -22,8 +22,7 @@ import org.apache.hadoop.mapreduce.*;
  **/
 
 public class MongoConfigUtil {
-    private static final Log log =
-        LogFactory.getLog(MongoConfigUtil.class);
+    private static final Log log = LogFactory.getLog(MongoConfigUtil.class);
 
     private static final Mongo.Holder _mongos = new Mongo.Holder();
 
@@ -208,7 +207,7 @@ public class MongoConfigUtil {
             return _uri.connectCollection(_mongos.connect(_uri));
         } 
         catch (Exception e) {
-            throw new IllegalArgumentException("Unable to connect to MongoDB Input Collection.", e);
+            throw new IllegalArgumentException("Unable to connect to MongoDB Input Collection at '" + getInputURI(conf) + "'", e);
         }
     }
 
@@ -217,12 +216,13 @@ public class MongoConfigUtil {
     }
 
     public static void setMongoURIString(Configuration conf, String key, String value) {
+        
         try {
             MongoURI uri = new MongoURI(value);
             setMongoURI(conf, key, uri);
         } 
         catch (Exception e) {
-            throw new IllegalArgumentException("Invalid Mongo URI '" + value + "' for Input URI");
+            throw new IllegalArgumentException("Invalid Mongo URI '" + value + "' for Input URI", e);
         }
     }
 
