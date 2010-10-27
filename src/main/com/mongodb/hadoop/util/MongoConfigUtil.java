@@ -270,7 +270,11 @@ public class MongoConfigUtil {
     public static DBObject getDBObject(Configuration conf, String key) {
         try {
             String json = conf.get(key);
-            return (DBObject) JSON.parse(json);
+            DBObject obj = (DBObject) JSON.parse(json);
+            if (obj == null) 
+                return new BasicDBObject();
+            else
+                return obj;
         }
         catch (Exception e) {
             throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.", e);
