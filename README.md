@@ -31,26 +31,21 @@ You should find the results in the 'test' DB inside the 'pig.output' collection.
 
 TODO
 ----------
-- Specify a query in config as json
-- Specify a projection in config as json
-- Specify limit & skip in config
-- Specify sort as json
 - Set slave ok by default?
 - Use sharding chunks as splits when sharded
   * Read from slaves, again for parallelized inputting?
-  * See how I did luau, with threads spun up to suck in multiple inputs at once (IIRC)
 - Pick reasonable split points for non-sharded collections
-- Support and document XML Job configurations
+  * For initial release, no splits for non-sharded collections
 - [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
 - Support for "Merge" Jobs (e.g. combine results of multiple map/reduces esp. from diff. inputs in a single join job - this is supported by Hadoop w/ implementation of special interfaces)
 - Support Streaming for Python/Ruby implementation
 - Full support for appropriate 'alternate' Hadoop Interfaces
   * We already support Pig for Output (get input working)
   * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
-- Do we need support for Compression? (e.g. how compressed is BSON by default versus what we can achieve on a compression<->performance ratio balance with something like LZO)
-- Add a sourcecode filter which detects usages of the deprecated api namespace (org.apache.hadoop.mapred) and errors out for safety reasons
+- ** We treat '\_id', our main split segment, as an Object.  However this won't work well for custom types.  We should investigate allowing registration of custom BSONEncoder/Decoder which can be setup on the remote mapper **
 
 KNOWN ISSUES
 --------------
 
 You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.  Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes
+
