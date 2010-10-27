@@ -39,6 +39,7 @@ TODO
 - [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
 - Support for "Merge" Jobs (e.g. combine results of multiple map/reduces esp. from diff. inputs in a single join job - this is supported by Hadoop w/ implementation of special interfaces)
 - Support Streaming for Python/Ruby implementation
+- [Flume Sink|http://www.cloudera.com/blog/2010/07/whats-new-in-cdh3b2-flume/] asked for by several people
 - Full support for appropriate 'alternate' Hadoop Interfaces
   * We already support Pig for Output (get input working)
   * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
