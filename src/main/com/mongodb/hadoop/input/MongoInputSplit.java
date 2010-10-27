@@ -3,6 +3,7 @@
 package com.mongodb.hadoop.input;
 
 import java.io.*;
+import java.io.ObjectOutputStream;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,13 +25,14 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.util.MongoIDRange;
 
 import com.mongodb.util.JSON;
 
 public class MongoInputSplit extends InputSplit implements Writable {
     private static final Log log = LogFactory.getLog(MongoInputSplit.class);
 
-    private HashSet<ObjectId> idSet;
+    private MongoIDRange idRange;
     private ArrayList<MongoURI> mongoURIs = new ArrayList<MongoURI>(1);
     private DBObject querySpec;
     private DBObject fieldSpec;
@@ -38,9 +40,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private int limit = 0;
     private int skip = 0;
 
-    public MongoInputSplit(HashSet<ObjectId> mongoIDs, MongoURI inputURI, DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
+    public MongoInputSplit(MongoIDRange mongoIDs, MongoURI inputURI, DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
         log.debug("Creating a new MongoInputSplit for MongoURI '" + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '" + sort + "', limit: " + limit  + ", skip: " + skip + " against " + mongoIDs.size() + " IDs.");
-        this.idSet = mongoIDs;
+        this.idRange = mongoIDs;
         this.mongoURIs.add(inputURI);
         this.querySpec = query;
         this.fieldSpec = fields;
@@ -49,13 +51,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
         this.skip = skip;
     }
 
-    public MongoInputSplit(HashSet<ObjectId> mongoIDs, ArrayList<MongoURI> inputURIs, DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
+    public MongoInputSplit(MongoIDRange mongoIDs, ArrayList<MongoURI> inputURIs, DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
         log.debug("Creating a new MongoInputSplit for MongoURI '" + inputURIs + "', fieldSpec: '" + fields + "' against " + mongoIDs.size() + " IDs.");
-        this.idSet = mongoIDs;
-        /*this.mongoURIs.ensureCapacity(inputURIs.size());*/
+        this.idRange = mongoIDs;
         this.fieldSpec = fields;
-        log.debug("Creating a new MongoInputSplit for MongoURI '" + inputURIs + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '" + sort + "', limit: " + limit  + ", skip: " + skip + " against " + mongoIDs.size() + " IDs.");
-        this.idSet = mongoIDs;
         this.mongoURIs = inputURIs; // todo - should we clone / copy?
         this.querySpec = query;
         this.fieldSpec = fields;
@@ -67,7 +66,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
     public MongoInputSplit() {}
 
     public long getLength() {
-        return idSet.size();
+        return idRange.size();
     }
    
     public String[] getLocations() {
@@ -84,11 +83,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
      * Serialize the Split instance 
      */
     public void write(DataOutput out) throws IOException {
-        out.writeInt(idSet.size());
-        for (ObjectId _id : idSet)  {
-            out.writeUTF(_id.toString());
-        }
+        ObjectOutputStream objOut = new ObjectOutputStream((OutputStream) out);
+        objOut.writeObject(idRange);
 
+        // TODO - Use object outputstream instead of going to <-> from string?
         out.writeInt(getLocations().length);
         for (String _uri : getLocations())  {
             out.writeUTF(_uri.toString());
@@ -99,16 +97,19 @@ public class MongoInputSplit extends InputSplit implements Writable {
         out.writeUTF(JSON.serialize(sortSpec));
         out.writeInt(limit);
         out.writeInt(skip);
+        objOut.close();
     }
 
     public void readFields(DataInput in) throws IOException {
-        int numIDs = in.readInt();
-        log.trace("Expecting to read in " + numIDs + " ObjectIDs");
-        idSet = new HashSet<ObjectId>(numIDs);
-        for (int i = 0; i < numIDs; i++)  {
-            idSet.add(new ObjectId(in.readUTF()));
+        ObjectInputStream objIn = new ObjectInputStream((InputStream) in);
+        try {
+            idRange = (MongoIDRange) objIn.readObject();
+            log.trace("ID Range: " + idRange);
+        } 
+        catch (ClassNotFoundException e) {
+            throw new IOException("Cannot deserialize IDRange.", e);
         }
-        log.trace("ID Set: " + idSet);
+
 
         int numURIs = in.readInt();
         log.trace("Expecting to read in " + numURIs + " MongoURIs.");
@@ -124,13 +125,24 @@ public class MongoInputSplit extends InputSplit implements Writable {
         skip = in.readInt();
 
         
-        log.info("Deserialized MongoInputSplit ... { ids = " + idSet + ", length = " + getLength() + ", locations = " + getLocations() + ", query = " + querySpec + ", fields = " + fieldSpec + ", sort = " + sortSpec + ", limit = " + limit + ", skip = " + skip + "}");
+        log.info("Deserialized MongoInputSplit ... { ids = " + idRange + ", length = " + getLength() + ", locations = " + getLocations() + ", query = " + querySpec + ", fields = " + fieldSpec + ", sort = " + sortSpec + ", limit = " + limit + ", skip = " + skip + "}");
 
+
+        objIn.close();
     }
     
     DBCursor getCursor() {
         // Hardcoded to take first url - TODO - Fix me
-        return MongoConfigUtil.getCollection(mongoURIs.get(0)).find();
+        MongoURI _addr = mongoURIs.get(0);
+        // Return the cursor with the split's query, etc. already slotted in for them.
+        BasicDBObjectBuilder b = BasicDBObjectBuilder.start("$query", querySpec);
+        b.add("$min", new BasicDBObject("_id", idRange.getMin()));
+        b.add("$max", new BasicDBObject("_id", idRange.getMax()));
+        // todo - support limit/skip
+        DBObject q = b.get();
+        log.info("Addr: " + _addr + " Q: " + q);
+        DBCursor cursor = MongoConfigUtil.getCollection(_addr).find(q, fieldSpec).sort(sortSpec);
+        return cursor;
     }
 
 

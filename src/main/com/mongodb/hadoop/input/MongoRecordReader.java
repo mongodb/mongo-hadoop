@@ -5,19 +5,17 @@ package com.mongodb.hadoop.input;
 import org.bson.*;
 import com.mongodb.*;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.apache.hadoop.mapreduce.*;
 
 public class MongoRecordReader extends RecordReader<Object,BSONObject>{
+    private static final Log log = LogFactory.getLog(MongoRecordReader.class);
         
     public MongoRecordReader( MongoInputSplit split ){
         _split = split;
-        //try {
         _cursor = _split.getCursor();
-            /*        }
-        catch ( Exception e ){
-            throw new RuntimeException( "blah" , e );
-        }
-            */
     }
     
     public void close(){

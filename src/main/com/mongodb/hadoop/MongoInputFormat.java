@@ -25,11 +25,15 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.util.MongoIDRange;
 
 import com.mongodb.util.JSON;
 
 public class MongoInputFormat extends InputFormat<Object,BSONObject> {
     private static final Log log = LogFactory.getLog(MongoInputFormat.class);
+    private static final DBObject idTrue = new BasicDBObject("_id", 1);
+    private static final DBObject idFalse = new BasicDBObject("_id", -1);
+    private static final DBObject emptyObj = new BasicDBObject();
 
     public RecordReader<Object, BSONObject> createRecordReader(InputSplit split, TaskAttemptContext context){
         if ( ! ( split instanceof MongoInputSplit ) )
@@ -39,61 +43,78 @@ public class MongoInputFormat extends InputFormat<Object,BSONObject> {
 
         return new MongoRecordReader( mis );
     }
-    
-    public List<InputSplit> getSplits(JobContext context) {
-        MongoConfig conf = new MongoConfig(context.getConfiguration());
 
+    protected MongoIDRange findMinMax(DBCollection coll) {
+        return findMinMax(coll, null);
+    }
+
+    protected MongoIDRange findMinMax(DBCollection coll, MongoIDRange currentSegment) {
+        DBObject qSpec = null;
+        if (currentSegment == null) {
+            log.trace("Null segment so looking for whole range.");
+            qSpec = emptyObj;
+        }
+        else {
+            BasicDBObjectBuilder b = BasicDBObjectBuilder.start("$query", "");
+            b.add("$min", new BasicDBObject("_id", currentSegment.getMin()));
+            b.add("$max", new BasicDBObject("_id", currentSegment.getMax()));
+            qSpec = b.get();
+        }
+
+            //throw new IllegalArgumentException("No data found matching specified query '" + JSON.serialize(conf.getQuery()) + "'.");
         /**
-         * On the jobclient side we want *ONLY* the id
-         * configged Fields is for the mapper/recordreader to handle 
+         * To support custom keys like compounds we CANNOT grab _id as a 'ObjectId'...
          */
-        DBCursor cursor = conf.getInputCollection().find(conf.getQuery(), new BasicDBObject("_id", 1));
-        cursor = cursor.sort(conf.getSort());
-        log.debug("Cursor created: " + cursor);
-        // TODO - Skip first or limit first?
-        cursor = cursor.skip(conf.getSkip());
-        cursor = cursor.limit(conf.getLimit());
-
+        log.info("Q Spec: " + qSpec); 
+        Object min = coll.find(qSpec, idTrue).sort(idTrue).next().get("_id");
+        Object max = coll.find(qSpec, idTrue).sort(idFalse).next().get("_id");
+        assert(min != max) : "Minimum range object should not be the same as maximum range object";
         /** 
          * Note we are calling size(), which accounts for limit/skip.
          * count() ignores them.
          **/
-        int cursorSize = cursor.size(); 
-        int splitSize = conf.getSplitSize();
-
+        int cursorSize = coll.find().size(); 
         if (cursorSize <= 0) 
-            throw new IllegalArgumentException("No data found matching specified query '" + JSON.serialize(conf.getQuery()) + "'.");
-        
-        log.info("Retrieved and configured a Mongo cursor of size " + cursorSize + " (after limit/skip ad nauseum).  Setting splitSize to " + splitSize + " Iterating to " + (cursorSize / splitSize + 1));
+            return MongoIDRange.empty;
+        MongoIDRange newSegment = new MongoIDRange(min, max, cursorSize);
+        log.debug("Found an ID Range: " + newSegment);
+        return newSegment;
+    }
+    
+    public List<InputSplit> getSplits(JobContext context) {
+        MongoConfig conf = new MongoConfig(context.getConfiguration());
 
-        // TODO - Configure batchSize based off splitSize? Will this give us a more efficient cursor handle?
-        /**
-         * At the moment with a single cursor,
-         * creating threads &amp; futures makes no sense.
-         * We either need to do more logical splits w/ skip &amp; limit
-         * or reserve sequential reads for sharding.
-         * TODO - Optimize Me!
-         */
-        List<InputSplit> l = new ArrayList<InputSplit>();
-        /**
-         * Sane flow control by creating a requisite number of 
-         * future jobs as futureSplitters.
-         * WARNING: In large splits this may be REALLY bad. 
-         */
-        for (int i = 0; i < (cursorSize / splitSize + 1); i++) {
-            int startSeen = cursor.numSeen();
-            log.info("Split Iter " + i);
-            HashSet<ObjectId> mongoIDs = new HashSet<ObjectId>(splitSize);
-            for (DBObject obj : cursor)  {
-                log.info("Input object: " + obj);
-                mongoIDs.add((ObjectId) obj.get("_id"));
-            }
-            int seenItems = startSeen - cursor.numSeen();
-            assert(seenItems == mongoIDs.size()) : "Missing items. Expected to have loaded " + seenItems + " but loaded " + mongoIDs.size();
-            l.add(new MongoInputSplit(mongoIDs, conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip()));
+        if (conf.getLimit() > 0 || conf.getSkip() > 0) {
+            /** TODO - If they specify skip or limit we create only one input split */
+            throw new IllegalArgumentException("skip() and limit() is not currently supported do to input split issues.");
+        } 
+        else {
+            /**
+             * On the jobclient side we want *ONLY* the min and max ids
+             * for each split;  Actual querying will be done on the individual
+             * mappers.
+             */
+            int splitSize = conf.getSplitSize();
+            MongoIDRange range = findMinMax(conf.getInputCollection());
+            // For first release, no splits
+            /*int numSplits = (range.size() / splitSize + 1);
+            
+            log.info("Retrieved and configured an outer Mongo IDRange: " + range + " of size " + range.size() + " (after limit/skip ad nauseum).  Setting splitSize to " + splitSize + " Iterating to " + numSplits);
+*/
+            // TODO - Configure batchSize based off splitSize? Will this give us a more efficient cursor handle?
+            /**
+             * At the moment using a single cursor,
+             * with larger collections we could probably use
+             * branched futures threads for walking down the split tree.
+             *
+             * TODO - Optimize Me &amp; support sharding!
+             */
+            List<InputSplit> splits = new ArrayList<InputSplit>(1);
+            // For first release, no splits, no sharding
+            splits.add(new MongoInputSplit(range, conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip()));
+            log.info("Calculated " + splits.size() + " split objects.");
+            return splits;
         }
-        log.info("Calculated " + l.size() + " split objects.");
-        return l;
     }
 
         
