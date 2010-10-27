@@ -23,7 +23,8 @@
   <property>
     <!-- The query, in JSON, to execute [OPTIONAL] -->
     <name>mongo.input.query</name>
-    <value>{"x": {"$regex": "^eliot", "$options": ""}}</value>
+    <!--<value>{"x": {"$regex": "^eliot", "$options": ""}}</value>-->
+    <value></value>
   </property>
   <property>
     <!-- The fields, in JSON, to read [OPTIONAL] -->
