@@ -1,4 +1,3 @@
-
 MongoDB Hadoop Adapter
 =======================
 
@@ -69,7 +68,7 @@ The use of Pig assumes you have Hadoop & Pig installed and setup on your machine
 Make sure you've built using `ant jar` and then run:
 
 
-    pig -x local /examples/test.pig
+    pig -x local examples/test.pig
 
 
 You should find the results in the 'test' DB inside the 'pig.output' collection.
