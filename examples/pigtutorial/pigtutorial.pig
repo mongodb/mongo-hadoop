@@ -23,13 +23,13 @@
 -- Register the tutorial JAR file so that the included UDFs can be called in the script.
 
 -- Based on the Pig tutorial ,modified for Mongo support tests
-REGISTER src/examples/pigtutorial.jar;
-REGISTER ./mongo-hadoop.jar;
+REGISTER examples/pigtutorial/lib/pigtutorial.jar;
+REGISTER mongo-hadoop.jar;
 REGISTER lib/mongo-java-driver.jar;
 
 -- Use the PigStorage function to load the excite log file into the raw bag as an array of records.
 -- Input: (user,time,query) 
-raw = LOAD 'excite-small.log' USING PigStorage('\t') AS (user, time, query);
+raw = LOAD 'examples/pigtutorial/resources/excite-small.log' USING PigStorage('\t') AS (user, time, query);
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
 clean1 = FILTER raw BY org.apache.pig.tutorial.NonURLDetector(query);

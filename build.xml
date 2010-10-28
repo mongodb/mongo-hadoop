@@ -97,7 +97,7 @@
     </javac>
 -->
 
-    <javac srcdir="src/examples"
+<javac srcdir="examples/wordcount/src"
            destdir="build/examples"
            optimize="off"
            deprecation="off"
@@ -121,7 +121,7 @@
   <target name="wordcountXML" depends="jar" description="--> Run the wordcount example">
     <java classname="com.mongodb.hadoop.examples.WordCountXMLConfig" >
       <classpath refid="classpath"/>
-      <arg line="-conf src/examples/mongo-wordcount.xml"/>
+      <arg line="-conf examples/wordcount/resources/mongo-wordcount.xml"/>
       <arg line="-Dlog4j.debug"/>
     </java>
   </target>
