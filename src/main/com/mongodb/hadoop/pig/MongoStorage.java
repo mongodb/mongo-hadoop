@@ -1,3 +1,20 @@
+// MongoStorage.java
+/*
+ * Copyright 2010 10gen Inc.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.mongodb.hadoop.pig;
 
 import java.io.*;
@@ -14,23 +31,20 @@ import com.mongodb.*;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.output.*;
 
+import com.mongodb.hadoop.util.MongoConfigUtil;
+
 public class MongoStorage extends StoreFunc implements StoreMetadata {
     private static final Log log = LogFactory.getLog( MongoStorage.class );
+    // Pig specific settings
+    static final String PIG_OUTPUT_SCHEMA = "mongo.pig.output.schema";
+    static final String PIG_OUTPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.output.schema.udf_context";
 
-    private String udfContextSignature = null;
-    private MongoRecordWriter recordWriter = null;
+    public MongoStorage() { }
 
-    public final static String CONF_OUTPUT_URI = "MONGO_OUTPUT";
-    public final static String CONF_OUTPUT_SCHEMA = "MONGO_SCHEMA";
-    public final static String UDFCONTEXT_OUTPUT_SCHEMA = "UDF.MONGO_SCHEMA";
-
-    public MongoStorage() {
-    }
-
-    @Override
+    
     public void checkSchema( ResourceSchema schema ) throws IOException{
-        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { udfContextSignature } );
-        properties.setProperty( UDFCONTEXT_OUTPUT_SCHEMA, parseSchema( schema ) );
+        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
+        properties.setProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT, parseSchema( schema ) );
     }
 
     public String parseSchema( ResourceSchema schema ){
@@ -42,68 +56,68 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         return fields.substring( 0, fields.length() - 1 );
     }
 
-    @Override
+    
     public void storeSchema( ResourceSchema schema , String location , Job job ){
         // not implemented
     }
 
-    @Override
+    
     public void storeStatistics( ResourceStatistics stats , String location , Job job ){
         // not implemented
     }
 
-    @Override
+    
     public void putNext( Tuple tuple ) throws IOException{
-        final Configuration config = recordWriter.getContext().getConfiguration();
-        final List<String> schema = Arrays.asList( config.get( CONF_OUTPUT_SCHEMA ).split( "," ) );
+        final Configuration config = _recordWriter.getContext().getConfiguration();
+        final List<String> schema = Arrays.asList( config.get( PIG_OUTPUT_SCHEMA ).split( "," ) );
         log.info( "Stored Schema: " + schema );
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
         for ( int i = 0; i < tuple.size(); i++ ) {
             log.info( "I: " + i + " tuple: " + tuple );
             builder.add( schema.get( i ), tuple.get( i ) );
         }
-        recordWriter.write( null, builder.get() );
+        _recordWriter.write( null, builder.get() );
     }
 
-    @Override
+    
     public void prepareToWrite( RecordWriter writer ) throws IOException{
-        recordWriter = (MongoRecordWriter) writer;
-        log.info( "Preparing to write to " + recordWriter );
-        if ( recordWriter == null )
+        _recordWriter = (MongoRecordWriter) writer;
+        log.info( "Preparing to write to " + _recordWriter );
+        if ( _recordWriter == null )
             throw new IOException( "Invalid Record Writer" );
     }
 
-    @Override
+    
     public OutputFormat getOutputFormat() throws IOException{
         final MongoOutputFormat outputFmt = new MongoOutputFormat();
         log.info( "OutputFormat... " + outputFmt );
         return outputFmt;
     }
 
-    @Override
+    
     public String relToAbsPathForStoreLocation( String location , org.apache.hadoop.fs.Path curDir ) throws IOException{
         // Don't convert anything - override to keep base from messing with URI
         log.info( "Converting path: " + location + "(curDir: " + curDir + ")" );
         return location;
     }
 
-    @Override
+    
     public void setStoreLocation( String location , Job job ) throws IOException{
         final Configuration config = job.getConfiguration();
         log.info( "Store Location Config: " + config + " For URI: " + location );
         if ( !location.startsWith( "mongodb://" ) )
             throw new IllegalArgumentException( "Invalid URI Format.  URIs must begin with a mongodb:// protocol string." );
-        log.info( "Storing " + location + " in " + CONF_OUTPUT_URI );
-        config.set( CONF_OUTPUT_URI, location );
-        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { udfContextSignature } );
-        config.set( CONF_OUTPUT_SCHEMA, properties.getProperty( UDFCONTEXT_OUTPUT_SCHEMA ) );
-        log.info( "Config: " + config );
-        log.info( "Config Item " + CONF_OUTPUT_URI + " is " + config.get( CONF_OUTPUT_URI ) );
+        MongoConfigUtil.setOutputURI(config, location);
+        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
+        config.set( PIG_OUTPUT_SCHEMA, properties.getProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT ) );
     }
 
-    @Override
+    
     public void setStoreFuncUDFContextSignature( String signature ){
-        udfContextSignature = signature;
+        _udfContextSignature = signature;
     }
+
+    String _udfContextSignature = null;
+    MongoRecordWriter _recordWriter = null;
 
 }
