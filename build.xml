@@ -97,7 +97,16 @@
     </javac>
 -->
 
-<javac srcdir="examples/wordcount/src"
+  <javac srcdir="examples/wordcount/src"
+           destdir="build/examples"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+  <javac srcdir="examples/treasury_yield/src"
            destdir="build/examples"
            optimize="off"
            deprecation="off"

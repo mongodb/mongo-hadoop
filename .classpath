@@ -2,7 +2,8 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src/main"/>
-	<classpathentry kind="src" path="src/examples"/>
+  <classpathentry kind="src" path="examples/wordcount/src"/>
+  <classpathentry kind="src" path="examples/treasury_yield/src"/>
 	<classpathentry kind="lib" path="lib/hadoop-core-0.20.2.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-streaming-0.20.2.jar"/>
 	<classpathentry kind="lib" path="lib/pig-0.7.0.jar"/>

@@ -1,6 +1,9 @@
 MongoDB Hadoop Adapter
 =======================
 
+NOTE: We have not tested this driver with Hadoop 0.21 yet.  We have tested with, and recommend the use of,
+Hadoop 0.20.2 or Cloudera CHD3 (Which ships 0.20.2)
+
 State of the Adapter
 ---------
 This is currently under development and is not feature complete.
@@ -57,6 +60,16 @@ You can run this with the ant task `wordcountXML`, or with a hadoop command of:
 
 You will need to copy the `mongo-java-driver.jar` file into your Hadoop `lib` directory before this will work.
 
+### Treasury Yield
+
+The treasury yield example demonstrates working with a more complex input BSON document and calculating an average.
+
+It uses a database of daily US Treasury Bid Curves from 1990 to Sept. 2010 and runs them through to calculate annual averages.
+
+There is a JSON file `examples/treasury_yield/resources/yield_historical_in.json` which you should import into the `test` db in the `yield_historical.in` collection.
+
+
+
 ###Pig
 
 We presently provide a modified version of the Pig Tutorial from the Pig distribution for testing.
@@ -93,4 +106,6 @@ KNOWN ISSUES
 
 You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.  
 Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
+
+We need a BSONWritable implementation
 
