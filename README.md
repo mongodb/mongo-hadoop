@@ -99,7 +99,7 @@ TODO
 - Full support for appropriate 'alternate' Hadoop Interfaces
   * We already support Pig for Output (get input working)
   * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
-- ** We treat '\_id', our main split segment, as an Object.  However this won't work well for custom types.  We should investigate allowing registration of custom BSONEncoder/Decoder which can be setup on the remote mapper **
+
 
 KNOWN ISSUES
 --------------
