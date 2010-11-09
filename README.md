@@ -1,6 +1,8 @@
 MongoDB Hadoop Adapter
 =======================
 
+EXPERIMENTAL: DO NOT USE FOR PRODUCTION
+---------------------------------------
 NOTE: We have not tested this driver with Hadoop 0.21 yet.  We have tested with, and recommend the use of,
 Hadoop 0.20.2 or Cloudera CHD3 (Which ships 0.20.2)
 
