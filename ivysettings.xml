@@ -5,7 +5,6 @@
       <filesystem name="libraries">
         <artifact pattern="${ivy.settings.dir}/repository/[artifact]-[revision].[ext]" />
       </filesystem>
-     <ibiblio name="cloudera" root="https://repository.cloudera.com/content/repositories/releases/" m2compatible="true" />
       <url name="maven2" m2compatible="true">
         <artifact pattern="http://repo1.maven.org/maven2/[organisation]/[module]/[revision]/[artifact]-[revision].[ext]"/>
       </url>
@@ -15,7 +14,4 @@
       
     </chain> 
   </resolvers>
-  <modules>
-    <module organisation="com.cloudera.hadoop" name="*" resolver="mongo-resolvers" />
-  </modules>
 </ivysettings>
