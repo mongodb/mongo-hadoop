@@ -37,7 +37,7 @@ public class TreasuryYieldMapper extends Mapper<java.util.Date, BSONObject, IntW
     public void map( java.util.Date key , BSONObject value , Context context ) throws IOException, InterruptedException{
 
         int year = key.getYear() + 1900;
-        double bid10Year = (Double) value.get( "bc10Year" );
+        double bid10Year = ((Number) value.get( "bc10Year" )).doubleValue();
 
         context.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
 
