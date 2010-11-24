@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="lib" path="/Users/bwmcadams/code/misc/flume/lib/google-collect-1.0-rc2.jar"/>
+	<classpathentry kind="lib" path="/Users/bwmcadams/code/misc/flume/lib/slf4j-api-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/Users/bwmcadams/code/misc/flume/lib/slf4j-log4j12-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/Users/bwmcadams/code/misc/flume/lib/log4j-1.2.15.jar"/>
+	<classpathentry exported="true" kind="src" path="/mongo-java-driver"/>
+	<classpathentry exported="true" kind="src" path="/flume"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
