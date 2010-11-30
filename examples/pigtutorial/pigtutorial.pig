@@ -25,7 +25,7 @@
 -- Based on the Pig tutorial ,modified for Mongo support tests
 REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 REGISTER mongo-hadoop.jar;
-REGISTER lib/mongo-java-driver.jar;
+REGISTER lib/mongo-java-driver-2.3.jar;
 
 -- Use the PigStorage function to load the excite log file into the raw bag as an array of records.
 -- Input: (user,time,query) 
@@ -73,4 +73,4 @@ ordered_uniq_frequency = ORDER filtered_uniq_frequency BY hour, score;
 
 -- Use the PigStorage function to store the results. 
 -- Output: (hour, n-gram, score, count, average_counts_among_all_hours)
-STORE ordered_uniq_frequency INTO 'mongodb://localhost/test.pig.output' USING com.mongodb.hadoop.pig.MongoStorage;
+STORE ordered_uniq_frequency INTO 'mongodb://localhost/demo.pig.output' USING com.mongodb.hadoop.pig.MongoStorage;

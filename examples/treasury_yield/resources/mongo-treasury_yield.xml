@@ -13,12 +13,12 @@
   <property>
     <!-- If you are reading from mongo, the URI -->
     <name>mongo.input.uri</name>
-    <value>mongodb://localhost/test.yield_historical.in</value>
+    <value>mongodb://localhost/demo.yield_historical.in</value>
   </property>
   <property>
     <!-- If you are writing to mongo, the URI -->
     <name>mongo.output.uri</name>
-    <value>mongodb://localhost/test.yield_historical.out</value>
+    <value>mongodb://localhost/demo.yield_historical.out</value>
   </property>
   <property>
     <!-- The query, in JSON, to execute [OPTIONAL] -->
