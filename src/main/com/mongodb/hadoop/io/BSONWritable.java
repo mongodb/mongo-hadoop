@@ -40,6 +40,18 @@ public class BSONWritable implements BSONObject, Writable {
     }
 
     /**
+     * Copy constructor, copies data from an existing BSONWritable
+     * 
+     * @param other
+     *            The BSONWritable to copy from
+     */
+    public BSONWritable(BSONWritable other) {
+        this();
+        copy( other );
+    }
+
+
+    /**
      * Constructs a new instance around an existing BSONObject
      */
     public BSONWritable(BSONObject doc) {
@@ -155,6 +167,27 @@ public class BSONWritable implements BSONObject, Writable {
         byte[] buf = new byte[dataLen];
         in.readFully( buf );
         dec.decode( buf, cb );
+    }
+
+    /** Used by child copy constructors. */
+    protected synchronized void copy( Writable other ){
+        if ( other != null ) {
+            try {
+                DataOutputBuffer out = new DataOutputBuffer();
+                other.write( out );
+                DataInputBuffer in = new DataInputBuffer();
+                in.reset( out.getData(), out.getLength() );
+                readFields( in );
+
+            }
+            catch ( IOException e ) {
+                throw new IllegalArgumentException( "map cannot be copied: " + e.getMessage() );
+            }
+
+        }
+        else {
+            throw new IllegalArgumentException( "source map cannot be null" );
+        }
     }
 
     /**

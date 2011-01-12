@@ -111,3 +111,5 @@ Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes
 
 We need a BSONWritable implementation
 
+Running Streaming:
+  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.3.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md

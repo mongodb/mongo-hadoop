@@ -29,7 +29,7 @@ REGISTER lib/mongo-java-driver-2.3.jar;
 
 -- Use the PigStorage function to load the excite log file into the raw bag as an array of records.
 -- Input: (user,time,query) 
-raw = LOAD 'examples/pigtutorial/resources/excite-small.log' USING PigStorage('\t') AS (user, time, query);
+raw = LOAD 'excite-small.log' USING PigStorage('\t') AS (user, time, query);
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
 clean1 = FILTER raw BY org.apache.pig.tutorial.NonURLDetector(query);
