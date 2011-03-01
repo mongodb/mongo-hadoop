@@ -95,7 +95,7 @@ public class MongoInputSplit implements Writable, InputSplit {
         log.info("Deserialized MongoInputSplit ... { length = "
                  + getLength()
                  + ", locations = "
-                 + getLocations()
+                 + java.util.Arrays.toString(getLocations())
                  + ", query = "
                  + _querySpec
                  + ", fields = "
