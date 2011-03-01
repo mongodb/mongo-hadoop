@@ -26,6 +26,7 @@ import com.mongodb.*;
 
 import com.mongodb.hadoop.io.*;
 
+/** @deprecated functionality has been consolidated into {@link com.mongodb.hadoop.input.MongoRecordReader} */
 @SuppressWarnings("deprecation")
 public class MongoRecordReader implements RecordReader<ObjectWritable, BSONWritable> {
 

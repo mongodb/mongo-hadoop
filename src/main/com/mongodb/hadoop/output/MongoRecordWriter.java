@@ -73,16 +73,27 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
     }
 
     public void write( K key , V value ) throws IOException{
+        boolean update = false;
+        DBObject query = null;
+        //This is very hackish
+        //TODO: have an enum class SpecialOper that can serve as the output key class
+        if ("$update".equals(key) || (key.getClass().equals(Text.class) && key.toString().equals("$update")) ){
+            update = true;
+            query = (DBObject) ((BSONObject)value).get("$query");
+            value = (V) ((BSONObject)value).get("$value");
+        }
         final DBObject o = new BasicDBObject();
 
-        if ( key instanceof MongoOutput ) {
-            ( (MongoOutput) key ).appendAsKey( o );
-        }
-        else if ( key instanceof BSONObject ) {
-            o.put( "_id", key );
-        }
-        else {
-            o.put( "_id", toBSON( key ) );
+        if (! update){
+            if ( key instanceof MongoOutput ) {
+                ( (MongoOutput) key ).appendAsKey( o );
+            }
+            else if ( key instanceof BSONObject ) {
+                o.put( "_id", key );
+            }
+            else {
+                o.put( "_id", toBSON( key ) );
+            }
         }
 
         if ( value instanceof MongoOutput ) {
@@ -96,7 +107,10 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
         }
 
         try {
-            _collection.save( o );
+            if (update){
+                _collection.update(query, o);
+            }else
+                _collection.save( o );
         }
         catch ( final MongoException e ) {
             throw new IOException( "can't write to mongo" , e );

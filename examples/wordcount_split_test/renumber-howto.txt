@@ -1,0 +1,10 @@
+To add nums to data that was inserted without them, run this in a mongo shell:
+
+var cur = db.lines.find();
+var i = 1;
+while(cur.hasNext()){
+  obj = cur.next();
+  obj.num = i;
+  i++;
+  db.lines.save(obj);
+}
