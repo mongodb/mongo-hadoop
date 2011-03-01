@@ -70,6 +70,14 @@ public class MongoConfigUtil {
 
     // Number of *documents*, not bytes, to split on
     public static final int DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
+    
+    /** If true in a sharded setup splits will be made to connect to individual
+     backends */
+    public static final String SPLITS_USE_SHARDS = "mongo.splits.use-shards";
+    /** If true  have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS}
+     * is not true splits will still use chunks, but will connect through
+    {@code mongos} instead of the individual backend {@code mongod}s. */
+    public static final String SPLITS_USE_CHUNKS = "mongo.splits.use-chunks";
 
     public static boolean isJobVerbose( Configuration conf ){
         return conf.getBoolean( JOB_VERBOSE, false );
