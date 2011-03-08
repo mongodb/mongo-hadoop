@@ -263,19 +263,21 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
             num_chunks++;
             final com.mongodb.DBObject row = cur.next();
             com.mongodb.DBObject minObj = ((com.mongodb.DBObject) row.get("min"));
+            //System.out.println("minObj keyset is "+minObj.keySet());
             String keyname = minObj.keySet().iterator().next();
             //the shard key can be of any type so this must be an Object
             Object thisMinVal = minObj.get(keyname);
-            //System.out.println("this_min_val is a "+this_min_val.getClass().getName());
             Object thisMaxVal = ((com.mongodb.DBObject) row.get("max")).get(keyname);
             Map shardKeyQueryMap = new HashMap();
             if ( ! (thisMinVal instanceof String))
-                shardKeyQueryMap.put("$gte",  thisMinVal); //$min does not work
+                shardKeyQueryMap.put("$min", new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMinVal)) );
             if (! (thisMaxVal instanceof String))
-                shardKeyQueryMap.put("$lt", thisMaxVal);//$max does not work
-            com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(origQueryMap);
-            newQuery.put(keyname,shardKeyQueryMap); //todo: check that original query didn't have a query on the shard key.  If it did merge the queries
-            System.out.println(" new_query is: "+newQuery);
+                shardKeyQueryMap.put("$max",  new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMaxVal)) );
+            if (originalQuery == null)
+                originalQuery = new com.mongodb.BasicDBObject();
+            shardKeyQueryMap.put("$query", originalQuery);
+            com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(shardKeyQueryMap);
+            log.info("["+num_chunks+"/"+splits.size()+"] new query is: "+newQuery);
 
             MongoURI inputURI = conf.getInputURI();
             if (useShards){
