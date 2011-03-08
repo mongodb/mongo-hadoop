@@ -270,9 +270,9 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
             Object thisMaxVal = ((com.mongodb.DBObject) row.get("max")).get(keyname);
             Map shardKeyQueryMap = new HashMap();
             if ( ! (thisMinVal instanceof String))
-                shardKeyQueryMap.put("$min",  thisMinVal);
+                shardKeyQueryMap.put("$gte",  thisMinVal); //$min does not work
             if (! (thisMaxVal instanceof String))
-                shardKeyQueryMap.put("$max", thisMaxVal);
+                shardKeyQueryMap.put("$lt", thisMaxVal);//$max does not work
             com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(origQueryMap);
             newQuery.put(keyname,shardKeyQueryMap); //todo: check that original query didn't have a query on the shard key.  If it did merge the queries
             System.out.println(" new_query is: "+newQuery);
