@@ -76,8 +76,14 @@ public class MongoConfigUtil {
     public static final String SPLITS_USE_SHARDS = "mongo.splits.use-shards";
     /** If true  have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS}
      * is not true splits will still use chunks, but will connect through
-    {@code mongos} instead of the individual backend {@code mongod}s. */
+     {@code mongos} instead of the individual backend {@code mongod}s.
+     If {@link #SPLITS_USE_SHARDS} is true but this is false one split will
+     be made for each shard. THIS IS UNSAFE and may result in data being run
+     multiple times */
     public static final String SPLITS_USE_CHUNKS = "mongo.splits.use-chunks";
+    /** If true then shards are replica sets run queries on slaves. If set
+     * this will override any option passed on the URI. */
+    public static final String SPLITS_SLAVE_OK = "mongo.splits.slaveok";
 
     public static boolean isJobVerbose( Configuration conf ){
         return conf.getBoolean( JOB_VERBOSE, false );
