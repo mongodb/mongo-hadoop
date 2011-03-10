@@ -56,6 +56,7 @@
 
   <target name="init" depends="install-ivy">
     <mkdir dir="build" />
+    <!--mkdir dir="lib" /-->
     <mkdir dir="build/main" />
 <!--    <mkdir dir="build/test" /> -->
     <mkdir dir="build/examples" />
@@ -106,6 +107,19 @@
            debug="on" >
       <classpath refid="classpath"/>
     </javac>
+  <javac srcdir="examples/wordcount_split_test/src"
+           destdir="examples/wordcount_split_test"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+    <jar  destfile="examples/wordcount_split_test/wc-split-test.jar">
+      <fileset dir="examples/wordcount_split_test"
+         includes="*.class" />
+   </jar>
   <javac srcdir="examples/treasury_yield/src"
            destdir="build/examples"
            optimize="off"
