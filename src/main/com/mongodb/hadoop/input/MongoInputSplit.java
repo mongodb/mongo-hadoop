@@ -81,7 +81,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _limit = in.readInt();
         _skip = in.readInt();
 
-        log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = " + getLocations() + ", query = " + _querySpec
+        log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = " + java.util.Arrays.toString(getLocations()) + ", query = " + _querySpec
                 + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
 
         objIn.close();
