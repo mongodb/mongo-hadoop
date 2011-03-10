@@ -1,5 +1,3 @@
-
-// WordCount.java
 /*
  * Copyright 2010 10gen Inc.
  * 
@@ -75,7 +73,7 @@ public class WordCountSplitTest {
             context.write( key, result );
         }
     }
-    private final static void test(boolean use_shards, boolean use_chunks) throws Exception{
+    private final static void test(boolean use_shards, boolean use_chunks, Boolean slaveok) throws Exception{
         did_start = false;
         final Configuration conf = new Configuration();
         MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30000/test.lines" );
@@ -92,6 +90,9 @@ public class WordCountSplitTest {
                 output_table = "with_shards";
             else
                 output_table = "no_splits";
+        }
+        if (slaveok != null){
+            output_table += "_" + slaveok;
         }
         MongoConfigUtil.setOutputURI( conf, "mongodb://localhost:30000/test." +output_table );
         System.out.println( "Conf: " + conf );
@@ -126,7 +127,7 @@ public class WordCountSplitTest {
         nf.setMaximumFractionDigits(3);
         System.out.println("finished run in "+nf.format(seconds)+" seconds");
 
-        com.mongodb.Mongo m = new com.mongodb.Mongo( new com.mongodb.MongoURI("mongodb://localhost:30000/"));
+        com.mongodb.Mongo m = new com.mongodb.Mongo( new com.mongodb.MongoURI("mongodb://localhost:30000/?slaveok=true"));
         com.mongodb.DB db = m.getDB( "test" );
         com.mongodb.DBCollection coll = db.getCollection(output_table);
         com.mongodb.BasicDBObject query = new com.mongodb.BasicDBObject();
@@ -143,8 +144,10 @@ public class WordCountSplitTest {
 
     public static void main( String[] args ) throws Exception{
         boolean[] tf = {false, true};
+        Boolean[] ntf = {null, Boolean.TRUE, Boolean.FALSE};
         for(boolean use_shards : tf)
             for(boolean use_chunks : tf)
-                test(use_shards, use_chunks);
+                for(Boolean slaveok : ntf)
+                    test(use_shards, use_chunks, slaveok);
     }
 }
