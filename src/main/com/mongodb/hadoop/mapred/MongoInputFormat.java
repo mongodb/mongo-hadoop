@@ -51,7 +51,7 @@ public class MongoInputFormat implements InputFormat<ObjectWritable, BSONWritabl
          * TODO - If they specify skip or limit we create only one input
          * split
          */
-            throw new IllegalArgumentException("skip() and limit() is not currently supported do to input split "
+            throw new IllegalArgumentException("skip() and limit() is not currently supported due to input split "
                                                + "issues.");
         else {
             /**

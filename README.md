@@ -12,7 +12,7 @@ This is currently under development and is not feature complete.
 
 It should be considered an Alpha.
 
-You will need the MongoDB Java Driver 2.3 or Master.
+You will need the MongoDB Java Driver 2.4 or higher.
 
 Issue tracking: https://github.com/mongodb/mongo-hadoop/issues
 
@@ -109,7 +109,19 @@ KNOWN ISSUES
 You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.  
 Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
 
-We need a BSONWritable implementation
 
 Running Streaming:
-  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.3.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
+  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
+
+You will need Hadoop Streaming 0.21 or higher to make this work --- 0.20.2 does *not* support Binary streaming
+
+
+  hadoop jar $HADOOP_STREAMING -D stream.map.input=rawbytes -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
+
+  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md -io rawbytes
+
+hadoop jar $HADOOP_STREAMING -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
+
+hadoop jar ./mongo-hadoop-streaming.jar -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
+
+hadoop jar mongo-hadoop-streaming.jar -libjars $HADOOP_STREAMING,mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
