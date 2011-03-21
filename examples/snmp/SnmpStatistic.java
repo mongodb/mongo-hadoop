@@ -156,6 +156,7 @@ public class SnmpStatistic {
 
         */
          //*****************This is the second job.********************/
+/*      The MapReduce chain is not available so far.
         System.out.println(" ----------------------- Second MapReduce Job Starts --------------------");
 	    final Configuration conf2 = new Configuration();
         MongoConfigUtil.setInputURI( conf2, "mongodb://localhost:30000/test."+ output_table );
