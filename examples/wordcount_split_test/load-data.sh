@@ -35,7 +35,7 @@ else
 
     TMPFILE=`mktemp`
     echo num = 1 >> $TMPFILE
-    perl -e 'while (<>) {  s/\"/\\"/g ; print }' < big.txt | sed 's/.*/  db.lines.insert({"_id": num++, "line": "&"});/' >> $TMPFILE
+    perl -e 'while (<>) {  s/\"/\\"/g ; print }' < big.txt | sed 's/.*/  db.lines.insert({"num": num++, "line": "&"});/' >> $TMPFILE
 
     mv $TMPFILE $TMPFILE.js
 
