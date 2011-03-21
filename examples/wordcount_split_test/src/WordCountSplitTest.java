@@ -73,20 +73,32 @@ public class WordCountSplitTest {
             context.write( key, result );
         }
     }
-    private final static void test(boolean use_shards, boolean use_chunks, Boolean slaveok) throws Exception{
+    private final static void test(boolean useShards, boolean useChunks, Boolean slaveok, boolean useQuery) throws Exception{
         did_start = false;
         final Configuration conf = new Configuration();
         MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30000/test.lines" );
-        conf.setBoolean(MongoConfigUtil.SPLITS_USE_SHARDS, use_shards);
-        conf.setBoolean(MongoConfigUtil.SPLITS_USE_CHUNKS, use_chunks);
+        conf.setBoolean(MongoConfigUtil.SPLITS_USE_SHARDS, useShards);
+        conf.setBoolean(MongoConfigUtil.SPLITS_USE_CHUNKS, useChunks);
+
+        if(useQuery) {
+            //NOTE: must do this BEFORE Job is created
+            final MongoConfig mongo_conf = new MongoConfig(conf);
+            com.mongodb.BasicDBObject query = new com.mongodb.BasicDBObject();
+            query.put( "num", new com.mongodb.BasicDBObject(Collections.singletonMap("$mod", new int[]{2,0})) );
+            System.out.println(" --- setting query on num");
+            mongo_conf.setQuery(query);
+            System.out.println(" --- query is: "+mongo_conf.getQuery());
+        }
+        
         String output_table = null;
-        if (use_chunks){
-            if(use_shards)
+        if (useChunks){
+            if(useShards)
                 output_table = "with_shards_and_chunks";
             else
                 output_table = "with_chunks";
-        }else{
-            if(use_shards)
+        }
+        else{
+            if(useShards)
                 output_table = "with_shards";
             else
                 output_table = "no_splits";
@@ -143,11 +155,26 @@ public class WordCountSplitTest {
     }
 
     public static void main( String[] args ) throws Exception{
+        boolean useQuery = false;
+        boolean testSlaveOk = false;
+        for(int i = 0 ; i < args.length ; i++){
+            final String argi = args[i];
+            if (argi.equals("--use-query"))
+                useQuery = true;
+            else if(argi.equals("--test-slave-ok"))
+                testSlaveOk = true;
+            else{
+                System.err.println("Unknown argument: "+argi);
+                System.exit(1);
+            }
+        }
         boolean[] tf = {false, true};
-        Boolean[] ntf = {null, Boolean.TRUE, Boolean.FALSE};
+        Boolean[] ntf = {null};
+        if (testSlaveOk)
+            ntf = new Boolean[]{null, Boolean.TRUE, Boolean.FALSE};
         for(boolean use_shards : tf)
             for(boolean use_chunks : tf)
                 for(Boolean slaveok : ntf)
-                    test(use_shards, use_chunks, slaveok);
+                    test(use_shards, use_chunks, slaveok, useQuery);
     }
 }
