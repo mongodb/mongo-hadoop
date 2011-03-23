@@ -1,6 +1,6 @@
 import java.io.*;
 import java.util.*;
- 
+import java.lang.String; 
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
@@ -28,24 +28,31 @@ public class SnmpStatistic {
             //System.out.println( "key: " + key );
             //System.out.println( "value: " + value );
             //System.out.println(value.get("key").toString());
-            String inputKey = value.get("key").toString();
-            if(inputKey.equals("c2")) {
-	            String content = value.get( "content" ).toString() ;
-	            String date = value.get( "date" ).toString();
-	            String [] item = content.split(",");
-	            String apID = item[2];
-	            String macAdd = item[3];
-	            String outputFlow = item[5]; // Number of observed octets for which this entry was the source.
-	            String keyString = date + "," + macAdd + "," + apID;  //Get middle input key for reducer.
-	            //System.out.println("Map output key is "+keyString);
-                    
-                    LongWritable valueLong = new LongWritable(Long.parseLong(outputFlow));
-	           // System.out.println("Map output value is "+valueLong.get());
-                    context.write(new Text(keyString), valueLong);
+            if (value.get("key") != null) {
+                String inputKey = value.get("key").toString();
+                if(inputKey.equals("c2")) {
+                    String content = value.get( "content" ).toString() ;
+                    String date = value.get( "date" ).toString();
+                    String [] item = content.split(",");
+                    int strlength = item.length;
+                    if (strlength > 5) {
+                        String apID = item[2];
+                        String macAdd = item[3];
+                        String outputFlow = item[5]; // Number of observed octets for which this entry was the source.
+                        String keyString = date + "," + macAdd + "," + apID;  //Get middle input key for reducer.
+                        LongWritable valueLong = new LongWritable(Long.parseLong(outputFlow));
+                        context.write(new Text(keyString), valueLong);
+                    }//System.out.println("Map output key is "+keyString);
+                    else
+                        System.out.println("The length of item is less than 5! The value is "+content);
+                    //LongWritable valueLong = new LongWritable(Long.parseLong(outputFlow));
+              //System.out.println("Map output value is "+valueLong.get());
+                    //context.write(new Text(keyString), valueLong);
+                  }
+
             }
-            //else {
-            //        System.out.println("The key is "+inputKey+", but c2");
-            //}            
+            else 
+                System.out.println("The value.get(\"key\") is null. The key is " + key);
         }
     }
  
@@ -58,10 +65,10 @@ public class SnmpStatistic {
 	             outputFlow_vector.add(val.get());
             }
             Long totalOutput = Collections.max(outputFlow_vector) - Collections.min(outputFlow_vector);
-            System.out.println("Input reduce key is "+key.toString());
+            //System.out.println("Input reduce key is "+key.toString());
             String reduceInputKey=key.toString(); 
             String [] item = reduceInputKey.split(",");
-            System.out.println("Item[0] is "+item[0]+"; Item[1] is "+item[1]+"; Item[2] is "+item[2]);
+            //System.out.println("Item[0] is "+item[0]+"; Item[1] is "+item[1]+"; Item[2] is "+item[2]);
             String date = item[0];
             String macAdd = item[1];
             String apID = item[2];
@@ -215,11 +222,11 @@ public class SnmpStatistic {
     }
  
     public static void main( String[] args ) throws Exception{
-        boolean[] tf = {false, true};
-        for(boolean use_shards : tf)
-            for(boolean use_chunks : tf)
-        //boolean use_shards=true;
-        //boolean use_chunks=true;
+        //boolean[] tf = {false, true};
+        //for(boolean use_shards : tf)
+        //    for(boolean use_chunks : tf)
+        boolean use_shards=false;
+        boolean use_chunks=false;
                 test(use_shards, use_chunks);
     }
 }
