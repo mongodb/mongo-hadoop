@@ -43,8 +43,8 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     }
 
     public List<InputSplit> getSplits( JobContext context ){
-        final Configuration hadoop_configuration = context.getConfiguration();
-        final MongoConfig conf = new MongoConfig( hadoop_configuration);
+        final Configuration hadoopConfiguration = context.getConfiguration();
+        final MongoConfig conf = new MongoConfig( hadoopConfiguration);
 
         if ( conf.getLimit() > 0 || conf.getSkip() > 0 )
             /**
@@ -57,13 +57,13 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
              * On the jobclient side we want *ONLY* the min and max ids for each
              * split; Actual querying will be done on the individual mappers.
              */
-            boolean useShards = hadoop_configuration.getBoolean(MongoConfigUtil.SPLITS_USE_SHARDS , false);
-            //use_chunks should be true if use_shards is true unless overridden
-            boolean useChunks = hadoop_configuration.getBoolean(MongoConfigUtil.SPLITS_USE_CHUNKS , useShards);
-            Boolean slave_ok = null;
-            String slave_ok_prop =  hadoop_configuration.get(MongoConfigUtil.SPLITS_SLAVE_OK);
-            if (slave_ok_prop != null)
-                slave_ok = Boolean.valueOf(slave_ok_prop);
+            //connecting to the individual backend mongods is not safe, do not do so by default
+            boolean useShards = hadoopConfiguration.getBoolean(MongoConfigUtil.SPLITS_USE_SHARDS , false);
+            boolean useChunks = hadoopConfiguration.getBoolean(MongoConfigUtil.SPLITS_USE_CHUNKS , true);
+            Boolean slaveOk = null;
+            String slaveOkProp =  hadoopConfiguration.get(MongoConfigUtil.SPLITS_SLAVE_OK);
+            if (slaveOkProp != null)
+                slaveOk = Boolean.valueOf(slaveOkProp);
             List<InputSplit> splits = null;
             if(useShards || useChunks){
                 try{
@@ -75,9 +75,9 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     final boolean isSharded = stats.getBoolean("sharded", false);
                     if (isSharded) { //don't proceed if the collection isn't actually sharded
                         if (useChunks)
-                            splits = getSplitsUsingChunks(conf, uri, mongo, useShards, slave_ok);
+                            splits = getSplitsUsingChunks(conf, uri, mongo, useShards, slaveOk);
                         else if(useShards)
-                            splits = getSplitsUsingShards(conf, uri, mongo, slave_ok);
+                            splits = getSplitsUsingShards(conf, uri, mongo, slaveOk);
                     }
                     mongo.close();
                     if (splits != null)
@@ -85,7 +85,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     //If splits is null fall through to code below
                 }catch  (Exception e) {
                     log.error("Could not get splits (use_shards: "+useShards+", use_chunks: "+useChunks+")", e);
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
             // Number of *documents*, not bytes, to split on
@@ -110,12 +110,12 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     private List<InputSplit> getSplitsUsingShards( final MongoConfig conf,
              com.mongodb.MongoURI uri, com.mongodb.Mongo mongo, Boolean slaveok) {
         log.warn("WARNING getting splits using shards w/o chunks is risky and might not produce correct results");
-        com.mongodb.DB config_db = mongo.getDB("config");
-        com.mongodb.DBCollection shards_coll = config_db.getCollection("shards");
+        com.mongodb.DB configDb = mongo.getDB("config");
+        com.mongodb.DBCollection shardsColl = configDb.getCollection("shards");
 
         java.util.Set<String> shardSet = new java.util.HashSet<String>();
         
-        com.mongodb.DBCursor cur = shards_coll.find();
+        com.mongodb.DBCursor cur = shardsColl.find();
         while (cur.hasNext()) {
             final com.mongodb.DBObject row = cur.next();
             //System.out.println(row);
@@ -227,6 +227,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     private List<InputSplit> getSplitsUsingChunks(final MongoConfig conf,
             com.mongodb.MongoURI uri, com.mongodb.Mongo mongo, boolean useShards, Boolean slaveok) {
         com.mongodb.DBObject originalQuery = conf.getQuery();
+        //log.info("getSplitsUsingChunks(): originalQuery: "+originalQuery);
         com.mongodb.DB configDB = mongo.getDB("config");
         Map<String, String> shardMap = null; //key: shardname, value: host
         if (useShards){
