@@ -71,6 +71,17 @@
     <delete file="mongo-hadoop.jar"/>
   </target>
 
+
+ <target name="javadoc"  depends="init"  >
+        <mkdir dir="javadoc"/>
+        <javadoc charset="UTF-8" destdir="javadoc" docencoding="UTF-8" failonerror="true"  private="false"  useexternalfile="true" >
+        <classpath refid="classpath"/>
+          <fileset dir=".">
+                <filename name="src/main/**/*.java"/>
+            </fileset>
+        </javadoc>
+    </target>
+
   <target name="compile" depends="init" description="--> compile all artifacts">
 
     <javac srcdir="src/main"
