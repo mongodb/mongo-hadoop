@@ -7,7 +7,7 @@
     <dependency org="commons-cli" name="commons-cli" rev="1.2"/>
     <dependency org="commons-logging" name="commons-logging" rev="1.1.1"/>
     <dependency org="commons-httpclient" name="commons-httpclient" rev="3.1"/>
-    <dependency org="org.mongodb" name="mongo-java-driver" rev="2.4"/>
+    <dependency org="org.mongodb" name="mongo-java-driver" rev="2.5.2"/>
     <dependency org="xerces" name="xercesImpl" rev="2.8.0"/>
   </dependencies>
 </ivy-module>
