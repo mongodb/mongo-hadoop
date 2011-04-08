@@ -120,9 +120,9 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         while (cur.hasNext()) {
             final com.mongodb.DBObject row = cur.next();
             String host = (String) row.get("host");
-                int slash_index = host.indexOf('/');
-                if (slash_index > 0)
-                    host = host.substring(slash_index+1);
+                int slashIndex = host.indexOf('/');
+                if (slashIndex > 0)
+                    host = host.substring(slashIndex+1);
             shardSet.add(host);
         }
         final List<InputSplit> splits = new ArrayList<InputSplit>( shardSet.size() );
@@ -145,8 +145,8 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         Map<String, String> shardMap = null; //key: shardname, value: host
         if (useShards){
             shardMap = new HashMap<String, String>();
-            com.mongodb.DBCollection shards_coll = configDB.getCollection("shards");
-            com.mongodb.DBCursor cur = shards_coll.find();
+            com.mongodb.DBCollection shardsCollection = configDB.getCollection("shards");
+            com.mongodb.DBCursor cur = shardsCollection.find();
             while (cur.hasNext()) {
                 final com.mongodb.DBObject row = cur.next();
                 String host = (String) row.get("host");
@@ -179,11 +179,11 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         com.mongodb.DBCursor cur = chunksCollection.find(query);
         com.mongodb.BasicDBObject sort = new com.mongodb.BasicDBObject();
         cur.sort(sort);
-        int num_chunks = 0;
+        int numChunks = 0;
 
         final List<InputSplit> splits = new ArrayList<InputSplit>( cur.size() );
         while (cur.hasNext()) {
-            num_chunks++;
+            numChunks++;
             final com.mongodb.DBObject row = cur.next();
             com.mongodb.DBObject minObj = ((com.mongodb.DBObject) row.get("min"));
             String keyname = minObj.keySet().iterator().next();
@@ -200,7 +200,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 originalQuery = new com.mongodb.BasicDBObject();
             shardKeyQueryMap.put("$query", originalQuery);
             com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(shardKeyQueryMap);
-            log.info("["+num_chunks+"/"+splits.size()+"] new query is: "+newQuery);
+            log.info("["+numChunks+"/"+splits.size()+"] new query is: "+newQuery);
 
             MongoURI inputURI = conf.getInputURI();
             if (useShards){
@@ -210,7 +210,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
             }
             splits.add( new MongoInputSplit(  inputURI , newQuery, conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip() ) );
         }//while
-        log.info("There were "+num_chunks+" chunks, returning "+splits.size()+" splits");
+        log.info("There were "+numChunks+" chunks, returning "+splits.size()+" splits");
         return splits;
     }
 
