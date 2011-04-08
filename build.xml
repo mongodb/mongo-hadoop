@@ -80,9 +80,16 @@
                 <filename name="src/main/**/*.java"/>
             </fileset>
         </javadoc>
-    </target>
+  </target>
 
-  <target name="compile" depends="init" description="--> compile all artifacts">
+  <target name="checklib">
+           <available property="lib.exists" file="lib"/>
+   </target>
+  <target name="firstresolve" unless="${lib.exists}" >
+          <antcall target="resolve" /> 
+  </target>
+
+  <target name="compile" depends="init,checklib,firstresolve" description="--> compile all artifacts">
 
     <javac srcdir="src/main"
            destdir="build/main"
