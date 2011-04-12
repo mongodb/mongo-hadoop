@@ -68,17 +68,22 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 try{
                     com.mongodb.MongoURI uri = conf.getInputURI();
                     com.mongodb.Mongo mongo = uri.connect();
-                    com.mongodb.DB db = mongo.getDB(uri.getDatabase());
-                    com.mongodb.DBCollection coll = db.getCollection(uri.getCollection());
-                    final CommandResult stats = coll.getStats();
-                    final boolean isSharded = stats.getBoolean("sharded", false);
-                    if (isSharded) { //don't proceed if the collection isn't actually sharded
-                        if (useChunks)
-                            splits = getSplitsUsingChunks(conf, uri, mongo, useShards, slaveOk);
-                        else if(useShards)
-                            splits = getSplitsUsingShards(conf, uri, mongo, slaveOk);
+                    try{
+                        com.mongodb.DB db = mongo.getDB(uri.getDatabase());
+                        com.mongodb.DBCollection coll = db.getCollection(uri.getCollection());
+                        final CommandResult stats = coll.getStats();
+                        final boolean isSharded = stats.getBoolean("sharded", false);
+                        if (isSharded) { //don't proceed if the collection isn't actually sharded
+                            if (useChunks)
+                                splits = getSplitsUsingChunks(conf, uri, mongo, useShards, slaveOk);
+                            else if(useShards)
+                                splits = getSplitsUsingShards(conf, uri, mongo, slaveOk);
+                        }
+                    }finally{
+                        if (mongo != null)
+                            mongo.close();
+                        mongo = null;
                     }
-                    mongo.close();
                     if (splits != null)
                         return splits;
                     //If splits is null fall through to code below
@@ -117,13 +122,19 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         java.util.Set<String> shardSet = new java.util.HashSet<String>();
         
         com.mongodb.DBCursor cur = shardsColl.find();
-        while (cur.hasNext()) {
-            final com.mongodb.DBObject row = cur.next();
-            String host = (String) row.get("host");
+        try{
+            while (cur.hasNext()) {
+                final com.mongodb.DBObject row = cur.next();
+                String host = (String) row.get("host");
                 int slashIndex = host.indexOf('/');
                 if (slashIndex > 0)
                     host = host.substring(slashIndex+1);
-            shardSet.add(host);
+                shardSet.add(host);
+            }
+        }finally{
+            if (cur != null)
+                cur.close();
+            cur = null;
         }
         final List<InputSplit> splits = new ArrayList<InputSplit>( shardSet.size() );
         //todo: using stats only get the shards that actually host data for this collection
@@ -147,16 +158,21 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
             shardMap = new HashMap<String, String>();
             com.mongodb.DBCollection shardsCollection = configDB.getCollection("shards");
             com.mongodb.DBCursor cur = shardsCollection.find();
-            while (cur.hasNext()) {
-                final com.mongodb.DBObject row = cur.next();
-                String host = (String) row.get("host");
-                //for replica sets host will look like: "setname/localhost:20003,localhost:20004"
-                int slashIndex = host.indexOf('/');
-                if (slashIndex > 0)
-                    host = host.substring(slashIndex+1);
-                shardMap.put((String) row.get("_id"), host);
+            try{
+                while (cur.hasNext()) {
+                    final com.mongodb.DBObject row = cur.next();
+                    String host = (String) row.get("host");
+                    //for replica sets host will look like: "setname/localhost:20003,localhost:20004"
+                    int slashIndex = host.indexOf('/');
+                    if (slashIndex > 0)
+                        host = host.substring(slashIndex+1);
+                    shardMap.put((String) row.get("_id"), host);
+                }
+            }finally{
+                if (cur != null)
+                    cur.close();
+                cur = null;
             }
-            cur.close();
         }
         log.info("getSplitsUsingChunks(): shard map is: "+shardMap);
         com.mongodb.DBCollection chunksCollection = configDB.getCollection("chunks");
@@ -177,41 +193,44 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         query.put("ns", uri.getDatabase()+"."+uri.getCollection());
 
         com.mongodb.DBCursor cur = chunksCollection.find(query);
-        com.mongodb.BasicDBObject sort = new com.mongodb.BasicDBObject();
-        cur.sort(sort);
-        int numChunks = 0;
+        try{
+            int numChunks = 0;
 
-        final List<InputSplit> splits = new ArrayList<InputSplit>( cur.size() );
-        while (cur.hasNext()) {
-            numChunks++;
-            final com.mongodb.DBObject row = cur.next();
-            com.mongodb.DBObject minObj = ((com.mongodb.DBObject) row.get("min"));
-            String keyname = minObj.keySet().iterator().next();
-            //the shard key can be of any type so this must be an Object
-            Object thisMinVal = minObj.get(keyname);
-            Object thisMaxVal = ((com.mongodb.DBObject) row.get("max")).get(keyname);
-            Map shardKeyQueryMap = new HashMap();
-            if ( ! (thisMinVal instanceof String))
-                shardKeyQueryMap.put("$min", new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMinVal)) );
-            if (! (thisMaxVal instanceof String))
-                shardKeyQueryMap.put("$max",  new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMaxVal)) );
-            //must put something for $query or will silently fail. If no original query use an empty DBObject
-            if (originalQuery == null)
-                originalQuery = new com.mongodb.BasicDBObject();
-            shardKeyQueryMap.put("$query", originalQuery);
-            com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(shardKeyQueryMap);
-            log.info("["+numChunks+"/"+splits.size()+"] new query is: "+newQuery);
+            final List<InputSplit> splits = new ArrayList<InputSplit>( cur.size() );
+            while (cur.hasNext()) {
+                numChunks++;
+                final com.mongodb.DBObject row = cur.next();
+                com.mongodb.DBObject minObj = ((com.mongodb.DBObject) row.get("min"));
+                String keyname = minObj.keySet().iterator().next();
+                //the shard key can be of any type so this must be an Object
+                Object thisMinVal = minObj.get(keyname);
+                Object thisMaxVal = ((com.mongodb.DBObject) row.get("max")).get(keyname);
+                Map shardKeyQueryMap = new HashMap();
+                if ( ! (thisMinVal instanceof String))
+                    shardKeyQueryMap.put("$min", new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMinVal)) );
+                if (! (thisMaxVal instanceof String))
+                    shardKeyQueryMap.put("$max",  new com.mongodb.BasicDBObject(Collections.singletonMap(keyname, thisMaxVal)) );
+                //must put something for $query or will silently fail. If no original query use an empty DBObject
+                if (originalQuery == null)
+                    originalQuery = new com.mongodb.BasicDBObject();
+                shardKeyQueryMap.put("$query", originalQuery);
+                com.mongodb.BasicDBObject newQuery = new com.mongodb.BasicDBObject(shardKeyQueryMap);
+                log.info("["+numChunks+"/"+splits.size()+"] new query is: "+newQuery);
 
-            MongoURI inputURI = conf.getInputURI();
-            if (useShards){
-                final String shardname = (String) row.get("shard");
-                String host = shardMap.get(shardname);
-                inputURI = getNewURI(inputURI, host, slaveok);
-            }
-            splits.add( new MongoInputSplit(  inputURI , newQuery, conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip() ) );
-        }//while
-        log.info("There were "+numChunks+" chunks, returning "+splits.size()+" splits");
-        return splits;
+                MongoURI inputURI = conf.getInputURI();
+                if (useShards){
+                    final String shardname = (String) row.get("shard");
+                    String host = shardMap.get(shardname);
+                    inputURI = getNewURI(inputURI, host, slaveok);
+                }
+                splits.add( new MongoInputSplit(  inputURI , newQuery, conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip() ) );
+            }//while
+            log.info("There were "+numChunks+" chunks, returning "+splits.size()+" splits");
+            return splits;
+        }finally{
+            if (cur != null)
+                cur.close();
+        }
     }
 
     private static com.mongodb.MongoURI getNewURI(com.mongodb.MongoURI originalUri, String newServerUri, Boolean slaveok){
