@@ -19,5 +19,5 @@ done
 export CLASSPATH=$CLASSPATH:$DIR0/build
 
 #echo CLASSPATH is $CLASSPATH
-java ApacheLogFileReader  mongodb://127.0.0.1:30010/test.lines $1
+java ApacheLogFileReader  mongodb://127.0.0.1:30010/test.weblog $1
 
