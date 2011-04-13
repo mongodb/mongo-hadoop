@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010 - 2011 10gen Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import com.mongodb.hadoop.util.*;
 public class WordCountSplitTest extends MongoTool {
 
     private static final Log log = LogFactory.getLog( WordCountSplitTest.class );
-        private static boolean did_start = false;
 
     public static class TokenizerMapper extends Mapper<Object, BSONObject, Text, IntWritable> {
+        private static boolean didStart = false;
 
         private final static IntWritable one = new IntWritable( 1 );
         private final Text word = new Text();
@@ -39,21 +39,21 @@ public class WordCountSplitTest extends MongoTool {
 
         @Override
         public void map( Object key , BSONObject value , Context context ) throws IOException, InterruptedException{
-            if (! did_start){
-                System.out.println( "map starting, config: "+context.getConfiguration());
-                did_start = true;
+            if (! didStart){
+                log.info( "map starting, config: "+context.getConfiguration());
+                didStart = true;
             }
 
-//            System.out.println( "key: " + key );
-//            System.out.println( "value: " + value );
+            //            System.out.println( "key: " + key );
+            //            System.out.println( "value: " + value );
 
             String str = value.get( "line" ).toString() ;
             if (str != null){
-            final StringTokenizer itr = new StringTokenizer(str );
-            while ( itr.hasMoreTokens() ) {
-                word.set( itr.nextToken() );
-                context.write( word, one );
-            }
+                final StringTokenizer itr = new StringTokenizer(str );
+                while ( itr.hasMoreTokens() ) {
+                    word.set( itr.nextToken() );
+                    context.write( word, one );
+                }
             }
         }
     }
@@ -74,9 +74,10 @@ public class WordCountSplitTest extends MongoTool {
         }
     }
 
+    @Override
     public int run(String[] args) throws Exception {
-         final Configuration conf = getConf();
-          boolean useQuery = false;
+        final Configuration conf = getConf();
+        boolean useQuery = false;
         for(int i = 0 ; i < args.length ; i++){
             final String argi = args[i];
             if (argi.equals("--use-query"))
@@ -149,12 +150,11 @@ public class WordCountSplitTest extends MongoTool {
 
         return 0; //is the return value supposed to be the program exit code?
 
-//        if (! result)
-//           System.exit(  1 );
+        //        if (! result)
+        //           System.exit(  1 );
     }
 
     private final static void test(boolean useShards, boolean useChunks, Boolean slaveok, boolean useQuery) throws Exception{
-        did_start = false;
         final Configuration conf = new Configuration();
         MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30000/test.lines" );
         conf.setBoolean(MongoConfigUtil.SPLITS_USE_SHARDS, useShards);
@@ -230,8 +230,8 @@ public class WordCountSplitTest extends MongoTool {
         else
             System.out.println("'the' count: "+cur.next());
         
-//        if (! result)
-//           System.exit(  1 );
+        //        if (! result)
+        //           System.exit(  1 );
     }
 
     public static void main( String[] args ) throws Exception{
