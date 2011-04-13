@@ -138,6 +138,20 @@
       <fileset dir="examples/wordcount_split_test"
          includes="*.class" />
    </jar>
+ <mkdir dir="examples/ip_location/build" />
+  <javac srcdir="examples/ip_location/src"
+           destdir="examples/ip_location/build"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+    <jar  destfile="examples/ip_location/ip-loc.jar">
+      <fileset dir="examples/ip_location/build"
+         includes="*.class" />
+   </jar>
   <javac srcdir="examples/treasury_yield/src"
            destdir="build/examples"
            optimize="off"
