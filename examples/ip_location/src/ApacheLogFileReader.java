@@ -59,7 +59,7 @@ public class ApacheLogFileReader {
             return keyList;
         }
     };
-    private List<logParser> _logParsersToTry = Arrays.asList(vcombinedApacheParser, commonApacheParser, commonApacheParser);
+    private List<logParser> _logParsersToTry = Arrays.asList(vcombinedApacheParser, combinedApacheParser, commonApacheParser);
     private logParser _logParser = null;
     
     // 192.168.1.106 - - [24/Jun/2007:00:27:12 -0400] "GET /temp.html HTTP/1.1" 304 - "-" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.4) Gecko/20070515 Firefox/2.0.0.4"
@@ -87,7 +87,7 @@ public class ApacheLogFileReader {
      int key_idx = 0;
      for(String key : _logParser.getKeys()){
          key_idx++; //first key has index of 1
-         if (key != null)
+         if (key != null && ! ("-".equals(key) || "\"-\"".equals(key) ) )
              doc.append(key, m.group(key_idx));
      }
             _coll.insert(doc);
