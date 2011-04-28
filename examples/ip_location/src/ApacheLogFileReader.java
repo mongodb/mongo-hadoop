@@ -29,7 +29,7 @@ public class ApacheLogFileReader {
         List<String> getKeys();
     }
     private logParser commonApacheParser = new logParser() {
-        private final Pattern pattern = Pattern.compile("^([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) (\\d+)");// \"([^\"]+)\" \"([^\"]+)\"";
+        private final Pattern pattern = Pattern.compile("^([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) ((\\d+)|-)");// \"([^\"]+)\" \"([^\"]+)\"";
 
         public Matcher match(String logline) {
             return pattern.matcher(logline);
@@ -40,7 +40,7 @@ public class ApacheLogFileReader {
         }
     };
     private final static logParser combinedApacheParser = new logParser() {
-        private final Pattern pattern = Pattern.compile("^([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) (\\d+) \"([^\"]+)\" \"([^\"]+)\"");
+        private final Pattern pattern = Pattern.compile("^([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) ((\\d+)|-) \"([^\"]+)\" \"([^\"]+)\"");
         public Matcher match(String logline) {
             return pattern.matcher(logline);
         }
@@ -50,7 +50,7 @@ public class ApacheLogFileReader {
         }
     };
     private final static logParser vcombinedApacheParser = new logParser() {
-        private final Pattern pattern = Pattern.compile("^(\\S+) ([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) (\\d+) \"([^\"]+)\" \"([^\"]+)\"");
+        private final Pattern pattern = Pattern.compile("^(\\S+) ([\\d.]+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(.+?)\" (\\d{3}) ((\\d+)|-) \"([^\"]+)\" \"([^\"]+)\"");
         public Matcher match(String logline) {
             return pattern.matcher(logline);
         }
