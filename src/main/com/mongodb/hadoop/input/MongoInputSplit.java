@@ -28,7 +28,7 @@ import com.mongodb.*;
 import com.mongodb.hadoop.util.*;
 import com.mongodb.util.*;
 
-public class MongoInputSplit extends InputSplit implements Writable {
+public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
     private static final Log log = LogFactory.getLog( MongoInputSplit.class );
 
     public MongoInputSplit(MongoURI inputURI , DBObject query , DBObject fields , DBObject sort , int limit , int skip) {
