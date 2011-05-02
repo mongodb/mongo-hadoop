@@ -39,12 +39,16 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
         final MongoInputSplit mis = (MongoInputSplit) split;
 
-        return new MongoRecordReader( mis );
+        return new com.mongodb.hadoop.input.MongoRecordReader( mis );
     }
 
     public List<InputSplit> getSplits( JobContext context ){
         final Configuration hadoopConfiguration = context.getConfiguration();
         final MongoConfig conf = new MongoConfig( hadoopConfiguration);
+        return getSplits(hadoopConfiguration, conf);
+    }
+    //public because called by the other MongoInputFormat
+    public List<InputSplit> getSplits( Configuration hadoopConfiguration, MongoConfig conf){
 
         if ( conf.getLimit() > 0 || conf.getSkip() > 0 )
             /**
