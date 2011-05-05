@@ -44,9 +44,14 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     public MongoInputSplit() {
     }
-
+    /** This is supposed to return the size of the split in bytes, but is hardcoded
+     to return a constant value*/
     public long getLength(){
-        return getCursor().size();
+        //This takes a really long time.  Hadoop calls this when it is deciding
+        //how to divvy up the splits.  As a result the whole database is sequenced
+        //through before the real number crunching begins.
+        //return getCursor().size();
+        return 200000000; //200 million is the default mongo chunk size
     }
 
     public String[] getLocations(){
