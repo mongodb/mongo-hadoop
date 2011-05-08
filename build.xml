@@ -69,10 +69,10 @@
   <target name="clean" description="--> clean up project">
     <delete dir="build"/>
     <delete file="examples/wordcount_split_test/wc-split-test.jar"/>
- <delete file="examples/wordcount_split_test/*.jar"/>
- <delete file="examples/wordcount_split_test/*.class"/>
- <delete dir="examples/wordcount_split_test/build"/>
- <delete dir="examples/ip_location/build" />
+    <delete file="examples/wordcount_split_test/*.jar"/>
+    <delete file="examples/wordcount_split_test/*.class"/>
+    <delete dir="examples/wordcount_split_test/build"/>
+    <delete dir="examples/ip_location/build" />
     <delete file="mongo-hadoop.jar"/>
   </target>
 
@@ -144,30 +144,30 @@
       <fileset dir="examples/wordcount_split_test/build"
          includes="*.class" />
    </jar>
- <mkdir dir="examples/snmp/build"/>
-  <javac srcdir="examples/snmp/src"
+   <mkdir dir="examples/snmp/build"/>
+      <javac srcdir="examples/snmp/src"
            destdir="examples/snmp/build"
            debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
-    <jar  destfile="examples/snmp/wc-split-test.jar">
-      <fileset dir="examples/snmp"
-         includes="*.class" />
-   </jar>
- <mkdir dir="examples/ip_location/build" />
-  <javac srcdir="examples/ip_location/src"
+        <classpath refid="classpath"/>
+      </javac>
+       <jar  destfile="examples/snmp/snmp.jar">
+          <fileset dir="examples/snmp/build"
+             includes="*.class" />
+      </jar>
+   <mkdir dir="examples/ip_location/build" />
+     <javac srcdir="examples/ip_location/src"
            destdir="examples/ip_location/build"
            optimize="off"
            deprecation="off"
            source="1.5"
            encoding="ISO-8859-1"
            debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
+        <classpath refid="classpath"/>
+      </javac>
     <jar  destfile="examples/ip_location/ip-loc.jar">
       <fileset dir="examples/ip_location/build"
          includes="*.class" />
-   </jar>
+    </jar>
   <javac srcdir="examples/treasury_yield/src"
            destdir="build/examples"
            optimize="off"
@@ -177,8 +177,6 @@
            debug="on" >
       <classpath refid="classpath"/>
     </javac>
-
-
   </target>
 
   <target name="word" depends="jar" description="--> Run the wordcount example">
