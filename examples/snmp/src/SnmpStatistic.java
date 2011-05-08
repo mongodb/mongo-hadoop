@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.util.*;
  
-public class SnmpStatistic {
+public class SnmpStatistic extends MongoTool{
  
    private static boolean did_start = false;
  
@@ -128,13 +128,8 @@ public class SnmpStatistic {
 
         final long start = System.currentTimeMillis();
         System.out.println(" ----------------------- running test "+ output_table +" --------------------");
-        try{
-            boolean result = job.waitForCompletion( true );
-            System.out.println("job.waitForCompletion( true ) returned " + result);
-        }catch(Exception e){
-            System.out.println("job.waitForCompletion( true ) threw Exception");
-            e.printStackTrace();
-        }
+        boolean result = job.waitForCompletion( true );
+        System.out.println("job.waitForCompletion( true ) returned " + result);
         final long end = System.currentTimeMillis();
         final float seconds = ((float)(end - start))/1000;
         java.text.NumberFormat nf = java.text.NumberFormat.getInstance();
@@ -147,7 +142,7 @@ public class SnmpStatistic {
         //boolean[] tf = {false, true};
         //for(boolean use_shards : tf)
         //    for(boolean use_chunks : tf)
-        boolean use_shards=false;
+        boolean use_shards=true;
         boolean use_chunks=false;
                 test(use_shards, use_chunks);
     }
