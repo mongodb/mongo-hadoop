@@ -3,13 +3,12 @@
   <property name="ivy.install.version" value="2.2.0" />
   <property name="ivy.jar.dir"         value="${basedir}/ivy" />
   <property name="ivy.jar.file"        value="${ivy.jar.dir}/ivy.jar" />
-  <property name="hadoop.20.dir"       value="/home/hadoopuser/hadoop20" />
 
   <path id="classpath">
-    <fileset dir="${hadoop.20.dir}/lib/">
+    <fileset dir="/home/hadoopuser/hadoop20/lib/">
       <include name="**/*.jar"/>
     </fileset>
-    <fileset dir="${hadoop.20.dir}/">
+    <fileset dir="/home/hadoopuser/hadoop20/">
       <include name="*.jar"/>
     </fileset>
     <pathelement path="build/main" />
@@ -74,7 +73,7 @@
 
   <target name="clean" description="--> clean up project">
     <delete dir="build"/>
-    <delete file="mongo-hadoop.jar"/>
+    <delete file="snmp_test.jar"/>
   </target>
 
   <target name="compile" depends="init" description="--> compile all artifacts">
@@ -160,7 +159,7 @@
   </target>
 
   <target name="jar" depends="compile">
-    <jar destfile="mongo-hadoop.jar">
+    <jar destfile="snmp_test.jar">
       <fileset dir="build/main"
          includes="**/*.class" />
       <fileset dir="build/examples"
