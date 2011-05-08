@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.util.*;
  
-public class SnmpStatistic {
+public class SnmpStatistic_MapReduceChain extends MongoTool {
  
    private static boolean did_start = false;
  
