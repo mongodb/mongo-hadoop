@@ -68,6 +68,11 @@
 
   <target name="clean" description="--> clean up project">
     <delete dir="build"/>
+    <delete file="examples/wordcount_split_test/wc-split-test.jar"/>
+ <delete file="examples/wordcount_split_test/*.jar"/>
+ <delete file="examples/wordcount_split_test/*.class"/>
+ <delete dir="examples/wordcount_split_test/build"/>
+ <delete dir="examples/ip_location/build" />
     <delete file="mongo-hadoop.jar"/>
   </target>
 
@@ -125,8 +130,9 @@
            debug="on" >
       <classpath refid="classpath"/>
     </javac>
+  <mkdir dir="examples/wordcount_split_test/build"/>
   <javac srcdir="examples/wordcount_split_test/src"
-           destdir="examples/wordcount_split_test"
+           destdir="examples/wordcount_split_test/build"
            optimize="off"
            deprecation="off"
            source="1.5"
@@ -135,7 +141,17 @@
       <classpath refid="classpath"/>
     </javac>
     <jar  destfile="examples/wordcount_split_test/wc-split-test.jar">
-      <fileset dir="examples/wordcount_split_test"
+      <fileset dir="examples/wordcount_split_test/build"
+         includes="*.class" />
+   </jar>
+ <mkdir dir="examples/snmp/build"/>
+  <javac srcdir="examples/snmp/src"
+           destdir="examples/snmp/build"
+           debug="on" >
+      <classpath refid="classpath"/>
+    </javac>
+    <jar  destfile="examples/snmp/wc-split-test.jar">
+      <fileset dir="examples/snmp"
          includes="*.class" />
    </jar>
  <mkdir dir="examples/ip_location/build" />
