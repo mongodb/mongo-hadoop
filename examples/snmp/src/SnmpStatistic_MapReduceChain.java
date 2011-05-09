@@ -94,6 +94,83 @@ public class SnmpStatistic_MapReduceChain extends MongoTool {
 	     } 
     }
     
+    @Override
+    public int run(String[] args) throws Exception {
+      final Configuration conf = getConf();
+      final com.mongodb.MongoURI outputUri =  MongoConfigUtil.getOutputURI(conf);
+      if (outputUri == null)
+        throw new IllegalStateException("output uri is not set");
+      if (MongoConfigUtil.getInputURI(conf) == null)
+        throw new IllegalStateException("input uri is not set");
+      final String outputCollectionName = outputUri.getCollection();
+      if (!outputCollectionName.startsWith("second")) {
+        final Job job = new Job(conf, "snmp analysis " + outputCollectionName);
+        job.setJarByClass(SnmpStatistic.class);
+        job.setMapperClass(MapHostUploadEachAPEachDay.class);
+        job.setReducerClass(ReduceHostUploadEachAPEachDay.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(LongWritable.class);
+        job.setInputFormatClass(MongoInputFormat.class);
+        job.setOutputFormatClass(MongoOutputFormat.class);
+
+        final long start = System.currentTimeMillis();
+        System.out.println(" ----------------------- running test "+ outputCollectionName +" --------------------");
+        boolean result = job.waitForCompletion( true );
+        System.out.println("job.waitForCompletion( true ) returned " + result);
+        final long end = System.currentTimeMillis();
+        final float seconds = ((float)(end - start))/1000;
+        java.text.NumberFormat nf = java.text.NumberFormat.getInstance();
+        nf.setMaximumFractionDigits(3);
+        System.out.println("finished run in "+ nf.format(seconds) +" seconds");
+        return (result?0:1);
+      } else {
+        final Job secondJob = new Job(conf , "snmp analysis "+ outputCollectionName);
+        secondJob.setJarByClass(SnmpStatistic.class);
+        secondJob.setMapperClass(MapHostUploadEachDay.class);
+        secondJob.setReducerClass(ReduceHostUploadEachDay.class);
+        secondJob.setOutputKeyClass(Text.class);
+        secondJob.setOutputValueClass(LongWritable.class);
+        secondJob.setInputFormatClass(MongoInputFormat.class);
+        secondJob.setOutputFormatClass(MongoOutputFormat.class);
+
+        final long start2 = System.currentTimeMillis();
+        System.out.println(" ----------------------- running test "+ outputCollectionName +" --------------------");
+        try{
+            boolean result2 = secondJob.waitForCompletion( true );
+            System.out.println("job.waitForCompletion( true ) returned "+ result2);
+        }catch(Exception e){
+            System.out.println("job.waitForCompletion( true ) threw Exception");
+            e.printStackTrace();
+        }
+
+        final long end2 = System.currentTimeMillis();
+        final float seconds2 = ((float)(end2 - start2))/1000;
+        java.text.NumberFormat nf2 = java.text.NumberFormat.getInstance();
+        nf2.setMaximumFractionDigits(3);
+        System.out.println("finished run in "+nf2.format(seconds2)+" seconds");
+      }
+      final Job job = new Job(conf, "snmp analysis " + outputCollectionName);
+      job.setJarByClass(SnmpStatistic.class);
+      job.setMapperClass(MapHostUploadEachAPEachDay.class);
+      job.setReducerClass(ReduceHostUploadEachAPEachDay.class);
+      job.setOutputKeyClass(Text.class);
+      job.setOutputValueClass(LongWritable.class);
+      job.setInputFormatClass(MongoInputFormat.class);
+      job.setOutputFormatClass(MongoOutputFormat.class);
+
+      final long start = System.currentTimeMillis();
+      System.out.println(" ----------------------- running test "+ outputCollectionName +" --------------------");
+      boolean result = job.waitForCompletion( true );
+      System.out.println("job.waitForCompletion( true ) returned " + result);
+      final long end = System.currentTimeMillis();
+      final float seconds = ((float)(end - start))/1000;
+      java.text.NumberFormat nf = java.text.NumberFormat.getInstance();
+      nf.setMaximumFractionDigits(3);
+      System.out.println("finished run in "+ nf.format(seconds) +" seconds");
+      return (result?0:1);
+      
+    }
+
     private final static void test(boolean use_shards, boolean use_chunks) throws Exception{
         did_start = false;
         //In the test case, we need to design a MapReduce chain to get our result. 
@@ -154,8 +231,8 @@ public class SnmpStatistic_MapReduceChain extends MongoTool {
         //*****************This is the second job.********************/
         
         System.out.println(" ----------------------- Second MapReduce Job Starts --------------------");
-	    final Configuration secondConf = new Configuration();
-	    System.out.println("The second input table is " + output_table);
+	final Configuration secondConf = new Configuration();
+	System.out.println("The second input table is " + output_table);
         MongoConfigUtil.setInputURI( secondConf, "mongodb://localhost:30000/test."+ output_table );
         secondConf.setBoolean(MongoConfigUtil.SPLITS_USE_SHARDS, use_shards);
         secondConf.setBoolean(MongoConfigUtil.SPLITS_USE_CHUNKS, use_chunks);
@@ -200,20 +277,6 @@ public class SnmpStatistic_MapReduceChain extends MongoTool {
         java.text.NumberFormat nf2 = java.text.NumberFormat.getInstance();
         nf2.setMaximumFractionDigits(3);
         System.out.println("finished run in "+nf2.format(seconds2)+" seconds");
-        //System.exit(job.waitForCompletion( true ) ? 0:1);
-
-
-        /*com.mongodb.Mongo m2 = new com.mongodb.Mongo( new com.mongodb.MongoURI("mongodb://localhost:30000/"));
-        com.mongodb.DB db2 = m2.getDB( "test" );
-        com.mongodb.DBCollection coll2 = db2.getCollection(output_table);
-        com.mongodb.BasicDBObject query2 = new com.mongodb.BasicDBObject();
-        query2.put( "_id","the");
-        com.mongodb.DBCursor cur2 = coll.find(query);
-        if (! cur2.hasNext())
-            System.out.println("FAILURE: could not find count of \'the\'");
-        else
-            System.out.println("'the' count: "+cur2.next());
-        */
     }
  
     public static void main( String[] args ) throws Exception{
