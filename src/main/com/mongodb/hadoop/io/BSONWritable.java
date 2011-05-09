@@ -1,6 +1,6 @@
 // BSONWritable.java
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010 - 2011 10gen Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import org.bson.io.*;
 import org.apache.commons.logging.*;
 
 import org.apache.hadoop.io.*;
+
+/** This is <em>not</em> reusable. */
 
 @SuppressWarnings( "deprecation" )
 public class BSONWritable implements BSONObject, Writable {
@@ -151,6 +153,9 @@ public class BSONWritable implements BSONObject, Writable {
         enc.set( buf );
         enc.putObject( _doc );
         enc.done();
+        out.writeInt(buf.size());
+        //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
+        //to have a method signature that works with DataOutput
         out.write( buf.toByteArray() );
     }
 
