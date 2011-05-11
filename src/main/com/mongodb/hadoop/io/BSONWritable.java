@@ -30,7 +30,7 @@ import org.apache.hadoop.io.*;
 /** This is <em>not</em> reusable. */
 
 @SuppressWarnings( "deprecation" )
-public class BSONWritable implements BSONObject, Writable {
+public class BSONWritable implements BSONObject, WritableComparable<BSONWritable> {
 
     private static final Log log = LogFactory.getLog( BSONWritable.class );
 
@@ -208,6 +208,11 @@ public class BSONWritable implements BSONObject, Writable {
         log.debug( "Output As String: '" + str + "'" );
         return str;
     }
+
+    public int compareTo(BSONWritable o) {
+        return String.valueOf(_doc).compareTo(String.valueOf(o._doc));
+    }
+    
 
     private BSONObject _doc;
 }
