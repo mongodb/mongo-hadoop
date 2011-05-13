@@ -11,6 +11,7 @@ DIR0=`dirname $0`
 cd $DIR0
 
 export LIBDIR=$DIR0/../../lib
+CLASSPATH=../../mongo-hadoop.jar 
 #echo jars: `ls $LIBDIR| grep jar`
 for I in `ls $LIBDIR| grep jar ` ; do
    CLASSPATH=$CLASSPATH:$LIBDIR/$I
