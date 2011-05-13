@@ -37,18 +37,17 @@ import org.apache.hadoop.util.ToolRunner;
  * Created: Apr 11, 2011  1:27:14 PM
  *
  * @author Joseph Shraibman
- * @version $Revision: 1.1 $  $Date:  $ $Author: jks $
  */
 public class WebLogAnalyzer2 extends MongoTool{
     private final static String BITS_NOW_PROC_NAME = "WebLogAnalyzer2.bitsnow";
     private final static String IP_RANGE_FIELD_NAME = "iprange";
+    private final static String WRAPPED_ID_FIELD_NAME = "wrappedid";
     private final static String IpDbFilename = "IpToCountry.csv";
     private static final Log log = LogFactory.getLog( WebLogAnalyzer2.class );
     
     /** Mapper to get input from the ip range database file. */
     public static class IpRangeMapper 
-        extends Mapper<LongWritable, Text, Text, BSONWritable> 
-    {
+        extends Mapper<LongWritable, Text, Text, BSONWritable> {
           
         private Text rangeText = new Text(); 
         @Override
@@ -62,7 +61,7 @@ public class WebLogAnalyzer2 extends MongoTool{
                 return;
             }
                     
-            //turn ip range into text
+            //turn ip range into text like "1.2.3.4/27"
             String range = IpCsvParser.getIpRange(map1.get(IpCsvParser.Key.IP_FROM), map1.get(IpCsvParser.Key.IP_TO));
             rangeText.set(range);
             Map<String, String> map2 = new HashMap<String, String>();
@@ -92,9 +91,8 @@ public class WebLogAnalyzer2 extends MongoTool{
         }
     }
     public static class TheWeglogEntryMapper
-        extends Mapper<Object, BSONObject, Text, BSONWritable> 
-    {
-        int bitsProcessingNow = 0;
+        extends Mapper<Object, BSONObject, Text, BSONWritable> {
+        private int bitsProcessingNow = 0;
         private Text rangeText = new Text(); 
          
         @Override
@@ -105,7 +103,7 @@ public class WebLogAnalyzer2 extends MongoTool{
             String maskStr = IpCsvParser.getIpRange(ipString, bitsProcessingNow);
             rangeText.set(maskStr);
             context.write(rangeText, new BSONWritable(new BasicBSONObject("weblog_id", (org.bson.types.ObjectId)  key)));
-            //output is: iprange : objid   
+            //output is: iprange, objid   
         }
 
         @Override
@@ -114,8 +112,7 @@ public class WebLogAnalyzer2 extends MongoTool{
             bitsProcessingNow = context.getConfiguration().getInt(BITS_NOW_PROC_NAME, -1);
         }
     }
-    public static class TheWeblogEntryReducer extends Reducer<Text, BSONWritable, String, BSONObject>
-    {
+    public static class TheWeblogEntryReducer extends Reducer<Text, BSONWritable, String, BSONObject>{
 
         @Override
         public void reduce( Text key , Iterable<BSONWritable> values , Context context ) throws IOException, InterruptedException{
@@ -128,13 +125,11 @@ public class WebLogAnalyzer2 extends MongoTool{
             final BasicDBObject wrapper = new BasicDBObject();
             wrapper.put("$query", new BasicDBObject("_id", key.toString()));
             wrapper.put("$value", val);
-            context.write( "$update", wrapper);
-
+            context.write("$update", wrapper); //"$update" is a magic string right now
         }
     }
     public static class TheWeglogEntryUpdateMapper  
-        extends Mapper<Object, BSONObject, BSONWritable, BSONWritable> 
-    {
+        extends Mapper<Object, BSONObject, BSONWritable, BSONWritable>{
 
         @Override
         protected void map(Object key, BSONObject value, Context context) throws IOException, InterruptedException {
@@ -146,17 +141,15 @@ public class WebLogAnalyzer2 extends MongoTool{
             for (Object weblog_id : weblogIdList) {
                 //output: weblog _id, iprange
                 org.bson.types.ObjectId id =  (org.bson.types.ObjectId)weblog_id;
-                BasicDBObject id_wrapper = new BasicDBObject("wrappedid", id);
+                BasicDBObject id_wrapper = new BasicDBObject(WRAPPED_ID_FIELD_NAME, id);
                 context.write( new BSONWritable(id_wrapper), new BSONWritable((BSONObject)value.get("iprange")));
             }
         }
-     
     }
-    public static class TheWeglogEntryUpdateReducer extends Reducer<BSONWritable, BSONWritable, String, BSONObject>
-    {
+    public static class TheWeglogEntryUpdateReducer extends Reducer<BSONWritable, BSONWritable, String, BSONObject>{
         @Override
         protected void reduce(BSONWritable wrapped_id, Iterable<BSONWritable> values, Context context) throws IOException, InterruptedException {
-            BasicDBObject query = new BasicDBObject("_id", wrapped_id.get("wrappedid"));
+            BasicDBObject query = new BasicDBObject("_id", wrapped_id.get(WRAPPED_ID_FIELD_NAME));
              
             BasicDBObject value = new BasicDBObject( values.iterator().next().toMap());
             final BasicDBObject val = new BasicDBObject().append("$set",new BasicDBObject(IP_RANGE_FIELD_NAME,value));
@@ -210,17 +203,17 @@ public class WebLogAnalyzer2 extends MongoTool{
         job.setJobName("ip range phase");
         
         job.setOutputFormatClass( MongoOutputFormat.class );
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(BSONObject.class);
-        job.setMapperClass(IpRangeMapper.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(BSONWritable.class);
-        job.setReducerClass(IpRangeReducer.class);
+        job.setOutputKeyClass( Text.class );
+        job.setOutputValueClass( BSONObject.class );
+        job.setMapperClass( IpRangeMapper.class );
+        job.setMapOutputKeyClass( Text.class );
+        job.setMapOutputValueClass( BSONWritable.class );
+        job.setReducerClass( IpRangeReducer.class );
         if (job.getMapOutputValueClass() == null)
             throw new RuntimeException("How come job.getMapOutputValueClass() == null ?");
         
-        job.setInputFormatClass( TextInputFormat.class);
-        job.setOutputFormatClass(MongoOutputFormat.class);
+        job.setInputFormatClass( TextInputFormat.class );
+        job.setOutputFormatClass( MongoOutputFormat.class );
         
         FileInputFormat.setInputPaths(job, new Path(IpDbFilename));
         
@@ -239,15 +232,15 @@ public class WebLogAnalyzer2 extends MongoTool{
         job.setJobName("weblog input phase");
         
         job.setOutputFormatClass( MongoOutputFormat.class );
-        job.setOutputKeyClass(String.class);
-        job.setOutputValueClass(BSONObject.class);
-        job.setMapperClass(TheWeglogEntryMapper.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(BSONWritable.class);
-        job.setReducerClass(TheWeblogEntryReducer.class);
+        job.setOutputKeyClass( String.class );
+        job.setOutputValueClass( BSONObject.class );
+        job.setMapperClass( TheWeglogEntryMapper.class );
+        job.setMapOutputKeyClass( Text.class );
+        job.setMapOutputValueClass( BSONWritable.class );
+        job.setReducerClass( TheWeblogEntryReducer.class );
         
-        job.setInputFormatClass( MongoInputFormat.class);
-        job.setOutputFormatClass(MongoOutputFormat.class);
+        job.setInputFormatClass( MongoInputFormat.class );
+        job.setOutputFormatClass( MongoOutputFormat.class );
         
         return job.waitForCompletion(true);
     }
@@ -266,15 +259,15 @@ public class WebLogAnalyzer2 extends MongoTool{
         job.setJobName("update weblog phase bits "+bits);
         
         job.setOutputFormatClass( MongoOutputFormat.class );
-        job.setOutputKeyClass(String.class);
-        job.setOutputValueClass(BSONObject.class);
-        job.setMapperClass( TheWeglogEntryUpdateMapper.class);
-        job.setMapOutputKeyClass(BSONWritable.class);
-        job.setMapOutputValueClass(BSONWritable.class);
-        job.setReducerClass(TheWeglogEntryUpdateReducer.class);
+        job.setOutputKeyClass( String.class );
+        job.setOutputValueClass( BSONObject.class );
+        job.setMapperClass( TheWeglogEntryUpdateMapper.class );
+        job.setMapOutputKeyClass( BSONWritable.class );
+        job.setMapOutputValueClass( BSONWritable.class );
+        job.setReducerClass( TheWeglogEntryUpdateReducer.class );
         
-        job.setInputFormatClass( MongoInputFormat.class);
-        job.setOutputFormatClass(MongoOutputFormat.class);
+        job.setInputFormatClass( MongoInputFormat.class );
+        job.setOutputFormatClass( MongoOutputFormat.class );
         
         return job.waitForCompletion(true);
     }
@@ -289,7 +282,7 @@ public class WebLogAnalyzer2 extends MongoTool{
         job.setMapperClass( TheWeglogEntryAnalMapper.class );
 
         job.setCombinerClass( TheWeglogEntryAnalReducer.class );
-        job.setReducerClass(  TheWeglogEntryAnalReducer.class );
+        job.setReducerClass( TheWeglogEntryAnalReducer.class );
 
         job.setOutputKeyClass( Text.class );
         job.setOutputValueClass( IntWritable.class );
@@ -326,7 +319,7 @@ public class WebLogAnalyzer2 extends MongoTool{
                 mongo.close();
         }
     }
-    private void shardCollection(com.mongodb.MongoURI uri){
+    static void shardCollection(com.mongodb.MongoURI uri){
         Mongo mongo = null;
         try{
             mongo = uri.connect();
@@ -348,25 +341,27 @@ public class WebLogAnalyzer2 extends MongoTool{
         originalConf.set("mapred.job.tracker", "local");
         if (originalConf == null)
             throw new java.lang.IllegalStateException("getConf() returned null!");
-        //hardcoded right now
-        MongoConfigUtil.setInputURI( originalConf, "mongodb://localhost:30010/test.weblog" );
-        MongoConfigUtil.setOutputURI( originalConf, "mongodb://localhost:30010/test.weblogAnalOutput" );
+        if (MongoConfigUtil.getInputURI(originalConf) == null)
+            throw new java.lang.IllegalStateException("input uri is not configured");
             
         
         final String workingCollectionName = "tempColl"+System.currentTimeMillis();
         final com.mongodb.MongoURI originalOutputUri =  MongoConfigUtil.getOutputURI( originalConf);
         if (originalOutputUri == null)
             throw new java.lang.IllegalStateException("output uri is not configured");
+
+        //If the data to be processed is very large a temp database can be used instead of a temp collection.
+        //That way the added documents will be at the top level and can be spread among the shards.
         final com.mongodb.MongoURI tempCollectionUri = getNewUri(originalOutputUri, workingCollectionName);
         log.debug("temp collection uri: "+tempCollectionUri);
         shardCollection(tempCollectionUri);
         addIndex(tempCollectionUri);
         
+        runIpRangePhase(tempCollectionUri); //get ip data into the temp collection for joining
         
-        runIpRangePhase(tempCollectionUri);
-        for(int bits = 29 ; bits >= 1 ;bits--){
+        for(int bits = 29 ; bits >= 1 ; bits--){
             System.out.println("---------------- running for bits "+bits+"-----------------------");
-            if (!runWeblogInputPhase(tempCollectionUri, bits))//write objids to temp table
+            if (!runWeblogInputPhase(tempCollectionUri, bits)) //write objids to temp table
                 return 1; 
             System.out.println("    ---------- updating original entries for bits "+bits+"--------");
             if (!runUpdateOriginalEntriesPhase(tempCollectionUri, bits))
@@ -394,11 +389,13 @@ public class WebLogAnalyzer2 extends MongoTool{
         
         //TODO: drop temp coll here
         
-        System.out.println("running analsys phase");
+        System.out.println("running analsis phase");
         return runAnalPhase() ? 0 : 1;
     }
     public static final void main(String[] args) throws Exception {
-        
-        ToolRunner.run(new WebLogAnalyzer2(), args);
+        Configuration conf = new Configuration();
+        MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30010/test.weblog" );
+        MongoConfigUtil.setOutputURI( conf, "mongodb://localhost:30010/test.weblogAnalOutput" );
+        ToolRunner.run(conf,new WebLogAnalyzer2(), args);
     }
 }
