@@ -97,6 +97,7 @@
   <target name="compile" depends="init,checklib,firstresolve" description="--> compile all artifacts">
 
     <javac srcdir="src/main"
+           includeantruntime="false"
            destdir="build/main"
            optimize="off"
            deprecation="off"
@@ -122,6 +123,7 @@
 -->
 
   <javac srcdir="examples/wordcount/src"
+           includeantruntime="false"
            destdir="build/examples"
            optimize="off"
            deprecation="off"
@@ -133,6 +135,7 @@
   <mkdir dir="examples/wordcount_split_test/build"/>
   <javac srcdir="examples/wordcount_split_test/src"
            destdir="examples/wordcount_split_test/build"
+           includeantruntime="false"
            optimize="off"
            deprecation="off"
            source="1.5"
@@ -146,6 +149,7 @@
    </jar>
    <mkdir dir="examples/snmp/build"/>
       <javac srcdir="examples/snmp/src"
+           includeantruntime="false"
            destdir="examples/snmp/build"
            debug="on" >
         <classpath refid="classpath"/>
@@ -157,6 +161,7 @@
    <mkdir dir="examples/ip_location/build" />
      <javac srcdir="examples/ip_location/src"
            destdir="examples/ip_location/build"
+           includeantruntime="false"
            optimize="off"
            deprecation="off"
            source="1.5"
@@ -170,6 +175,7 @@
     </jar>
   <javac srcdir="examples/treasury_yield/src"
            destdir="build/examples"
+           includeantruntime="false"
            optimize="off"
            deprecation="off"
            source="1.5"
