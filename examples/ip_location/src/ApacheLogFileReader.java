@@ -90,6 +90,9 @@ public class ApacheLogFileReader {
     public static final void main(String[] args) throws Exception {
         ApacheLogFileReader fr = new ApacheLogFileReader();
         fr._uriString = args[0];
+        
+        WebLogAnalyzer2.shardCollection(new com.mongodb.MongoURI((args[0])));
+        
         String filename = args[1];
         BufferedReader br = new BufferedReader(new FileReader(filename));
         fr.connect();
