@@ -2,8 +2,6 @@
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,12 +17,10 @@ import java.util.regex.Pattern;
 public class IpCsvParser {
     
     public enum Key{
-        IP_FROM, IP_TO,REGISTRY, ASSIGNED ,  CTRY, CNTRY, COUNTRY
-            }
+        IP_FROM, IP_TO, REGISTRY, ASSIGNED, CTRY, CNTRY, COUNTRY
+    }
     
     public final static Pattern patt = Pattern.compile("\"(\\d+)\",\"(\\d+)\",\"(\\w+)\",\"(\\d+)\",\"(\\w+)\",\"(\\w+)\",\"(.+)\"");
-    public final static List<String> keys = Collections.unmodifiableList(Arrays.asList(
-                                                                                       "IP FROM","IP TO","REGISTRY",  "ASSIGNED" ,  "CTRY", "CNTRY", "COUNTRY"));
     public final static Map<Key,String> parseLine(String in){
         if (in == null)
             return null;
@@ -48,7 +44,7 @@ public class IpCsvParser {
     private final static int mask_1 = mask_0 << 8;
     private final static int mask_2 = mask_1 << 8;
     private final static int mask_3 = mask_2 << 8;
-    private static  InetAddress toInetAddress(long in) throws UnknownHostException{
+    private static InetAddress toInetAddress(long in) throws UnknownHostException{
         byte[] ba = new byte[]{
             (byte) ((in & mask_3) >> (8*3)),
             (byte) ((in & mask_2) >> (8*2)),
