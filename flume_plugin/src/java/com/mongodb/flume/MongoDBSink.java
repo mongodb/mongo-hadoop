@@ -43,7 +43,7 @@ public class MongoDBSink extends EventSink.Base {
     @Override
     public void open() throws MongoException{
         try {
-            _mongoConn = _mongos.connect( _uri );
+            _mongoConn = new Mongo( _uri );
         }
         catch ( final Exception e ) {
             LOG.error( "Connecting to MongoDB failed.", e );
@@ -115,8 +115,7 @@ public class MongoDBSink extends EventSink.Base {
     }
 
     static final Logger LOG = LoggerFactory.getLogger( MongoDBSink.class );
-    /** Forcibly allow MongoDB to manage its own connection pooling */
-    private static final Mongo.Holder _mongos = new Mongo.Holder();
+
     final MongoURI _uri;
     Mongo _mongoConn;
     DBCollection _collection;
