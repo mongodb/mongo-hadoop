@@ -13,16 +13,16 @@ NOTE: We have not tested this driver with Hadoop 0.21 yet.  Hadoop lists 0.21 as
 
 Maintainers
 ------------
-Brendan McAdams <brendan@10gen.com>
-Eliot Horowitz <erh@10gen.com>
+* Brendan McAdams <brendan@10gen.com>
+* Eliot Horowitz <erh@10gen.com>
 
 Contributors 
 ------------
-Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
-Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
-Rushin Shah <rushin10@gmail.com> (Test Harness Code)
-Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
-Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
+* Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
+* Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
+* Rushin Shah <rushin10@gmail.com> (Test Harness Code)
+* Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
+* Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
 
 State of the Adapter
 ---------
