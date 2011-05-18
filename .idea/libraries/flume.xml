@@ -1,0 +1,45 @@
+<component name="libraryTable">
+  <library name="flume">
+    <CLASSES>
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/log4j-1.2.15.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/slf4j-api-1.6.1.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/servlet-api.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/paranamer-2.1.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/org.arabidopsis.ahocorasick-2.x.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jetty-util-6.1.22.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jetty-6.1.22.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jettison-1.2.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jersey-server-1.4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/libthrift-0.5.0.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jsp-api.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jopt-simple-3.2.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jline-0.9.94.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/slf4j-log4j12-1.6.1.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/zookeeper-3.3.2-CDH3B4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/automaton.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/antlr-3.1.3.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-cli-1.1.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/avro-1.4.0.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jasper-compiler.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jasper-runtime.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/flume-0.9.3-CDH3B4-test.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jersey-core-1.4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/flume-0.9.3-CDH3B4-core.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jersey-json-1.4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/irclib.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/ivy-2.1.0.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jackson-core-asl-1.4.0.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/jackson-mapper-asl-1.4.0.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-lang-2.5.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-logging-1.0.4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/google-collect-1.0-rc2.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/hadoop-core-0.20.2-CDH3B4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-codec-1.4.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-collections-3.1.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-el.jar!/" />
+      <root url="jar:///usr/local/Cellar/flume/0.9.3-CDH3B4/libexec/lib/commons-io-1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
