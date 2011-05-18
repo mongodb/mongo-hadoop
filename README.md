@@ -1,18 +1,38 @@
 MongoDB Hadoop Adapter
 =======================
 
-EXPERIMENTAL: DO NOT USE FOR PRODUCTION
----------------------------------------
-NOTE: We have not tested this driver with Hadoop 0.21 yet.  We have tested with, and recommend the use of,
-Hadoop 0.20.2 or Cloudera CHD3 (Which ships 0.20.2)
+PLEASE BE CAREFUL WITH THIS IN PRODUCTION
+------------------------------------------
+We are still shaking out bugs and features, so make sure you test this in your setup before deploying it to production.
+
+We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 (Which ships 0.20.2)
+
+The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
+
+NOTE: We have not tested this driver with Hadoop 0.21 yet.  Hadoop lists 0.21 as "unstable, unsupported " and until that changes we will not provide any full support.  
+
+Maintainers
+------------
+* Brendan McAdams <brendan@10gen.com>
+* Eliot Horowitz <erh@10gen.com>
+
+Contributors 
+------------
+* Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
+* Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
+* Rushin Shah <rushin10@gmail.com> (Test Harness Code)
+* Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
+* Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
 
 State of the Adapter
 ---------
 This is currently under development and is not feature complete.
 
-It should be considered an Alpha.
+However, the core functionality is relatively stable
 
-You will need the MongoDB Java Driver 2.4 or higher.
+It should be considered an early beta.
+
+You will need the MongoDB Java Driver 2.5.3+ or `master`.
 
 Issue tracking: https://github.com/mongodb/mongo-hadoop/issues
 

@@ -1,6 +1,6 @@
 // BSONWritable.java
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010 - 2011 10gen Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,15 @@ package com.mongodb.hadoop.io;
 import java.io.*;
 import java.util.*;
 
+import org.apache.commons.logging.*;
+import org.apache.hadoop.io.*;
 import org.bson.*;
 import org.bson.io.*;
 
-import org.apache.commons.logging.*;
-
-import org.apache.hadoop.io.*;
+/** This is <em>not</em> reusable. */
 
 @SuppressWarnings( "deprecation" )
-public class BSONWritable implements BSONObject, Writable {
-
-    private static final Log log = LogFactory.getLog( BSONWritable.class );
+public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * Constructs a new instance.
@@ -49,7 +47,6 @@ public class BSONWritable implements BSONObject, Writable {
         this();
         copy( other );
     }
-
 
     /**
      * Constructs a new instance around an existing BSONObject
@@ -151,6 +148,9 @@ public class BSONWritable implements BSONObject, Writable {
         enc.set( buf );
         enc.putObject( _doc );
         enc.done();
+        out.writeInt(buf.size());
+        //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
+        //to have a method signature that works with DataOutput
         out.write( buf.toByteArray() );
     }
 
@@ -167,6 +167,23 @@ public class BSONWritable implements BSONObject, Writable {
         byte[] buf = new byte[dataLen];
         in.readFully( buf );
         dec.decode( buf, cb );
+        _doc = (BSONObject) cb.get();
+        log.info( "Decoded a BSON Object: " + _doc );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString(){
+        BSONEncoder enc = new BSONEncoder();
+        BasicOutputBuffer buf = new BasicOutputBuffer();
+        enc.set( buf );
+        enc.putObject( _doc );
+        enc.done();
+        String str = buf.asString();
+        log.debug( "Output As String: '" + str + "'" );
+        return str;
     }
 
     /** Used by child copy constructors. */
@@ -190,20 +207,34 @@ public class BSONWritable implements BSONObject, Writable {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString(){
-        BSONEncoder enc = new BSONEncoder();
-        BasicOutputBuffer buf = new BasicOutputBuffer();
-        enc.set( buf );
-        enc.putObject( _doc );
-        enc.done();
-        String str = buf.asString();
-        log.debug( "Output As String: '" + str + "'" );
-        return str;
+    public static class Comparator extends WritableComparator {
+        public Comparator() {
+            super( BSONWritable.class );
+        }
+
+        public int compare( WritableComparable a , WritableComparable b ){
+
+            if ( a instanceof BSONWritable && b instanceof BSONWritable ) {
+                return ( (BSONWritable) a )._doc.toString().compareTo( ( (BSONWritable) b )._doc.toString() );
+            }
+            else {
+                return -1;
+            }
+        }
+
     }
 
-    final BSONObject _doc;
+    static { // register this comparator
+        WritableComparator.define( BSONWritable.class, new Comparator() );
+    }
+
+    @Override
+    public int compareTo( Object o ){
+        return new Comparator().compare( this, o );
+    }
+
+    protected BSONObject _doc;
+
+    private static final Log log = LogFactory.getLog( BSONWritable.class );
+
 }

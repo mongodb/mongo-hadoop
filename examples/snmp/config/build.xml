@@ -1,12 +1,15 @@
 <?xml version='1.0'?>
 <project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
   <property name="ivy.install.version" value="2.2.0" />
-  <property name="ivy.jar.dir" value="${basedir}/ivy" />
-	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+  <property name="ivy.jar.dir"         value="${basedir}/ivy" />
+  <property name="ivy.jar.file"        value="${ivy.jar.dir}/ivy.jar" />
 
   <path id="classpath">
-    <fileset dir="lib">
+    <fileset dir="/home/hadoopuser/hadoop20/lib/">
       <include name="**/*.jar"/>
+    </fileset>
+    <fileset dir="/home/hadoopuser/hadoop20/">
+      <include name="*.jar"/>
     </fileset>
     <pathelement path="build/main" />
     <pathelement path="build/examples" />
@@ -14,7 +17,7 @@
 
   </path>
     
-  <target name="download-ivy" unless="skip.download">
+  <target name="download-ivy" description="-->download ivy"> 
     <mkdir dir="${ivy.jar.dir}"/>
 		<!-- download Ivy from web site so that it can be used even without any special installation -->
 		<echo message="installing ivy..."/>
@@ -56,10 +59,12 @@
 
   <target name="init" depends="install-ivy">
     <mkdir dir="build" />
-    <!--mkdir dir="lib" /-->
     <mkdir dir="build/main" />
 <!--    <mkdir dir="build/test" /> -->
     <mkdir dir="build/examples" />
+    <mkdir dir="build/examples/wordcount" />
+    <mkdir dir="build/examples/snmp"/>
+    <mkdir dir="build/examples/treasury"/>
   </target>
 
   <target name="resolve" depends="init" description="--> retrieve dependencies with ivy">
@@ -68,36 +73,12 @@
 
   <target name="clean" description="--> clean up project">
     <delete dir="build"/>
-    <delete file="examples/wordcount_split_test/wc-split-test.jar"/>
-    <delete file="examples/wordcount_split_test/*.jar"/>
-    <delete file="examples/wordcount_split_test/*.class"/>
-    <delete dir="examples/wordcount_split_test/build"/>
-    <delete dir="examples/ip_location/build" />
-    <delete file="mongo-hadoop.jar"/>
+    <delete file="snmp_test.jar"/>
   </target>
 
-
- <target name="javadoc"  depends="init"  >
-        <mkdir dir="javadoc"/>
-        <javadoc charset="UTF-8" destdir="javadoc" docencoding="UTF-8" failonerror="true"  private="false"  useexternalfile="true" >
-        <classpath refid="classpath"/>
-          <fileset dir=".">
-                <filename name="src/main/**/*.java"/>
-            </fileset>
-        </javadoc>
-  </target>
-
-  <target name="checklib">
-           <available property="lib.exists" file="lib"/>
-   </target>
-  <target name="firstresolve" unless="${lib.exists}" >
-          <antcall target="resolve" /> 
-  </target>
-
-  <target name="compile" depends="init,checklib,firstresolve" description="--> compile all artifacts">
+  <target name="compile" depends="init" description="--> compile all artifacts">
 
     <javac srcdir="src/main"
-           includeantruntime="false"
            destdir="build/main"
            optimize="off"
            deprecation="off"
@@ -123,66 +104,34 @@
 -->
 
   <javac srcdir="examples/wordcount/src"
-           includeantruntime="false"
-           destdir="build/examples"
+           destdir="build/examples/wordcount"
            optimize="off"
            deprecation="off"
            source="1.5"
            encoding="ISO-8859-1"
            debug="on" >
       <classpath refid="classpath"/>
-    </javac>
-  <mkdir dir="examples/wordcount_split_test/build"/>
-  <javac srcdir="examples/wordcount_split_test/src"
-           destdir="examples/wordcount_split_test/build"
-           includeantruntime="false"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
-    <jar  destfile="examples/wordcount_split_test/wc-split-test.jar">
-      <fileset dir="examples/wordcount_split_test/build"
-         includes="*.class" />
-   </jar>
-   <mkdir dir="examples/snmp/build"/>
-      <javac srcdir="examples/snmp/src"
-           includeantruntime="false"
-           destdir="examples/snmp/build"
-           debug="on" >
-        <classpath refid="classpath"/>
-      </javac>
-       <jar  destfile="examples/snmp/snmp.jar">
-          <fileset dir="examples/snmp/build"
-             includes="*.class" />
-      </jar>
-   <mkdir dir="examples/ip_location/build" />
-     <javac srcdir="examples/ip_location/src"
-           destdir="examples/ip_location/build"
-           includeantruntime="false"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-        <classpath refid="classpath"/>
-      </javac>
-    <jar  destfile="examples/ip_location/ip-loc.jar">
-      <fileset dir="examples/ip_location/build"
-         includes="*.class" />
-    </jar>
+  </javac>
   <javac srcdir="examples/treasury_yield/src"
-           destdir="build/examples"
-           includeantruntime="false"
+           destdir="build/examples/treasury/"
            optimize="off"
            deprecation="off"
            source="1.5"
            encoding="ISO-8859-1"
            debug="on" >
       <classpath refid="classpath"/>
-    </javac>
+  </javac>
+  <javac srcdir="examples/snmp"
+           destdir="build/examples/snmp"
+           optimize="off"
+           deprecation="off"
+           source="1.5"
+           encoding="ISO-8859-1"
+           debug="on" >
+      <classpath refid="classpath"/>
+  </javac>
+
+
   </target>
 
   <target name="word" depends="jar" description="--> Run the wordcount example">
@@ -210,7 +159,7 @@
   </target>
 
   <target name="jar" depends="compile">
-    <jar destfile="mongo-hadoop.jar">
+    <jar destfile="snmp_test.jar">
       <fileset dir="build/main"
          includes="**/*.class" />
       <fileset dir="build/examples"

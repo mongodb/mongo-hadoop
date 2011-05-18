@@ -1,0 +1,10 @@
+To run this example:
+
+edit set-env.sh
+compile WordCountSplitTest.java
+
+run:
+
+start-servers.sh
+load-data.sh
+java WordCountSplitTest
