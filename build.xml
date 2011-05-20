@@ -1,221 +1,227 @@
 <?xml version='1.0'?>
-<project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
-  <property name="ivy.install.version" value="2.2.0" />
-  <property name="ivy.jar.dir" value="${basedir}/ivy" />
-	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
-
-  <path id="classpath">
-    <fileset dir="lib">
-      <include name="**/*.jar"/>
-    </fileset>
-    <pathelement path="build/main" />
-    <pathelement path="build/examples" />
-<!--    <pathelement path="build/test" /> -->
-
-  </path>
-    
-  <target name="download-ivy" unless="skip.download">
-    <mkdir dir="${ivy.jar.dir}"/>
-		<!-- download Ivy from web site so that it can be used even without any special installation -->
-		<echo message="installing ivy..."/>
-      <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-    		   dest="${ivy.jar.file}" usetimestamp="true"/>
-  </target>
-    
-  <!-- ================================= 
-        target: install-ivy         
-          this target is not necessary if you put ivy.jar in your ant lib directory
-          if you already have ivy in your ant lib, you can simply remove this
-          target and the dependency the 'go' target has on it
-       ================================= -->
-  <target name="install-ivy" depends="download-ivy" description="--> install ivy">
-    <!-- try to load ivy here from local ivy dir, in case the user has not already dropped
-          it into ant's lib dir (note that the latter copy will always take precedence).
-          We will not fail as long as local lib dir exists (it may be empty) and
-          ivy is in at least one of ant's lib dir or the local lib dir. -->
-    <path id="ivy.lib.path">
-        <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-    </path>
-    <taskdef resource="org/apache/ivy/ant/antlib.xml"
-              uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-  </target>    
-  <!-- ================================= 
-          target: clean-ivy              
-         ================================= -->
-	<target name="clean-ivy" description="--> clean the ivy installation">
-		<delete dir="${ivy.jar.dir}"/>
-	</target>
-	
-    <!-- ================================= 
-          target: clean-cache              
-         ================================= -->
-	<target name="clean-cache" depends="install-ivy" 
-			description="--> clean the ivy cache">
-		<ivy:cleancache />
-	</target>
-
-  <target name="init" depends="install-ivy">
-    <mkdir dir="build" />
-    <!--mkdir dir="lib" /-->
-    <mkdir dir="build/main" />
-<!--    <mkdir dir="build/test" /> -->
-    <mkdir dir="build/examples" />
-  </target>
-
-  <target name="resolve" depends="init" description="--> retrieve dependencies with ivy">
-    <ivy:retrieve/>
-  </target>
-
-  <target name="clean" description="--> clean up project">
-    <delete dir="build"/>
-    <delete file="examples/wordcount_split_test/wc-split-test.jar"/>
-    <delete file="examples/wordcount_split_test/*.jar"/>
-    <delete file="examples/wordcount_split_test/*.class"/>
-    <delete dir="examples/wordcount_split_test/build"/>
-    <delete dir="examples/ip_location/build" />
-    <delete file="mongo-hadoop.jar"/>
-  </target>
-
-
- <target name="javadoc"  depends="init"  >
-        <mkdir dir="javadoc"/>
-        <javadoc charset="UTF-8" destdir="javadoc" docencoding="UTF-8" failonerror="true"  private="false"  useexternalfile="true" >
-        <classpath refid="classpath"/>
-          <fileset dir=".">
-                <filename name="src/main/**/*.java"/>
-            </fileset>
-        </javadoc>
-  </target>
-
-  <target name="checklib">
-           <available property="lib.exists" file="lib"/>
-   </target>
-  <target name="firstresolve" unless="${lib.exists}" >
-          <antcall target="resolve" /> 
-  </target>
-
-  <target name="compile" depends="init,checklib,firstresolve" description="--> compile all artifacts">
-
-    <javac srcdir="src/main"
-           includeantruntime="false"
-           destdir="build/main"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           target="1.5"
-           encoding="ISO-8859-1"
-           memoryMaximumSize="256M"
-           fork="true"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
 
 <!--
-    <javac srcdir="src/test"
-           destdir="build/test"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
+Copyright 2011 10gen Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 -->
 
-  <javac srcdir="examples/wordcount/src"
-           includeantruntime="false"
-           destdir="build/examples"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
-  <mkdir dir="examples/wordcount_split_test/build"/>
-  <javac srcdir="examples/wordcount_split_test/src"
-           destdir="examples/wordcount_split_test/build"
-           includeantruntime="false"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
-    <jar  destfile="examples/wordcount_split_test/wc-split-test.jar">
-      <fileset dir="examples/wordcount_split_test/build"
-         includes="*.class" />
-   </jar>
-   <mkdir dir="examples/snmp/build"/>
-      <javac srcdir="examples/snmp/src"
-           includeantruntime="false"
-           destdir="examples/snmp/build"
-           debug="on" >
+<project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+    <property name="ivy.install.version" value="2.2.0" />
+    <property name="ivy.jar.dir" value="${basedir}/ivy" />
+    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+
+    <path id="classpath">
+        <fileset dir="lib"><include name="**/*.jar"/></fileset>
+        <pathelement path="build/main" />
+        <pathelement path="build/examples" />
+        <!-- <pathelement path="build/test" /> -->
+    </path>
+
+    <target name="download-ivy" unless="skip.download">
+        <mkdir dir="${ivy.jar.dir}"/>
+        <!-- download Ivy from web site so that it can be used even without any special installation -->
+        <echo message="installing ivy..."/>
+        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
+    </target>
+
+    <!-- =================================
+    target: install-ivy
+    this target is not necessary if you put ivy.jar in your ant lib directory
+    if you already have ivy in your ant lib, you can simply remove this
+    target and the dependency the 'go' target has on it
+    ================================== -->
+    <target name="install-ivy" depends="download-ivy" description="--> install ivy">
+        <!-- try to load ivy here from local ivy dir, in case the user has not already dropped
+        it into ant's lib dir (note that the latter copy will always take precedence).
+        We will not fail as long as local lib dir exists (it may be empty) and
+        ivy is in at least one of ant's lib dir or the local lib dir. -->
+        <path id="ivy.lib.path"><fileset dir="${ivy.jar.dir}" includes="*.jar"/></path>
+        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+    </target>
+
+    <!-- =================================
+    target: clean-ivy
+    ================================== -->
+    <target name="clean-ivy" description="--> clean the ivy installation"><delete dir="${ivy.jar.dir}"/></target>
+
+    <!-- =================================
+    target: clean-cache
+    ================================== -->
+    <target name="clean-cache" depends="install-ivy" description="--> clean the ivy cache"><ivy:cleancache /></target>
+
+    <target name="init" depends="install-ivy">
+        <mkdir dir="build" />
+        <!--mkdir dir="lib" /-->
+        <mkdir dir="build/main" />
+        <!-- <mkdir dir="build/test" /> -->
+        <mkdir dir="build/examples" />
+    </target>
+
+    <target name="resolve" depends="init" description="--> retrieve dependencies with ivy"><ivy:retrieve/></target>
+
+    <target name="clean" description="--> clean up project">
+        <delete dir="build"/>
+        <delete file="examples/wordcount_split_test/wc-split-test.jar"/>
+        <delete file="examples/wordcount_split_test/*.jar"/>
+        <delete file="examples/wordcount_split_test/*.class"/>
+        <delete dir="examples/wordcount_split_test/build"/>
+        <delete dir="examples/ip_location/build" />
+        <delete file="mongo-hadoop.jar"/>
+    </target>
+
+    <target name="javadoc"  depends="init">
+        <mkdir dir="javadoc"/>
+        <javadoc charset="UTF-8" destdir="javadoc" docencoding="UTF-8" failonerror="true"  private="false"  useexternalfile="true">
+            <classpath refid="classpath"/>
+            <fileset dir="."><filename name="src/main/**/*.java"/></fileset>
+        </javadoc>
+    </target>
+
+    <target name="checklib"><available property="lib.exists" file="lib"/></target>
+
+    <target name="firstresolve" unless="${lib.exists}"><antcall target="resolve" /></target>
+
+    <target name="compile" depends="init, checklib, firstresolve" description="--> compile all artifacts">
+        <javac
+            srcdir="src/main"
+            includeantruntime="false"
+            destdir="build/main"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            target="1.5"
+            encoding="ISO-8859-1"
+            memoryMaximumSize="256M"
+            fork="true"
+            debug="on">
+            <classpath refid="classpath"/>
+        </javac>
+
+        <!--
+        <javac srcdir="src/test"
+        destdir="build/test"
+        optimize="off"
+        deprecation="off"
+        source="1.5"
+        encoding="ISO-8859-1"
+        debug="on" >
         <classpath refid="classpath"/>
-      </javac>
-       <jar  destfile="examples/snmp/snmp.jar">
-          <fileset dir="examples/snmp/build"
-             includes="*.class" />
-      </jar>
-   <mkdir dir="examples/ip_location/build" />
-     <javac srcdir="examples/ip_location/src"
-           destdir="examples/ip_location/build"
-           includeantruntime="false"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-        <classpath refid="classpath"/>
-      </javac>
-    <jar  destfile="examples/ip_location/ip-loc.jar">
-      <fileset dir="examples/ip_location/build"
-         includes="*.class" />
-    </jar>
-  <javac srcdir="examples/treasury_yield/src"
-           destdir="build/examples"
-           includeantruntime="false"
-           optimize="off"
-           deprecation="off"
-           source="1.5"
-           encoding="ISO-8859-1"
-           debug="on" >
-      <classpath refid="classpath"/>
-    </javac>
-  </target>
+        </javac>
+        -->
 
-  <target name="word" depends="jar" description="--> Run the wordcount example">
-    <java classname="WordCount" >
-      <classpath refid="classpath"/>
-    </java>
-  </target>
+        <javac
+            srcdir="examples/wordcount/src"
+            includeantruntime="false"
+            destdir="build/examples"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            encoding="ISO-8859-1"
+            debug="on">
+            <classpath refid="classpath"/>
+        </javac>
 
-  <target name="wordcount" depends="word"/>
+        <javac
+            srcdir="examples/nyc_campaign_contributions/src"
+            includeantruntime="false"
+            destdir="build/examples"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            encoding="ISO-8859-1"
+            debug="on">
+            <classpath refid="classpath"/>
+        </javac>
 
-  <target name="wordcountXML" depends="jar" description="--> Run the wordcount example">
-    <java classname="com.mongodb.hadoop.examples.WordCountXMLConfig" >
-      <classpath refid="classpath"/>
-      <arg line="-conf examples/wordcount/resources/mongo-wordcount.xml"/>
-      <arg line="-Dlog4j.debug"/>
-    </java>
-  </target>
+        <mkdir dir="examples/wordcount_split_test/build"/>
 
-  <target name="yieldXML" depends="jar" description="--> Run the treasury yield historical example">
-    <java classname="com.mongodb.hadoop.examples.TreasuryYieldXMLConfig" >
-      <classpath refid="classpath"/>
-      <arg line="-conf examples/treasury_yield/resources/mongo-treasury_yield.xml"/>
-      <arg line="-Dlog4j.debug"/>
-    </java>
-  </target>
+        <javac
+            srcdir="examples/wordcount_split_test/src"
+            destdir="examples/wordcount_split_test/build"
+            includeantruntime="false"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            encoding="ISO-8859-1"
+            debug="on">
+            <classpath refid="classpath"/>
+        </javac>
 
-  <target name="jar" depends="compile">
-    <jar destfile="mongo-hadoop.jar">
-      <fileset dir="build/main"
-         includes="**/*.class" />
-      <fileset dir="build/examples"
-         includes="**/*.class" />
-   </jar>
-  </target>
+        <jar destfile="examples/wordcount_split_test/wc-split-test.jar"><fileset dir="examples/wordcount_split_test/build" includes="*.class" /></jar>
+
+        <mkdir dir="examples/snmp/build"/>
+
+        <javac srcdir="examples/snmp/src" includeantruntime="false" destdir="examples/snmp/build" debug="on" ><classpath refid="classpath"/></javac>
+
+        <jar destfile="examples/snmp/snmp.jar"><fileset dir="examples/snmp/build" includes="*.class" /></jar>
+
+        <mkdir dir="examples/ip_location/build" />
+
+        <javac
+            srcdir="examples/ip_location/src"
+            destdir="examples/ip_location/build"
+            includeantruntime="false"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            encoding="ISO-8859-1"
+            debug="on">
+            <classpath refid="classpath"/>
+        </javac>
+
+        <jar destfile="examples/ip_location/ip-loc.jar"><fileset dir="examples/ip_location/build" includes="*.class" /></jar>
+
+        <javac
+            srcdir="examples/treasury_yield/src"
+            destdir="build/examples"
+            includeantruntime="false"
+            optimize="off"
+            deprecation="off"
+            source="1.5"
+            encoding="ISO-8859-1"
+            debug="on">
+            <classpath refid="classpath" />
+        </javac>
+    </target>
+
+    <target name="word" depends="jar" description="--> Run the wordcount example">
+        <java classname="WordCount" ><classpath refid="classpath"/></java>
+    </target>
+
+    <target name="wordcount" depends="word"/>
+
+    <target name="wordcountXML" depends="jar" description="--> Run the wordcount example">
+        <java classname="com.mongodb.hadoop.examples.WordCountXMLConfig" >
+            <classpath refid="classpath"/>
+            <arg line="-conf examples/wordcount/resources/mongo-wordcount.xml"/>
+            <arg line="-Dlog4j.debug"/>
+        </java>
+    </target>
+
+    <target name="yieldXML" depends="jar" description="--> Run the treasury yield historical example">
+        <java classname="com.mongodb.hadoop.examples.TreasuryYieldXMLConfig" >
+            <classpath refid="classpath"/>
+            <arg line="-conf examples/treasury_yield/resources/mongo-treasury_yield.xml"/>
+            <arg line="-Dlog4j.debug"/>
+        </java>
+    </target>
+
+    <target name="jar" depends="compile">
+        <jar destfile="mongo-hadoop.jar">
+            <fileset dir="build/main" includes="**/*.class" />
+            <fileset dir="build/examples" includes="**/*.class" />
+        </jar>
+    </target>
 
 </project>
