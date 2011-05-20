@@ -23,7 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 
 /**
- * The NYC campagin contribution reducer.
+ * The world development xml config class.
  */
 public class WorldDevIndicatorXmlConfig extends MongoTool {
 
