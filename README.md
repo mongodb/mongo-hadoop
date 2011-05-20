@@ -88,7 +88,7 @@ The treasury yield example demonstrates working with a more complex input BSON d
 
 It uses a database of daily US Treasury Bid Curves from 1990 to Sept. 2010 and runs them through to calculate annual averages.
 
-There is a JSON file `examples/treasury_yield/resources/yield_historical_in.json` which you should import into the `demo` db in the `yield_historical.in` collection.
+There is a JSON file `examples/treasury_yield/resources/yield_historical_in.json` which you should import into the `yield_historical.in` collection in the `demo` db.
 
 The sample data can be imported into the mongos host by calling (assumes mongos running on 27017 on the same node):
 
