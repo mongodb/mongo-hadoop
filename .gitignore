@@ -2,3 +2,10 @@
 *~
 build
 *.swp
+
+.DS*
+*#*
+*~
+lib
+mongo-hadoop.jar
+examples/*/*.jar
