@@ -31,7 +31,7 @@ import java.io.IOException;
  * The world development indicator reducer.
  */
 public class WorldDevIndicatorReducer
-    extends Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable>
+    extends Reducer<Text, DoubleWritable, Text, DoubleWritable>
 {
     @Override
     public void reduce( final Text pCountryCode,
