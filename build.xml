@@ -133,7 +133,7 @@ limitations under the License.
         </javac>
 
         <javac
-            srcdir="examples/nyc_campaign_contributions/src"
+            srcdir="examples/world_development_indicators/src"
             includeantruntime="false"
             destdir="build/examples"
             optimize="off"
