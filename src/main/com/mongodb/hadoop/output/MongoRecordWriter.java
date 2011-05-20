@@ -77,7 +77,7 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
         DBObject query = null;
         //This is very hackish
         //TODO: have an enum class SpecialOper that can serve as the output key class
-        if ("$update".equals(key) || (key.getClass().equals(Text.class) && key.toString().equals("$update")) ){
+        if (key != null && ("$update".equals(key) || (key.getClass().equals(Text.class) && key.toString().equals("$update"))) ){
             update = true;
             query = (DBObject) ((BSONObject)value).get("$query");
             value = (V) ((BSONObject)value).get("$value");
