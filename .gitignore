@@ -9,3 +9,4 @@ build
 lib
 mongo-hadoop.jar
 examples/*/*.jar
+WDI_GDF_Data.csv
