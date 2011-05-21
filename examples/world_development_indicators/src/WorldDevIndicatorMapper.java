@@ -38,7 +38,7 @@ import java.io.IOException;
 public class WorldDevIndicatorMapper
     extends Mapper<ObjectId, BSONObject, Text, DoubleWritable>
 {
-    public void map(    final Text pKey,
+    public void map(    final String pKey,
                         final BSONObject pValue,
                         final Context pContext )
         throws IOException, InterruptedException
