@@ -39,7 +39,7 @@ public class WorldDevIndicatorReducer
                         final Context pContext )
         throws IOException, InterruptedException
     {
-        int count = 0;
+        double count = 0;
         double sum = 0;
         for ( final DoubleWritable value : pValues ) {
             sum += value.get();
