@@ -1,13 +1,12 @@
-// MongoConfig.java
 /*
  * Copyright 2010 10gen Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,31 +16,43 @@
 
 package com.mongodb.hadoop;
 
-import java.io.*;
+// Mongo
+import com.mongodb.DBObject;
+import com.mongodb.MongoURI;
+import com.mongodb.DBCollection;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+// Hadoop
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.mapreduce.Partitioner;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.OutputFormat;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.util.*;
+// Commons
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import java.io.DataInput;
+import java.io.IOException;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs Instance based,
  * more idiomatic for those who prefer it to the static methoding of ConfigUtil
- **/
-
+ */
 public class MongoConfig {
-    private static final Log log = LogFactory.getLog( MongoConfig.class );
 
+    /**
+     * You probably don't want to use this.
+     */
     @Deprecated
-    /** you probably don't want to use this. */
     public MongoConfig() {
         _conf = new Configuration();
     }
 
-    public MongoConfig(Configuration conf) {
+    public MongoConfig( Configuration conf ) {
         _conf = conf;
     }
 
@@ -275,4 +286,6 @@ public class MongoConfig {
 
     final Configuration _conf;
 
+    private static final Log LOG = LogFactory.getLog( MongoConfig.class );
 }
+
