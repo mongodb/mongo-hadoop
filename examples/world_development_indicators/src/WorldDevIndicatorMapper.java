@@ -36,9 +36,9 @@ import java.io.IOException;
  * The world development indicator mapper.
  */
 public class WorldDevIndicatorMapper
-    extends Mapper<ObjectId, BSONObject, Text, DoubleWritable>
+    extends Mapper<Text, BSONObject, Text, DoubleWritable>
 {
-    public void map(    final String pKey,
+    public void map(    final Text pKey,
                         final BSONObject pValue,
                         final Context pContext )
         throws IOException, InterruptedException
@@ -48,9 +48,9 @@ public class WorldDevIndicatorMapper
 
         // Determine the average growth for each country - historical data.
 
-        System.out.println("--------- key: " + pKey);
+        LOG.info("--------- key: " + pKey);
 
-        System.out.println("--------- value: " + pValue);
+        LOG.info("--------- value: " + pValue);
 
         _countryCode.set( (String)pValue.get("Country Code") );
 
