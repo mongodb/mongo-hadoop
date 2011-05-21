@@ -33,7 +33,17 @@ import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 
 /**
- * The world development indicator mapper.
+ * The world development indicator mapper. This example looks at:
+ *
+ * <pre>
+ * SeriesCode : SL.GDP.PCAP.EM.KD
+ * Series Name : GDP per person employed (constant 1990 PPP $)
+ * </pre>
+ *
+ * From 1980 - 2008;
+ *
+ * From the data, it calculates the average growth rate per year.
+ *
  */
 public class WorldDevIndicatorMapper
     extends Mapper<String, BSONObject, Text, DoubleWritable>
@@ -43,22 +53,46 @@ public class WorldDevIndicatorMapper
                         final Context pContext )
         throws IOException, InterruptedException
     {
-        // TODO: Look at configuration to determine what series code/name
-        // and see if there is a country/countries filter.
+        final BasicBSONObject doc = (BasicBSONObject)pValue;
 
-        // Determine the average growth for each country - historical data.
+        if (!doc.getString("SeriesCode").equals("SL.GDP.PCAP.EM.KD")) return;
 
-        LOG.trace("--------- key: " + pKey);
+        int yearCount = 0;
 
-        LOG.trace("--------- value: " + pValue);
+        double sum = 0;
 
-        _countryCode.set( (String)pValue.get("Country Code") );
+        double previous = -1;
+        double current = 0;
 
-        pContext.write( _countryCode, _value);
+        for (int year=START_YEAR; year <= END_YEAR; year++) {
+
+            final String yearField = Integer.toString( year );
+
+            if (!doc.containsField( yearField )) continue;
+
+            current = doc.getDouble( yearField );
+
+            yearCount++;
+
+            if ( previous == -1 ) {
+                previous = current;
+                continue;
+            }
+
+            sum += ( ( current - previous )  / previous * (double)100);
+
+            previous = current;
+        }
+
+        if (yearCount == 0) return;
+
+        final DoubleWritable value = new DoubleWritable( ( sum / (double)yearCount ) );
+
+        pContext.write( new Text( doc.getString("Country Name") ), value);
     }
 
-    private final DoubleWritable _value = new DoubleWritable( 1 );
-    private final Text _countryCode = new Text();
+    private static final int START_YEAR = 1980;
+    private static final int END_YEAR = 2008;
 
     private static final Log LOG = LogFactory.getLog( WorldDevIndicatorMapper.class );
 }
