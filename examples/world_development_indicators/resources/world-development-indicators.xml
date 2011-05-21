@@ -35,11 +35,13 @@ limitations under the License.
 
     <property>
         <name>mongo.input.uri</name>
+        <!-- <value>mongodb://localhost/test.worldDevelopmentIndicators.in</value> -->
         <value>mongodb://localhost/test.worldDevelopmentIndicators.in</value>
     </property>
 
     <property>
         <name>mongo.output.uri</name>
+        <!-- <value>mongodb://localhost/test.worldDevelopmentIndicators.out</value> -->
         <value>mongodb://localhost/test.worldDevelopmentIndicators.out</value>
     </property>
 
@@ -111,7 +113,7 @@ limitations under the License.
     <property>
         <!-- Output value class for the mapper [optional] -->
         <name>mongo.job.mapper.output.value</name>
-        <value>org.apache.hadoop.io.DoubleWritable</value>
+        <value>org.apache.hadoop.io.DoubleWritable</value> 
     </property>
 
     <property>

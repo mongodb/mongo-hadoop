@@ -23,17 +23,18 @@ limitations under the License.
         <value>file:///</value>
     </property>
 
-    <!--
+
     <property>
         <name>mapred.job.tracker</name>
         <value>local</value>
     </property>
-    -->
 
+    <!--
     <property>
         <name>mapred.job.tracker</name>
         <value>linux0:8021</value>
     </property>
+    -->
 
 
 </configuration>

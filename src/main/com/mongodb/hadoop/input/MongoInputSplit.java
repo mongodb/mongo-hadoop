@@ -46,7 +46,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     }
     /** This is supposed to return the size of the split in bytes, but is hardcoded
      to return a constant value*/
-    public long getLength(){
+    public long getLength() {
         //This takes a really long time.  Hadoop calls this when it is deciding
         //how to divvy up the splits.  As a result the whole database is sequenced
         //through before the real number crunching begins.

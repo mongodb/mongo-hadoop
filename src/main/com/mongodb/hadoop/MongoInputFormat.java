@@ -182,8 +182,12 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         return splits;
     }
      /** This constructs splits using the chunk boundries. */
-    private List<InputSplit> getSplitsUsingChunks(final MongoConfig conf,
-            MongoURI uri, Mongo mongo, boolean useShards, Boolean slaveok) {
+    private List<InputSplit> getSplitsUsingChunks(  final MongoConfig conf,
+                                                    MongoURI uri,
+                                                    Mongo mongo,
+                                                    boolean useShards,
+                                                    Boolean slaveok)
+    {
         DBObject originalQuery = conf.getQuery();
         if (useShards)
             log.warn("WARNING getting splits that connect directly to the backend mongods"
