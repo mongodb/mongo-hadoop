@@ -39,9 +39,15 @@ public class WorldDevIndicatorReducer
                         final Context pContext )
         throws IOException, InterruptedException
     {
-        // TODO: Iterate through the results and average.
+        int count = 0;
+        double sum = 0;
+        for ( final DoubleWritable value : pValues ) {
+            sum += value.get();
+        }
 
-        //pContext.write( pCode, new DoubleWritable( avg ) );
+        final double avg = sum / count;
+
+        pContext.write( pCountryCode, new DoubleWritable( avg ) );
     }
 
     private static final Log LOG = LogFactory.getLog( WorldDevIndicatorReducer.class );
