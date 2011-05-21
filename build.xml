@@ -78,6 +78,7 @@ limitations under the License.
         <delete dir="examples/wordcount_split_test/build"/>
         <delete dir="examples/ip_location/build" />
         <delete file="mongo-hadoop.jar"/>
+        <delete file="examples/world_development_indicators/resources/WDI_GDF_Data.csv"/>
     </target>
 
     <target name="javadoc"  depends="init">
@@ -197,6 +198,32 @@ limitations under the License.
 
     <target name="word" depends="jar" description="--> Run the wordcount example">
         <java classname="WordCount" ><classpath refid="classpath"/></java>
+    </target>
+
+    <!--
+    This assumes that you have mongodb/bin in your path and that your running your mongos on localhost:27017
+    If you want to reload, you need to manually delete the data.
+    -->
+    <target name="world-load-data" depends="jar" description="--> Load the data for the world development indicator example">
+        <unzip src="examples/world_development_indicators/resources/WDI_GDF_Data.csv.zip" dest="examples/world_development_indicators/resources" />
+
+        <java classname="com.mongodb.hadoop.examples.WorldDevIndicatorDataLoader">
+            <classpath refid="classpath"/>
+        </java>
+
+    </target>
+
+    <!--
+    This assumes that you have hadoop/bin in your path.
+    -->
+    <target name="world" depends="jar" description="--> Run the world development indicator example">
+        <exec executable="hadoop" dir=".">
+            <arg value="jar"/>
+            <arg value="mongo-hadoop.jar"/>
+            <arg value="com.mongodb.hadoop.examples.WorldDevIndicatorXmlConfig"/>
+            <arg value="-conf"/>
+           <arg value="examples/world_development_indicators/resources/world-development-indicators.xml"/>
+        </exec>
     </target>
 
     <target name="wordcount" depends="word"/>
