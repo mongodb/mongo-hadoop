@@ -43,6 +43,7 @@ public class WorldDevIndicatorReducer
         double sum = 0;
         for ( final DoubleWritable value : pValues ) {
             sum += value.get();
+            count++;
         }
 
         final double avg = sum / count;

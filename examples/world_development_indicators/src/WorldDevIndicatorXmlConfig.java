@@ -29,12 +29,8 @@ public class WorldDevIndicatorXmlConfig extends MongoTool {
 
     static {
         // Load the XML config defined in hadoop-local.xml
-        //Configuration.addDefaultResource( "src/examples/world_development_indicators/resources/hadoop-local.xml" );
-        //Configuration.addDefaultResource( "src/examples/world_development_indicators/resources/mongo-defaults.xml" );
-
         Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
         Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );
-
     }
 
     public static void main( final String[] pArgs ) throws Exception {
