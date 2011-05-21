@@ -31,25 +31,41 @@ import com.mongodb.hadoop.io.*;
 
 @SuppressWarnings("deprecation")
 public class MongoInputFormat implements InputFormat<ObjectWritable, BSONWritable> {
-    
-    private com.mongodb.hadoop.MongoInputFormat mif = new com.mongodb.hadoop.MongoInputFormat();
 
     public RecordReader<ObjectWritable, BSONWritable> getRecordReader(InputSplit split,
                                                                       JobConf job,
                                                                       Reporter reporter) {
-        if (!(split instanceof com.mongodb.hadoop.input.MongoInputSplit))
+        if (!(split instanceof MongoInputSplit))
             throw new IllegalStateException("Creation of a new RecordReader requires a MongoInputSplit instance.");
 
-        final com.mongodb.hadoop.input.MongoInputSplit mis = (com.mongodb.hadoop.input.MongoInputSplit) split;
+        final MongoInputSplit mis = (MongoInputSplit) split;
 
-        return //(RecordReader<ObjectWritable, BSONWritable>) 
-                new com.mongodb.hadoop.input.MongoRecordReader(mis);
+        return (RecordReader<ObjectWritable, BSONWritable>) new MongoRecordReader(mis);
     }
 
     public InputSplit[] getSplits(JobConf job, int numSplits) {
-        List list =   mif.getSplits(  job, new MongoConfig(job));
-        InputSplit[] ans = (InputSplit[]) list.toArray(new InputSplit[list.size()]);
-        return ans;
+        final MongoConfig conf = new MongoConfig(job);
+
+        if (conf.getLimit() > 0 || conf.getSkip() > 0)
+        /**
+         * TODO - If they specify skip or limit we create only one input
+         * split
+         */
+            throw new IllegalArgumentException("skip() and limit() is not currently supported do to input split "
+                                               + "issues.");
+        else {
+            /**
+             * On the jobclient side we want *ONLY* the min and max ids for each
+             * split; Actual querying will be done on the individual mappers.
+             */
+            /*final int splitSize = conf.getSplitSize();*/
+            // For first release, no splits, no sharding
+            InputSplit[] splits =
+                    {(InputSplit) new MongoInputSplit(conf.getInputURI(), conf.getQuery(), conf.getFields(),
+                                                      conf.getSort(), conf.getLimit(), conf.getSkip())};
+            log.info("Calculated " + splits.length + " split objects.");
+            return splits;
+        }
     }
 
     public boolean verifyConfiguration(Configuration conf) {
