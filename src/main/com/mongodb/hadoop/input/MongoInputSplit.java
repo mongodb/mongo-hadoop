@@ -51,10 +51,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
      * @return
      */
     public long getLength(){
-        if (_length == -1) {
-            _length = getCursor().size(); // May be slow at first, but memoized
-        }
-        return _length;
+        return Long.MAX_VALUE;
     }
 
     public String[] getLocations(){
