@@ -48,11 +48,12 @@ limitations under the License.
         <value></value>
     </property>
 
+    <!-- The fields, in JSON, to read [OPTIONAL] -
     <property>
-        <!-- The fields, in JSON, to read [OPTIONAL] -->
         <name>mongo.input.fields</name>
         <value></value>
     </property>
+    -->
 
     <property>
         <!-- A JSON sort specification for read [OPTIONAL] -->
@@ -83,7 +84,7 @@ limitations under the License.
     <!-- These .job.* class defs are optional and only needed if you use the MongoTool baseclass -->
     <property>
         <!-- Class for the mapper -->
-        <name>mongo.job.mapper</name>
+        <!-- <name>mongo.job.mapper</name> -->
         <value></value>
     </property>
 
