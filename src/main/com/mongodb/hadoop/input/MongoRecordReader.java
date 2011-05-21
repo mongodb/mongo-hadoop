@@ -17,16 +17,12 @@
 
 package com.mongodb.hadoop.input;
 
-import java.io.IOException;
+import com.mongodb.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
-import com.mongodb.*;
-
-public class MongoRecordReader extends RecordReader<Object, BSONObject>
-   implements org.apache.hadoop.mapred.RecordReader<org.apache.hadoop.io.ObjectWritable, com.mongodb.hadoop.io.BSONWritable> {
-    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
+public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
     public MongoRecordReader(MongoInputSplit split) {
         _split = split;
@@ -60,6 +56,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject>
         _cur = _cursor.next();
         _seen++;
         return true;
+
     }
 
     final MongoInputSplit _split;
@@ -68,32 +65,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject>
     BSONObject _cur;
     float _seen = 0;
     float _total;
-    //---------------------------------
-    //Methods to implement org.apache.hadoop.mapred.RecordReader, originally in com.mongodb.hadoop.mapred.input.MongoRecordReader
-    public boolean next(org.apache.hadoop.io.ObjectWritable key,  com.mongodb.hadoop.io.BSONWritable value) {
-        if (nextKeyValue()) {
-            log.debug("Had another k/v");
-            key.set(getCurrentKey());
-            value.putAll(getCurrentValue());
-            //log.info("Key: " + key + " Value: " + value);
-            return true;
-        }
-        else {
-            log.info("Cursor exhausted.");
-            return false;
-        }
-    }
-    
-    public com.mongodb.hadoop.io.BSONWritable createValue() {
-        return new com.mongodb.hadoop.io.BSONWritable();
-    }
-    public org.apache.hadoop.io.ObjectWritable createKey() {
-        return new org.apache.hadoop.io.ObjectWritable();
-    }
 
+    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 
-    public long getPos() {
-        return new Float(_seen).longValue();
-    }
-    
 }
