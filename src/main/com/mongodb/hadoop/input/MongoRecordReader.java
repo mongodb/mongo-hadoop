@@ -1,13 +1,12 @@
-// MongoRecordReader.java
 /*
- * Copyright 2010 10gen Inc.
- * 
+ * Copyright 2011 10gen Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,32 +16,38 @@
 
 package com.mongodb.hadoop.input;
 
-import java.io.IOException;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
-import org.bson.*;
+// Mongo
+import com.mongodb.DBCursor;
+import org.bson.BSONObject;
 
-import com.mongodb.*;
+// Hadoop
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+
+// Commons
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
-    public MongoRecordReader(MongoInputSplit split) {
-        _split = split;
-        _cursor = _split.getCursor();
-    }
-
+    @Override
     public void close(){
+        if ( _cursor != null )
+            _cursor.close();
     }
 
-    public Object getCurrentKey(){
-        return _cur.get( "_id" );
+    @Override
+    public Object getCurrentKey() {
+        return _current.get( "_id" );
     }
 
-    public BSONObject getCurrentValue(){
-        return _cur;
+    @Override
+    public BSONObject getCurrentValue() {
+        return _current;
     }
 
-    public float getProgress(){
+    public float getProgress() {
         if (_cursor.hasNext()) {
             return 0.0f;
         } else {
@@ -50,29 +55,32 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
         }
     }
 
-    public void initialize( InputSplit split , TaskAttemptContext context ){
-//        if ( split != _split )
-//            throw new IllegalStateException( "split != _split ??? " );
+    @Override
+    public void initialize( InputSplit split , TaskAttemptContext context ) {
         _total = _cursor.size();
         _total = 1.0f;
     }
 
-    public boolean nextKeyValue(){
+    @Override
+    public boolean nextKeyValue() {
         if ( !_cursor.hasNext() )
             return false;
-        _cur = _cursor.next();
-        _seen++;
-        return true;
 
+        _current = _cursor.next();
+        _seen++;
+
+        return true;
     }
 
-    final MongoInputSplit _split;
-    final DBCursor _cursor;
+    public MongoRecordReader(MongoInputSplit split) {
+        _cursor = split.getCursor();
+    }
 
-    BSONObject _cur;
-    float _seen = 0;
-    float _total;
+    private BSONObject _current;
+    private final DBCursor _cursor;
+    private float _seen = 0;
+    private float _total;
 
-    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
+    private static final Log LOG = LogFactory.getLog( MongoRecordReader.class );
 
 }
