@@ -17,13 +17,22 @@ limitations under the License.
 -->
 
 <project name="mongo-hadoop" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
     <property name="ivy.install.version" value="2.2.0" />
-    <property name="ivy.jar.dir" value="${basedir}/ivy" />
-    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+    <property name="ivy.jar.dir" value="${basedir}/lib_core" />
+    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
+
+    <property name="dir.src.java.unit" value="src/unit"/>
+    <property name="dir.build.java" value="build/main"/>
+
+    <property name="junit.install.version" value="4.8.2" />
+    <property name="junit.jar.dir" value="${basedir}/lib_core" />
+    <property name="junit.jar.file" value="${junit.jar.dir}/junit.jar"/>
 
     <path id="classpath">
         <fileset dir="lib"><include name="**/*.jar"/></fileset>
-        <pathelement path="build/main" />
+        <fileset dir="lib_core"><include name="**/*.jar"/></fileset>
+        <pathelement path="${dir.build.java}" />
         <pathelement path="build/examples" />
         <!-- <pathelement path="build/test" /> -->
     </path>
@@ -33,6 +42,13 @@ limitations under the License.
         <!-- download Ivy from web site so that it can be used even without any special installation -->
         <echo message="installing ivy..."/>
         <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
+    </target>
+
+    <target name="download-junit" unless="skip.download">
+        <mkdir dir="${junit.jar.dir}"/>
+        <!-- download Ivy from web site so that it can be used even without any special installation -->
+        <echo message="Installing junit..."/>
+        <get src="http://repo1.maven.org/maven2/junit/junit/${junit.install.version}/junit-${junit.install.version}.jar" dest="${junit.jar.file}" usetimestamp="true"/>
     </target>
 
     <!-- =================================
@@ -50,25 +66,35 @@ limitations under the License.
         <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
     </target>
 
-    <!-- =================================
-    target: clean-ivy
-    ================================== -->
+    <!-- ******************************************************************* -->
+    <!-- Clean ivy.                                                          -->
+    <!-- ******************************************************************* -->
+
     <target name="clean-ivy" description="--> clean the ivy installation"><delete dir="${ivy.jar.dir}"/></target>
 
-    <!-- =================================
-    target: clean-cache
-    ================================== -->
+    <!-- ******************************************************************* -->
+    <!-- Clean ivy cache.                                                    -->
+    <!-- ******************************************************************* -->
+
     <target name="clean-cache" depends="install-ivy" description="--> clean the ivy cache"><ivy:cleancache /></target>
 
-    <target name="init" depends="install-ivy">
+    <!-- ******************************************************************* -->
+    <!-- Init the build.                                                     -->
+    <!-- ******************************************************************* -->
+
+    <!-- TODO:  Check to  see if file(s) exist, if not download (then remove from git). -->
+
+    <target name="init" depends="install-ivy, download-junit">
         <mkdir dir="build" />
-        <!--mkdir dir="lib" /-->
-        <mkdir dir="build/main" />
-        <!-- <mkdir dir="build/test" /> -->
+        <mkdir dir="${dir.build.java}" />
         <mkdir dir="build/examples" />
     </target>
 
     <target name="resolve" depends="init" description="--> retrieve dependencies with ivy"><ivy:retrieve/></target>
+
+    <!-- ******************************************************************* -->
+    <!-- Clean local repository.                                             -->
+    <!-- ******************************************************************* -->
 
     <target name="clean" description="--> clean up project">
         <delete dir="build"/>
@@ -80,6 +106,10 @@ limitations under the License.
         <delete file="mongo-hadoop.jar"/>
         <delete file="examples/world_development_indicators/resources/WDI_GDF_Data.csv"/>
     </target>
+
+    <!-- ******************************************************************* -->
+    <!-- Generate javadocs .                                                 -->
+    <!-- ******************************************************************* -->
 
     <target name="javadoc"  depends="init">
         <mkdir dir="javadoc"/>
@@ -93,11 +123,44 @@ limitations under the License.
 
     <target name="firstresolve" unless="${lib.exists}"><antcall target="resolve" /></target>
 
+    <!-- ******************************************************************* -->
+    <!-- Run the unit tests.                                                 -->
+    <!-- ******************************************************************* -->
+
+    <target name="unit" depends="compile">
+        <junit fork="yes" haltonfailure="true">
+            <jvmarg value="-Duser.timezone=GMT"/>
+            <jvmarg value="-Dfile.encoding=UTF-8"/>
+            <classpath refid="classpath"/>
+
+            <classpath>
+                <pathelement path="${dir.build.java}"/>
+            </classpath>
+
+            <formatter type="brief" usefile="false"/>
+            <batchtest todir="."><fileset dir="${dir.build.java}"><include name="**/*UnitTests.class"/></fileset></batchtest>
+        </junit>
+    </target>
+
+    <!-- ******************************************************************* -->
+    <!-- Create the adapter jar file.                                        -->
+    <!-- ******************************************************************* -->
+
+    <target name="jar" depends="compile">
+        <jar destfile="mongo-hadoop.jar">
+            <fileset dir="${dir.build.java}" includes="**/*.class" />
+            <fileset dir="build/examples" includes="**/*.class" />
+        </jar>
+    </target>
+
+    <!-- ******************************************************************* -->
+    <!-- Compile the source.                                                 -->
+    <!-- ******************************************************************* -->
+
     <target name="compile" depends="init, checklib, firstresolve" description="--> compile all artifacts">
         <javac
-            srcdir="src/main"
             includeantruntime="false"
-            destdir="build/main"
+            destdir="${dir.build.java}"
             optimize="off"
             deprecation="off"
             source="1.5"
@@ -107,19 +170,9 @@ limitations under the License.
             fork="true"
             debug="on">
             <classpath refid="classpath"/>
+            <src path="src/main"/>
+            <src path="${dir.src.java.unit}"/>
         </javac>
-
-        <!--
-        <javac srcdir="src/test"
-        destdir="build/test"
-        optimize="off"
-        deprecation="off"
-        source="1.5"
-        encoding="ISO-8859-1"
-        debug="on" >
-        <classpath refid="classpath"/>
-        </javac>
-        -->
 
         <javac
             srcdir="examples/wordcount/src"
@@ -242,13 +295,6 @@ limitations under the License.
             <arg line="-conf examples/treasury_yield/resources/mongo-treasury_yield.xml"/>
             <arg line="-Dlog4j.debug"/>
         </java>
-    </target>
-
-    <target name="jar" depends="compile">
-        <jar destfile="mongo-hadoop.jar">
-            <fileset dir="build/main" includes="**/*.class" />
-            <fileset dir="build/examples" includes="**/*.class" />
-        </jar>
     </target>
 
 </project>
