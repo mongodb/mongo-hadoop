@@ -36,7 +36,7 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
         _collection.getDB().getLastError();
     }
 
-    Object toBSON( Object x ){
+    Object toBSON( Object x ) {
         if ( x == null )
             return null;
         if ( x instanceof Text || x instanceof UTF8 )
