@@ -44,7 +44,7 @@ import java.util.HashMap;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
-
+    @Override
     public RecordReader<Object, BSONObject> createRecordReader( InputSplit split, TaskAttemptContext context ){
         if ( !( split instanceof MongoInputSplit ) )
             throw new IllegalStateException( "Creation of a new RecordReader requires a MongoInputSplit instance." );
@@ -54,13 +54,14 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         return new com.mongodb.hadoop.input.MongoRecordReader( mis );
     }
 
+    @Override
     public List<InputSplit> getSplits( JobContext context ){
         final Configuration hadoopConfiguration = context.getConfiguration();
         final MongoConfig conf = new MongoConfig( hadoopConfiguration );
         return getSplits( hadoopConfiguration, conf );
     }
 
-    //public because called by the other MongoInputFormat
+    // public because called by the other MongoInputFormat
     public List<InputSplit> getSplits( Configuration hadoopConfiguration, MongoConfig conf ){
 
         if ( conf.getLimit() > 0 || conf.getSkip() > 0 ){
@@ -305,7 +306,8 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         }
     }
 
-    private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ){
+    private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ) {
+
         String originalUriString = originalUri.toString();
         originalUriString = originalUriString.substring( MongoURI.MONGODB_PREFIX.length() );
 
