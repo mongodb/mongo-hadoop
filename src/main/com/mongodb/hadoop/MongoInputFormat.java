@@ -114,17 +114,19 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 }
 
                 if ( splits != null ) {
-                    log.info("Calculated splits and returning them.");
-                    log.debug("Splits: " + splits);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Calculated splits and returning them - splits: " + splits);
+                    }
+
                     return splits;
                 }
 
-                log.warn( "Fallthrough code; splits is null." );
+                LOG.warn( "Fallthrough code; splits is null." );
                 //If splits is null fall through to code below
             }
             catch ( Exception e ) {
-                log.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
-                //e.printStackTrace();
+                LOG.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
             }
         }
 
@@ -135,9 +137,12 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         splits.add( new MongoInputSplit( conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(),
                                          conf.getLimit(), conf.getSkip() ) );
 
-        log.info( "Calculated " + splits.size() + " split objects." );
-        return splits;
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug( "Calculated " + splits.size() + " split objects." );
+        }
+
+        return splits;
     }
 
     /**
@@ -147,8 +152,8 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
      * in the process of getting moved around). </ol>
      */
     private List<InputSplit> getSplitsUsingShards( final MongoConfig conf,
-                                                   MongoURI uri, Mongo mongo, Boolean slaveok ){
-        log.warn( "WARNING getting splits that connect directly to the backend mongods"
+                                                   MongoURI uri, Mongo mongo, Boolean slaveOk ){
+        LOG.warn( "WARNING getting splits that connect directly to the backend mongods"
                   + " is risky and might not produce correct results" );
         DB configDb = mongo.getDB( "config" );
         DBCollection shardsColl = configDb.getCollection( "shards" );
@@ -174,7 +179,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         final List<InputSplit> splits = new ArrayList<InputSplit>( shardSet.size() );
         //todo: using stats only get the shards that actually host data for this collection
         for ( String host : shardSet ){
-            MongoURI thisUri = getNewURI( uri, host, slaveok );
+            MongoURI thisUri = getNewURI( uri, host, slaveOk );
             splits.add( new MongoInputSplit( thisUri, conf.getQuery(), conf.getFields(), conf.getSort(),
                                              conf.getLimit(), conf.getSkip() ) );
         }
@@ -188,54 +193,63 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                                                    MongoURI uri,
                                                    Mongo mongo,
                                                    boolean useShards,
-                                                   Boolean slaveok ){
+                                                   Boolean slaveOk )
+    {
         DBObject originalQuery = conf.getQuery();
+
         if ( useShards )
-            log.warn( "WARNING getting splits that connect directly to the backend mongods"
+            LOG.warn( "WARNING getting splits that connect directly to the backend mongods"
                       + " is risky and might not produce correct results" );
-        log.debug( "getSplitsUsingChunks(): originalQuery: " + originalQuery );
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug( "getSplitsUsingChunks(): originalQuery: " + originalQuery );
+        }
+
         DB configDB = mongo.getDB( "config" );
+
         Map<String, String> shardMap = null; //key: shardname, value: host
-        if ( useShards ){
+
+        if ( useShards ) {
+
             shardMap = new HashMap<String, String>();
             DBCollection shardsCollection = configDB.getCollection( "shards" );
             DBCursor cur = shardsCollection.find();
             try {
                 while ( cur.hasNext() ){
                     final BasicDBObject row = (BasicDBObject) cur.next();
+
                     String host = row.getString( "host" );
-                    //for replica sets host will look like: "setname/localhost:20003,localhost:20004"
+
+                    // for replica sets host will look like: "setname/localhost:20003,localhost:20004"
                     int slashIndex = host.indexOf( '/' );
+
                     if ( slashIndex > 0 )
                         host = host.substring( slashIndex + 1 );
+
                     shardMap.put( (String) row.get( "_id" ), host );
                 }
-            }
-            finally {
+            } finally {
                 if ( cur != null )
                     cur.close();
-                cur = null;
             }
         }
-        log.info( "MongoInputFormat.getSplitsUsingChunks(): shard map is: " + shardMap );
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug( "MongoInputFormat.getSplitsUsingChunks(): shard map is: " + shardMap );
+        }
+
         DBCollection chunksCollection = configDB.getCollection( "chunks" );
+
         /* Chunks looks like:
         { "_id" : "test.lines-_id_ObjectId('4d60b839874a8ad69ad8adf6')", "lastmod" : { "t" : 3000, "i" : 1 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b839874a8ad69ad8adf6") }, "max" : { "_id" : ObjectId("4d60b83a874a8ad69ad8d1a9") }, "shard" : "shard0000" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b83a874a8ad69ad8d1a9')", "lastmod" : { "t" : 4000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b83a874a8ad69ad8d1a9") }, "max" : { "_id" : ObjectId("4d60b83d874a8ad69ad8fb7c") }, "shard" : "shard0000" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b83d874a8ad69ad8fb7c')", "lastmod" : { "t" : 5000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b83d874a8ad69ad8fb7c") }, "max" : { "_id" : ObjectId("4d60b83e874a8ad69ad928e8") }, "shard" : "shard0001" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b83e874a8ad69ad928e8')", "lastmod" : { "t" : 6000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b83e874a8ad69ad928e8") }, "max" : { "_id" : ObjectId("4d60b840874a8ad69ad95853") }, "shard" : "shard0000" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b840874a8ad69ad95853')", "lastmod" : { "t" : 7000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b840874a8ad69ad95853") }, "max" : { "_id" : ObjectId("4d60b842874a8ad69ad985db") }, "shard" : "shard0001" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b842874a8ad69ad985db')", "lastmod" : { "t" : 8000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b842874a8ad69ad985db") }, "max" : { "_id" : ObjectId("4d60b843874a8ad69ad9b4c2") }, "shard" : "shard0000" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b843874a8ad69ad9b4c2')", "lastmod" : { "t" : 9000, "i" : 0 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b843874a8ad69ad9b4c2") }, "max" : { "_id" : ObjectId("4d60b844874a8ad69ad9e750") }, "shard" : "shard0001" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b844874a8ad69ad9e750')", "lastmod" : { "t" : 9000, "i" : 1 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b844874a8ad69ad9e750") }, "max" : { "_id" : ObjectId("4d60b845874a8ad69ada1c71") }, "shard" : "shard0002" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b845874a8ad69ada1c71')", "lastmod" : { "t" : 3000, "i" : 16 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b845874a8ad69ada1c71") }, "max" : { "_id" : ObjectId("4d60b846874a8ad69ada4720") }, "shard" : "shard0002" }
-        { "_id" : "test.lines-_id_ObjectId('4d60b846874a8ad69ada4720')", "lastmod" : { "t" : 3000, "i" : 18 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b846874a8ad69ada4720") }, "max" : { "_id" : ObjectId("4d60b848874a8ad69ada8756") }, "shard" : "shard0002" }
         { "_id" : "test.lines-_id_ObjectId('4d60b848874a8ad69ada8756')", "lastmod" : { "t" : 3000, "i" : 19 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b848874a8ad69ada8756") }, "max" : { "_id" : { $maxKey : 1 } }, "shard" : "shard0002" }
         */
+
         BasicDBObject query = new BasicDBObject();
         query.put( "ns", uri.getDatabase() + "." + uri.getCollection() );
 
         DBCursor cur = chunksCollection.find( query );
+
         try {
             int numChunks = 0;
 
@@ -257,26 +271,35 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
                 shardKeyQuery.put( "$query", originalQuery );
-                log.info( "[" + numChunks + "/" + splits.size() + "] new query is: " + shardKeyQuery );
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug( "[" + numChunks + "/" + splits.size() + "] new query is: " + shardKeyQuery );
+                }
 
                 MongoURI inputURI = conf.getInputURI();
+
                 if ( useShards ){
                     final String shardname = row.getString( "shard" );
+
                     String host = shardMap.get( shardname );
-                    inputURI = getNewURI( inputURI, host, slaveok );
+
+                    inputURI = getNewURI( inputURI, host, slaveOk );
                 }
                 splits.add( new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
                                                  conf.getSkip() ) );
-            }//while
-            log.info( "MongoInputFormat.getSplitsUsingChunks(): There were "
-                      + numChunks
-                      + " chunks, returning "
-                      + splits.size()
-                      + " splits" );
-            log.debug("Splits: " + splits);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug( "MongoInputFormat.getSplitsUsingChunks(): There were "
+                          + numChunks
+                          + " chunks, returning "
+                          + splits.size()
+                          + " splits: " + splits );
+            }
+
             return splits;
-        }
-        finally {
+
+        } finally {
             if ( cur != null )
                 cur.close();
         }
@@ -286,7 +309,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         String originalUriString = originalUri.toString();
         originalUriString = originalUriString.substring( MongoURI.MONGODB_PREFIX.length() );
 
-        //uris look like: mongodb://fred:foobar@server1[,server2]/path?options
+        // uris look like: mongodb://fred:foobar@server1[,server2]/path?options
 
         int serverEnd = -1;
         int serverStart = 0;
@@ -315,7 +338,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 sb.append( "?slaveok=" ).append( slaveok );
         }
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
-        log.debug( "getNewURI(): original " + originalUri + " new uri: " + ans );
+        LOG.debug( "getNewURI(): original " + originalUri + " new uri: " + ans );
         return new MonkeyPatchedMongoURI( ans );
     }
 
@@ -323,5 +346,5 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         return true;
     }
 
-    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
+    private static final Log LOG = LogFactory.getLog( MongoInputFormat.class );
 }
