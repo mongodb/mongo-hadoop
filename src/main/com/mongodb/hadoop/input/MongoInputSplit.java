@@ -17,55 +17,51 @@
 
 package com.mongodb.hadoop.input;
 
-import java.io.*;
-import java.util.*;
+// Mongo
+import com.mongodb.DBObject;
+import com.mongodb.DBCursor;
+import com.mongodb.MongoURI;
+import com.mongodb.util.JSON;
+import com.mongodb.MonkeyPatchedMongoURI;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
-import org.apache.commons.logging.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+// Commons
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.util.*;
+// Hadoop
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapreduce.InputSplit;
+
+// Java
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Arrays;
 
 public class MongoInputSplit extends InputSplit implements Writable {
-
-    public MongoInputSplit(MongoURI inputURI , DBObject query , DBObject fields , DBObject sort , int limit , int skip) {
-        log.debug( "Creating a new MongoInputSplit for MongoURI '" + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
-                + sort + "', limit: " + limit + ", skip: " + skip + " ." );
-        _mongoURI = inputURI;
-        _querySpec = query;
-        _fieldSpec = fields;
-        _sortSpec = sort;
-        _limit = limit;
-        _skip = skip;
-        getCursor();
-    }
-
-    public MongoInputSplit() {
-    }
 
     /**
      * This is supposed to return the size of the split in bytes, but
      * for now, for sanity sake we return the # of docs in the split instead.
      * @return
      */
-    public long getLength(){
+    @Override
+    public long getLength() {
         return Long.MAX_VALUE;
     }
 
-    public String[] getLocations(){
-        final List<String> hosts = _mongoURI.getHosts();
-        return hosts.toArray( new String[hosts.size()] );
+    @Override
+    public String [] getLocations() {
+        return _mongoURI.getHosts().toArray( new String[_mongoURI.getHosts().size()] );
     }
 
     /**
      * Serialize the Split instance
      */
-
-    public void write( DataOutput out ) throws IOException{
+    @Override
+    public void write( final DataOutput out ) throws IOException {
         out.writeUTF( _mongoURI.toString() );
-
         out.writeUTF( JSON.serialize( _querySpec ) );
         out.writeUTF( JSON.serialize( _fieldSpec ) );
         out.writeUTF( JSON.serialize( _sortSpec ) );
@@ -73,7 +69,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
         out.writeInt( _skip );
     }
 
-    public void readFields( DataInput in ) throws IOException{
+    @Override
+    public void readFields( DataInput in ) throws IOException {
         _mongoURI = new MonkeyPatchedMongoURI( in.readUTF() );
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
         _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
@@ -82,8 +79,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _skip = in.readInt();
         getCursor();
 
-        log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = " + Arrays.toString(getLocations()) + ", query = " + _querySpec
-                + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(  "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
+                        + Arrays.toString(getLocations()) + ", query = " + _querySpec
+                        + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
+        }
     }
 
     DBCursor getCursor(){
@@ -94,8 +94,33 @@ public class MongoInputSplit extends InputSplit implements Writable {
             _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
             _cursor.slaveOk();
         }
+
         return _cursor;
     }
+
+    public MongoInputSplit( MongoURI inputURI,
+                            DBObject query,
+                            DBObject fields,
+                            DBObject sort,
+                            int limit,
+                            int skip)
+    {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(  "Creating a new MongoInputSplit for MongoURI '"
+                        + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
+                        + sort + "', limit: " + limit + ", skip: " + skip + " ." );
+        }
+
+        _mongoURI = inputURI;
+        _querySpec = query;
+        _fieldSpec = fields;
+        _sortSpec = sort;
+        _limit = limit;
+        _skip = skip;
+        getCursor();
+    }
+
+    public MongoInputSplit() { }
 
     private MongoURI _mongoURI;
     private DBObject _querySpec;
@@ -106,6 +131,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private long _length = -1;
     private transient DBCursor _cursor;
 
-    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
+    private static final Log LOG = LogFactory.getLog( MongoInputSplit.class );
 
 }
