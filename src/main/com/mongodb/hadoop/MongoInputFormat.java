@@ -126,7 +126,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     return splits;
                 }
 
-                log.warning("Fallthrough code; splits is null.");
+                log.warn("Fallthrough code; splits is null.");
                 //If splits is null fall through to code below
             }
             catch ( Exception e ) {
