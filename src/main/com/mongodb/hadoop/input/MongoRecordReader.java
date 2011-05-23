@@ -17,10 +17,12 @@
 
 package com.mongodb.hadoop.input;
 
-import com.mongodb.*;
+import java.io.IOException;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
+
+import com.mongodb.*;
 
 public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
@@ -45,9 +47,10 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     }
 
     public void initialize( InputSplit split , TaskAttemptContext context ){
-        if ( split != _split )
-            throw new IllegalStateException( "split != _split ??? " );
+//        if ( split != _split )
+//            throw new IllegalStateException( "split != _split ??? " );
         _total = _cursor.size();
+        _total = 1.0f;
     }
 
     public boolean nextKeyValue(){

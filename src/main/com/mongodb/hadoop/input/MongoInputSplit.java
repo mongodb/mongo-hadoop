@@ -39,6 +39,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _sortSpec = sort;
         _limit = limit;
         _skip = skip;
+        getCursor();
     }
 
     public MongoInputSplit() {
@@ -50,7 +51,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
      * @return
      */
     public long getLength(){
-        if (_length == 0) {
+        if (_length == -1) {
             _length = getCursor().size(); // May be slow at first, but memoized
         }
         return _length;
@@ -89,6 +90,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _sortSpec = (DBObject) JSON.parse( in.readUTF() );
         _limit = in.readInt();
         _skip = in.readInt();
+        getCursor();
 
         log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = " + Arrays.toString(getLocations()) + ", query = " + _querySpec
                 + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
@@ -100,12 +102,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // Return the cursor with the split's query, etc. already slotted in for
         // them.
         // todo - support limit/skip
-        final DBCursor cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
-        cursor.slaveOk();
-        log.debug("Cursor: " + cursor);
-        log.info("getCursor(collection: " + cursor.getCollection() + ", id: " + cursor.getCursorId() + ", addr: " +  cursor.getServerAddress() +
-                 ", query: " + cursor.getQuery());
-        return cursor;
+        if (_cursor == null) {
+            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+            _cursor.slaveOk();
+        }
+        return _cursor;
     }
 
     private MongoURI _mongoURI;
@@ -114,7 +115,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private DBObject _sortSpec;
     private int _limit = 0;
     private int _skip = 0;
-    private long _length = 0;
+    private long _length = -1;
+    private transient DBCursor _cursor;
 
     private static final Log log = LogFactory.getLog( MongoInputSplit.class );
 

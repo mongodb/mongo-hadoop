@@ -4,6 +4,7 @@
     <list id="4ab658d6-2ff5-4084-84ea-5340fd0e2ccf" name="Default" comment="" />
     <list default="true" id="3c54070d-dc34-416b-b356-357bd442d4d1" name="Update Ivy Deps; Migrate Hadoop to 0.20.203.0 Release &amp; Pig to 0.8.3" comment="Updating Ivy Dependencies to use now available public hadoop artifacts&#10;- Migrating Hadoop to 0.20.203 http://hadoop.apache.org/common/docs/r0.20.203.0/releasenotes.html&#10;- Migrating Pig to 0.8.3">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java" />
     </list>
     <ignored path="mongo-hadoop.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -77,10 +78,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="104" column="7" selection-start="3969" selection-end="3969" vertical-scroll-proportion="0.6241135">
+            <state line="53" column="24" selection-start="1752" selection-end="1752" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -88,10 +89,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
+      <file leaf-file-name="MongoRecordReader.java" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoRecordReader.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="118" column="0" selection-start="3770" selection-end="3770" vertical-scroll-proportion="0.0">
+            <state line="67" column="25" selection-start="1877" selection-end="1877" vertical-scroll-proportion="0.6086176">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MongoRecordReader.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="47" column="0" selection-start="1245" selection-end="1245" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -100,7 +110,7 @@
       <file leaf-file-name="MongoInputFormat.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="203" column="39" selection-start="8530" selection-end="8530" vertical-scroll-proportion="0.0">
+            <state line="234" column="49" selection-start="12394" selection-end="12394" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -175,7 +185,6 @@
         <option value="$PROJECT_DIR$/build.xml" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/output/MongoRecordWriter.java" />
         <option value="$PROJECT_DIR$/flume_plugin/src/java/com/mongodb/flume/MongoDBSink.java" />
-        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/MongoInputFormat.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyCallbackFactory.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/SplitFriendlyDBCallback.java" />
@@ -184,6 +193,7 @@
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
       </list>
     </option>
@@ -711,11 +721,11 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="22" width="1920" height="995" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33444077" sideWeight="0.0" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32890365" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32890365" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32890365" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -784,23 +794,9 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/build.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="108" column="22" selection-start="4860" selection-end="4860" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/io/BSONWritable.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="7" column="0" selection-start="242" selection-end="242" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="18" column="0" selection-start="654" selection-end="654" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/MongoOutput.java">
@@ -879,15 +875,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="203" column="39" selection-start="8530" selection-end="8530" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="118" column="0" selection-start="3770" selection-end="3770" vertical-scroll-proportion="0.0">
@@ -895,12 +882,35 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="104" column="7" selection-start="3969" selection-end="3969" vertical-scroll-proportion="0.6241135">
+        <state line="47" column="0" selection-start="1245" selection-end="1245" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="234" column="49" selection-start="12394" selection-end="12394" vertical-scroll-proportion="0.0">
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="53" column="24" selection-start="1752" selection-end="1752" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoRecordReader.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="67" column="25" selection-start="1877" selection-end="1877" vertical-scroll-proportion="0.6086176">
+          <folding />
         </state>
       </provider>
     </entry>
