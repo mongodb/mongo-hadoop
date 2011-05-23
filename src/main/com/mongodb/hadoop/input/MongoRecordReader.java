@@ -43,7 +43,14 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     }
 
     public float getProgress(){
-        return _seen / _total;
+        log.info("Seen Items: " + _seen);
+        if (_cursor.hasNext()) {
+            log.info("Cursor HasNext.");
+            return 0.0f;
+        } else {
+            log.info("Cursor should be all done.");
+            return 1.0f;
+        }
     }
 
     public void initialize( InputSplit split , TaskAttemptContext context ){
