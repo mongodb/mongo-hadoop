@@ -15,8 +15,8 @@
       <root url="jar://$PROJECT_DIR$/lib/hadoop-core-0.20.203.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/avalon-framework-4.1.3.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/mongo-java-driver-2.5.3.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/logkit-1.0.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/commons-logging-1.1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/logkit-1.0.1.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
