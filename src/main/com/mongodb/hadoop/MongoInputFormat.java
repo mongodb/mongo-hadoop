@@ -249,9 +249,9 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 Object thisMinVal = minObj.get( keyname );
                 Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
                 Map shardKeyQueryMap = new HashMap();
-                if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE ) )
+                if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE || thisMinVal.equals( "MinKey") ) )
                     shardKeyQueryMap.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
-                if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE ) )
+                if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE || thisMaxVal.equals( "MaxKey") ) )
                     shardKeyQueryMap.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
                 //must put something for $query or will silently fail. If no original query use an empty DBObject
                 if ( originalQuery == null )
