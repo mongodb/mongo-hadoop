@@ -28,8 +28,7 @@ import com.mongodb.*;
 import com.mongodb.hadoop.util.*;
 import com.mongodb.util.*;
 
-public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
-    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
+public class MongoInputSplit extends InputSplit implements Writable {
 
     public MongoInputSplit(MongoURI inputURI , DBObject query , DBObject fields , DBObject sort , int limit , int skip) {
         log.debug( "Creating a new MongoInputSplit for MongoURI '" + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
@@ -44,14 +43,17 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     public MongoInputSplit() {
     }
-    /** This is supposed to return the size of the split in bytes, but is hardcoded
-     to return a constant value*/
+
+    /**
+     * This is supposed to return the size of the split in bytes, but
+     * for now, for sanity sake we return the # of docs in the split instead.
+     * @return
+     */
     public long getLength(){
-        //This takes a really long time.  Hadoop calls this when it is deciding
-        //how to divvy up the splits.  As a result the whole database is sequenced
-        //through before the real number crunching begins.
-        //return getCursor().size();
-        return 200000000; //200 million is the default mongo chunk size
+        if (_length == 0) {
+            _length = getCursor().size(); // May be slow at first, but memoized
+        }
+        return _length;
     }
 
     public String[] getLocations(){
@@ -107,5 +109,8 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     private DBObject _sortSpec;
     private int _limit = 0;
     private int _skip = 0;
+    private long _length = 0;
+
+    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
 
 }
