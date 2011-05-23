@@ -16,7 +16,8 @@
 
 package com.mongodb.hadoop;
 
-import com.mongodb.*;
+// Mongo
+import com.mongodb.DBObject;
 
 public interface MongoOutput {
 
@@ -25,3 +26,4 @@ public interface MongoOutput {
     public void appendAsValue( DBObject o );
 
 }
+
