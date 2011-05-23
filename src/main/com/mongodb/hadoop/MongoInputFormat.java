@@ -248,17 +248,16 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 //the shard key can be of any type so this must be an Object
                 Object thisMinVal = minObj.get( keyname );
                 Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
-                Map shardKeyQueryMap = new HashMap();
+                DBObject shardKeyQuery = new BasicDBObject();
                 if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE || thisMinVal.equals( "MinKey") ) )
-                    shardKeyQueryMap.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
+                    shardKeyQuery.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
                 if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE || thisMaxVal.equals( "MaxKey") ) )
-                    shardKeyQueryMap.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
+                    shardKeyQuery.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
                 //must put something for $query or will silently fail. If no original query use an empty DBObject
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
-                shardKeyQueryMap.put( "$query", originalQuery );
-                BasicDBObject newQuery = new BasicDBObject( shardKeyQueryMap );
-                log.info( "[" + numChunks + "/" + splits.size() + "] new query is: " + newQuery );
+                shardKeyQuery.put( "$query", originalQuery );
+                log.info( "[" + numChunks + "/" + splits.size() + "] new query is: " + shardKeyQuery );
 
                 MongoURI inputURI = conf.getInputURI();
                 if ( useShards ){
@@ -266,7 +265,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     String host = shardMap.get( shardname );
                     inputURI = getNewURI( inputURI, host, slaveok );
                 }
-                splits.add( new MongoInputSplit( inputURI, newQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
+                splits.add( new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
                                                  conf.getSkip() ) );
             }//while
             log.info( "MongoInputFormat.getSplitsUsingChunks(): There were "
