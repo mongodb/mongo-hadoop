@@ -100,14 +100,14 @@ limitations under the License.
     <property>
         <!-- Output key class for the mapper [optional] -->
         <name>mongo.job.mapper.output.key</name>
-        <!-- <value>org.apache.hadoop.io.Text</value> -->
+         <value>org.apache.hadoop.io.Text</value> 
         <value></value>
     </property>
 
     <property>
         <!-- Output value class for the mapper [optional] -->
         <name>mongo.job.mapper.output.value</name>
-        <!-- <value>org.apache.hadoop.io.DoubleWritable</value> -->
+        <value>org.apache.hadoop.io.DoubleWritable</value> 
         <value></value>
     </property>
 

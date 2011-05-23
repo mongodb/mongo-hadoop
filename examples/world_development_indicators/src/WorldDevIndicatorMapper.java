@@ -36,7 +36,7 @@ import java.io.IOException;
  * The world development indicator mapper.
  */
 public class WorldDevIndicatorMapper
-    extends Mapper<ObjectId, BSONObject, Text, DoubleWritable>
+    extends Mapper<String, BSONObject, Text, DoubleWritable>
 {
     public void map(    final String pKey,
                         final BSONObject pValue,
