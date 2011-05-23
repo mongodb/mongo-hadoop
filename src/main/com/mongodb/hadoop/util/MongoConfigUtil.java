@@ -70,7 +70,7 @@ public class MongoConfigUtil {
 
     // Number of *documents*, not bytes, to split on
     public static final int DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
-    
+
     /** If {@code true} in a sharded setup splits will be made to connect to individual
      backend {@code mongod}s.  This can be unsafe. If {@code mongos} is moving
      chunks around you might see duplicate data, or miss some data entirely.

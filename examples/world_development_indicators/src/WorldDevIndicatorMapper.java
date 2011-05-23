@@ -48,9 +48,9 @@ public class WorldDevIndicatorMapper
 
         // Determine the average growth for each country - historical data.
 
-        System.out.println("--------- key: " + pKey);
+        LOG.info("--------- key: " + pKey);
 
-        System.out.println("--------- value: " + pValue);
+        LOG.info("--------- value: " + pValue);
 
         _countryCode.set( (String)pValue.get("Country Code") );
 

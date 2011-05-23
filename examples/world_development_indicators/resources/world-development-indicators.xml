@@ -29,12 +29,19 @@ limitations under the License.
     </property>
 
     <property>
+        <name>mongo.splits.use-chunks</name>
+        <value>true</value>
+    </property>
+
+    <property>
         <name>mongo.input.uri</name>
+        <!-- <value>mongodb://localhost/test.worldDevelopmentIndicators.in</value> -->
         <value>mongodb://localhost/test.worldDevelopmentIndicators.in</value>
     </property>
 
     <property>
         <name>mongo.output.uri</name>
+        <!-- <value>mongodb://localhost/test.worldDevelopmentIndicators.out</value> -->
         <value>mongodb://localhost/test.worldDevelopmentIndicators.out</value>
     </property>
 
@@ -100,15 +107,13 @@ limitations under the License.
     <property>
         <!-- Output key class for the mapper [optional] -->
         <name>mongo.job.mapper.output.key</name>
-         <value>org.apache.hadoop.io.Text</value> 
-        <value></value>
+        <value>org.apache.hadoop.io.Text</value>
     </property>
 
     <property>
         <!-- Output value class for the mapper [optional] -->
         <name>mongo.job.mapper.output.value</name>
         <value>org.apache.hadoop.io.DoubleWritable</value> 
-        <value></value>
     </property>
 
     <property>
