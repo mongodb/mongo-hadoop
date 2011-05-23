@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list id="4ab658d6-2ff5-4084-84ea-5340fd0e2ccf" name="Default" comment="" />
     <list default="true" id="3c54070d-dc34-416b-b356-357bd442d4d1" name="Update Ivy Deps; Migrate Hadoop to 0.20.203.0 Release &amp; Pig to 0.8.3" comment="Updating Ivy Dependencies to use now available public hadoop artifacts&#10;- Migrating Hadoop to 0.20.203 http://hadoop.apache.org/common/docs/r0.20.203.0/releasenotes.html&#10;- Migrating Pig to 0.8.3">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
     </list>
     <ignored path="mongo-hadoop.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -77,10 +77,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="85" column="36" selection-start="3065" selection-end="3065" vertical-scroll-proportion="0.0">
+            <state line="104" column="7" selection-start="3969" selection-end="3969" vertical-scroll-proportion="0.6241135">
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -88,10 +88,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="120" column="48" selection-start="4003" selection-end="4003" vertical-scroll-proportion="0.3812825">
+            <state line="118" column="0" selection-start="3770" selection-end="3770" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -179,12 +179,12 @@
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/MongoInputFormat.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyCallbackFactory.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/SplitFriendlyDBCallback.java" />
-        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/MonkeyPatchedMongoURI.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
       </list>
     </option>
   </component>
@@ -854,15 +854,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="85" column="36" selection-start="3065" selection-end="3065" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="254" column="61" selection-start="10325" selection-end="10325" vertical-scroll-proportion="0.0">
@@ -899,8 +890,17 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="120" column="48" selection-start="4003" selection-end="4003" vertical-scroll-proportion="0.3812825">
+        <state line="118" column="0" selection-start="3770" selection-end="3770" vertical-scroll-proportion="0.0">
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="104" column="7" selection-start="3969" selection-end="3969" vertical-scroll-proportion="0.6241135">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

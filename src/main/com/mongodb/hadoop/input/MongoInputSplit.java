@@ -102,6 +102,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // todo - support limit/skip
         final DBCursor cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
         cursor.slaveOk();
+        log.debug("Cursor: " + cursor);
+        log.info("getCursor(collection: " + cursor.getCollection() + ", id: " + cursor.getCursorId() + ", addr: " +  cursor.getServerAddress() +
+                 ", query: " + cursor.getQuery());
         return cursor;
     }
 
