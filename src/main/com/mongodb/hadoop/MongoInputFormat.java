@@ -18,16 +18,9 @@ package com.mongodb.hadoop;
 
 // Mongo
 
-import com.mongodb.DB;
-import com.mongodb.DBCursor;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
-import com.mongodb.MongoURI;
-import com.mongodb.Mongo;
+import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
-import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.util.*;
 import org.bson.BSONObject;
 
 // Commons
@@ -126,7 +119,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     return splits;
                 }
 
-                log.warn("Fallthrough code; splits is null.");
+                log.warn( "Fallthrough code; splits is null." );
                 //If splits is null fall through to code below
             }
             catch ( Exception e ) {
@@ -256,10 +249,10 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 Object thisMinVal = minObj.get( keyname );
                 Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
                 Map shardKeyQueryMap = new HashMap();
-/*                if ( !( thisMinVal instanceof String ) )*/
-                shardKeyQueryMap.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
-/*                if ( !( thisMaxVal instanceof String ) )*/
-                shardKeyQueryMap.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
+                if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE ) )
+                    shardKeyQueryMap.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
+                if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE ) )
+                    shardKeyQueryMap.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
                 //must put something for $query or will silently fail. If no original query use an empty DBObject
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
@@ -324,7 +317,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         }
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
         log.debug( "getNewURI(): original " + originalUri + " new uri: " + ans );
-        return new MongoURI( ans );
+        return new MonkeyPatchedMongoURI( ans );
     }
 
     public boolean verifyConfiguration( Configuration conf ){

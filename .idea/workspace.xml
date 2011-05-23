@@ -3,7 +3,13 @@
   <component name="ChangeListManager">
     <list id="4ab658d6-2ff5-4084-84ea-5340fd0e2ccf" name="Default" comment="" />
     <list default="true" id="3c54070d-dc34-416b-b356-357bd442d4d1" name="Update Ivy Deps; Migrate Hadoop to 0.20.203.0 Release &amp; Pig to 0.8.3" comment="Updating Ivy Dependencies to use now available public hadoop artifacts&#10;- Migrating Hadoop to 0.20.203 http://hadoop.apache.org/common/docs/r0.20.203.0/releasenotes.html&#10;- Migrating Pig to 0.8.3">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/com/mongodb/MonkeyPatchedMongoURI.java" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java" afterPath="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java" />
     </list>
     <ignored path="mongo-hadoop.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -80,7 +86,7 @@
       <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="38" column="24" selection-start="1406" selection-end="1406" vertical-scroll-proportion="0.0">
+            <state line="85" column="36" selection-start="3065" selection-end="3065" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -88,13 +94,71 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MongoInputFormat.java" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="MongoInputSplit.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="81" column="22" selection-start="2493" selection-end="2493" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MongoInputFormat.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="259" column="16" selection-start="13506" selection-end="13506" vertical-scroll-proportion="0.35772356">
+            <state line="255" column="4" selection-start="13570" selection-end="13570" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SplitFriendlyDBCallback.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="33" column="21" selection-start="1260" selection-end="1260" vertical-scroll-proportion="0.0">
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MongoConfigUtil.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="254" column="61" selection-start="10325" selection-end="10325" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MonkeyPatchedMongoURI.java" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/MonkeyPatchedMongoURI.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="35" column="96" selection-start="1417" selection-end="1417" vertical-scroll-proportion="0.8388215">
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MongoDBSink.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/flume_plugin/src/java/com/mongodb/flume/MongoDBSink.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="39" column="15" selection-start="1126" selection-end="1126" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MongoConfig.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoConfig.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="157" column="36" selection-start="4543" selection-end="4543" vertical-scroll-proportion="0.0">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -119,8 +183,14 @@
         <option value="$PROJECT_DIR$/flume_plugin/src/java/com/mongodb/flume/MongoDBSink.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/MongoInputFormat.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyCallbackFactory.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/SplitFriendlyDBCallback.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java" />
         <option value="$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java" />
+        <option value="$PROJECT_DIR$/src/main/com/mongodb/MonkeyPatchedMongoURI.java" />
       </list>
     </option>
   </component>
@@ -147,7 +217,7 @@
       <showMembers />
       <showModules />
       <showLibraryContents />
-      <hideEmptyPackages />
+      <hideEmptyPackages ProjectPane="false" />
       <abbreviatePackageNames />
       <autoscrollToSource />
       <autoscrollFromSource />
@@ -187,6 +257,36 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongo-hadoop" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="hadoop" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
@@ -202,6 +302,44 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="hadoop" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="util" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongo-hadoop" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
@@ -224,6 +362,14 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
@@ -253,6 +399,14 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="hadoop" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
@@ -279,6 +433,14 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="hadoop" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
@@ -298,6 +460,14 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
@@ -330,6 +500,14 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mongodb" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
@@ -375,6 +553,21 @@
     <property name="options.searchVisible" value="true" />
   </component>
   <component name="RunManager">
+    <configuration default="true" type="Specs2RunConfiguration" factoryName="Specs2">
+      <module name="" />
+      <setting name="path" value="" />
+      <setting name="vmparams" value="" />
+      <setting name="params" value="" />
+      <setting name="packagepath" value="" />
+      <setting name="workingDirectory" value="$PROJECT_DIR$" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+        <option name="SBT.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
     <configuration default="true" type="Remote" factoryName="Remote">
       <option name="USE_SOCKET_TRANSPORT" value="true" />
       <option name="SERVER_MODE" value="false" />
@@ -384,6 +577,23 @@
       <method>
         <option name="AntTarget" enabled="false" />
         <option name="BuildArtifacts" enabled="false" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+        <option name="SBT.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="SpecsRunConfiguration" factoryName="Specs">
+      <module name="" />
+      <setting name="path" value="" />
+      <setting name="vmparams" value="" />
+      <setting name="params" value="" />
+      <setting name="packagepath" value="" />
+      <setting name="workingDirectory" value="$PROJECT_DIR$" />
+      <setting name="sysFilter" value=".*" />
+      <setting name="exampleFilter" value=".*" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
         <option name="SBT.BeforeRunTask" enabled="false" />
       </method>
@@ -453,6 +663,22 @@
         <option name="SBT.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
+    <configuration default="true" type="ScalaTestRunConfiguration" factoryName="ScalaTest">
+      <module name="" />
+      <setting name="path" value="" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="" />
+      <setting name="params" value="" />
+      <setting name="version" value="false" />
+      <setting name="workingDirectory" value="$PROJECT_DIR$" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+        <option name="SBT.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
     <list size="0" />
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -495,7 +721,7 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33444077" sideWeight="0.0" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32890365" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32890365" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32890365" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -564,13 +790,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/ivy.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="16" selection-start="200" selection-end="200" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/build.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="108" column="22" selection-start="4860" selection-end="4860" vertical-scroll-proportion="0.0">
@@ -583,23 +802,9 @@
         <state line="7" column="0" selection-start="242" selection-end="242" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/flume_plugin/src/java/com/mongodb/flume/MongoDBSink.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="92" column="40" selection-start="3179" selection-end="3179" vertical-scroll-proportion="0.485482">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoRecordReader.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="18" column="0" selection-start="654" selection-end="654" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoConfig.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="277" column="0" selection-start="7550" selection-end="7550" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -641,9 +846,46 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoConfig.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="157" column="36" selection-start="4543" selection-end="4543" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/flume_plugin/src/java/com/mongodb/flume/MongoDBSink.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="39" column="15" selection-start="1126" selection-end="1126" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/input/MongoInputSplit.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="38" column="24" selection-start="1406" selection-end="1406" vertical-scroll-proportion="0.0">
+        <state line="85" column="36" selection-start="3065" selection-end="3065" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/MongoConfigUtil.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="254" column="61" selection-start="10325" selection-end="10325" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/mapred/input/MongoInputSplit.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="81" column="22" selection-start="2493" selection-end="2493" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/util/SplitFriendlyDBCallback.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="33" column="21" selection-start="1260" selection-end="1260" vertical-scroll-proportion="0.0">
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
@@ -652,7 +894,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/hadoop/MongoInputFormat.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="259" column="16" selection-start="13506" selection-end="13506" vertical-scroll-proportion="0.35772356">
+        <state line="255" column="4" selection-start="13570" selection-end="13570" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/com/mongodb/MonkeyPatchedMongoURI.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="35" column="96" selection-start="1417" selection-end="1417" vertical-scroll-proportion="0.8388215">
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
