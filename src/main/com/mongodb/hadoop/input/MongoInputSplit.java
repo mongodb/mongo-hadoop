@@ -67,8 +67,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
      */
 
     public void write( DataOutput out ) throws IOException{
-        final ObjectOutputStream objOut = new ObjectOutputStream( (OutputStream) out );
-        // TODO - Use object outputstream instead of going to <-> from string?
         out.writeUTF( _mongoURI.toString() );
 
         out.writeUTF( JSON.serialize( _querySpec ) );
@@ -76,14 +74,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
         out.writeUTF( JSON.serialize( _sortSpec ) );
         out.writeInt( _limit );
         out.writeInt( _skip );
-        objOut.close();
-        log.info( "Serialized a MongoInputSplit ... { length = " + getLength() + ", locations = " + Arrays.toString(getLocations()) + ", query = " + _querySpec
-                + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
     }
 
     public void readFields( DataInput in ) throws IOException{
-        final ObjectInputStream objIn = new ObjectInputStream( (InputStream) in );
-
         _mongoURI = new MonkeyPatchedMongoURI( in.readUTF() );
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
         _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
@@ -94,8 +87,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
         log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = " + Arrays.toString(getLocations()) + ", query = " + _querySpec
                 + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = " + _skip + "}" );
-
-        objIn.close();
     }
 
     DBCursor getCursor(){
