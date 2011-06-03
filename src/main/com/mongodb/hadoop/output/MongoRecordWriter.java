@@ -39,7 +39,7 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
     Object toBSON( Object x ) {
         if ( x == null )
             return null;
-        if ( x instanceof Text || x instanceof UTF8 )
+        if ( x instanceof Text || x instanceof UTF8 || ((! (x instanceof String)) && x instanceof CharSequence))
             return x.toString();
         if ( x instanceof Writable ) {
             if ( x instanceof AbstractMapWritable )
@@ -68,7 +68,8 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
             // TODO - Support counters
 
         }
-        throw new RuntimeException( "can't convert: " + x.getClass().getName() + " to BSON" );
+        //fall through, let the mongo java driver try to handle whatever x is
+        return x;
     }
 
     public void write( K key , V value ) throws IOException{
