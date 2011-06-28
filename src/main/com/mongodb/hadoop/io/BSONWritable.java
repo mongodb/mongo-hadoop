@@ -148,10 +148,17 @@ public class BSONWritable implements BSONObject, WritableComparable {
         enc.set( buf );
         enc.putObject( _doc );
         enc.done();
-        out.writeInt(buf.size());
-        //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
-        //to have a method signature that works with DataOutput
-        out.write( buf.toByteArray() );
+        final int datalen = buf.size();
+        if (datalen <= 0){
+            byte[] ba = buf.toByteArray();
+            log.error("write(): datalen is: "+datalen+" byte[] len is "+ba.length);
+            out.writeInt(ba.length);
+            out.write(ba);
+        } else {
+            out.writeInt(datalen);
+            //TODO: switch to BasicOutputBuffer.pipe(DataOutput) once unit test is written
+            out.write( buf.toByteArray() );
+        }
     }
 
     /**
@@ -164,6 +171,8 @@ public class BSONWritable implements BSONObject, WritableComparable {
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
         int dataLen = in.readInt();
+        if (dataLen <= 0)
+            log.error("readFields(): datalen is: "+dataLen);
         byte[] buf = new byte[dataLen];
         in.readFully( buf );
         dec.decode( buf, cb );
