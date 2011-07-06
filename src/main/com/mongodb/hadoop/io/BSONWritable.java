@@ -160,7 +160,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      * @see Writable#readFields(DataInput)
      */
     public void readFields( DataInput in ) throws IOException{
-        BSONDecoder dec = new BSONDecoder();
+        BSONDecoder dec = new BasicBSONDecoder();
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
         int dataLen = in.readInt();

@@ -18,6 +18,7 @@ package com.mongodb.hadoop.input;
 
 // Mongo
 import com.mongodb.DBCursor;
+import com.mongodb.MongoException;
 import org.bson.BSONObject;
 
 // Hadoop
@@ -47,12 +48,16 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
         return _current;
     }
 
-    public float getProgress() {
-        if (_cursor.hasNext()) {
-            return 0.0f;
-        } else {
-            return 1.0f;
-        }
+    public float getProgress() throws MongoException {
+    	try{
+    		if (_cursor.hasNext()) {
+    			return 0.0f;
+    		} else {
+    			return 1.0f;
+    		}
+    	}catch(MongoException ex){
+    		return 1.0f;
+    	}
     }
 
     @Override
@@ -62,9 +67,13 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     }
 
     @Override
-    public boolean nextKeyValue() {
-        if ( !_cursor.hasNext() )
-            return false;
+    public boolean nextKeyValue() throws MongoException{
+    	try {
+    		if ( !_cursor.hasNext() )
+    			return false;
+    	}catch(MongoException ex){
+    		return false;
+    	}
 
         _current = _cursor.next();
         _seen++;

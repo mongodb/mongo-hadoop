@@ -85,7 +85,7 @@ public class MongoInputSplit implements Writable, InputSplit {
     public void readFields(DataInput in) throws IOException {
         final ObjectInputStream objIn = new ObjectInputStream((InputStream) in);
 
-        _mongoURI = new MonkeyPatchedMongoURI(in.readUTF());
+        _mongoURI = new MongoURI(in.readUTF());
         _querySpec = (DBObject) JSON.parse(in.readUTF());
         _fieldSpec = (DBObject) JSON.parse(in.readUTF());
         _sortSpec = (DBObject) JSON.parse(in.readUTF());

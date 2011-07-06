@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.HashMap;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
@@ -259,18 +260,26 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 numChunks++;
                 final BasicDBObject row = (BasicDBObject) cur.next();
                 DBObject minObj = ( (DBObject) row.get( "min" ) );
-                String keyname = minObj.keySet().iterator().next();
-                //the shard key can be of any type so this must be an Object
-                Object thisMinVal = minObj.get( keyname );
-                Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
+                Iterator<String> keyset = minObj.keySet().iterator();
                 DBObject shardKeyQuery = new BasicDBObject();
-                if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE || thisMinVal.equals( "MinKey") ) )
-                    shardKeyQuery.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
-                if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE || thisMaxVal.equals( "MaxKey") ) )
-                    shardKeyQuery.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
-                //must put something for $query or will silently fail. If no original query use an empty DBObject
+                DBObject min = new BasicDBObject();
+                DBObject max = new BasicDBObject();
+
+                while(keyset.hasNext()){
+                	String keyname = keyset.next();
+                	Object thisMinVal = minObj.get( keyname );
+                	Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
+                	//the shard key can be of any type so this must be an Object
+                	if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE || thisMinVal.equals( "MinKey") ) )
+                		min.put(keyname, thisMinVal);
+                	if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE || thisMaxVal.equals( "MaxKey") ) )
+                		max.put(keyname, thisMaxVal);
+                	//must put something for $query or will silently fail. If no original query use an empty DBObject
+                }
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
+                shardKeyQuery.put( "$min", min );
+                shardKeyQuery.put( "$max", max );
                 shardKeyQuery.put( "$query", originalQuery );
 
                 if (LOG.isDebugEnabled()) {
@@ -341,7 +350,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         }
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
         LOG.debug( "getNewURI(): original " + originalUri + " new uri: " + ans );
-        return new MonkeyPatchedMongoURI( ans );
+        return new MongoURI( ans );
     }
 
     public boolean verifyConfiguration( Configuration conf ){

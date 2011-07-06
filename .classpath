@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src/main"/>
-  <classpathentry kind="src" path="examples/wordcount/src"/>
-  <classpathentry kind="src" path="examples/treasury_yield/src"/>
-	<classpathentry kind="lib" path="lib/hadoop-core-0.20.2.jar"/>
-	<classpathentry kind="lib" path="lib/hadoop-streaming-0.20.2.jar"/>
-	<classpathentry kind="lib" path="lib/pig-0.7.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-httpclient-3.1.jar"/>
-	<classpathentry kind="lib" path="lib/mongo-java-driver-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/xercesImpl-2.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="src" path="src/unit"/>
+	<classpathentry kind="src" path="examples/wordcount/src"/>
+	<classpathentry kind="src" path="examples/treasury_yield/src"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/commons-httpclient-3.0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/hadoop-core-0.20.2.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/hadoop-streaming-0.20.2.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/pig-0.7.0-core.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-hadoop/lib/xercesImpl.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/JVM 1.6.0"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-java-driver/mongo.jar"/>
+	<classpathentry kind="lib" path="/Users/sci01173/work/eclipse_workspace/mongo-java-driver/bson.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
