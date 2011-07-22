@@ -177,7 +177,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
         in.readFully( buf );
         dec.decode( buf, cb );
         _doc = (BSONObject) cb.get();
-        log.info( "Decoded a BSON Object: " + _doc );
+        log.debug( "Decoded a BSON Object: " + _doc );
     }
 
     /**
