@@ -156,8 +156,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
             out.write(ba);
         } else {
             out.writeInt(datalen);
-            //TODO: switch to BasicOutputBuffer.pipe(DataOutput) once unit test is written
-            out.write( buf.toByteArray() );
+            buf.pipe(out);
         }
     }
 
