@@ -339,58 +339,59 @@ limitations under the License.
  <target name="download-jars-for-cuke" depends="install-ivy,checkgems" if="cuke.ivy" description="download jars with ivy">
     <ivy:resolve file="ivy-for-cuke.xml"/>
     <ivy:retrieve settingsRef="ivy-cuke-settings.xml"/>
-  </target>
+ </target>
 
 
-  <target name="cuke-install-gems" depends="define-cuke-paths" if="gems">
-    <property name="did.gem.install" value="true" />
-    <taskdef name="gem" classname="cuke4duke.ant.GemTask" classpathref="cuke.compile.classpath"/>
-    <gem args="install cucumber --version 1.0.0"/><!-- Needs to be 1.0.0, not 1.0.1 until bug is fixed -->
-    <gem args="install cuke4duke --version 0.4.4"/>
-  </target>
+ <target name="cuke-install-gems" depends="define-cuke-paths" if="gems">
+   <property name="did.gem.install" value="true" />
+   <taskdef name="gem" classname="cuke4duke.ant.GemTask" classpathref="cuke.compile.classpath"/>
+   <gem args="install cucumber --version 1.0.0"/><!-- Needs to be 1.0.0, not 1.0.1 until bug is fixed -->
+   <gem args="install cuke4duke --version 0.4.4"/>
+ </target>
 
  <target name="define-cuke-paths" depends="download-jars-for-cuke,scalainit">
-    <path id="jruby.classpath">
-      <fileset dir="lib">
-        <include name="**/*.jar"/>
-      </fileset>
-    </path>
+   <path id="jruby.classpath">
+     <fileset dir="lib">
+       <include name="**/*.jar"/>
+     </fileset>
+   </path>
 
-    <path id="cuke.compile.classpath">
-      <fileset dir="lib">
-        <include name="**/*.jar"/>
-      </fileset>
-        <path refid="scala.classpath"/>
-        <pathelement location="mongo-hadoop.jar"/>
-    </path>
-  </target>
+   <path id="cuke.compile.classpath">
+     <fileset dir="lib">
+       <include name="**/*.jar"/>
+     </fileset>
+     <path refid="scala.classpath"/>
+     <pathelement location="mongo-hadoop.jar"/>
+   </path>
+ </target>
 
- <target name="cuke-compile-steps" depends="define-cuke-paths,cuke-install-gems">
-      <property name="cuke-target-dir" location="target/test-classes" />
-     <mkdir dir="${cuke-target-dir}" />
-     <scalac srcdir="src/test/scala" destdir="${cuke-target-dir}" force="changed" scalacdebugging="on" classpathref="cuke.compile.classpath" failonerror="true" >
-         <!-- reset="${made.jar}" -->
-        <!-- addparams="-Yclosure-elim -optimise" -->
-        <include name="**/*.scala"/>
-      </scalac>
-    <path id="cuke.compile.classpath.for-java">
-       <path refid="cuke.compile.classpath"/>
-        <pathelement location="${cuke-target-dir}"/>
-    </path>
+ <target name="cuke-compile-steps" depends="define-cuke-paths,cuke-install-gems" description="compile classes for cucumber tests">
+   <property name="cuke-target-dir" location="target/test-classes" />
+   <mkdir dir="${cuke-target-dir}" />
+   <!-- note: I tried fsc here but ran into a bug, so reverted to scalac even though it takes forever -->
+   <scalac srcdir="src/test/scala" destdir="${cuke-target-dir}" force="changed" scalacdebugging="on" classpathref="cuke.compile.classpath" failonerror="true" >
+     <!-- when using fsc add this attribute: reset="${made.jar}" -->
+     <include name="**/*.scala"/>
+   </scalac>
+   <path id="cuke.compile.classpath.for-java">
+     <path refid="cuke.compile.classpath"/>
+     <pathelement location="${cuke-target-dir}"/>
+   </path>
+   <!--  Do not try to run javac until we actually have some tests in this src directory
+        <javac includeantruntime="false" srcdir="src/test/java" destdir="target/test-classes" classpathref="cuke.compile.classpath" encoding="UTF-8"/>
+   -->
+ </target>
+ 
 
-    <javac includeantruntime="false" srcdir="src/test/java" destdir="target/test-classes" classpathref="cuke.compile.classpath" encoding="UTF-8"/>
-  </target>
-
-
-  <target name="cucumber" depends="cuke-compile-steps " description="Run Cucumber">
-    <mkdir dir="target/junit-report"/>
-    <taskdef name="cucumber" classname="cuke4duke.ant.CucumberTask" classpathref="cuke.compile.classpath"/>
-    <cucumber
-            args="--verbose --require target/test-classes --require src/test/ruby --color --format pretty --format junit --out target/junit-report features"
-            objectFactory="pico">
-      <classpath refid="cuke.compile.classpath.for-java" />
-    </cucumber>
-  </target>
+ <target name="cucumber" depends="cuke-compile-steps " description="Run Cucumber">
+   <mkdir dir="target/junit-report"/>
+   <taskdef name="cucumber" classname="cuke4duke.ant.CucumberTask" classpathref="cuke.compile.classpath"/>
+   <cucumber
+       args="--verbose --require target/test-classes --require src/test/ruby --color --format pretty --format junit --out target/junit-report features"
+       objectFactory="pico">
+     <classpath refid="cuke.compile.classpath.for-java" />
+   </cucumber>
+ </target>
 
 
 
