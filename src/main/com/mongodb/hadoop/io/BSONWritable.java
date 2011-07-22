@@ -242,6 +242,21 @@ public class BSONWritable implements BSONObject, WritableComparable {
         return new Comparator().compare( this, o );
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        final BSONWritable other = (BSONWritable) obj;
+        if (this._doc != other._doc && (this._doc == null || !this._doc.equals(other._doc)))
+            return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return (this._doc != null ? this._doc.hashCode() : 0);
+    }
+
     protected BSONObject _doc;
 
     private static final Log log = LogFactory.getLog( BSONWritable.class );
