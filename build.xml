@@ -342,7 +342,7 @@ limitations under the License.
  </target>
 
 
- <target name="cuke-install-gems" depends="define-cuke-paths" if="gems">
+ <target name="cuke-install-gems" depends="define-cuke-paths" if="gems" description="Install gems needed by cuke4duke">
    <property name="did.gem.install" value="true" />
    <taskdef name="gem" classname="cuke4duke.ant.GemTask" classpathref="cuke.compile.classpath"/>
    <gem args="install cucumber --version 1.0.0"/><!-- Needs to be 1.0.0, not 1.0.1 until bug is fixed -->
@@ -392,7 +392,5 @@ limitations under the License.
      <classpath refid="cuke.compile.classpath.for-java" />
    </cucumber>
  </target>
-
-
 
 </project>
