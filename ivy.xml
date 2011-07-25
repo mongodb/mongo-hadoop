@@ -20,7 +20,6 @@ limitations under the License.
     <info organisation="org.mongodb" module="mongo-hadoop"/>
     <dependencies>
         <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.203.0"/>
-        <dependency org="org.apache.hadoop" name="hadoop-streaming" rev="0.20.203.0"/>
         <dependency org="org.apache.pig" name="pig" rev="0.8.3"/>
         <dependency org="commons-cli" name="commons-cli" rev="1.2"/>
         <dependency org="commons-logging" name="commons-logging" rev="1.1.1"/>
