@@ -123,7 +123,6 @@ TODO
   * For initial release, no splits for non-sharded collections
 - [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
 - Support for "Merge" Jobs (e.g. combine results of multiple map/reduces esp. from diff. inputs in a single join job - this is supported by Hadoop w/ implementation of special interfaces)
-- Support Streaming for Python/Ruby implementation
 - Full support for appropriate 'alternate' Hadoop Interfaces
   * We already support Pig for Output (get input working)
   * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
@@ -135,6 +134,19 @@ KNOWN ISSUES
 You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.
 Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
 
+
+STREAMING
+----------
+
+Streaming is a work in progress as we are sorting out how to most efficiently stream binary data.
+
+Essentially, Streaming support + MongoDB **requires** your Hadoop distribution include the patches for the following issues:
+
+    * [HADOOP-1722 - Make streaming to handle non-utf8 byte array](https://issues.apache.org/jira/browse/HADOOP-1722)
+    * [HADOOP-5450 - Add support for application-specific typecodes to typed bytes](https://issues.apache.org/jira/browse/HADOOP-5450)
+    * [MAPREDUCE-764 - TypedBytesInput's readRaw() does not preserve custom type codes](https://issues.apache.org/jira/browse/MAPREDUCE-764)
+
+For the mainline Apache Hadoop distribution, these patches were merged for the 0.21.0 release.  We have verified as well that the [Cloudera](http://cloudera.com) distribution (while based on 0.20.x still) includes these patches in CDH3 Update 1; anecdotal evidence (which needs confirmation) indicates they may have been there since CDH2, and likely exist in CDH3 as well.
 
 Running Streaming:
   hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
