@@ -146,12 +146,15 @@ public class BSONWritable implements BSONObject, WritableComparable {
         BSONEncoder enc = new BSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
+        int sizePos = buf.getPosition();
         enc.putObject( _doc );
+        int x = buf.size();
         enc.done();
-        out.writeInt(buf.size());
+        log.trace("* Finishing writing core message, final length of '" + buf.size() + "' / '" + x + "'");
+        buf.writeInt(sizePos, buf.getPosition() - sizePos); // Include this header's length
         //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
         //to have a method signature that works with DataOutput
-        out.write( buf.toByteArray() );
+        buf.pipe( out );
     }
 
     /**
@@ -164,11 +167,35 @@ public class BSONWritable implements BSONObject, WritableComparable {
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
         int dataLen = in.readInt();
-        byte[] buf = new byte[dataLen];
-        in.readFully( buf );
-        dec.decode( buf, cb );
-        _doc = (BSONObject) cb.get();
-        log.info( "Decoded a BSON Object: " + _doc );
+        if (in instanceof InputStream) {
+            _doc = dec.readObject( (InputStream) in );
+            // Streaming (which uses InputStream) is acting weird serializing anything but string ID
+            _doc.put("_id", _doc.get("_id").toString() );
+/*            // TODO - Sort out Writables for serialization and the like?
+            Object v = _doc.get( "_id" );
+            // At least for streaming we have to break classes of _id down to Writable Instances.  This will be messy.
+            // TODO: Support every freaking possible ID Type?  Should we just wrap it in a Byte writable or something?
+            if (v instanceof Boolean) { // boolean
+                _doc.put( "_id", new BooleanWritable( (Boolean) v ) );
+            } else if (v instanceof Integer) { // int
+                _doc.put( "_id", new IntWritable( (Integer) v) );
+            } else if (v instanceof Long) {    // long
+                _doc.put( "_id", new LongWritable( (Long) v) );
+            } else if (v instanceof Float) {   // float
+                _doc.put( "_id", new FloatWritable( (Float) v ) );
+            } else if (v instanceof Double) {  // double
+                _doc.put( "_id", new DoubleWritable( (Double) v ) );
+            } else {
+                log.info("Can't decode primitive");
+            }*/
+        } else {
+            log.info("Expected DataLen: " + dataLen);
+            byte[] buf = new byte[dataLen];
+            in.readFully( buf );
+            dec.decode( buf, cb );
+            _doc = (BSONObject) cb.get();
+            log.info( "Decoded a BSON Object: " + _doc );
+        }
     }
 
     /**

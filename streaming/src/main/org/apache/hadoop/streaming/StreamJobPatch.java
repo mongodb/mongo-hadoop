@@ -2,6 +2,7 @@
 package org.apache.hadoop.streaming;
 
 import org.apache.commons.cli.*;
+import org.apache.commons.logging.*;
 
 import java.io.*;
 import java.net.*;
@@ -11,11 +12,17 @@ import java.util.regex.*;
 public class StreamJobPatch extends StreamJob {
     
     protected void processArguments() throws Exception {
-        setupOptions(); 
+        log.info("Setup Options'");
+        setupOptions();
+        log.info("PreProcess Args");
         preProcessArgs();
+        log.info("Parse Options");
         parseOpts();
+        log.info("Add InputSpecs");
         inputSpecs_.add("file:///");
+        log.info("Setup output_");
         output_ = "file:///";
+        log.info("Post Process Args");
         postProcessArgs();
     }
 
@@ -34,6 +41,9 @@ public class StreamJobPatch extends StreamJob {
     }
 
     protected void parseOpts() {
+        for ( String arg : argv_ ) {
+            log.info("Arg: '" + arg + "'");
+        }
         CommandLine cmdLine = null; 
         try{
           cmdLine = _parser.parse(_options, argv_, false);
@@ -117,6 +127,9 @@ public class StreamJobPatch extends StreamJob {
         // reducer could be NONE 
         addOption("reducer", "The streaming command to run", "cmd", 1, false); 
         addOption("jt", "Optional. Override JobTracker configuration", "<h:p>|local", 1, false);
+        addOption("additionalconfspec", "Optional.", "spec", 1, false);
+        addOption("inputformat", "Optional.", "spec", 1, false);
+        addOption("outputformat", "Optional.", "spec", 1, false);
         addOption("partitioner", "Optional.", "spec", 1, false);
         addOption("numReduceTasks", "Optional.", "spec",1, false );
         addOption("mapdebug", "Optional.", "spec", 1, false);
@@ -139,6 +152,7 @@ public class StreamJobPatch extends StreamJob {
     protected String _outputURI;
     protected CommandLineParser _parser = new BasicParser(); 
     protected Options _options = new Options();
+    private static final Log log = LogFactory.getLog(StreamJobPatch.class);
 }
 
 
