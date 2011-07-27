@@ -30,20 +30,28 @@ class BSONReducer(object):
 class KeyValueBSONReducer(BSONReducer):
     pass
 
+def default_reducer(data): 
+    print >> sys.stderr, "*** Invoking default reducer function, this is unoptimized for your data and may be very slow."
+
 class BSONReducerInput(BSONInput):
     """Wrapper to 'roll up' the reduce data down to just
     key and values, simplifying the streaming API as much
     as humanly possible."""
 
+
     # TODO - Combiner/KeyFunc
     def __init__(self, reducefunc):
         """ 
         reducer must be a function which takes a series of 
-        pairs of Key, Values to process
+        pairs of Key, Values to process and returns an iterable
+        of (key, value) tuples OR a dict with key in _id 
+        (recommended as a generator)
         """
         self.reducer = reducefunc
         super(BSONReducerInput, self).__init__()
             
+
+
     def iter_reduce(self):
         data = groupby(self._reads(), lambda doc: doc['_id'])
         data = ((key, (v for v in values)) for key, values in data)

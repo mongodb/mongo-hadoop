@@ -4,9 +4,17 @@ import sys
 
 from pymongo_hadoop import BSONReducerInput, KeyValueBSONOutput
 
+def reducer(data):
+    for key, values in data:
+        print >> sys.stderr, "Processing Key: %s" % key
+        _count = _sum = 0
+        for v in values:
+            _count += 1
+            _sum += v['bc10Year']
+        yield (key, _sum / _count)
+
 output = KeyValueBSONOutput()
-input  = BSONReducerInput()
+input  = BSONReducerInput(reducer)
 
-for entry in input:
-    print >> sys.stderr, "Value: %s" % entry
-
+        
+output.writes(input)
