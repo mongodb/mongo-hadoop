@@ -3,32 +3,46 @@ based upon the Dumbo module at
 https://github.com/klbostee/dumbo
 """
 from itertools import groupby
-from operator import itemgetter
-from input import KeyValueBSONInput, BSONInput
-import struct
+from input import BSONInput
+from output import BSONOutput
 
 import sys
 
-class BSONReducer(object):
-    def __init__(self, factory=None):
-        if factory:
-            self.factory = factory
-        
-    def factory(self):
-        """Processor factory used to consume reducer input (one per path on multiple outputs)
+import inspect # HACKY!
 
+class BSONReducer(object):
+    def __init__(self, factory=None, input_fh=None):
+        if factory:
+            # Try to figure out if they gave us a factory
+            # or a straight function
+            spec = inspect.getargspec(factory)
+            if len(spec.args) == 2:
+                self.factory = lambda: factory
+            elif len(spec.args) == 0:
+                self.factory = factory
+            else:
+                raise ValueError("Invalid Factory.  Must return a function expecting 2 arguments or be a function expecting 2 arguments.")
+            
+        if not input_fh:
+            self.input = BSONReducerInput(self)
+        else:
+            self.input = input_fh
+
+        self.output = BSONOutput()
+
+        self.output.writes(self.input)
+
+    def __call__(self, data):
+        for key, values in data:
+            yield self.factory()(key, values) 
+
+    def factory(self):
+        """Processor factory used to consume reducer input        
         Must return a callable (aka processor) that accepts two parameters
         "key" and "values", and returns an iterable of strings or None.
-
-        The processor may have a close() method that returns an iterable of
-        strings or None. This method is called when the last key-values pair
-        for a path is seen.
-
         """
-        return lambda key, values: values
+        return lambda key, values: {'values': [v for v in values]}
 
-class KeyValueBSONReducer(BSONReducer):
-    pass
 
 def default_reducer(data): 
     print >> sys.stderr, "*** Invoking default reducer function, this is unoptimized for your data and may be very slow."
@@ -59,10 +73,4 @@ class BSONReducerInput(BSONInput):
     
     __iter__ = iter_reduce
 
-class KeyValueBSONReducerInput(KeyValueBSONInput):
-    """Wrapper to 'roll up' the reduce data down to just
-    key and values, simplifying the streaming API as much
-    as humanly possible."""
-       
-    #__iter__ = reads = _reads
-    pass
+

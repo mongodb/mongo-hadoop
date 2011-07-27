@@ -51,7 +51,8 @@ class KeyValueBSONOutput(BSONOutput):
             if len(obj) != 2:
                 raise ValueError("Key/Value Tuples can only contain 2 elements.")
             if isinstance(obj[1], dict) and '_id' in obj[1]:
-                print >> sys.stderr, "WARNING: Value contains an '_id', which will be overwritten by the contents of the key in KeyValueBSONOutput Mode."
+                #print >> sys.stderr, "WARNING: Value contains an '_id', which will be overwritten by the contents of the key in KeyValueBSONOutput Mode."
+                pass
 
 
 
