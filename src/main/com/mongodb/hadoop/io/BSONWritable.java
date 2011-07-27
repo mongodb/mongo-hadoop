@@ -17,15 +17,19 @@
 
 package com.mongodb.hadoop.io;
 
-import java.io.*;
-import java.util.*;
-
+import com.mongodb.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.io.*;
 import org.bson.*;
 import org.bson.io.*;
+import org.bson.io.Bits;
 
-/** This is <em>not</em> reusable. */
+import java.io.*;
+import java.util.*;
+
+/**
+ * This is <em>not</em> reusable.
+ */
 
 @SuppressWarnings( "deprecation" )
 public class BSONWritable implements BSONObject, WritableComparable {
@@ -33,41 +37,42 @@ public class BSONWritable implements BSONObject, WritableComparable {
     /**
      * Constructs a new instance.
      */
-    public BSONWritable() {
+    public BSONWritable(){
         _doc = new BasicBSONObject();
     }
 
     /**
      * Copy constructor, copies data from an existing BSONWritable
-     * 
-     * @param other
-     *            The BSONWritable to copy from
+     *
+     * @param other The BSONWritable to copy from
      */
-    public BSONWritable(BSONWritable other) {
+    public BSONWritable( BSONWritable other ){
         this();
         copy( other );
     }
 
     /**
      * Constructs a new instance around an existing BSONObject
+     *
+     * @param doc
      */
-    public BSONWritable(BSONObject doc) {
+    public BSONWritable( BSONObject doc ){
         this();
         putAll( doc );
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * @see BSONObject#put(String,Object)
+     *
+     * @see BSONObject#put(String , Object)
      */
-    public Object put( String key , Object value ){
+    public Object put( String key, Object value ){
         return _doc.put( key, value );
     }
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#putAll(BSONObject)
      */
     public void putAll( BSONObject otherDoc ){
@@ -76,7 +81,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#putAll(Map)
      */
     public void putAll( Map otherMap ){
@@ -85,7 +90,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#get(String)
      */
     public Object get( String key ){
@@ -94,7 +99,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#toMap()
      */
     public Map toMap(){
@@ -103,7 +108,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#removeField(String)
      */
     public Object removeField( String key ){
@@ -112,7 +117,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#containsKey(String)
      */
     public boolean containsKey( String key ){
@@ -121,7 +126,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#containsField(String)
      */
     public boolean containsField( String fieldName ){
@@ -130,7 +135,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see BSONObject#keySet()
      */
     public Set<java.lang.String> keySet(){
@@ -139,63 +144,54 @@ public class BSONWritable implements BSONObject, WritableComparable {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see Writable#write(DataOutput)
      */
     public void write( DataOutput out ) throws IOException{
+
         BSONEncoder enc = new BSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
-        int sizePos = buf.getPosition();
         enc.putObject( _doc );
-        int x = buf.size();
         enc.done();
-        log.trace("* Finishing writing core message, final length of '" + buf.size() + "' / '" + x + "'");
-        buf.writeInt(sizePos, buf.getPosition() - sizePos); // Include this header's length
         //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
         //to have a method signature that works with DataOutput
+        /*        dumpBytes( buf );*/
         buf.pipe( out );
     }
 
+
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see Writable#readFields(DataInput)
      */
     public void readFields( DataInput in ) throws IOException{
         BSONDecoder dec = new BSONDecoder();
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
-        int dataLen = in.readInt();
-        if (in instanceof InputStream) {
-            _doc = dec.readObject( (InputStream) in );
-            // Streaming (which uses InputStream) is acting weird serializing anything but string ID
-            _doc.put("_id", _doc.get("_id").toString() );
-/*            // TODO - Sort out Writables for serialization and the like?
-            Object v = _doc.get( "_id" );
-            // At least for streaming we have to break classes of _id down to Writable Instances.  This will be messy.
-            // TODO: Support every freaking possible ID Type?  Should we just wrap it in a Byte writable or something?
-            if (v instanceof Boolean) { // boolean
-                _doc.put( "_id", new BooleanWritable( (Boolean) v ) );
-            } else if (v instanceof Integer) { // int
-                _doc.put( "_id", new IntWritable( (Integer) v) );
-            } else if (v instanceof Long) {    // long
-                _doc.put( "_id", new LongWritable( (Long) v) );
-            } else if (v instanceof Float) {   // float
-                _doc.put( "_id", new FloatWritable( (Float) v ) );
-            } else if (v instanceof Double) {  // double
-                _doc.put( "_id", new DoubleWritable( (Double) v ) );
-            } else {
-                log.info("Can't decode primitive");
-            }*/
-        } else {
-            log.info("Expected DataLen: " + dataLen);
-            byte[] buf = new byte[dataLen];
+        byte[] l = new byte[4];
+        byte[] data = new byte[0];
+        try {
+            in.readFully( l );
+            int dataLen = Bits.readInt( l );
+            log.debug( "*** Expected DataLen: " + dataLen );
+            byte[] buf = new byte[dataLen - 4];
             in.readFully( buf );
-            dec.decode( buf, cb );
+            data = new byte[dataLen + 4];
+            System.arraycopy( l, 0, data, 0, 4 );
+            System.arraycopy( buf, 0, data, 4, dataLen - 4 );
+            dec.decode( data, cb );
             _doc = (BSONObject) cb.get();
-            log.info( "Decoded a BSON Object: " + _doc );
+            log.trace( "Decoded a BSON Object: " + _doc );
         }
+        catch ( Exception e ) {
+            /* If we can't read another length it's not an error, just return quietly. */
+            // TODO - Figure out how to gracefully mark this as an empty
+            log.info( "No Length Header available." + e );
+            _doc = new BasicDBObject();
+        }
+
     }
 
     /**
@@ -213,9 +209,13 @@ public class BSONWritable implements BSONObject, WritableComparable {
         return str;
     }
 
-    /** Used by child copy constructors. */
+    /**
+     * Used by child copy constructors.
+     *
+     * @param other
+     */
     protected synchronized void copy( Writable other ){
-        if ( other != null ) {
+        if ( other != null ){
             try {
                 DataOutputBuffer out = new DataOutputBuffer();
                 other.write( out );
@@ -229,39 +229,44 @@ public class BSONWritable implements BSONObject, WritableComparable {
             }
 
         }
-        else {
+        else{
             throw new IllegalArgumentException( "source map cannot be null" );
         }
     }
 
-    public static class Comparator extends WritableComparator {
-        public Comparator() {
-            super( BSONWritable.class );
-        }
 
-        public int compare( WritableComparable a , WritableComparable b ){
-
-            if ( a instanceof BSONWritable && b instanceof BSONWritable ) {
-                return ( (BSONWritable) a )._doc.toString().compareTo( ( (BSONWritable) b )._doc.toString() );
-            }
-            else {
-                return -1;
-            }
-        }
-
+    static{ // register this comparator
+        WritableComparator.define( BSONWritable.class, new BSONComparator() );
     }
 
-    static { // register this comparator
-        WritableComparator.define( BSONWritable.class, new Comparator() );
-    }
-
-    @Override
     public int compareTo( Object o ){
-        return new Comparator().compare( this, o );
+        log.info( " ************ Compare: '" + this + "' to '" + o + "'" );
+        return new BSONComparator().compare( this, o );
+    }
+
+    private static final byte[] HEX_CHAR = new byte[] {
+            '0' , '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8' ,
+            '9' , 'A' , 'B' , 'C' , 'D' , 'E' , 'F'
+    };
+
+    protected static void dumpBytes( BasicOutputBuffer buf ){// Temp debug output
+        dumpBytes( buf.toByteArray() );
+    }
+
+    protected static void dumpBytes( byte[] buffer ){
+        StringBuffer sb = new StringBuffer();
+
+        for ( byte b : buffer ){
+            sb.append( "0x" ).append( (char) ( HEX_CHAR[( b & 0x00F0 ) >> 4] ) ).append(
+                    (char) ( HEX_CHAR[b & 0x000F] ) ).append( " " );
+        }
+
+        log.info( "Byte Dump: " + sb.toString() );
     }
 
     protected BSONObject _doc;
 
     private static final Log log = LogFactory.getLog( BSONWritable.class );
+
 
 }
