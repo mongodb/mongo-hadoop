@@ -1,7 +1,9 @@
 package com.mongodb.hadoop.streaming.io;
 
+import com.mongodb.*;
 import com.mongodb.hadoop.io.BSONWritable;
-import org.apache.hadoop.io.ObjectWritable;
+import org.apache.commons.logging.*;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.streaming.PipeMapRed;
 import org.apache.hadoop.streaming.io.OutputReader;
 
@@ -9,7 +11,7 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 
-public class MongoOutputReader extends OutputReader<ObjectWritable, BSONWritable> {
+public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> {
 
     @Override
     public void initialize(PipeMapRed pipeMapRed) throws IOException {
@@ -20,15 +22,21 @@ public class MongoOutputReader extends OutputReader<ObjectWritable, BSONWritable
     @Override
     public boolean readKeyValue() throws IOException {
         // Actually, just read the value as the key is embedded.
-        bson = new BSONWritable();
-        bson.readFields( in );
-        // If successful we'll have an _id field
-        return bson.containsKey("_id");
+        try {
+            bson = new BSONWritable();
+            bson.readFields( in );
+            // If successful we'll have an _id field
+            return bson.containsKey("_id");
+        } catch ( IndexOutOfBoundsException ioob ) {
+            // No more data
+            log.info("No more data; no key/value pair read.");
+            return false;
+        }
     }
 
     @Override
-    public ObjectWritable getCurrentKey() throws IOException {
-        return new ObjectWritable(bson.get("_id"));
+    public BSONWritable getCurrentKey() throws IOException {
+        return new BSONWritable(new BasicDBObject(  "_id", bson.get("_id")));
     }
 
     @Override
@@ -43,4 +51,5 @@ public class MongoOutputReader extends OutputReader<ObjectWritable, BSONWritable
 
     private DataInput in;
     private BSONWritable bson;
+    private static final Log log = LogFactory.getLog( MongoOutputReader.class );
 }

@@ -28,7 +28,7 @@ import com.mongodb.hadoop.io.*;
 
 /** @deprecated functionality has been consolidated into {@link com.mongodb.hadoop.input.MongoRecordReader} */
 @SuppressWarnings("deprecation")
-public class MongoRecordReader implements RecordReader<ObjectWritable, BSONWritable> {
+public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
     public MongoRecordReader(MongoInputSplit split) {
         _split = split;
@@ -38,8 +38,8 @@ public class MongoRecordReader implements RecordReader<ObjectWritable, BSONWrita
     public void close() {
     }
 
-    public ObjectWritable createKey() {
-        return new ObjectWritable();
+    public BSONWritable createKey() {
+        return new BSONWritable();
     }
 
 
@@ -47,8 +47,8 @@ public class MongoRecordReader implements RecordReader<ObjectWritable, BSONWrita
         return new BSONWritable();
     }
 
-    public Object getCurrentKey() {
-        return _cur.get("_id");
+    public BSONObject getCurrentKey() {
+        return new BasicDBObject(  "_id", _cur.get("_id"));
     }
 
     public BSONObject getCurrentValue() {
@@ -75,10 +75,10 @@ public class MongoRecordReader implements RecordReader<ObjectWritable, BSONWrita
         return true;
     }
 
-    public boolean next(ObjectWritable key, BSONWritable value) {
+    public boolean next(BSONWritable key, BSONWritable value) {
         if (nextKeyValue()) {
             log.debug("Had another k/v");
-            key.set(getCurrentKey());
+            key.put("_id", getCurrentKey().get( "_id" ));
             value.putAll(getCurrentValue());
             //log.info("Key: " + key + " Value: " + value);
             return true;

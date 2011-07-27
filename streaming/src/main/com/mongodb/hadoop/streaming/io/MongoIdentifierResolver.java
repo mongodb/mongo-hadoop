@@ -3,7 +3,6 @@ package com.mongodb.hadoop.streaming.io;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.mongodb.hadoop.io.BSONWritable;
-import org.apache.hadoop.io.ObjectWritable;
 import org.apache.hadoop.streaming.io.IdentifierResolver;
 
 public class MongoIdentifierResolver extends IdentifierResolver {
@@ -15,7 +14,7 @@ public class MongoIdentifierResolver extends IdentifierResolver {
             identifier.equalsIgnoreCase(BSON_ID)) {
             setInputWriterClass(MongoInputWriter.class);
             setOutputReaderClass(MongoOutputReader.class);
-            setOutputKeyClass(ObjectWritable.class);
+            setOutputKeyClass(BSONWritable.class);
             setOutputValueClass(BSONWritable.class);
         }
         else super.resolve(identifier);
