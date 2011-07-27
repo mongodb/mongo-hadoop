@@ -1,3 +1,4 @@
+*.pyc
 *.class
 *~
 build

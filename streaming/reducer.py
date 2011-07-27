@@ -2,8 +2,11 @@
 
 import sys
 
-from operator import itemgetter
+from pymongo_hadoop import BSONReducerInput, KeyValueBSONOutput
 
-for line in sys.stdin:
-    print >> sys.stderr, type(line)
+output = KeyValueBSONOutput()
+input  = BSONReducerInput()
+
+for entry in input:
+    print >> sys.stderr, "Value: %s" % entry
 
