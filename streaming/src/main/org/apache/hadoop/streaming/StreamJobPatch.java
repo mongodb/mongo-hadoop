@@ -19,9 +19,9 @@ public class StreamJobPatch extends StreamJob {
         log.info("Parse Options");
         parseOpts();
         log.info("Add InputSpecs");
-        inputSpecs_.add("file:///");
+        inputSpecs_.add("file://");
         log.info("Setup output_");
-        output_ = "file:///";
+        output_ = "file:///tmp";
         log.info("Post Process Args");
         postProcessArgs();
     }
