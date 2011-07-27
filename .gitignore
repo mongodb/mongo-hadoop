@@ -5,6 +5,10 @@ build
 .DS*
 *#*
 *~
+.idea/*.*
+.idea/libraries/*.xml
+.iml
+.ipr
 lib
 mongo-hadoop.jar
 examples/*/*.jar
