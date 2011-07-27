@@ -13,3 +13,6 @@ lib
 mongo-hadoop.jar
 examples/*/*.jar
 WDI_GDF_Data.csv
+.idea
+.idea/libraries/lib2.xml
+.idea/workspace.xml
