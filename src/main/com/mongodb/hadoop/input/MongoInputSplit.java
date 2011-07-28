@@ -22,7 +22,6 @@ import com.mongodb.DBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoURI;
 import com.mongodb.util.JSON;
-import com.mongodb.MonkeyPatchedMongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 
 // Commons
@@ -71,7 +70,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public void readFields( DataInput in ) throws IOException {
-        _mongoURI = new MonkeyPatchedMongoURI( in.readUTF() );
+        _mongoURI = new MongoURI( in.readUTF() );
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
         _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
         _sortSpec = (DBObject) JSON.parse( in.readUTF() );

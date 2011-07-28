@@ -202,7 +202,7 @@ public class MongoConfigUtil {
     public static MongoURI getMongoURI( Configuration conf , String key ){
         final String raw = conf.get( key );
         if ( raw != null && !raw.trim().isEmpty() )
-            return new MonkeyPatchedMongoURI( raw );
+            return new MongoURI( raw );
         else
             return null;
     }
@@ -248,7 +248,7 @@ public class MongoConfigUtil {
     public static void setMongoURIString( Configuration conf , String key , String value ){
 
         try {
-            final MongoURI uri = new MonkeyPatchedMongoURI( value );
+            final MongoURI uri = new MongoURI( value );
             setMongoURI( conf, key, uri );
         }
         catch ( final Exception e ) {
