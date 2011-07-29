@@ -17,8 +17,6 @@
 
 package com.mongodb.hadoop.input;
 
-// Mongo
-
 import com.mongodb.*;
 import com.mongodb.hadoop.util.*;
 import com.mongodb.util.*;
@@ -29,12 +27,28 @@ import org.apache.hadoop.mapreduce.*;
 import java.io.*;
 import java.util.*;
 
-// Commons
-// Hadoop
-// Java
-
 public class MongoInputSplit extends InputSplit implements Writable {
 
+    public MongoInputSplit( MongoURI inputURI,
+                            DBObject query,
+                            DBObject fields,
+                            DBObject sort,
+                            int limit,
+                            int skip ){
+        if ( LOG.isDebugEnabled() ){
+            LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
+                       + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
+                       + sort + "', limit: " + limit + ", skip: " + skip + " ." );
+        }
+
+        _mongoURI = inputURI;
+        _querySpec = query;
+        _fieldSpec = fields;
+        _sortSpec = sort;
+        _limit = limit;
+        _skip = skip;
+        getCursor();
+    }
     /**
      * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
      * in the split instead.
@@ -94,26 +108,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _cursor;
     }
 
-    public MongoInputSplit( MongoURI inputURI,
-                            DBObject query,
-                            DBObject fields,
-                            DBObject sort,
-                            int limit,
-                            int skip ){
-        if ( LOG.isDebugEnabled() ){
-            LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
-                       + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
-                       + sort + "', limit: " + limit + ", skip: " + skip + " ." );
-        }
-
-        _mongoURI = inputURI;
-        _querySpec = query;
-        _fieldSpec = fields;
-        _sortSpec = sort;
-        _limit = limit;
-        _skip = skip;
-        getCursor();
-    }
 
     @Override
     public String toString(){
