@@ -101,12 +101,16 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                             splits = getSplitsUsingChunks( conf, uri, mongo, useShards, slaveOk );
                         else if ( useShards )
                             splits = getSplitsUsingShards( conf, uri, mongo, slaveOk );
+                        if (splits == null)
+                            LOG.warn( "Failed to create/calculate Input Splits from Shard Chunks." );
+                    } else {
+                        LOG.info("Collection is not sharded, will process as a single Input Split.");
+                        LOG.debug("Sharding Stats Dump: " + stats);
                     }
                 }
                 finally {
                     if ( mongo != null )
                         mongo.close();
-
                     mongo = null;
                 }
 
@@ -249,8 +253,9 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
         try {
             int numChunks = 0;
+            final int numExpectedChunks = cur.size();
 
-            final List<InputSplit> splits = new ArrayList<InputSplit>( cur.size() );
+            final List<InputSplit> splits = new ArrayList<InputSplit>( numExpectedChunks );
             while ( cur.hasNext() ){
                 numChunks++;
                 final BasicDBObject row = (BasicDBObject) cur.next();
@@ -276,7 +281,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 shardKeyQuery.put( "$query", originalQuery );
 
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug( "[" + numChunks + "/" + splits.size() + "] new query is: " + shardKeyQuery );
+                    LOG.debug( "[" + numChunks + "/" + numExpectedChunks + "] new query is: " + shardKeyQuery );
                 }
 
                 MongoURI inputURI = conf.getInputURI();

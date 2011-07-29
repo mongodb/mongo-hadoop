@@ -119,6 +119,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
         getCursor();
     }
 
+    @Override
+    public String toString() {
+        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + '}';
+    }
+
     public MongoInputSplit() { }
 
     private MongoURI _mongoURI;
