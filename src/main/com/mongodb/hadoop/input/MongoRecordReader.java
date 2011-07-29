@@ -64,7 +64,6 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
     @Override
     public void initialize( InputSplit split, TaskAttemptContext context ){
-        _total = _cursor.size();
         _total = 1.0f;
     }
 
