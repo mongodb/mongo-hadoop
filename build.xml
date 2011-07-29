@@ -102,7 +102,6 @@ limitations under the License.
         <delete file="examples/wordcount_split_test/*.jar"/>
         <delete file="examples/wordcount_split_test/*.class"/>
         <delete dir="examples/wordcount_split_test/build"/>
-        <delete dir="examples/ip_location/build" />
         <delete file="mongo-hadoop.jar"/>
         <delete file="examples/world_development_indicators/resources/WDI_GDF_Data.csv"/>
     </target>
@@ -220,21 +219,6 @@ limitations under the License.
 
         <jar destfile="examples/snmp/snmp.jar"><fileset dir="examples/snmp/build" includes="*.class" /></jar>
 
-        <mkdir dir="examples/ip_location/build" />
-
-        <javac
-            srcdir="examples/ip_location/src"
-            destdir="examples/ip_location/build"
-            includeantruntime="false"
-            optimize="off"
-            deprecation="off"
-            source="1.5"
-            encoding="ISO-8859-1"
-            debug="on">
-            <classpath refid="classpath"/>
-        </javac>
-
-        <jar destfile="examples/ip_location/ip-loc.jar"><fileset dir="examples/ip_location/build" includes="*.class" /></jar>
 
         <javac
             srcdir="examples/treasury_yield/src"

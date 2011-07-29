@@ -67,7 +67,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
     public void write(K key, V value) throws IOException {
         final DBObject o = new BasicDBObject();
 
-        log.trace( "Writing out data {k: " + key + ", value:  " + value);
+        if (log.isTraceEnabled()) log.trace( "Writing out data {k: " + key + ", value:  " + value);
         if (key instanceof MongoOutput) {
             ((MongoOutput) key).appendAsKey(o);
         }

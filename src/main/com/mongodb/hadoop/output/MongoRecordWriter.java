@@ -72,21 +72,16 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     }
 
     public void write( K key, V value ) throws IOException{
-        boolean update = false;
-        DBObject query = null;
-        //This is very hackish
         final DBObject o = new BasicDBObject();
 
-        if ( !update ){
-            if ( key instanceof MongoOutput ){
-                ( (MongoOutput) key ).appendAsKey( o );
-            }
-            else if ( key instanceof BSONObject ){
-                o.put( "_id", key );
-            }
-            else{
-                o.put( "_id", toBSON( key ) );
-            }
+        if ( key instanceof MongoOutput ){
+            ( (MongoOutput) key ).appendAsKey( o );
+        }
+        else if ( key instanceof BSONObject ){
+            o.put( "_id", key );
+        }
+        else{
+            o.put( "_id", toBSON( key ) );
         }
 
         if ( value instanceof MongoOutput ){
@@ -100,11 +95,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
 
         try {
-            if ( update ){
-                _collection.update( query, o );
-            }
-            else
-                _collection.save( o );
+            _collection.save( o );
         }
         catch ( final MongoException e ) {
             throw new IOException( "can't write to mongo", e );

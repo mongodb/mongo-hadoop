@@ -23,18 +23,18 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
-/**
- * @deprecated functionality has been consolidated into {@link com.mongodb.hadoop.input.MongoRecordReader}
- */
+
 @SuppressWarnings( "deprecation" )
 public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
     public MongoRecordReader( MongoInputSplit split ){
-        _split = split;
-        _cursor = _split.getCursor();
+        _cursor = split.getCursor();
     }
 
+    @Override
     public void close(){
+        if ( _cursor != null )
+            _cursor.close();
     }
 
     public BSONWritable createKey(){
@@ -47,31 +47,48 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     }
 
     public BSONObject getCurrentKey(){
-        return new BasicDBObject( "_id", _cur.get( "_id" ) );
+        return new BasicDBObject( "_id", _current.get( "_id" ) );
     }
 
     public BSONObject getCurrentValue(){
-        return _cur;
+        return _current;
     }
 
     public float getProgress(){
-        return _seen / _total;
+        try {
+            if ( _cursor.hasNext() ){
+                return 0.0f;
+            }
+            else{
+                return 1.0f;
+            }
+        }
+        catch ( MongoException e ) {
+            return 1.0f;
+        }
     }
 
     public long getPos(){
-        return new Float( _seen ).longValue();
+        return 0; // no progress to be reported, just working on it
     }
 
     public void initialize( InputSplit split, TaskAttemptContext context ){
-        if ( split != _split ) throw new IllegalStateException( "split != _split ??? " );
-        _total = _cursor.size();
+        _total = 1.0f;
     }
 
     public boolean nextKeyValue(){
-        if ( !_cursor.hasNext() ) return false;
-        _cur = _cursor.next();
-        _seen++;
-        return true;
+        try {
+            if ( !_cursor.hasNext() )
+                return false;
+
+            _current = _cursor.next();
+            _seen++;
+
+            return true;
+        }
+        catch ( MongoException e ) {
+            return false;
+        }
     }
 
     public boolean next( BSONWritable key, BSONWritable value ){
@@ -79,7 +96,6 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
             log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
             value.putAll( getCurrentValue() );
-            //log.info("Key: " + key + " Value: " + value);
             return true;
         }
         else{
@@ -88,13 +104,10 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         }
     }
 
-    final MongoInputSplit _split;
-    final DBCursor _cursor;
-
-    BSONObject _cur;
-    float _seen = 0;
-    float _total;
+    private final DBCursor _cursor;
+    private BSONObject _current;
+    private float _seen = 0;
+    private float _total;
 
     private static final Log log = LogFactory.getLog( MongoRecordReader.class );
-
 }

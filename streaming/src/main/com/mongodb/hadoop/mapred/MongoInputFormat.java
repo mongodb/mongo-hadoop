@@ -19,10 +19,18 @@ package com.mongodb.hadoop.mapred;
 
 import java.util.*;
 
+import com.mongodb.hadoop.input.*;
+import com.mongodb.hadoop.mapred.input.MongoInputSplit;
+import com.mongodb.hadoop.mapred.input.MongoRecordReader;
+import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.InputFormat;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
 import com.mongodb.hadoop.MongoConfig;
@@ -40,32 +48,19 @@ public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable>
 
         final MongoInputSplit mis = (MongoInputSplit) split;
 
-        return (RecordReader<BSONWritable, BSONWritable>) new MongoRecordReader(mis);
+        return new MongoRecordReader(mis);
     }
 
     public InputSplit[] getSplits(JobConf job, int numSplits) {
         final MongoConfig conf = new MongoConfig(job);
-
-        if (conf.getLimit() > 0 || conf.getSkip() > 0)
-        /**
-         * TODO - If they specify skip or limit we create only one input
-         * split
-         */
-            throw new IllegalArgumentException("skip() and limit() is not currently supported do to input split "
-                                               + "issues.");
-        else {
-            /**
-             * On the jobclient side we want *ONLY* the min and max ids for each
-             * split; Actual querying will be done on the individual mappers.
-             */
-            /*final int splitSize = conf.getSplitSize();*/
-            // For first release, no splits, no sharding
-            InputSplit[] splits =
-                    {(InputSplit) new MongoInputSplit(conf.getInputURI(), conf.getQuery(), conf.getFields(),
-                                                      conf.getSort(), conf.getLimit(), conf.getSkip())};
-            log.info("Calculated " + splits.length + " split objects.");
-            return splits;
+        // TODO - Support allowing specification of numSplits to affect our ops?
+        final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
+        // TODO - Make me less egregiously inefficient.
+        InputSplit[] classicSplits = new InputSplit[splits.size()];
+        for ( int i = 0; i < splits.size(); i++ ) {
+            classicSplits[i] = new MongoInputSplit( (com.mongodb.hadoop.input.MongoInputSplit) splits.get( i ) );
         }
+        return classicSplits;
     }
 
     public boolean verifyConfiguration(Configuration conf) {

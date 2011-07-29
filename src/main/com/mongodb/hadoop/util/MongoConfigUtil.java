@@ -382,4 +382,39 @@ public class MongoConfigUtil {
         conf.setInt( INPUT_SPLIT_SIZE, value );
     }
 
+    /**
+     * if TRUE,
+     * Splits will be read by connecting to the individual shard servers,
+     *  however this really isn't safe unless you know what you're doing.
+     *  ( issue has to do with chunks moving / relocating during balancing phases)
+     * @return
+     */
+    public static boolean canReadSplitsFromShards( Configuration conf ){
+        return conf.getBoolean( SPLITS_USE_SHARDS, false );
+    }
+
+    public static void setReadSplitsFromShards( Configuration conf, boolean value ){
+        conf.setBoolean( SPLITS_USE_SHARDS, value );
+    }
+
+    /**
+     * If sharding is enabled,
+     * Use the sharding configured chunks to split up data.
+     */
+    public static boolean isShardChunkedSplittingEnabled( Configuration conf ) {
+        return conf.getBoolean( SPLITS_USE_CHUNKS, true );
+    }
+
+    public static void setShardChunkSplittingEnabled( Configuration conf, boolean value) {
+        conf.setBoolean( SPLITS_USE_CHUNKS, value );
+    }
+
+    public static boolean canReadSplitsFromSecondary( Configuration conf ) {
+        return conf.getBoolean( SPLITS_SLAVE_OK, false );
+    }
+
+    public static void setReadSplitsFromSecondary( Configuration conf, boolean value ) {
+        conf.getBoolean( SPLITS_SLAVE_OK, value );
+    }
+
 }

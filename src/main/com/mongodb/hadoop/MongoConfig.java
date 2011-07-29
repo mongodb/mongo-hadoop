@@ -276,6 +276,42 @@ public class MongoConfig {
         MongoConfigUtil.setSplitSize( _conf, value );
     }
 
+    /**
+     * if TRUE,
+     * Splits will be read by connecting to the individual shard servers,
+     *  however this really isn't safe unless you know what you're doing.
+     *  ( issue has to do with chunks moving / relocating during balancing phases)
+     * @return
+     */
+   public boolean canReadSplitsFromShards() {
+        return MongoConfigUtil.canReadSplitsFromShards( _conf );
+    }
+
+    public void setReadSplitsFromShards( boolean value ){
+        MongoConfigUtil.setReadSplitsFromShards( _conf, value );
+    }
+
+    /**
+     * If sharding is enabled,
+     * Use the sharding configured chunks to split up data.
+     */
+    public boolean isShardChunkedSplittingEnabled() {
+        return MongoConfigUtil.isShardChunkedSplittingEnabled( _conf );
+    }
+
+    public void setShardChunkSplittingEnabled( boolean value) {
+        MongoConfigUtil.setShardChunkSplittingEnabled( _conf, value );
+    }
+
+    public boolean canReadSplitsFromSecondary() {
+        return MongoConfigUtil.canReadSplitsFromSecondary( _conf );
+    }
+
+    public void setReadSplitsFromSecondary( boolean value ) {
+        MongoConfigUtil.setReadSplitsFromSecondary( _conf, value );
+    }
+
+
     final Configuration _conf;
 
     private static final Log LOG = LogFactory.getLog( MongoConfig.class );

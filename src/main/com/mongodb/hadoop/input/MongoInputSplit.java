@@ -117,6 +117,31 @@ public class MongoInputSplit extends InputSplit implements Writable {
     public MongoInputSplit(){ }
 
     private MongoURI _mongoURI;
+
+    public MongoURI getMongoURI(){
+        return _mongoURI;
+    }
+
+    public DBObject getQuerySpec(){
+        return _querySpec;
+    }
+
+    public DBObject getFieldSpec(){
+        return _fieldSpec;
+    }
+
+    public DBObject getSortSpec(){
+        return _sortSpec;
+    }
+
+    public int getLimit(){
+        return _limit;
+    }
+
+    public int getSkip(){
+        return _skip;
+    }
+
     private DBObject _querySpec;
     private DBObject _fieldSpec;
     private DBObject _sortSpec;
