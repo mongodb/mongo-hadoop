@@ -16,9 +16,10 @@
 
 package com.mongodb.hadoop.pig;
 
-import java.io.*;
-import java.util.*;
-
+import com.mongodb.*;
+import com.mongodb.hadoop.*;
+import com.mongodb.hadoop.output.*;
+import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
@@ -26,11 +27,8 @@ import org.apache.pig.*;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.util.*;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.*;
-import com.mongodb.hadoop.output.*;
-
-import com.mongodb.hadoop.util.MongoConfigUtil;
+import java.io.*;
+import java.util.*;
 
 public class MongoStorage extends StoreFunc implements StoreMetadata {
     private static final Log log = LogFactory.getLog( MongoStorage.class );
@@ -38,17 +36,18 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     static final String PIG_OUTPUT_SCHEMA = "mongo.pig.output.schema";
     static final String PIG_OUTPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.output.schema.udf_context";
 
-    public MongoStorage() { }
+    public MongoStorage(){ }
 
 
     public void checkSchema( ResourceSchema schema ) throws IOException{
-        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
+        final Properties properties =
+                UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
         properties.setProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT, parseSchema( schema ) );
     }
 
     public String parseSchema( ResourceSchema schema ){
         final StringBuilder fields = new StringBuilder();
-        for ( final String field : schema.fieldNames() ) {
+        for ( final String field : schema.fieldNames() ){
             fields.append( field );
             fields.append( "," );
         }
@@ -56,12 +55,12 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
 
-    public void storeSchema( ResourceSchema schema , String location , Job job ){
+    public void storeSchema( ResourceSchema schema, String location, Job job ){
         // not implemented
     }
 
 
-    public void storeStatistics( ResourceStatistics stats , String location , Job job ){
+    public void storeStatistics( ResourceStatistics stats, String location, Job job ){
         // not implemented
     }
 
@@ -71,7 +70,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         final List<String> schema = Arrays.asList( config.get( PIG_OUTPUT_SCHEMA ).split( "," ) );
         log.info( "Stored Schema: " + schema );
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
-        for ( int i = 0; i < tuple.size(); i++ ) {
+        for ( int i = 0; i < tuple.size(); i++ ){
             log.info( "I: " + i + " tuple: " + tuple );
             builder.add( schema.get( i ), tuple.get( i ) );
         }
@@ -94,20 +93,22 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
 
-    public String relToAbsPathForStoreLocation( String location , org.apache.hadoop.fs.Path curDir ) throws IOException{
+    public String relToAbsPathForStoreLocation( String location, org.apache.hadoop.fs.Path curDir ) throws IOException{
         // Don't convert anything - override to keep base from messing with URI
         log.info( "Converting path: " + location + "(curDir: " + curDir + ")" );
         return location;
     }
 
 
-    public void setStoreLocation( String location , Job job ) throws IOException{
+    public void setStoreLocation( String location, Job job ) throws IOException{
         final Configuration config = job.getConfiguration();
         log.info( "Store Location Config: " + config + " For URI: " + location );
         if ( !location.startsWith( "mongodb://" ) )
-            throw new IllegalArgumentException( "Invalid URI Format.  URIs must begin with a mongodb:// protocol string." );
-        MongoConfigUtil.setOutputURI(config, location);
-        final Properties properties = UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
+            throw new IllegalArgumentException(
+                    "Invalid URI Format.  URIs must begin with a mongodb:// protocol string." );
+        MongoConfigUtil.setOutputURI( config, location );
+        final Properties properties =
+                UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
         config.set( PIG_OUTPUT_SCHEMA, properties.getProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT ) );
     }
 

@@ -17,17 +17,14 @@
 package com.mongodb.hadoop.input;
 
 // Mongo
+
 import com.mongodb.*;
-import org.bson.BSONObject;
+import org.apache.commons.logging.*;
+import org.apache.hadoop.mapreduce.*;
+import org.bson.*;
 
 // Hadoop
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-
 // Commons
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
@@ -38,35 +35,37 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     }
 
     @Override
-    public Object getCurrentKey() {
+    public Object getCurrentKey(){
         return _current.get( "_id" );
     }
 
     @Override
-    public BSONObject getCurrentValue() {
+    public BSONObject getCurrentValue(){
         return _current;
     }
 
-    public float getProgress() {
+    public float getProgress(){
         try {
-            if (_cursor.hasNext()) {
+            if ( _cursor.hasNext() ){
                 return 0.0f;
-            } else {
+            }
+            else{
                 return 1.0f;
             }
-        } catch (MongoException e) {
+        }
+        catch ( MongoException e ) {
             return 1.0f;
         }
     }
 
     @Override
-    public void initialize( InputSplit split , TaskAttemptContext context ) {
+    public void initialize( InputSplit split, TaskAttemptContext context ){
         _total = _cursor.size();
         _total = 1.0f;
     }
 
     @Override
-    public boolean nextKeyValue() {
+    public boolean nextKeyValue(){
         try {
             if ( !_cursor.hasNext() )
                 return false;
@@ -75,12 +74,13 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
             _seen++;
 
             return true;
-        } catch (MongoException e) {
+        }
+        catch ( MongoException e ) {
             return false;
         }
     }
 
-    public MongoRecordReader(MongoInputSplit split) {
+    public MongoRecordReader( MongoInputSplit split ){
         _cursor = split.getCursor();
     }
 

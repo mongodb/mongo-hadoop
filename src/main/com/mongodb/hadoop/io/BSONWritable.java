@@ -171,13 +171,13 @@ public class BSONWritable implements BSONObject, WritableComparable {
         try {
             in.readFully( l );
             int dataLen = Bits.readInt( l );
-            if (log.isDebugEnabled()) log.debug( "*** Expected DataLen: " + dataLen );
+            if ( log.isDebugEnabled() ) log.debug( "*** Expected DataLen: " + dataLen );
             byte[] data = new byte[dataLen + 4];
             System.arraycopy( l, 0, data, 0, 4 );
-            in.readFully( data, 4, dataLen -4 );
+            in.readFully( data, 4, dataLen - 4 );
             dec.decode( data, cb );
             _doc = (BSONObject) cb.get();
-            if (log.isTraceEnabled()) log.trace( "Decoded a BSON Object: " + _doc );
+            if ( log.isTraceEnabled() ) log.trace( "Decoded a BSON Object: " + _doc );
         }
         catch ( Exception e ) {
             /* If we can't read another length it's not an error, just return quietly. */
@@ -234,7 +234,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
     }
 
     public int compareTo( Object o ){
-        if (log.isTraceEnabled()) log.trace( " ************ Compare: '" + this + "' to '" + o + "'" );
+        if ( log.isTraceEnabled() ) log.trace( " ************ Compare: '" + this + "' to '" + o + "'" );
         return new BSONComparator().compare( this, o );
     }
 
@@ -248,7 +248,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
     }
 
     protected static void dumpBytes( byte[] buffer ){
-        StringBuilder sb = new StringBuilder(2 + (3 * buffer.length));
+        StringBuilder sb = new StringBuilder( 2 + ( 3 * buffer.length ) );
 
         for ( byte b : buffer ){
             sb.append( "0x" ).append( (char) ( HEX_CHAR[( b & 0x00F0 ) >> 4] ) ).append(

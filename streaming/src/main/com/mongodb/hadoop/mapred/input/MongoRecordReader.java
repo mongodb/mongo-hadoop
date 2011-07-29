@@ -17,74 +17,73 @@
 
 package com.mongodb.hadoop.mapred.input;
 
+import com.mongodb.*;
+import com.mongodb.hadoop.io.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.io.*;
 import org.bson.*;
 
-import com.mongodb.*;
-
-import com.mongodb.hadoop.io.*;
-
-/** @deprecated functionality has been consolidated into {@link com.mongodb.hadoop.input.MongoRecordReader} */
-@SuppressWarnings("deprecation")
+/**
+ * @deprecated functionality has been consolidated into {@link com.mongodb.hadoop.input.MongoRecordReader}
+ */
+@SuppressWarnings( "deprecation" )
 public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
-    public MongoRecordReader(MongoInputSplit split) {
+    public MongoRecordReader( MongoInputSplit split ){
         _split = split;
         _cursor = _split.getCursor();
     }
 
-    public void close() {
+    public void close(){
     }
 
-    public BSONWritable createKey() {
+    public BSONWritable createKey(){
         return new BSONWritable();
     }
 
 
-    public BSONWritable createValue() {
+    public BSONWritable createValue(){
         return new BSONWritable();
     }
 
-    public BSONObject getCurrentKey() {
-        return new BasicDBObject(  "_id", _cur.get("_id"));
+    public BSONObject getCurrentKey(){
+        return new BasicDBObject( "_id", _cur.get( "_id" ) );
     }
 
-    public BSONObject getCurrentValue() {
+    public BSONObject getCurrentValue(){
         return _cur;
     }
 
-    public float getProgress() {
+    public float getProgress(){
         return _seen / _total;
     }
 
-    public long getPos() {
-        return new Float(_seen).longValue();
+    public long getPos(){
+        return new Float( _seen ).longValue();
     }
 
-    public void initialize(InputSplit split, TaskAttemptContext context) {
-        if (split != _split) throw new IllegalStateException("split != _split ??? ");
+    public void initialize( InputSplit split, TaskAttemptContext context ){
+        if ( split != _split ) throw new IllegalStateException( "split != _split ??? " );
         _total = _cursor.size();
     }
 
-    public boolean nextKeyValue() {
-        if (!_cursor.hasNext()) return false;
+    public boolean nextKeyValue(){
+        if ( !_cursor.hasNext() ) return false;
         _cur = _cursor.next();
         _seen++;
         return true;
     }
 
-    public boolean next(BSONWritable key, BSONWritable value) {
-        if (nextKeyValue()) {
-            log.debug("Had another k/v");
-            key.put("_id", getCurrentKey().get( "_id" ));
-            value.putAll(getCurrentValue());
+    public boolean next( BSONWritable key, BSONWritable value ){
+        if ( nextKeyValue() ){
+            log.debug( "Had another k/v" );
+            key.put( "_id", getCurrentKey().get( "_id" ) );
+            value.putAll( getCurrentValue() );
             //log.info("Key: " + key + " Value: " + value);
             return true;
         }
-        else {
-            log.info("Cursor exhausted.");
+        else{
+            log.info( "Cursor exhausted." );
             return false;
         }
     }
@@ -96,6 +95,6 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     float _seen = 0;
     float _total;
 
-    private static final Log log = LogFactory.getLog(MongoRecordReader.class);
+    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 
 }

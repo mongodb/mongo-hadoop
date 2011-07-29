@@ -36,7 +36,7 @@ public class MongoDBSink extends EventSink.Base {
     /**
      * Constructs a new instance against the given URI
      */
-    public MongoDBSink(String uriString) {
+    public MongoDBSink( String uriString ){
         _uri = new MongoURI( uriString );
     }
 
@@ -47,14 +47,14 @@ public class MongoDBSink extends EventSink.Base {
         }
         catch ( final Exception e ) {
             LOG.error( "Connecting to MongoDB failed.", e );
-            throw new MongoException( "Failed to connect to MongoDB. " , e );
+            throw new MongoException( "Failed to connect to MongoDB. ", e );
         }
         try {
             _collection = _uri.connectCollection( _mongoConn );
         }
         catch ( final Exception e ) {
             LOG.error( "Connected to MongoDB but failed in acquiring collection.", e );
-            throw new MongoException( "Could not acquire specified collection." , e );
+            throw new MongoException( "Could not acquire specified collection.", e );
         }
     }
 
@@ -87,17 +87,17 @@ public class MongoDBSink extends EventSink.Base {
         return new SinkBuilder() {
             // Create a new sink using a MongoDB URI
             @Override
-            public EventSink build( Context context , String ... argv ){
+            public EventSink build( Context context, String... argv ){
                 Preconditions
                         .checkArgument(
                                 argv.length == 1,
                                 "usage: mongoDBSink(\"mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]\")"
-                                        + "\n ... See http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB Connection URI Format."
-                                        + "\n\t Note that using [?options] you can specify Write Concern related settings: "
-                                        + "\n\t\t safe={true|false} (default: false) Whether or not the driver should send getLastError to verify each write operation."
-                                        + "\n\t\t w={n} (default: 0) Specify the number of servers to replicate a write to before returning success. When non-zero, implies safe=true."
-                                        + "\n\t\t wtimeout={ms} (default: wait forever) The number of milliseconds to wait for W replications to complete.  When non-zero, implies safe=true."
-                                        + "\n\t\t fsync={true|false} (default: false) When enabled, forces an fsync after each write operation to increase durability.  You probably *don't* want to do this; see the MongoDB docs for info.  When 'true', implies safe=true" );
+                                + "\n ... See http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB Connection URI Format."
+                                + "\n\t Note that using [?options] you can specify Write Concern related settings: "
+                                + "\n\t\t safe={true|false} (default: false) Whether or not the driver should send getLastError to verify each write operation."
+                                + "\n\t\t w={n} (default: 0) Specify the number of servers to replicate a write to before returning success. When non-zero, implies safe=true."
+                                + "\n\t\t wtimeout={ms} (default: wait forever) The number of milliseconds to wait for W replications to complete.  When non-zero, implies safe=true."
+                                + "\n\t\t fsync={true|false} (default: false) When enabled, forces an fsync after each write operation to increase durability.  You probably *don't* want to do this; see the MongoDB docs for info.  When 'true', implies safe=true" );
 
                 return new MongoDBSink( argv[0] );
             }
@@ -105,12 +105,11 @@ public class MongoDBSink extends EventSink.Base {
     }
 
     /**
-     * Special function used by Flume's SourceFactory
-     * to pull this class in and use it as a plugin Sink
+     * Special function used by Flume's SourceFactory to pull this class in and use it as a plugin Sink
      */
     public static List<Pair<String, SinkBuilder>> getSinkBuilders(){
         List<Pair<String, SinkBuilder>> builders = new ArrayList<Pair<String, SinkBuilder>>();
-        builders.add( new Pair<String, SinkBuilder>( "mongoDBSink" , builder() ) );
+        builders.add( new Pair<String, SinkBuilder>( "mongoDBSink", builder() ) );
         return builders;
     }
 

@@ -17,18 +17,17 @@
 
 package com.mongodb.hadoop.util;
 
-import java.util.Map.Entry;
-
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 
+import java.util.Map.*;
+
 /**
- * Tool for simplifying the setup and usage of Mongo Hadoop jobs
- * using the Tool / Configured interfaces for use w/ a ToolRunner
- * Primarily useful in cases of XML Config files.
- * 
+ * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a
+ * ToolRunner Primarily useful in cases of XML Config files.
+ *
  * @author Brendan W. McAdams <brendan@10gen.com>
  */
 public class MongoTool extends Configured implements Tool {
@@ -44,11 +43,11 @@ public class MongoTool extends Configured implements Tool {
 
         log.info( "Created a conf: '" + conf + "' on {" + this.getClass() + "} as job named '" + _jobName + "'" );
 
-        for ( final Entry<String, String> entry : conf ) {
+        for ( final Entry<String, String> entry : conf ){
             log.trace( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
         }
 
-        final Job job = new Job( conf , _jobName );
+        final Job job = new Job( conf, _jobName );
         /**
          * Any arguments specified with -D <property>=<value>
          * on the CLI will be picked up and set here
@@ -82,13 +81,14 @@ public class MongoTool extends Configured implements Tool {
          */
         final boolean background = MongoConfigUtil.isJobBackground( conf );
         try {
-            if ( background ) {
+            if ( background ){
                 log.info( "Setting up and running MapReduce job in background." );
                 job.submit();
                 return 0;
             }
-            else {
-                log.info( "Setting up and running MapReduce job in foreground, will wait for results.  {Verbose? " + verbose + "}" );
+            else{
+                log.info( "Setting up and running MapReduce job in foreground, will wait for results.  {Verbose? "
+                          + verbose + "}" );
                 return job.waitForCompletion( true ) ? 0 : 1;
             }
         }
@@ -105,13 +105,11 @@ public class MongoTool extends Configured implements Tool {
      * int exitCode = ToolRunner.run(new <YourClass>(), args);
      * System.exit(exitCode);
      * }
-     * 
+     *
      */
 
     /**
-     * SET ME
-     * Defines the name of the job on the cluster.
-     * Left non-final to allow tweaking with serial #s, etc
-     **/
+     * SET ME Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc
+     */
     String _jobName = "<unnamed MongoTool job>";
 }

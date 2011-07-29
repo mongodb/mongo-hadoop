@@ -17,30 +17,22 @@
 package com.mongodb.hadoop;
 
 // Mongo
-import com.mongodb.DBObject;
-import com.mongodb.MongoURI;
-import com.mongodb.DBCollection;
-import com.mongodb.hadoop.util.MongoConfigUtil;
+
+import com.mongodb.*;
+import com.mongodb.hadoop.util.*;
+import org.apache.commons.logging.*;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.*;
+
+import java.io.*;
 
 // Hadoop
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.RawComparator;
-import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.OutputFormat;
-
 // Commons
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.io.DataInput;
-import java.io.IOException;
 
 /**
- * Configuration helper tool for MongoDB related Map/Reduce jobs Instance based,
- * more idiomatic for those who prefer it to the static methoding of ConfigUtil
+ * Configuration helper tool for MongoDB related Map/Reduce jobs Instance based, more idiomatic for those who prefer it
+ * to the static methoding of ConfigUtil
  */
 public class MongoConfig {
 
@@ -48,15 +40,15 @@ public class MongoConfig {
      * You probably don't want to use this.
      */
     @Deprecated
-    public MongoConfig() {
+    public MongoConfig(){
         _conf = new Configuration();
     }
 
-    public MongoConfig( Configuration conf ) {
+    public MongoConfig( Configuration conf ){
         _conf = conf;
     }
 
-    public MongoConfig(DataInput in) throws IOException {
+    public MongoConfig( DataInput in ) throws IOException{
         _conf = new Configuration();
         _conf.readFields( in );
     }
@@ -181,11 +173,11 @@ public class MongoConfig {
         return MongoConfigUtil.getInputCollection( _conf );
     }
 
-    public void setMongoURI( String key , MongoURI value ){
+    public void setMongoURI( String key, MongoURI value ){
         MongoConfigUtil.setMongoURI( _conf, key, value );
     }
 
-    public void setMongoURIString( String key , String value ){
+    public void setMongoURIString( String key, String value ){
         MongoConfigUtil.setMongoURIString( _conf, key, value );
     }
 
@@ -212,7 +204,7 @@ public class MongoConfig {
     /**
      * Set JSON but first validate it's parseable into a BSON Object
      */
-    public void setJSON( String key , String value ){
+    public void setJSON( String key, String value ){
         MongoConfigUtil.setJSON( _conf, key, value );
     }
 
@@ -220,7 +212,7 @@ public class MongoConfig {
         return MongoConfigUtil.getDBObject( _conf, key );
     }
 
-    public void setDBObject( String key , DBObject value ){
+    public void setDBObject( String key, DBObject value ){
         MongoConfigUtil.setDBObject( _conf, key, value );
     }
 

@@ -16,18 +16,17 @@
 
 package com.mongodb.hadoop.output;
 
-import java.io.*;
-
+import com.mongodb.*;
+import com.mongodb.hadoop.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.*;
+import java.io.*;
 
-public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
+public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
-    public MongoRecordWriter(DBCollection c , TaskAttemptContext ctx) {
+    public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx ){
         _collection = c;
         _context = ctx;
     }
@@ -36,15 +35,16 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
         _collection.getDB().getLastError();
     }
 
-    Object toBSON( Object x ) {
+    Object toBSON( Object x ){
         if ( x == null )
             return null;
         if ( x instanceof Text || x instanceof UTF8 )
             return x.toString();
-        if ( x instanceof Writable ) {
+        if ( x instanceof Writable ){
             if ( x instanceof AbstractMapWritable )
-                throw new IllegalArgumentException( "ERROR: MapWritables are not presently supported for MongoDB Serialization." );
-            if ( x instanceof ArrayWritable ) { // TODO - test me
+                throw new IllegalArgumentException(
+                        "ERROR: MapWritables are not presently supported for MongoDB Serialization." );
+            if ( x instanceof ArrayWritable ){ // TODO - test me
                 Writable[] o = ( (ArrayWritable) x ).get();
                 Object[] a = new Object[o.length];
                 for ( int i = 0; i < o.length; i++ )
@@ -71,49 +71,52 @@ public class MongoRecordWriter<K,V> extends RecordWriter<K, V> {
         throw new RuntimeException( "can't convert: " + x.getClass().getName() + " to BSON" );
     }
 
-    public void write( K key , V value ) throws IOException{
+    public void write( K key, V value ) throws IOException{
         boolean update = false;
         DBObject query = null;
         //This is very hackish
         //TODO: have an enum class SpecialOper that can serve as the output key class
-        if (key != null && ("$update".equals(key) || (key.getClass().equals(Text.class) && key.toString().equals("$update"))) ){
+        if ( key != null && ( "$update".equals( key ) || ( key.getClass().equals( Text.class ) && key.toString()
+                                                                                                     .equals(
+                                                                                                             "$update" ) ) ) ){
 
             update = true;
-            query = (DBObject) ((BSONObject)value).get("$query");
-            value = (V) ((BSONObject)value).get("$value");
+            query = (DBObject) ( (BSONObject) value ).get( "$query" );
+            value = (V) ( (BSONObject) value ).get( "$value" );
         }
         final DBObject o = new BasicDBObject();
 
-        if (! update){
-            if ( key instanceof MongoOutput ) {
+        if ( !update ){
+            if ( key instanceof MongoOutput ){
                 ( (MongoOutput) key ).appendAsKey( o );
             }
-            else if ( key instanceof BSONObject ) {
+            else if ( key instanceof BSONObject ){
                 o.put( "_id", key );
             }
-            else {
+            else{
                 o.put( "_id", toBSON( key ) );
             }
         }
 
-        if ( value instanceof MongoOutput ) {
+        if ( value instanceof MongoOutput ){
             ( (MongoOutput) value ).appendAsValue( o );
         }
-        else if ( value instanceof BSONObject ) {
+        else if ( value instanceof BSONObject ){
             o.putAll( (BSONObject) value );
         }
-        else {
+        else{
             o.put( "value", toBSON( value ) );
         }
 
         try {
-            if (update){
-                _collection.update(query, o);
-            }else
+            if ( update ){
+                _collection.update( query, o );
+            }
+            else
                 _collection.save( o );
         }
         catch ( final MongoException e ) {
-            throw new IOException( "can't write to mongo" , e );
+            throw new IOException( "can't write to mongo", e );
         }
     }
 

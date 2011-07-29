@@ -19,8 +19,11 @@ import java.util.logging.*;
 
 public class SplitFriendlyDBCallback extends DefaultDBCallback {
 
-    static final class MinKey {}
-    static final class MaxKey {}
+    static final class MinKey {
+    }
+
+    static final class MaxKey {
+    }
 
     static class SplitFriendlyFactory implements DBCallbackFactory {
         public DBCallback create( DBCollection collection ){
@@ -33,17 +36,17 @@ public class SplitFriendlyDBCallback extends DefaultDBCallback {
     public static MaxKey MAX_KEY_TYPE = new MaxKey();
 
     public SplitFriendlyDBCallback( DBCollection coll ){
-        super(coll);
+        super( coll );
     }
 
     @Override
     public void gotMinKey( String name ){
-        cur().put( name , MAX_KEY_TYPE );
+        cur().put( name, MAX_KEY_TYPE );
     }
 
     @Override
     public void gotMaxKey( String name ){
-        cur().put( name , MAX_KEY_TYPE );
+        cur().put( name, MAX_KEY_TYPE );
     }
 
     static final Logger LOGGER = Logger.getLogger( "com.mongo.DECODING" );

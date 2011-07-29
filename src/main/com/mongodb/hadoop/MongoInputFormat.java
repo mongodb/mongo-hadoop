@@ -21,22 +21,16 @@ package com.mongodb.hadoop;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
 import com.mongodb.hadoop.util.*;
-import org.bson.BSONObject;
+import org.apache.commons.logging.*;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.mapreduce.*;
+import org.bson.*;
+
+import java.util.*;
 
 // Commons
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 // Hadoop
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.JobContext;
-
 // Java
-import java.util.*;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
@@ -65,7 +59,8 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
              * TODO - If they specify skip or limit we create only one input
              * split
              */
-            throw new IllegalArgumentException( "skip() and limit() is not currently supported do to input split issues." );
+            throw new IllegalArgumentException(
+                    "skip() and limit() is not currently supported do to input split issues." );
         }
 
         /**
@@ -101,11 +96,12 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                             splits = getSplitsUsingChunks( conf, uri, mongo, useShards, slaveOk );
                         else if ( useShards )
                             splits = getSplitsUsingShards( conf, uri, mongo, slaveOk );
-                        if (splits == null)
+                        if ( splits == null )
                             LOG.warn( "Failed to create/calculate Input Splits from Shard Chunks." );
-                    } else {
-                        LOG.info("Collection is not sharded, will process as a single Input Split.");
-                        LOG.debug("Sharding Stats Dump: " + stats);
+                    }
+                    else{
+                        LOG.info( "Collection is not sharded, will process as a single Input Split." );
+                        LOG.debug( "Sharding Stats Dump: " + stats );
                     }
                 }
                 finally {
@@ -114,10 +110,10 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                     mongo = null;
                 }
 
-                if ( splits != null ) {
+                if ( splits != null ){
 
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Calculated splits and returning them - splits: " + splits);
+                    if ( LOG.isDebugEnabled() ){
+                        LOG.debug( "Calculated splits and returning them - splits: " + splits );
                     }
 
                     return splits;
@@ -139,7 +135,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                                          conf.getLimit(), conf.getSkip() ) );
 
 
-        if (LOG.isDebugEnabled()) {
+        if ( LOG.isDebugEnabled() ){
             LOG.debug( "Calculated " + splits.size() + " split objects." );
         }
 
@@ -194,15 +190,14 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                                                    MongoURI uri,
                                                    Mongo mongo,
                                                    boolean useShards,
-                                                   Boolean slaveOk )
-    {
+                                                   Boolean slaveOk ){
         DBObject originalQuery = conf.getQuery();
 
         if ( useShards )
             LOG.warn( "WARNING getting splits that connect directly to the backend mongods"
                       + " is risky and might not produce correct results" );
 
-        if (LOG.isDebugEnabled()) {
+        if ( LOG.isDebugEnabled() ){
             LOG.debug( "getSplitsUsingChunks(): originalQuery: " + originalQuery );
         }
 
@@ -210,7 +205,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
         Map<String, String> shardMap = null; //key: shardname, value: host
 
-        if ( useShards ) {
+        if ( useShards ){
 
             shardMap = new HashMap<String, String>();
             DBCollection shardsCollection = configDB.getCollection( "shards" );
@@ -229,13 +224,14 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
                     shardMap.put( (String) row.get( "_id" ), host );
                 }
-            } finally {
+            }
+            finally {
                 if ( cur != null )
                     cur.close();
             }
         }
 
-        if (LOG.isDebugEnabled()) {
+        if ( LOG.isDebugEnabled() ){
             LOG.debug( "MongoInputFormat.getSplitsUsingChunks(): shard map is: " + shardMap );
         }
 
@@ -264,13 +260,13 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 DBObject min = new BasicDBObject();
                 DBObject max = new BasicDBObject();
 
-                for ( String keyName : minObj.keySet() ) {
-                    Object tMin = minObj.get( keyName);
-                    Object tMax = ( (DBObject) row.get( "max" ) ).get(  keyName );
+                for ( String keyName : minObj.keySet() ){
+                    Object tMin = minObj.get( keyName );
+                    Object tMax = ( (DBObject) row.get( "max" ) ).get( keyName );
                     /** The shard key can be of any possible type, so this must be kept as Object */
-                    if ( !( tMin == SplitFriendlyDBCallback.MIN_KEY_TYPE || tMin.equals( "MinKey" )))
+                    if ( !( tMin == SplitFriendlyDBCallback.MIN_KEY_TYPE || tMin.equals( "MinKey" ) ) )
                         min.put( keyName, tMin );
-                    if ( !( tMax == SplitFriendlyDBCallback.MAX_KEY_TYPE || tMax.equals( "MaxKey") ) )
+                    if ( !( tMax == SplitFriendlyDBCallback.MAX_KEY_TYPE || tMax.equals( "MaxKey" ) ) )
                         max.put( keyName, tMax );
                 }
                 /** We have to put something for $query or we'll fail; if no original query use an empty DBObj */
@@ -280,7 +276,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 shardKeyQuery.put( "$max", max );
                 shardKeyQuery.put( "$query", originalQuery );
 
-                if (LOG.isDebugEnabled()) {
+                if ( LOG.isDebugEnabled() ){
                     LOG.debug( "[" + numChunks + "/" + numExpectedChunks + "] new query is: " + shardKeyQuery );
                 }
 
@@ -293,27 +289,29 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
-                splits.add( new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
-                                                 conf.getSkip() ) );
+                splits.add(
+                        new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
+                                             conf.getSkip() ) );
             }
 
-            if (LOG.isDebugEnabled()) {
+            if ( LOG.isDebugEnabled() ){
                 LOG.debug( "MongoInputFormat.getSplitsUsingChunks(): There were "
-                          + numChunks
-                          + " chunks, returning "
-                          + splits.size()
-                          + " splits: " + splits );
+                           + numChunks
+                           + " chunks, returning "
+                           + splits.size()
+                           + " splits: " + splits );
             }
 
             return splits;
 
-        } finally {
+        }
+        finally {
             if ( cur != null )
                 cur.close();
         }
     }
 
-    private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ) {
+    private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ){
 
         String originalUriString = originalUri.toString();
         originalUriString = originalUriString.substring( MongoURI.MONGODB_PREFIX.length() );

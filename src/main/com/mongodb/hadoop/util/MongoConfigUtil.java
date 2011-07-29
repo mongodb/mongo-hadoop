@@ -17,17 +17,16 @@
 
 package com.mongodb.hadoop.util;
 
+import com.mongodb.*;
+import com.mongodb.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
-import com.mongodb.*;
-import com.mongodb.util.*;
-
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
- **/
+ */
 
 public class MongoConfigUtil {
     private static final Log log = LogFactory.getLog( MongoConfigUtil.class );
@@ -35,8 +34,7 @@ public class MongoConfigUtil {
     private static final Mongo.Holder _mongos = new Mongo.Holder();
 
     /**
-     * The JOB_* values are entirely optional and disregarded
-     * unless you use the MongoTool base toolset... If you don't,
+     * The JOB_* values are entirely optional and disregarded unless you use the MongoTool base toolset... If you don't,
      * feel free to ignore these
      */
     public static final String JOB_VERBOSE = "mongo.job.verbose";
@@ -71,29 +69,30 @@ public class MongoConfigUtil {
     // Number of *documents*, not bytes, to split on
     public static final int DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
 
-    /** If {@code true} in a sharded setup splits will be made to connect to individual
-     backend {@code mongod}s.  This can be unsafe. If {@code mongos} is moving
-     chunks around you might see duplicate data, or miss some data entirely.
-     * Defaults to {@code false} */
+    /**
+     * If {@code true} in a sharded setup splits will be made to connect to individual backend {@code mongod}s.  This
+     * can be unsafe. If {@code mongos} is moving chunks around you might see duplicate data, or miss some data
+     * entirely. Defaults to {@code false}
+     */
     public static final String SPLITS_USE_SHARDS = "mongo.splits.use-shards";
-    /** If {@code true} have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS}
-      is not true splits will still use chunks, but will connect through
-     {@code mongos} instead of the individual backend {@code mongod}s
-      (the safe thing to do).
-     If {@link #SPLITS_USE_SHARDS} is {@code true} but this is {@code false} one split will
-     be made for each backend shard. THIS IS UNSAFE and may result in data being run
-     multiple times
-     <p> Defaults to {@code true }*/
+    /**
+     * If {@code true} have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS} is not true splits will still
+     * use chunks, but will connect through {@code mongos} instead of the individual backend {@code mongod}s (the safe
+     * thing to do). If {@link #SPLITS_USE_SHARDS} is {@code true} but this is {@code false} one split will be made for
+     * each backend shard. THIS IS UNSAFE and may result in data being run multiple times <p> Defaults to {@code true }
+     */
     public static final String SPLITS_USE_CHUNKS = "mongo.splits.use-chunks";
-    /** If true then shards are replica sets run queries on slaves. If set
-     * this will override any option passed on the URI. */
+    /**
+     * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the
+     * URI.
+     */
     public static final String SPLITS_SLAVE_OK = "mongo.splits.slaveok";
 
     public static boolean isJobVerbose( Configuration conf ){
         return conf.getBoolean( JOB_VERBOSE, false );
     }
 
-    public static void setJobVerbose( Configuration conf , boolean val ){
+    public static void setJobVerbose( Configuration conf, boolean val ){
         conf.setBoolean( JOB_VERBOSE, val );
     }
 
@@ -101,7 +100,7 @@ public class MongoConfigUtil {
         return conf.getBoolean( JOB_BACKGROUND, false );
     }
 
-    public static void setJobBackground( Configuration conf , boolean val ){
+    public static void setJobBackground( Configuration conf, boolean val ){
         conf.setBoolean( JOB_BACKGROUND, val );
     }
 
@@ -112,7 +111,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_MAPPER, null, Mapper.class );
     }
 
-    public static void setMapper( Configuration conf , Class<? extends Mapper> val ){
+    public static void setMapper( Configuration conf, Class<? extends Mapper> val ){
         conf.setClass( JOB_MAPPER, val, Mapper.class );
     }
 
@@ -120,7 +119,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_MAPPER_OUTPUT_KEY, null );
     }
 
-    public static void setMapperOutputKey( Configuration conf , Class<?> val ){
+    public static void setMapperOutputKey( Configuration conf, Class<?> val ){
         conf.setClass( JOB_MAPPER_OUTPUT_KEY, val, Object.class );
     }
 
@@ -128,7 +127,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_MAPPER_OUTPUT_VALUE, null );
     }
 
-    public static void setMapperOutputValue( Configuration conf , Class<?> val ){
+    public static void setMapperOutputValue( Configuration conf, Class<?> val ){
         conf.setClass( JOB_MAPPER_OUTPUT_VALUE, val, Object.class );
     }
 
@@ -136,7 +135,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_COMBINER, null, Reducer.class );
     }
 
-    public static void setCombiner( Configuration conf , Class<? extends Reducer> val ){
+    public static void setCombiner( Configuration conf, Class<? extends Reducer> val ){
         conf.setClass( JOB_COMBINER, val, Reducer.class );
     }
 
@@ -147,7 +146,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_REDUCER, null, Reducer.class );
     }
 
-    public static void setReducer( Configuration conf , Class<? extends Reducer> val ){
+    public static void setReducer( Configuration conf, Class<? extends Reducer> val ){
         conf.setClass( JOB_REDUCER, val, Reducer.class );
     }
 
@@ -155,7 +154,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_PARTITIONER, null, Partitioner.class );
     }
 
-    public static void setPartitioner( Configuration conf , Class<? extends Partitioner> val ){
+    public static void setPartitioner( Configuration conf, Class<? extends Partitioner> val ){
         conf.setClass( JOB_PARTITIONER, val, Partitioner.class );
     }
 
@@ -163,7 +162,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_SORT_COMPARATOR, null, RawComparator.class );
     }
 
-    public static void setSortComparator( Configuration conf , Class<? extends RawComparator> val ){
+    public static void setSortComparator( Configuration conf, Class<? extends RawComparator> val ){
         conf.setClass( JOB_SORT_COMPARATOR, val, RawComparator.class );
     }
 
@@ -171,7 +170,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_OUTPUT_FORMAT, null, OutputFormat.class );
     }
 
-    public static void setOutputFormat( Configuration conf , Class<? extends OutputFormat> val ){
+    public static void setOutputFormat( Configuration conf, Class<? extends OutputFormat> val ){
         conf.setClass( JOB_OUTPUT_FORMAT, val, OutputFormat.class );
     }
 
@@ -179,7 +178,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_OUTPUT_KEY, null );
     }
 
-    public static void setOutputKey( Configuration conf , Class<?> val ){
+    public static void setOutputKey( Configuration conf, Class<?> val ){
         conf.setClass( JOB_OUTPUT_KEY, val, Object.class );
     }
 
@@ -187,7 +186,7 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_OUTPUT_VALUE, null );
     }
 
-    public static void setOutputValue( Configuration conf , Class<?> val ){
+    public static void setOutputValue( Configuration conf, Class<?> val ){
         conf.setClass( JOB_OUTPUT_VALUE, val, Object.class );
     }
 
@@ -195,11 +194,11 @@ public class MongoConfigUtil {
         return conf.getClass( JOB_INPUT_FORMAT, null, InputFormat.class );
     }
 
-    public static void setInputFormat( Configuration conf , Class<? extends InputFormat> val ){
+    public static void setInputFormat( Configuration conf, Class<? extends InputFormat> val ){
         conf.setClass( JOB_INPUT_FORMAT, val, InputFormat.class );
     }
 
-    public static MongoURI getMongoURI( Configuration conf , String key ){
+    public static MongoURI getMongoURI( Configuration conf, String key ){
         final String raw = conf.get( key );
         if ( raw != null && !raw.trim().isEmpty() )
             return new MongoURI( raw );
@@ -216,7 +215,7 @@ public class MongoConfigUtil {
             return uri.connectCollection( _mongos.connect( uri ) );
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to collection." , e );
+            throw new IllegalArgumentException( "Unable to connect to collection.", e );
         }
     }
 
@@ -226,7 +225,7 @@ public class MongoConfigUtil {
             return getCollection( _uri );
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection." , e );
+            throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
         }
     }
 
@@ -236,31 +235,32 @@ public class MongoConfigUtil {
             return getCollection( _uri );
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to MongoDB Input Collection at '" + getInputURI( conf ) + "'" , e );
+            throw new IllegalArgumentException(
+                    "Unable to connect to MongoDB Input Collection at '" + getInputURI( conf ) + "'", e );
         }
     }
 
-    public static void setMongoURI( Configuration conf , String key , MongoURI value ){
+    public static void setMongoURI( Configuration conf, String key, MongoURI value ){
         conf.set( key, value.toString() ); // todo - verify you can toString a
-                                           // URI object
+        // URI object
     }
 
-    public static void setMongoURIString( Configuration conf , String key , String value ){
+    public static void setMongoURIString( Configuration conf, String key, String value ){
 
         try {
             final MongoURI uri = new MongoURI( value );
             setMongoURI( conf, key, uri );
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Invalid Mongo URI '" + value + "' for Input URI" , e );
+            throw new IllegalArgumentException( "Invalid Mongo URI '" + value + "' for Input URI", e );
         }
     }
 
-    public static void setInputURI( Configuration conf , String uri ){
+    public static void setInputURI( Configuration conf, String uri ){
         setMongoURIString( conf, INPUT_URI, uri );
     }
 
-    public static void setInputURI( Configuration conf , MongoURI uri ){
+    public static void setInputURI( Configuration conf, MongoURI uri ){
         setMongoURI( conf, INPUT_URI, uri );
     }
 
@@ -268,29 +268,30 @@ public class MongoConfigUtil {
         return getMongoURI( conf, OUTPUT_URI );
     }
 
-    public static void setOutputURI( Configuration conf , String uri ){
+    public static void setOutputURI( Configuration conf, String uri ){
         setMongoURIString( conf, OUTPUT_URI, uri );
     }
 
-    public static void setOutputURI( Configuration conf , MongoURI uri ){
+    public static void setOutputURI( Configuration conf, MongoURI uri ){
         setMongoURI( conf, OUTPUT_URI, uri );
     }
 
     /**
      * Set JSON but first validate it's parseable into a DBObject
      */
-    public static void setJSON( Configuration conf , String key , String value ){
+    public static void setJSON( Configuration conf, String key, String value ){
         try {
             final Object dbObj = JSON.parse( value );
             setDBObject( conf, key, (DBObject) dbObj );
         }
         catch ( final Exception e ) {
             log.error( "Cannot parse JSON...", e );
-            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject." , e );
+            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject.",
+                                                e );
         }
     }
 
-    public static DBObject getDBObject( Configuration conf , String key ){
+    public static DBObject getDBObject( Configuration conf, String key ){
         try {
             final String json = conf.get( key );
             final DBObject obj = (DBObject) JSON.parse( json );
@@ -300,61 +301,59 @@ public class MongoConfigUtil {
                 return obj;
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject." , e );
+            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject.",
+                                                e );
         }
     }
 
-    public static void setDBObject( Configuration conf , String key , DBObject value ){
+    public static void setDBObject( Configuration conf, String key, DBObject value ){
         conf.set( key, JSON.serialize( value ) );
     }
 
-    public static void setQuery( Configuration conf , String query ){
+    public static void setQuery( Configuration conf, String query ){
         setJSON( conf, INPUT_QUERY, query );
     }
 
-    public static void setQuery( Configuration conf , DBObject query ){
+    public static void setQuery( Configuration conf, DBObject query ){
         setDBObject( conf, INPUT_QUERY, query );
     }
 
     /**
-     * Returns the configured query as a DBObject...
-     * If you want a string call toString() on the returned object.
-     * or use JSON.serialize()
-     **/
+     * Returns the configured query as a DBObject... If you want a string call toString() on the returned object. or use
+     * JSON.serialize()
+     */
     public static DBObject getQuery( Configuration conf ){
         return getDBObject( conf, INPUT_QUERY );
     }
 
-    public static void setFields( Configuration conf , String fields ){
+    public static void setFields( Configuration conf, String fields ){
         setJSON( conf, INPUT_FIELDS, fields );
     }
 
-    public static void setFields( Configuration conf , DBObject fields ){
+    public static void setFields( Configuration conf, DBObject fields ){
         setDBObject( conf, INPUT_FIELDS, fields );
     }
 
     /**
-     * Returns the configured fields as a DBObject...
-     * If you want a string call toString() on the returned object.
-     * or use JSON.serialize()
-     **/
+     * Returns the configured fields as a DBObject... If you want a string call toString() on the returned object. or
+     * use JSON.serialize()
+     */
     public static DBObject getFields( Configuration conf ){
         return getDBObject( conf, INPUT_FIELDS );
     }
 
-    public static void setSort( Configuration conf , String sort ){
+    public static void setSort( Configuration conf, String sort ){
         setJSON( conf, INPUT_SORT, sort );
     }
 
-    public static void setSort( Configuration conf , DBObject sort ){
+    public static void setSort( Configuration conf, DBObject sort ){
         setDBObject( conf, INPUT_SORT, sort );
     }
 
     /**
-     * Returns the configured sort as a DBObject...
-     * If you want a string call toString() on the returned object.
-     * or use JSON.serialize()
-     **/
+     * Returns the configured sort as a DBObject... If you want a string call toString() on the returned object. or use
+     * JSON.serialize()
+     */
     public static DBObject getSort( Configuration conf ){
         return getDBObject( conf, INPUT_SORT );
     }
@@ -363,7 +362,7 @@ public class MongoConfigUtil {
         return conf.getInt( INPUT_LIMIT, 0 );
     }
 
-    public static void setLimit( Configuration conf , int limit ){
+    public static void setLimit( Configuration conf, int limit ){
         conf.setInt( INPUT_LIMIT, limit );
     }
 
@@ -371,7 +370,7 @@ public class MongoConfigUtil {
         return conf.getInt( INPUT_SKIP, 0 );
     }
 
-    public static void setSkip( Configuration conf , int skip ){
+    public static void setSkip( Configuration conf, int skip ){
         conf.setInt( INPUT_SKIP, skip );
     }
 
@@ -379,7 +378,7 @@ public class MongoConfigUtil {
         return conf.getInt( INPUT_SPLIT_SIZE, DEFAULT_SPLIT_SIZE );
     }
 
-    public static void setSplitSize( Configuration conf , int value ){
+    public static void setSplitSize( Configuration conf, int value ){
         conf.setInt( INPUT_SPLIT_SIZE, value );
     }
 
