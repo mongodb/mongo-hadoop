@@ -28,8 +28,8 @@ import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.util.*;
 
 /**
- * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x :
- * "eliot is here" } ) db.in.insert( { x : "who is here" } ) =
+ * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x : "eliot is here" } ) db.in.insert( { x : "who is
+ * here" } ) =
  */
 public class WordCount {
 
@@ -40,13 +40,13 @@ public class WordCount {
         private final static IntWritable one = new IntWritable( 1 );
         private final Text word = new Text();
 
-        public void map( Object key , BSONObject value , Context context ) throws IOException, InterruptedException{
+        public void map( Object key, BSONObject value, Context context ) throws IOException, InterruptedException{
 
             System.out.println( "key: " + key );
             System.out.println( "value: " + value );
 
             final StringTokenizer itr = new StringTokenizer( value.get( "x" ).toString() );
-            while ( itr.hasMoreTokens() ) {
+            while ( itr.hasMoreTokens() ){
                 word.set( itr.nextToken() );
                 context.write( word, one );
             }
@@ -57,10 +57,11 @@ public class WordCount {
 
         private final IntWritable result = new IntWritable();
 
-        public void reduce( Text key , Iterable<IntWritable> values , Context context ) throws IOException, InterruptedException{
+        public void reduce( Text key, Iterable<IntWritable> values, Context context )
+                throws IOException, InterruptedException{
 
             int sum = 0;
-            for ( final IntWritable val : values ) {
+            for ( final IntWritable val : values ){
                 sum += val.get();
             }
             result.set( sum );
@@ -75,7 +76,7 @@ public class WordCount {
         MongoConfigUtil.setOutputURI( conf, "mongodb://localhost/test.out" );
         System.out.println( "Conf: " + conf );
 
-        final Job job = new Job( conf , "word count" );
+        final Job job = new Job( conf, "word count" );
 
         job.setJarByClass( WordCount.class );
 

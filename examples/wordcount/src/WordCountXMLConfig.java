@@ -30,8 +30,8 @@ import com.mongodb.hadoop.util.*;
 // WordCount.java
 
 /**
- * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x :
- * "eliot is here" } ) db.in.insert( { x : "who is here" } ) =
+ * test.in db.in.insert( { x : "eliot was here" } ) db.in.insert( { x : "eliot is here" } ) db.in.insert( { x : "who is
+ * here" } ) =
  */
 public class WordCountXMLConfig extends MongoTool {
 
@@ -40,13 +40,13 @@ public class WordCountXMLConfig extends MongoTool {
         private final static IntWritable one = new IntWritable( 1 );
         private final Text word = new Text();
 
-        public void map( Object key , BSONObject value , Context context ) throws IOException, InterruptedException{
+        public void map( Object key, BSONObject value, Context context ) throws IOException, InterruptedException{
 
             System.out.println( "key: " + key );
             System.out.println( "value: " + value );
 
             final StringTokenizer itr = new StringTokenizer( value.get( "x" ).toString() );
-            while ( itr.hasMoreTokens() ) {
+            while ( itr.hasMoreTokens() ){
                 word.set( itr.nextToken() );
                 context.write( word, one );
             }
@@ -57,10 +57,11 @@ public class WordCountXMLConfig extends MongoTool {
 
         private final IntWritable result = new IntWritable();
 
-        public void reduce( Text key , Iterable<IntWritable> values , Context context ) throws IOException, InterruptedException{
+        public void reduce( Text key, Iterable<IntWritable> values, Context context )
+                throws IOException, InterruptedException{
 
             int sum = 0;
-            for ( final IntWritable val : values ) {
+            for ( final IntWritable val : values ){
                 sum += val.get();
             }
             result.set( sum );
@@ -68,7 +69,7 @@ public class WordCountXMLConfig extends MongoTool {
         }
     }
 
-    static {
+    static{
         // Load the XML config defined in hadoop-local.xml
         Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
         Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );

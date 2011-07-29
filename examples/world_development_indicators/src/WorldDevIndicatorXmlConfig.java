@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Mongo
+
 import com.mongodb.hadoop.util.MongoTool;
 
 // Hadoop
@@ -27,13 +28,13 @@ import org.apache.hadoop.util.ToolRunner;
  */
 public class WorldDevIndicatorXmlConfig extends MongoTool {
 
-    static {
+    static{
         // Load the XML config defined in hadoop-local.xml
         Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
         Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );
     }
 
-    public static void main( final String[] pArgs ) throws Exception {
+    public static void main( final String[] pArgs ) throws Exception{
         System.exit( ToolRunner.run( new WorldDevIndicatorXmlConfig(), pArgs ) );
     }
 }

@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Commons
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,17 +32,15 @@ import java.io.IOException;
  * The world development indicator reducer.
  */
 public class WorldDevIndicatorReducer
-    extends Reducer<Text, DoubleWritable, Text, DoubleWritable>
-{
+        extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
     @Override
     public void reduce( final Text pCountryCode,
                         final Iterable<DoubleWritable> pValues,
                         final Context pContext )
-        throws IOException, InterruptedException
-    {
+            throws IOException, InterruptedException{
         double count = 0;
         double sum = 0;
-        for ( final DoubleWritable value : pValues ) {
+        for ( final DoubleWritable value : pValues ){
             sum += value.get();
             count++;
         }

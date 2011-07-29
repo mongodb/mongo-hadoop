@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Mongo
+
 import org.bson.*;
 import com.mongodb.hadoop.util.*;
 
@@ -28,13 +29,13 @@ import org.apache.hadoop.util.*;
  */
 public class TreasuryYieldXMLConfig extends MongoTool {
 
-    static {
+    static{
         // Load the XML config defined in hadoop-local.xml
         Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
         Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );
     }
 
-    public static void main( final String[] pArgs ) throws Exception {
+    public static void main( final String[] pArgs ) throws Exception{
         System.exit( ToolRunner.run( new TreasuryYieldXMLConfig(), pArgs ) );
     }
 }

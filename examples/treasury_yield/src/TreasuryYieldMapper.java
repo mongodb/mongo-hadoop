@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Mongo
+
 import org.bson.*;
 import com.mongodb.hadoop.util.*;
 
@@ -35,18 +36,16 @@ import java.util.*;
  * The treasury yield mapper.
  */
 public class TreasuryYieldMapper
-    extends Mapper<Date, BSONObject, IntWritable, DoubleWritable>
-{
+        extends Mapper<Date, BSONObject, IntWritable, DoubleWritable> {
 
     @Override
-    public void map(    final Date pKey,
-                        final BSONObject pValue,
-                        final Context pContext )
-        throws IOException, InterruptedException
-    {
+    public void map( final Date pKey,
+                     final BSONObject pValue,
+                     final Context pContext )
+            throws IOException, InterruptedException{
 
         final int year = pKey.getYear() + 1900;
-        double bid10Year = ((Number)pValue.get( "bc10Year" )).doubleValue();
+        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
 
         pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
     }

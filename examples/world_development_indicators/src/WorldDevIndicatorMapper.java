@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Mongo
+
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.types.ObjectId;
@@ -43,19 +44,16 @@ import java.io.IOException;
  * From 1980 - 2008;
  *
  * From the data, it calculates the average growth rate per year.
- *
  */
 public class WorldDevIndicatorMapper
-    extends Mapper<String, BSONObject, Text, DoubleWritable>
-{
-    public void map(    final String pKey,
-                        final BSONObject pValue,
-                        final Context pContext )
-        throws IOException, InterruptedException
-    {
-        final BasicBSONObject doc = (BasicBSONObject)pValue;
+        extends Mapper<String, BSONObject, Text, DoubleWritable> {
+    public void map( final String pKey,
+                     final BSONObject pValue,
+                     final Context pContext )
+            throws IOException, InterruptedException{
+        final BasicBSONObject doc = (BasicBSONObject) pValue;
 
-        if (!doc.getString("SeriesCode").equals("SL.GDP.PCAP.EM.KD")) return;
+        if ( !doc.getString( "SeriesCode" ).equals( "SL.GDP.PCAP.EM.KD" ) ) return;
 
         int yearCount = 0;
 
@@ -64,31 +62,31 @@ public class WorldDevIndicatorMapper
         double previous = -1;
         double current = 0;
 
-        for (int year=START_YEAR; year <= END_YEAR; year++) {
+        for ( int year = START_YEAR; year <= END_YEAR; year++ ){
 
             final String yearField = Integer.toString( year );
 
-            if (!doc.containsField( yearField )) continue;
+            if ( !doc.containsField( yearField ) ) continue;
 
             current = doc.getDouble( yearField );
 
             yearCount++;
 
-            if ( previous == -1 ) {
+            if ( previous == -1 ){
                 previous = current;
                 continue;
             }
 
-            sum += ( ( current - previous )  / previous * (double)100);
+            sum += ( ( current - previous ) / previous * (double) 100 );
 
             previous = current;
         }
 
-        if (yearCount == 0) return;
+        if ( yearCount == 0 ) return;
 
-        final DoubleWritable value = new DoubleWritable( ( sum / (double)yearCount ) );
+        final DoubleWritable value = new DoubleWritable( ( sum / (double) yearCount ) );
 
-        pContext.write( new Text( doc.getString("Country Name") ), value);
+        pContext.write( new Text( doc.getString( "Country Name" ) ), value );
     }
 
     private static final int START_YEAR = 1980;

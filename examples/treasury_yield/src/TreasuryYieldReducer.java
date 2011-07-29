@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples;
 
 // Mongo
+
 import org.bson.*;
 import com.mongodb.hadoop.util.*;
 
@@ -35,17 +36,15 @@ import java.util.*;
  * The treasury yield reducer.
  */
 public class TreasuryYieldReducer
-    extends Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable>
-{
+        extends Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable> {
     @Override
     public void reduce( final IntWritable pKey,
                         final Iterable<DoubleWritable> pValues,
                         final Context pContext )
-        throws IOException, InterruptedException
-    {
+            throws IOException, InterruptedException{
         int count = 0;
         double sum = 0;
-        for ( final DoubleWritable value : pValues ) {
+        for ( final DoubleWritable value : pValues ){
             LOG.debug( "Key: " + pKey + " Value: " + value );
             sum += value.get();
             count++;
