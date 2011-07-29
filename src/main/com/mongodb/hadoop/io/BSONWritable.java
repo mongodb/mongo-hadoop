@@ -154,9 +154,6 @@ public class BSONWritable implements BSONObject, WritableComparable {
         enc.set( buf );
         enc.putObject( _doc );
         enc.done();
-        //For better performance we can copy BasicOutputBuffer.pipe(OutputStream)
-        //to have a method signature that works with DataOutput
-        /*        dumpBytes( buf );*/
         buf.pipe( out );
     }
 
@@ -171,19 +168,16 @@ public class BSONWritable implements BSONObject, WritableComparable {
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
         byte[] l = new byte[4];
-        byte[] data = new byte[0];
         try {
             in.readFully( l );
             int dataLen = Bits.readInt( l );
-            log.debug( "*** Expected DataLen: " + dataLen );
-            byte[] buf = new byte[dataLen - 4];
-            in.readFully( buf );
-            data = new byte[dataLen + 4];
+            if (log.isDebugEnabled()) log.debug( "*** Expected DataLen: " + dataLen );
+            byte[] data = new byte[dataLen + 4];
             System.arraycopy( l, 0, data, 0, 4 );
-            System.arraycopy( buf, 0, data, 4, dataLen - 4 );
+            in.readFully( data, 4, dataLen -4 );
             dec.decode( data, cb );
             _doc = (BSONObject) cb.get();
-            log.trace( "Decoded a BSON Object: " + _doc );
+            if (log.isTraceEnabled()) log.trace( "Decoded a BSON Object: " + _doc );
         }
         catch ( Exception e ) {
             /* If we can't read another length it's not an error, just return quietly. */
@@ -240,7 +234,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
     }
 
     public int compareTo( Object o ){
-        log.info( " ************ Compare: '" + this + "' to '" + o + "'" );
+        if (log.isTraceEnabled()) log.trace( " ************ Compare: '" + this + "' to '" + o + "'" );
         return new BSONComparator().compare( this, o );
     }
 
@@ -254,7 +248,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
     }
 
     protected static void dumpBytes( byte[] buffer ){
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder(2 + (3 * buffer.length));
 
         for ( byte b : buffer ){
             sb.append( "0x" ).append( (char) ( HEX_CHAR[( b & 0x00F0 ) >> 4] ) ).append(
@@ -262,6 +256,19 @@ public class BSONWritable implements BSONObject, WritableComparable {
         }
 
         log.info( "Byte Dump: " + sb.toString() );
+    }
+
+    @Override
+    public boolean equals( Object obj ){
+        if ( obj == null || getClass() != obj.getClass() )
+            return false;
+        final BSONWritable other = (BSONWritable) obj;
+        return !( this._doc != other._doc && ( this._doc == null || !this._doc.equals( other._doc ) ) );
+    }
+
+    @Override
+    public int hashCode(){
+        return ( this._doc != null ? this._doc.hashCode() : 0 );
     }
 
     protected BSONObject _doc;
