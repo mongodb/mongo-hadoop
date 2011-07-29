@@ -345,7 +345,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         }
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
         LOG.debug( "getNewURI(): original " + originalUri + " new uri: " + ans );
-        return new MonkeyPatchedMongoURI( ans );
+        return new MongoURI( ans );
     }
 
     public boolean verifyConfiguration( Configuration conf ){

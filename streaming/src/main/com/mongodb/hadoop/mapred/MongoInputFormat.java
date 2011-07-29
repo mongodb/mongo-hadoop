@@ -30,9 +30,9 @@ import com.mongodb.hadoop.mapred.input.*;
 import com.mongodb.hadoop.io.*;
 
 @SuppressWarnings("deprecation")
-public class MongoInputFormat implements InputFormat<ObjectWritable, BSONWritable> {
+public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
-    public RecordReader<ObjectWritable, BSONWritable> getRecordReader(InputSplit split,
+    public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split,
                                                                       JobConf job,
                                                                       Reporter reporter) {
         if (!(split instanceof MongoInputSplit))
@@ -40,7 +40,7 @@ public class MongoInputFormat implements InputFormat<ObjectWritable, BSONWritabl
 
         final MongoInputSplit mis = (MongoInputSplit) split;
 
-        return (RecordReader<ObjectWritable, BSONWritable>) new MongoRecordReader(mis);
+        return (RecordReader<BSONWritable, BSONWritable>) new MongoRecordReader(mis);
     }
 
     public InputSplit[] getSplits(JobConf job, int numSplits) {

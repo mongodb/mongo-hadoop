@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/examples/examples.iml" filepath="$PROJECT_DIR$/examples/examples.iml" />
       <module fileurl="file://$PROJECT_DIR$/flume_plugin/src/flume-plugin.iml" filepath="$PROJECT_DIR$/flume_plugin/src/flume-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/mongo-hadoop.iml" filepath="$PROJECT_DIR$/src/mongo-hadoop.iml" />
+      <module fileurl="file://$PROJECT_DIR$/streaming/streaming.iml" filepath="$PROJECT_DIR$/streaming/streaming.iml" />
     </modules>
   </component>
 </project>
