@@ -154,16 +154,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
         enc.set( buf );
         enc.putObject( _doc );
         enc.done();
-        final int datalen = buf.size();
-        if (datalen <= 0){
-            byte[] ba = buf.toByteArray();
-            log.error("write(): datalen is: "+datalen+" byte[] len is "+ba.length);
-            out.writeInt(ba.length);
-            out.write(ba);
-        } else {
-            out.writeInt(datalen);
-            buf.pipe(out);
-        }
+        buf.pipe(out);
     }
 
 
