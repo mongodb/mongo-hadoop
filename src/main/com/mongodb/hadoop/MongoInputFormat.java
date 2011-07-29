@@ -36,11 +36,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.JobContext;
 
 // Java
-import java.util.Set;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
@@ -259,18 +255,24 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
                 numChunks++;
                 final BasicDBObject row = (BasicDBObject) cur.next();
                 DBObject minObj = ( (DBObject) row.get( "min" ) );
-                String keyname = minObj.keySet().iterator().next();
-                //the shard key can be of any type so this must be an Object
-                Object thisMinVal = minObj.get( keyname );
-                Object thisMaxVal = ( (DBObject) row.get( "max" ) ).get( keyname );
                 DBObject shardKeyQuery = new BasicDBObject();
-                if ( !( thisMinVal == SplitFriendlyDBCallback.MIN_KEY_TYPE || thisMinVal.equals( "MinKey") ) )
-                    shardKeyQuery.put( "$min", new BasicDBObject().append( keyname, thisMinVal ) );
-                if ( !( thisMaxVal == SplitFriendlyDBCallback.MAX_KEY_TYPE || thisMaxVal.equals( "MaxKey") ) )
-                    shardKeyQuery.put( "$max", new BasicDBObject().append( keyname, thisMaxVal ) );
-                //must put something for $query or will silently fail. If no original query use an empty DBObject
+                DBObject min = new BasicDBObject();
+                DBObject max = new BasicDBObject();
+
+                for ( String keyName : minObj.keySet() ) {
+                    Object tMin = minObj.get( keyName);
+                    Object tMax = ( (DBObject) row.get( "max" ) ).get(  keyName );
+                    /** The shard key can be of any possible type, so this must be kept as Object */
+                    if ( !( tMin == SplitFriendlyDBCallback.MIN_KEY_TYPE || tMin.equals( "MinKey" )))
+                        min.put( keyName, tMin );
+                    if ( !( tMax == SplitFriendlyDBCallback.MAX_KEY_TYPE || tMax.equals( "MaxKey") ) )
+                        max.put( keyName, tMax );
+                }
+                /** We have to put something for $query or we'll fail; if no original query use an empty DBObj */
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
+                shardKeyQuery.put( "$min", min );
+                shardKeyQuery.put( "$max", max );
                 shardKeyQuery.put( "$query", originalQuery );
 
                 if (LOG.isDebugEnabled()) {
