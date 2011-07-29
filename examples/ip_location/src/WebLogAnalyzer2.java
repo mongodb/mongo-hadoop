@@ -381,15 +381,15 @@ public class WebLogAnalyzer2 extends MongoTool{
                 }catch(Exception e){
                     e.printStackTrace();
                 }
+                if (bits == 1)  //last loop iteration, take advantage of open connection and drop collection here
+                    tempCollection.drop();
             }finally{
                 if (mongo != null)
                     mongo.close();
             }
         }
         
-        //TODO: drop temp coll here
-        
-        System.out.println("running analsis phase");
+        System.out.println("running analysis phase");
         return runAnalPhase() ? 0 : 1;
     }
     public static final void main(String[] args) throws Exception {
