@@ -28,6 +28,10 @@ import org.bson.*;
 
 public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
+    public MongoRecordReader( MongoInputSplit split ){
+        _cursor = split.getCursor();
+    }
+
     @Override
     public void close(){
         if ( _cursor != null )
@@ -80,9 +84,6 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
         }
     }
 
-    public MongoRecordReader( MongoInputSplit split ){
-        _cursor = split.getCursor();
-    }
 
     private BSONObject _current;
     private final DBCursor _cursor;
