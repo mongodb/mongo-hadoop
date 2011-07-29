@@ -97,6 +97,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _cursor;
     }
 
+    @Override
+    public String toString() {
+        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + '}';
+    }
+    
     public MongoInputSplit( MongoURI inputURI,
                             DBObject query,
                             DBObject fields,

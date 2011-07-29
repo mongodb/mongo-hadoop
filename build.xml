@@ -46,7 +46,7 @@ limitations under the License.
 
     <target name="download-junit" unless="skip.download">
         <mkdir dir="${junit.jar.dir}"/>
-        <!-- download Ivy from web site so that it can be used even without any special installation -->
+        <!-- download junit from web site so that it can be used even without any special installation -->
         <echo message="Installing junit..."/>
         <get src="http://repo1.maven.org/maven2/junit/junit/${junit.install.version}/junit-${junit.install.version}.jar" dest="${junit.jar.file}" usetimestamp="true"/>
     </target>
@@ -142,6 +142,28 @@ limitations under the License.
         </junit>
     </target>
 
+    <target name="scalainit">
+      <property environment="env"/>
+      
+      <!-- check for required tools -->
+      <fail message="Missing SCALA_HOME variable in OS environment">
+        <condition><isset property="${env.SCALA_HOME}"/></condition>
+      </fail>
+      <echo> scala home is ${env.SCALA_HOME} </echo>
+      <property name="scala.home" location="${env.SCALA_HOME}"/>
+      <property name="scala-library.jar" location="${scala.home}/lib/scala-library.jar"/>
+      <property name="scala-compiler.jar" location="${scala.home}/lib/scala-compiler.jar"/>
+      
+      <path id="scala.classpath">
+        <pathelement location="${scala-compiler.jar}"/>
+        <pathelement location="${scala-library.jar}"/>
+      </path>	
+
+      <!-- load scala's ant tasks -->
+      <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scala.classpath"/>
+    </target> 
+
+
     <!-- ******************************************************************* -->
     <!-- Create the adapter jar file.                                        -->
     <!-- ******************************************************************* -->
@@ -151,6 +173,7 @@ limitations under the License.
             <fileset dir="${dir.build.java}" includes="**/*.class" />
             <fileset dir="build/examples" includes="**/*.class" />
         </jar>
+        <property name="made_jar" value="true" />
     </target>
 
     <!-- ******************************************************************* -->
@@ -296,5 +319,78 @@ limitations under the License.
             <arg line="-Dlog4j.debug"/>
         </java>
     </target>
+
+
+<!-- ................................................................................. -->
+
+ <property name="jruby.home" value="${basedir}/lib/.jruby"/>
+
+  <target name="checkgems" description="force gem/ivy download the first time ant is run">
+    <available property="lib.jruby.exists" file="lib/.jruby"/>
+    <!-- force ivy and gems download if .jruby directory does not exist -->
+    <condition property="cuke.ivy" value="true">
+      <not><isset property="lib.jruby.exists"/></not>
+    </condition>
+    <condition property="gems" value="true">
+      <not><isset property="lib.jruby.exists"/></not>
+    </condition>
+ </target>
+
+ <target name="download-jars-for-cuke" depends="install-ivy,checkgems" if="cuke.ivy" description="download jars with ivy">
+    <ivy:settings id="ivy-for-cuke" file="ivy-cuke-settings.xml" />
+    <ivy:resolve file="ivy-for-cuke.xml"/>
+    <ivy:retrieve settingsRef="ivy-for-cuke" />
+ </target>
+
+
+ <target name="cuke-install-gems" depends="define-cuke-paths" if="gems" description="Install gems needed by cuke4duke">
+   <property name="did.gem.install" value="true" />
+   <taskdef name="gem" classname="cuke4duke.ant.GemTask" classpathref="cuke.compile.classpath"/>
+   <gem args="install cuke4duke --version 0.4.4"/>
+ </target>
+
+ <target name="define-cuke-paths" depends="download-jars-for-cuke,scalainit">
+   <path id="jruby.classpath">
+     <fileset dir="lib">
+       <include name="**/*.jar"/>
+     </fileset>
+   </path>
+
+   <path id="cuke.compile.classpath">
+     <fileset dir="lib">
+       <include name="**/*.jar"/>
+     </fileset>
+     <path refid="scala.classpath"/>
+     <pathelement location="mongo-hadoop.jar"/>
+   </path>
+ </target>
+
+ <target name="cuke-compile-steps" depends="define-cuke-paths,cuke-install-gems" description="compile classes for cucumber tests">
+   <property name="cuke-target-dir" location="target/test-classes" />
+   <mkdir dir="${cuke-target-dir}" />
+   <!-- note: I tried fsc here but ran into a bug, so reverted to scalac even though it takes forever -->
+   <scalac srcdir="src/test/scala" destdir="${cuke-target-dir}" force="changed" scalacdebugging="on" classpathref="cuke.compile.classpath" failonerror="true" >
+     <!-- when using fsc add this attribute: reset="${made.jar}" -->
+     <include name="**/*.scala"/>
+   </scalac>
+   <path id="cuke.compile.classpath.for-java">
+     <path refid="cuke.compile.classpath"/>
+     <pathelement location="${cuke-target-dir}"/>
+   </path>
+   <!--  Do not try to run javac until we actually have some tests in this src directory
+        <javac includeantruntime="false" srcdir="src/test/java" destdir="target/test-classes" classpathref="cuke.compile.classpath" encoding="UTF-8"/>
+   -->
+ </target>
+ 
+
+ <target name="cucumber" depends="cuke-compile-steps " description="Run Cucumber">
+   <mkdir dir="target/junit-report"/>
+   <taskdef name="cucumber" classname="cuke4duke.ant.CucumberTask" classpathref="cuke.compile.classpath"/>
+   <cucumber
+       args="--verbose --require target/test-classes --require src/test/ruby --color --format pretty --format junit --out target/junit-report features"
+       objectFactory="pico">
+     <classpath refid="cuke.compile.classpath.for-java" />
+   </cucumber>
+ </target>
 
 </project>
