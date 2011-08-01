@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.mongodb</groupId>
   <artifactId>mongo-hadoop-streaming</artifactId>
@@ -33,5 +32,39 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId> 
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>1.4</version>
+            <executions>
+                <execution>
+                    <phase>package</phase> 
+                    <goals>
+                        <goal>shade</goal> 
+                    </goals>
+                    <configuration>
+                      <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>com.mongodb.hadoop.streaming.MongoStreamJob</mainClass>
+                        </transformer>
+                      </transformers>
+                      <artifactSet>
+                          <excludes>
+                              <exclude>org.eclipse.*</exclude>
+                              <exclude>org.mortbay.jetty:*</exclude>
+                              <exclude>tomcat:*</exclude>
+                              <exclude>javax.servlet:*</exclude>
+                              <exclude>ant:ant</exclude>
+                              <exclude>net.java.dev.jets3t:jets3t</exclude>
+                              <exclude>hsqldb:hsqldb</exclude>
+                              <exclude>org.eclipse.jdt:*</exclude>
+                          </excludes>
+                      </artifactSet>
+                    </configuration>
+                </execution> 
+            </executions>
+        </plugin> 
+    </plugins>
   </build>
 </project>
