@@ -11,8 +11,8 @@ build
 .idea
 .idea/*.*
 .idea/libraries/*.xml
-.iml
-.ipr
+*.iml
+*.ipr
 lib
 mongo-hadoop.jar
 examples/*/*.jar
