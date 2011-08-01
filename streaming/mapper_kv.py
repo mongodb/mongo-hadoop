@@ -2,13 +2,12 @@
 
 import sys
 
-from pymongo_hadoop import BSONInput, BSONOutput
+from pymongo_hadoop import KeyValueBSONInput, KeyValueBSONOutput
 
-output = BSONOutput()
-input  = BSONInput()
+output = KeyValueBSONOutput()
+input  = KeyValueBSONInput()
 
-for doc in input:
-    output.write((doc['_id'].year, {'bc10Year': doc['bc10Year']}))
-
+for (k, v) in input:
+    output.write((k.year, v['bc10Year']))
 
 print >> sys.stderr, "Done Mapping."

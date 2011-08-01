@@ -3,10 +3,12 @@ import sys
 from input import BSONInput, KeyValueBSONInput
 from output import BSONOutput, KeyValueBSONOutput
 from reducer import BSONReducer, BSONReducerInput
+from reducer import KeyValueBSONReducer, KeyValueBSONReducerInput
 
 __all__ = ['BSONInput', 'BSONOutput',
            'KeyValueBSONOutput', 'KeyValueBSONInput',
-           'BSONReducerInput', 'BSONReducer']
+           'BSONReducerInput', 'BSONReducer',
+           'KeyValueBSONReducer', 'KeyValueBSONReducerInput']
 
 def dump_bits(bits):
     for bit in bits:

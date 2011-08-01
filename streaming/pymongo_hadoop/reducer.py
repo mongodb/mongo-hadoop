@@ -3,14 +3,17 @@ based upon the Dumbo module at
 https://github.com/klbostee/dumbo
 """
 from itertools import groupby
-from input import BSONInput
-from output import BSONOutput
+from input import BSONInput, KeyValueBSONInput
+from output import BSONOutput, KeyValueBSONOutput
 
 import sys
 
 import inspect # HACKY!
 
 class BSONReducer(object):
+
+    output = BSONOutput()
+
     def __init__(self, factory=None, input_fh=None):
         if factory:
             # Try to figure out if they gave us a factory
@@ -28,7 +31,6 @@ class BSONReducer(object):
         else:
             self.input = input_fh
 
-        self.output = BSONOutput()
 
         self.output.writes(self.input)
 
@@ -42,6 +44,14 @@ class BSONReducer(object):
         "key" and "values", and returns an iterable of strings or None.
         """
         return lambda key, values: {'values': [v for v in values]}
+
+class KeyValueBSONReducer(BSONReducer):
+
+    output = KeyValueBSONOutput()
+
+    def __init__(self, factory=None, input_fh=None):
+        super(KeyValueBSONReducer, self).__init__(factory, input_fh)
+
 
 
 def default_reducer(data): 
@@ -65,7 +75,6 @@ class BSONReducerInput(BSONInput):
         super(BSONReducerInput, self).__init__()
             
 
-
     def iter_reduce(self):
         data = groupby(self._reads(), lambda doc: doc['_id'])
         data = ((key, (v for v in values)) for key, values in data)
@@ -73,4 +82,15 @@ class BSONReducerInput(BSONInput):
     
     __iter__ = iter_reduce
 
+class KeyValueBSONReducerInput(BSONReducerInput, KeyValueBSONInput):
+    def __init__(self, reducefunc):
+        self.reducer = reducefunc
+        super(KeyValueBSONInput, self).__init__()
+
+    def iter_reduce(self):
+        data = groupby(self._reads(), lambda k, v: k)
+        data = ((key, (v for v in values)) for key, values in data)
+        return self.reducer(data)
+    
+    __iter__ = iter_reduce
 
