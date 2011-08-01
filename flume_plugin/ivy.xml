@@ -1,6 +1,0 @@
-<ivy-module version="2.0">
-  <info organisation="org.mongodb.hadoop" module="mongo-flume"/>
-  <dependencies>
-    <dependency org="com.cloudera.flume" name="flume" rev="0.9.3-cdh3u0"/>
-  </dependencies>
-</ivy-module>

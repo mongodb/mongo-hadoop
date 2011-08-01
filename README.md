@@ -5,11 +5,9 @@ PLEASE BE CAREFUL WITH THIS IN PRODUCTION
 ------------------------------------------
 We are still shaking out bugs and features, so make sure you test this in your setup before deploying it to production.
 
-We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 (Which ships 0.20.2)
+We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 Update 1 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
 
 The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
-
-NOTE: We have not tested this driver with Hadoop 0.21 yet.  Hadoop lists 0.21 as "unstable, unsupported " and until that changes we will not provide any full support.
 
 Maintainers
 ------------
@@ -25,15 +23,10 @@ Contributors
 * Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
 * Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
 
-State of the Adapter
----------
-This is currently under development and is not feature complete.
+Using the Adapter
+---------------------
 
-However, the core functionality is relatively stable
-
-It should be considered an early beta.
-
-You will need the MongoDB Java Driver 2.5.3+ or `master`.
+You will need the MongoDB Java Driver 2.6.3+.
 
 Issue tracking: https://github.com/mongodb/mongo-hadoop/issues
 
@@ -138,9 +131,7 @@ Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes
 STREAMING
 ----------
 
-Streaming is a work in progress as we are sorting out how to most efficiently stream binary data.
-
-Essentially, Streaming support + MongoDB **requires** your Hadoop distribution include the patches for the following issues:
+Streaming support + MongoDB **requires** your Hadoop distribution include the patches for the following issues:
 
     * [HADOOP-1722 - Make streaming to handle non-utf8 byte array](https://issues.apache.org/jira/browse/HADOOP-1722)
     * [HADOOP-5450 - Add support for application-specific typecodes to typed bytes](https://issues.apache.org/jira/browse/HADOOP-5450)
@@ -148,18 +139,16 @@ Essentially, Streaming support + MongoDB **requires** your Hadoop distribution i
 
 For the mainline Apache Hadoop distribution, these patches were merged for the 0.21.0 release.  We have verified as well that the [Cloudera](http://cloudera.com) distribution (while based on 0.20.x still) includes these patches in CDH3 Update 1; anecdotal evidence (which needs confirmation) indicates they may have been there since CDH2, and likely exist in CDH3 as well.
 
-Running Streaming:
-  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
 
-You will need Hadoop Streaming 0.21 or higher to make this work --- 0.20.2 does *not* support Binary streaming
+By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0; you can change the Hadoop version of the build in Maven by specifying the `hadoop.release` property:
+
+        mvn -Dhadoop.release=cdh3 
+        mvn -Dhadoop.release=cloudera
+
+Will both build against Cloudera CDH3u1, while:
 
 
-  hadoop jar $HADOOP_STREAMING -D stream.map.input=rawbytes -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md
+        mvn -Dhadoop.release=apache-hadoop-0.21
 
-  hadoop jar $HADOOP_STREAMING -conf examples/treasury_yield/resources/mongo-treasury_yield.xml -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar  -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input README.md -output foo.md -io rawbytes
 
-hadoop jar $HADOOP_STREAMING -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
-
-hadoop jar ./mongo-hadoop-streaming.jar -libjars mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
-
-hadoop jar mongo-hadoop-streaming.jar -libjars $HADOOP_STREAMING,mongo-hadoop.jar,lib/mongo-java-driver-2.4.jar -mapper examples/treasury_yield/src/mapper.py -reducer examples/treasury_yield/src/reducer.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -input mongodb://localhost/demo.yield_historical.in -output mongodb://localhost/demo.yield_historical.out
+Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.

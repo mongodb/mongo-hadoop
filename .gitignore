@@ -1,11 +1,14 @@
 *.pyc
 *.class
+.classpath
+.project
 *~
 build
 *.swp
 .DS*
 *#*
 *~
+.idea
 .idea/*.*
 .idea/libraries/*.xml
 .iml
