@@ -1,4 +1,4 @@
-// SnmpStatisticWithCombiner.java
+// SnmpStatisticMongoTool.java
 /*
  * Copyright 2011 10gen Inc.
  * 
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.examples;
+package com.mongodb.hadoop.examples.snmp;
 
 import java.io.*;
 import java.util.*;
@@ -32,11 +32,8 @@ import java.util.ArrayList;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.util.*;
 
-public class SnmpStatisticWithCombiner extends MongoTool {
-    public static class MapHostUploadOnEachAPPerDay extends Mapper<Object, BSONObject, Text, LongWritable> {
-        private final static IntWritable one = new IntWritable( 1 );
-        private final Text word = new Text();
-
+public class SnmpStatisticMongoTool extends MongoTool {
+    public static class MapHostUploadEachAPEachDay extends Mapper<Object, BSONObject, Text, LongWritable> {
         @Override
         public void map( Object key, BSONObject value, Context context ) throws IOException, InterruptedException{
             if ( value.get( "key" ) != null ){
@@ -59,7 +56,7 @@ public class SnmpStatisticWithCombiner extends MongoTool {
         }
     }
 
-    public static class CombineHostUploadOnEachAPPerDay extends Reducer<Text, LongWritable, Text, LongWritable> {
+    public static class ReduceHostUploadEachAPEachDay extends Reducer<Text, LongWritable, Text, LongWritable> {
         @Override
         public void reduce( Text key, Iterable<LongWritable> values, Context context )
                 throws IOException, InterruptedException{
@@ -68,27 +65,17 @@ public class SnmpStatisticWithCombiner extends MongoTool {
                 outputFlowArray.add( val.get() );
             }
             Long totalOutput = Collections.max( outputFlowArray ) - Collections.min( outputFlowArray );
-            String combinerInputKey = key.toString();
-            String[] item = combinerInputKey.split( "," );
+            String reduceInputKey = key.toString();
+            String[] item = reduceInputKey.split( "," );
             String date = item[0];
             String macAdd = item[1];
+            String apID = item[2];
             String outputKey = date + "," + macAdd;
             context.write( new Text( outputKey ), new LongWritable( totalOutput ) );
         }
     }
 
-    public static class ReduceHostUploadOnEachAPPerDay extends Reducer<Text, LongWritable, Text, LongWritable> {
-        @Override
-        public void reduce( Text key, Iterable<LongWritable> values, Context context )
-                throws IOException, InterruptedException{
-            Long totalUploadFlow = new Long( 0 );
-            for ( LongWritable val : values ){
-                totalUploadFlow += val.get();
-            }
-            context.write( key, new LongWritable( totalUploadFlow ) );
-        }
-    }
-
+    //run() method for test harness.
     @Override
     public int run( String[] args ) throws Exception{
         final Configuration conf = getConf();
@@ -99,33 +86,27 @@ public class SnmpStatisticWithCombiner extends MongoTool {
             throw new IllegalStateException( "input uri is not set" );
         final String outputCollectionName = outputUri.getCollection();
         final Job job = new Job( conf, "snmp analysis " + outputCollectionName );
-        job.setJarByClass( SnmpStatisticWithCombiner.class );
-        job.setMapperClass( MapHostUploadOnEachAPPerDay.class );
-        job.setCombinerClass( CombineHostUploadOnEachAPPerDay.class );
-        job.setReducerClass( ReduceHostUploadOnEachAPPerDay.class );
+        job.setJarByClass( SnmpStatisticMongoTool.class );
+        job.setMapperClass( MapHostUploadEachAPEachDay.class );
+        job.setReducerClass( ReduceHostUploadEachAPEachDay.class );
         job.setOutputKeyClass( Text.class );
         job.setOutputValueClass( LongWritable.class );
         job.setInputFormatClass( MongoInputFormat.class );
         job.setOutputFormatClass( MongoOutputFormat.class );
-        try {
-            boolean result = job.waitForCompletion( true );
-            System.out.println( "job.waitForCompletion( true ) returned " + result );
-        }
-        catch ( Exception e ) {
-            System.out.println( "job.waitForCompletion( true ) threw Exception" );
-            e.printStackTrace();
-        }
-        return 0;
+
+        boolean result = job.waitForCompletion( true );
+        return ( result ? 0 : 1 );
     }
 
     public static void main( String[] args ) throws Exception{
         boolean use_shards = true;
         boolean use_chunks = false;
-        final Configuration Conf = new Configuration();
-        MongoConfigUtil.setInputURI( Conf, "mongodb://localhost:30000/test.snmp" );
-        Conf.setBoolean( MongoConfigUtil.SPLITS_USE_SHARDS, use_shards );
-        Conf.setBoolean( MongoConfigUtil.SPLITS_USE_CHUNKS, use_chunks );
+        final Configuration conf = new Configuration();
         String output_table = null;
+
+        MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30000/test.snmp" );
+        conf.setBoolean( MongoConfigUtil.SPLITS_USE_SHARDS, use_shards );
+        conf.setBoolean( MongoConfigUtil.SPLITS_USE_CHUNKS, use_chunks );
         if ( use_chunks ){
             if ( use_shards )
                 output_table = "snmp_with_shards_and_chunks";
@@ -134,27 +115,20 @@ public class SnmpStatisticWithCombiner extends MongoTool {
         }
         else{
             if ( use_shards )
-                output_table = "snmpWithShards";
+                output_table = "snmp_with_shards";
             else
                 output_table = "snmp_no_splits";
         }
-        MongoConfigUtil.setOutputURI( Conf, "mongodb://localhost:30000/test." + output_table );
-        final Job snmpJob = new Job( Conf, "snmp analysis " + output_table );
-        snmpJob.setJarByClass( SnmpStatisticWithCombiner.class );
-        snmpJob.setMapperClass( MapHostUploadOnEachAPPerDay.class );
-        snmpJob.setCombinerClass( CombineHostUploadOnEachAPPerDay.class );
-        snmpJob.setReducerClass( ReduceHostUploadOnEachAPPerDay.class );
-        snmpJob.setOutputKeyClass( Text.class );
-        snmpJob.setOutputValueClass( LongWritable.class );
-        snmpJob.setInputFormatClass( MongoInputFormat.class );
-        snmpJob.setOutputFormatClass( MongoOutputFormat.class );
-        try {
-            boolean result = snmpJob.waitForCompletion( true );
-            System.out.println( "job.waitForCompletion( true ) returned " + result );
-        }
-        catch ( Exception e ) {
-            System.out.println( "job.waitForCompletion( true ) threw Exception" );
-            e.printStackTrace();
-        }
+        MongoConfigUtil.setOutputURI( conf, "mongodb://localhost:30000/test." + output_table );
+        final Job job = new Job( conf, "snmp analysis " + output_table );
+        job.setJarByClass( SnmpStatisticMongoTool.class );
+        job.setMapperClass( MapHostUploadEachAPEachDay.class );
+        job.setReducerClass( ReduceHostUploadEachAPEachDay.class );
+        job.setOutputKeyClass( Text.class );
+        job.setOutputValueClass( LongWritable.class );
+        job.setInputFormatClass( MongoInputFormat.class );
+        job.setOutputFormatClass( MongoOutputFormat.class );
+        boolean result = job.waitForCompletion( true );
+        System.exit( result ? 0 : 1 );
     }
 }

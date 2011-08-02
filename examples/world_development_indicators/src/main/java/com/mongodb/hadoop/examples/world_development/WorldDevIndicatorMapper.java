@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mongodb.hadoop.examples;
+package com.mongodb.hadoop.examples.world_development;
 
 // Mongo
 

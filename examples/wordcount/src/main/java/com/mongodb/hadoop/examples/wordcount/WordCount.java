@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package com.mongodb.hadoop.examples.wordcount;
+
 import java.io.*;
 import java.util.*;
 

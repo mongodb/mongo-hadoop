@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package com.mongodb.hadoop.examples.wordcount.split;
+
 import java.io.*;
 import java.util.*;
 

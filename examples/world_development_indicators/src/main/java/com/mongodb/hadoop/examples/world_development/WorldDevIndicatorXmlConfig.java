@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mongodb.hadoop.examples;
+package com.mongodb.hadoop.examples.world_development;
 
 // Mongo
 
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.util.MongoTool;
 
 // Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.ToolRunner;
 
 /**
- * The treasury yield xml config object.
+ * The world development xml config class.
  */
-public class TreasuryYieldXMLConfig extends MongoTool {
+public class WorldDevIndicatorXmlConfig extends MongoTool {
 
     static{
         // Load the XML config defined in hadoop-local.xml
@@ -36,7 +35,7 @@ public class TreasuryYieldXMLConfig extends MongoTool {
     }
 
     public static void main( final String[] pArgs ) throws Exception{
-        System.exit( ToolRunner.run( new TreasuryYieldXMLConfig(), pArgs ) );
+        System.exit( ToolRunner.run( new WorldDevIndicatorXmlConfig(), pArgs ) );
     }
 }
 
