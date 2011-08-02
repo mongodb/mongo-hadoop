@@ -3,18 +3,18 @@
 <testparams>
 
 
-<property name="mongo.splits.use-chunks">
+<property name="mongo.input.split.read_shard_chunks">
     <val value="true"/>
     <val value="false" baseline="true"/>
 </property>
 
-<property name="mongo.splits.use-shards">
+<property name="mongo.input.split.read_from_shards">
     <val value="true" />
     <val value="false" baseline="true"/>
 </property>
 
-<property name="mongo.splits.slaveok">
-    <when name="mongo.splits.use-shards" val="true"/>
+<property name="mongo.input.split.allow_read_from_secondaries">
+    <when name="mongo.input.split.read_from_shards" val="true"/>
     <val value="true"/>
     <val value="false"/>
      

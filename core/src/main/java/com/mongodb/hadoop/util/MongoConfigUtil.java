@@ -74,19 +74,19 @@ public class MongoConfigUtil {
      * can be unsafe. If {@code mongos} is moving chunks around you might see duplicate data, or miss some data
      * entirely. Defaults to {@code false}
      */
-    public static final String SPLITS_USE_SHARDS = "mongo.splits.use-shards";
+    public static final String SPLITS_USE_SHARDS = "mongo.input.split.read_from_shards";
     /**
      * If {@code true} have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS} is not true splits will still
      * use chunks, but will connect through {@code mongos} instead of the individual backend {@code mongod}s (the safe
      * thing to do). If {@link #SPLITS_USE_SHARDS} is {@code true} but this is {@code false} one split will be made for
      * each backend shard. THIS IS UNSAFE and may result in data being run multiple times <p> Defaults to {@code true }
      */
-    public static final String SPLITS_USE_CHUNKS = "mongo.splits.use-chunks";
+    public static final String SPLITS_USE_CHUNKS = "mongo.input.split.read_shard_chunks";
     /**
      * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the
      * URI.
      */
-    public static final String SPLITS_SLAVE_OK = "mongo.splits.slaveok";
+    public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
     public static boolean isJobVerbose( Configuration conf ){
         return conf.getBoolean( JOB_VERBOSE, false );

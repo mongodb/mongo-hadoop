@@ -18,7 +18,7 @@
            with cloudera-hadoop or apache-hadoop-0.21
        -->
       <!-- <module>streaming</module>  -->
-      <!--<module>examples</module>-->
+      <module>examples</module>
   </modules>
 
   <dependencies>

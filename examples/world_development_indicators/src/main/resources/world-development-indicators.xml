@@ -29,7 +29,7 @@ limitations under the License.
     </property>
 
     <property>
-        <name>mongo.splits.use-chunks</name>
+        <name>mongo.input.split.read_shard_chunks</name>
         <value>true</value>
     </property>
 
