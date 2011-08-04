@@ -4,6 +4,7 @@ from input import BSONInput, KeyValueBSONInput
 from output import BSONOutput, KeyValueBSONOutput
 from reducer import BSONReducer, BSONReducerInput
 from reducer import KeyValueBSONReducer, KeyValueBSONReducerInput
+from mapper import BSONMapper, KeyValueBSONMapper
 
 __all__ = ['BSONInput', 'BSONOutput',
            'KeyValueBSONOutput', 'KeyValueBSONInput',
