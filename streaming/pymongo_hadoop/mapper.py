@@ -9,7 +9,10 @@ class BSONMapper(object):
     def __init__(self, target, **kwargs):
         """`target` should be a generator function that accepts a
         single argument which will be an instance of :class:`BSONInput`,
-        and which yields values to be emitted.
+        and which yields dictionaries to be emitted. The yielded
+        dictionaries should conform to the format expected by
+        :class:`BSONInput` (i.e. they should have the key defined
+        in a field named `_id`).
 
         Keyword arguments are passed directly to the underlying
         :class:`BSONInput`.
@@ -30,8 +33,8 @@ class KeyValueBSONMapper(object):
     def __init__(self, target, **kwargs):
         """`target` should be a generator function that accepts a
         single argument which will be an instance of
-        :class:`KeyValueBSONInput`, and which yields values to be
-        emitted.
+        :class:`KeyValueBSONInput`, and which yields tuples of
+        (key, value) to be emitted.
 
         Keyword arguments are passed directly to the underlying
         :class:`KeyValueBSONInput`.
