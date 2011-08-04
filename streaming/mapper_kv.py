@@ -2,12 +2,11 @@
 
 import sys
 
-from pymongo_hadoop import KeyValueBSONInput, KeyValueBSONOutput
+from pymongo_hadoop import KeyValueBSONMapper
 
-output = KeyValueBSONOutput()
-input  = KeyValueBSONInput()
+def mapper(keys_and_values):
+    for (k, v) in keys_and_values:
+        yield (k.year, v['bc10Year'])
 
-for (k, v) in input:
-    output.write((k.year, v['bc10Year']))
-
+KeyValueBSONMapper(mapper)
 print >> sys.stderr, "Done Mapping."
