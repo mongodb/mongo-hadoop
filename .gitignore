@@ -20,3 +20,11 @@ WDI_GDF_Data.csv
 .idea
 .idea/libraries/lib2.xml
 .idea/workspace.xml
+core/target/*/*
+core/target/*
+examples/*/target/*/*
+examples/*/target/*
+flume/target/*/*
+flume/target/*
+pig/target/*/*
+pig/target/*
