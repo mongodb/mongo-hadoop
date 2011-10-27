@@ -13,7 +13,7 @@ Maintainers
 ------------
 * Brendan McAdams <brendan@10gen.com>
 * Eliot Horowitz <erh@10gen.com>
-* Ryan Nitz <ryan@10gen.com>
+* Ryan Nitz
 
 Contributors
 ------------
