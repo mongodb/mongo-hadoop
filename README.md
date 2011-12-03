@@ -9,6 +9,8 @@ We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 
 
 The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
 
+*NOTE*: If you have questions please email the [mongodb-user Mailing List](http://groups.google.com/group/mongodb-user), rather than directly contacting contributors or maintainers.
+
 Maintainers
 ------------
 * Brendan McAdams <brendan@10gen.com>
@@ -69,10 +71,10 @@ The results will be saved in db `test`, collection `out`.
 params are setup in the Java code.  You can run this with the ant task `wordcount`.
 
 `WordCountXMLConfig.java` is configured purely through XML files, with JSON for queries, etc.
-See examples/wordcount/resources/mongo-wordcount.xml for the example configuration.
+See examples/wordcount/src/main/resources/mongo-wordcount.xml for the example configuration.
 You can run this with the ant task `wordcountXML`, or with a hadoop command of:
 
-    hadoop jar mongo-hadoop.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/resources/mongo-wordcount.xml
+    hadoop jar mongo-hadoop.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
 
 You will need to copy the `mongo-java-driver.jar` file into your Hadoop `lib` directory before this will work.
 
@@ -82,15 +84,15 @@ The treasury yield example demonstrates working with a more complex input BSON d
 
 It uses a database of daily US Treasury Bid Curves from 1990 to Sept. 2010 and runs them through to calculate annual averages.
 
-There is a JSON file `examples/treasury_yield/resources/yield_historical_in.json` which you should import into the `yield_historical.in` collection in the `demo` db.
+There is a JSON file `examples/treasury_yield/src/main/resources/yield_historical_in.json` which you should import into the `yield_historical.in` collection in the `demo` db.
 
 The sample data can be imported into the mongos host by calling (assumes mongos running on 27017 on the same node):
 
-    mongoimport --db demo --collection yield_historical.in --type json --file examples/treasury_yield/resources/yield_historical_in.json
+    mongoimport --db demo --collection yield_historical.in --type json --file examples/treasury_yield/src/main/resources/yield_historical_in.json
 
 Once the data is imported, the test can be run by executing (on the Hadoop master):
 
-    hadoop jar mongo-hadoop.jar com.mongodb.hadoop.examples.TreasuryYieldXMLConfig -conf examples/treasury_yield/resources/mongo-treasury_yield.xml
+    hadoop jar mongo-hadoop.jar com.mongodb.hadoop.examples.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
 
 To confirm the test ran successfully, look at the `demo` database and query the `yield_historical.out collection`.
 
