@@ -4,8 +4,8 @@ import sys
 
 from pymongo_hadoop import KeyValueBSONMapper
 
-def mapper(keys_and_values):
-    for (k, v) in keys_and_values:
+def mapper(entries):
+    for (k, v) in entries:
         yield (k.year, v['bc10Year'])
 
 KeyValueBSONMapper(mapper)

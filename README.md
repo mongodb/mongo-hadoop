@@ -90,9 +90,9 @@ The sample data can be imported into the mongos host by calling (assumes mongos 
 
     mongoimport --db demo --collection yield_historical.in --type json --file examples/treasury_yield/src/main/resources/yield_historical_in.json
 
-Once the data is imported, the test can be run by executing (on the Hadoop master):
+You'll need to setup the mongo-hadoop and mongo-java-driver jars in your Hadoop installations "lib" directory; Once the data is imported, the test can be run by executing (on the Hadoop master):
 
-    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
+    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
 
 To confirm the test ran successfully, look at the `demo` database and query the `yield_historical.out collection`.
 

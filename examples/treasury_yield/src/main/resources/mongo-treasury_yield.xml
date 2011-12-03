@@ -50,12 +50,12 @@
   <property>
     <!-- Class for the mapper -->
     <name>mongo.job.mapper</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldMapper</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldMapper</value>
   </property>
   <property>
     <!-- Reducer class -->
     <name>mongo.job.reducer</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldReducer</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer</value>
   </property>
   <property>
     <!-- InputFormat Class -->
@@ -91,7 +91,7 @@
   <property>
     <!-- Class for the combiner [optional] -->
     <name>mongo.job.combiner</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldReducer</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer</value>
   </property>
   <property>
     <!-- Partitioner class [optional] -->
