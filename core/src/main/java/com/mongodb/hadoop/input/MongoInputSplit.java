@@ -35,11 +35,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
                             DBObject sort,
                             int limit,
                             int skip ){
-        if ( LOG.isDebugEnabled() ){
-            LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
-                       + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
-                       + sort + "', limit: " + limit + ", skip: " + skip + " ." );
-        }
+        LOG.info( "Creating a new MongoInputSplit for MongoURI '"
+                   + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
+                   + sort + "', limit: " + limit + ", skip: " + skip + " ." );
 
         _mongoURI = inputURI;
         _querySpec = query;
@@ -49,6 +47,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _skip = skip;
         getCursor();
     }
+
     /**
      * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
      * in the split instead.
@@ -68,7 +67,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
     /**
      * Serialize the Split instance
      */
-    @Override
     public void write( final DataOutput out ) throws IOException{
         out.writeUTF( _mongoURI.toString() );
         out.writeUTF( JSON.serialize( _querySpec ) );
@@ -78,7 +76,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
         out.writeInt( _skip );
     }
 
-    @Override
     public void readFields( DataInput in ) throws IOException{
         _mongoURI = new MongoURI( in.readUTF() );
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
@@ -88,12 +85,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _skip = in.readInt();
         getCursor();
 
-        if ( LOG.isDebugEnabled() ){
-            LOG.debug( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
-                       + Arrays.toString( getLocations() ) + ", query = " + _querySpec
-                       + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
-                       + _skip + "}" );
-        }
+        LOG.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
+                   + Arrays.toString( getLocations() ) + ", query = " + _querySpec
+                   + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
+                   + _skip + "}" );
     }
 
     DBCursor getCursor(){

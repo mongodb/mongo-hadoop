@@ -4,9 +4,9 @@ import com.mongodb.*;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.input.*;
 import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 
+import java.net.UnknownHostException;
 import java.util.*;
 
 /**
@@ -39,6 +39,20 @@ public class MongoSplitter {
          * On the jobclient side we want *ONLY* the min and max ids for each
          * split; Actual querying will be done on the individual mappers.
          */
+        MongoURI uri = conf.getInputURI();
+        Mongo mongo;
+        try {
+            mongo = uri.connect();
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException( " Unable to connect to MongoDB at '" + uri + "'", e);
+        }
+
+        DB db = mongo.getDB( uri.getDatabase() );
+        DBCollection coll = db.getCollection( uri.getCollection() );
+        final CommandResult stats = coll.getStats();
+
+        final boolean isSharded = stats.getBoolean( "sharded", false );
+
         //connecting to the individual backend mongods is not safe, do not do so by default
         final boolean useShards = conf.canReadSplitsFromShards();
 
@@ -48,67 +62,56 @@ public class MongoSplitter {
 
         List<InputSplit> splits = null;
 
-        if ( useShards || useChunks ){
-            try {
-                MongoURI uri = conf.getInputURI();
-                Mongo mongo = uri.connect();
-                try {
-                    DB db = mongo.getDB( uri.getDatabase() );
-                    DBCollection coll = db.getCollection( uri.getCollection() );
-                    final CommandResult stats = coll.getStats();
-                    final boolean isSharded = stats.getBoolean( "sharded", false );
-                    if ( isSharded ){ //don't proceed if the collection isn't actually sharded
-                        if ( useChunks )
-                            splits = fetchSplitsViaChunks( conf, uri, mongo, useShards, slaveOk );
-                        else if ( useShards ){
-                            log.warn( "Fetching Input Splits directly from shards is potentially dangerous for data "
-                                      + "consistency should migrations occur during the retrieval." );
-                            splits = fetchSplitsFromShards( conf, uri, mongo, slaveOk );
-                        }
-                        if ( splits == null )
-                            log.warn( "Failed to create/calculate Input Splits from Shard Chunks." );
-                    }
-                    else{
-                        log.info( "Collection is not sharded, will process as a single Input Split." );
-                        log.debug( "Sharding Stats Dump: " + stats );
-                    }
-                }
-                finally {
-                    if ( mongo != null )
-                        mongo.close();
-                    mongo = null;
-                }
+        log.info(" Calculate Splits Code ... Use Shards? " + useShards + ", Use Chunks? " + useChunks + "; Collection Sharded? " + isSharded);
 
-                if ( splits != null ){
-
-                    if ( log.isDebugEnabled() ){
-                        log.debug( "Calculated splits and returning them - splits: " + splits );
-                    }
-
-                    return splits;
-                }
-
-                log.warn( "Fallthrough code; splits is null." );
-                //If splits is null fall through to code below
-            }
-            catch ( Exception e ) {
-                log.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
-            }
+        if (isSharded && (useShards || useChunks)){  // todo I don't think these settings can be run together
+            log.info( "Sharding mode calculation entering." );
+            return calculateShardedSplits(conf, useShards, useChunks, slaveOk, splits, uri, mongo);
         }
+        else {
+            log.info( "Non-Sharding mode calculation entering." );
+            // Number of *documents*, not bytes, to split on
+            final int splitSize = conf.getSplitSize();
+            splits = new ArrayList<InputSplit>( 1 );
+            // no splits, no sharding
+            splits.add( new MongoInputSplit( conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(),
+                                             conf.getLimit(), conf.getSkip() ) );
 
-        // Number of *documents*, not bytes, to split on
-        final int splitSize = conf.getSplitSize();
-        splits = new ArrayList<InputSplit>( 1 );
-        // no splits, no sharding
-        splits.add( new MongoInputSplit( conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(),
-                                         conf.getLimit(), conf.getSkip() ) );
 
+            log.info( "Calculated " + splits.size() + " split objects." );
+            log.info( "Dump of calculated splits ... " );
+            for ( InputSplit split : splits ) {
+                log.info("\t Split: " + split.toString());
+            }
 
-        if ( log.isDebugEnabled() ){
-            log.debug( "Calculated " + splits.size() + " split objects." );
+            return splits;
         }
+    }
 
-        return splits;
+    private static List<InputSplit> calculateShardedSplits(MongoConfig conf, boolean useShards, boolean useChunks, boolean slaveOk, List<InputSplit> splits, MongoURI uri, Mongo mongo) {
+        try {
+            if ( useChunks )
+                splits = fetchSplitsViaChunks( conf, uri, mongo, useShards, slaveOk );
+            else if ( useShards ){
+                log.warn( "Fetching Input Splits directly from shards is potentially dangerous for data "
+                          + "consistency should migrations occur during the retrieval." );
+                splits = fetchSplitsFromShards( conf, uri, mongo, slaveOk );
+            }
+            else throw new IllegalStateException( "Neither useChunks nor useShards enabled; failed to pick a valid state. " );
+
+            if ( splits == null )
+                throw new IllegalStateException( "Failed to create/calculate Input Splits from Shard Chunks; final splits content is 'null'." );
+
+            if ( log.isDebugEnabled() ){
+                log.debug( "Calculated splits and returning them - splits: " + splits );
+            }
+
+            return splits;
+        }
+        catch ( Exception e ) {
+            log.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
