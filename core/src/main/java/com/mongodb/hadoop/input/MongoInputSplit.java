@@ -97,6 +97,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // todo - support limit/skip
         if ( _cursor == null ){
             _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+            // It would be exceptionally bad for cursors to time out reading data for Hadoop. Disable
+            _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }
 
@@ -106,7 +108,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + '}';
+        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
     }
 
     public MongoInputSplit(){ }

@@ -16,6 +16,7 @@
   <modules>
       <module>snmp</module>
       <module>treasury_yield</module>
+      <module>ufo_sightings</module>
       <module>wordcount</module>
       <module>wordcount_split_test</module>
           <module>world_development_indicators</module>
