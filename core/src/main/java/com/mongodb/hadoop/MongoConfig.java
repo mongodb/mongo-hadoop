@@ -311,6 +311,27 @@ public class MongoConfig {
         MongoConfigUtil.setReadSplitsFromSecondary( _conf, value );
     }
 
+    /**
+     * The MongoDB field to read from for the Mapper Input.
+     *
+     * This will be fed to your mapper as the "Key" for the input.
+     *
+     * Defaults to {@code _id}
+     */
+    public String getInputKey() {
+        return MongoConfigUtil.getInputKey( _conf );
+    }
+
+    /**
+     * The MongoDB field to read from for the Mapper Input.
+     *
+     * This will be fed to your mapper as the "Key" for the input.
+     *
+     * Defaults to {@code _id}
+     */
+    public void setInputKey( String fieldName ) {
+        MongoConfigUtil.setInputKey( _conf, fieldName );
+    }
 
     final Configuration _conf;
 
