@@ -19,10 +19,11 @@ package com.mongodb.hadoop.input;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.util.*;
-import com.mongodb.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.bson.BSONDecoder;
+import org.bson.BSONEncoder;
 
 import java.io.*;
 import java.util.*;
@@ -46,6 +47,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _limit = limit;
         _skip = skip;
         getCursor();
+        
+        getBsonDecoder();
+        getBsonEncoder();
     }
 
     /**
@@ -68,19 +72,46 @@ public class MongoInputSplit extends InputSplit implements Writable {
      * Serialize the Split instance
      */
     public void write( final DataOutput out ) throws IOException{
+        byte[] buf;
+        getBsonEncoder();
+        
         out.writeUTF( _mongoURI.toString() );
-        out.writeUTF( JSON.serialize( _querySpec ) );
-        out.writeUTF( JSON.serialize( _fieldSpec ) );
-        out.writeUTF( JSON.serialize( _sortSpec ) );
+        
+        buf = _bsonEncoder.encode(_querySpec);
+        out.writeInt(buf.length);
+        out.write(buf);
+        
+        buf = _bsonEncoder.encode(_fieldSpec);
+        out.writeInt(buf.length);
+        out.write(buf);
+        
+        buf = _bsonEncoder.encode(_sortSpec);
+        out.writeInt(buf.length);
+        out.write(buf);
+        
         out.writeInt( _limit );
         out.writeInt( _skip );
     }
 
     public void readFields( DataInput in ) throws IOException{
+    	
         _mongoURI = new MongoURI( in.readUTF() );
-        _querySpec = (DBObject) JSON.parse( in.readUTF() );
-        _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
-        _sortSpec = (DBObject) JSON.parse( in.readUTF() );
+        
+        byte[] buf;
+        getBsonDecoder();
+        
+        buf = new byte[in.readInt()];
+        in.readFully(buf, 0, buf.length);
+        _querySpec = new BasicDBObject(_bsonDecoder.readObject(buf).toMap());
+        
+        buf = new byte[in.readInt()];
+        in.readFully(buf, 0, buf.length);
+        _fieldSpec = new BasicDBObject(_bsonDecoder.readObject(buf).toMap());
+        
+        buf = new byte[in.readInt()];
+        in.readFully(buf, 0, buf.length);
+        _sortSpec = new BasicDBObject(_bsonDecoder.readObject(buf).toMap());
+        
         _limit = in.readInt();
         _skip = in.readInt();
         getCursor();
@@ -105,6 +136,19 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _cursor;
     }
 
+    BSONEncoder getBsonEncoder(){
+    	if (_bsonEncoder == null){
+    		_bsonEncoder = new BSONEncoder();
+    	}
+    	return _bsonEncoder;
+    }
+    
+    BSONDecoder getBsonDecoder(){
+    	if (_bsonDecoder == null){
+    		_bsonDecoder = new BSONDecoder();
+    	}
+    	return _bsonDecoder;
+    }
 
     @Override
     public String toString(){
@@ -146,6 +190,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private int _skip = 0;
     private long _length = -1;
     private transient DBCursor _cursor;
+    
+    private transient BSONEncoder _bsonEncoder;
+    private transient BSONDecoder _bsonDecoder;
 
     private static final Log LOG = LogFactory.getLog( MongoInputSplit.class );
 
