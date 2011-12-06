@@ -29,6 +29,7 @@ import org.bson.*;
 public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
     public MongoRecordReader( MongoInputSplit split ){
+        _split = split;
         _cursor = split.getCursor();
     }
 
@@ -40,7 +41,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
     @Override
     public Object getCurrentKey(){
-        return _current.get( "_id" );
+        return _current.get( _split.getKeyField() );
     }
 
     @Override
@@ -85,6 +86,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
 
     private BSONObject _current;
+    private final MongoInputSplit _split;
     private final DBCursor _cursor;
     private float _seen = 0;
     private float _total;

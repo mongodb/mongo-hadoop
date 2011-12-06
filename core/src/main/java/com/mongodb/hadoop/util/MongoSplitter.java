@@ -32,7 +32,7 @@ public class MongoSplitter {
              * split
              */
             throw new IllegalArgumentException(
-                    "skip() and limit() is not currently supported do to input split issues." );
+                    "skip() and limit() is not currently supported due to input split issues." );
         }
 
         /**
@@ -74,7 +74,7 @@ public class MongoSplitter {
             final int splitSize = conf.getSplitSize();
             splits = new ArrayList<InputSplit>( 1 );
             // no splits, no sharding
-            splits.add( new MongoInputSplit( conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(),
+            splits.add( new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), conf.getQuery(), conf.getFields(), conf.getSort(),
                                              conf.getLimit(), conf.getSkip() ) );
 
 
@@ -151,8 +151,8 @@ public class MongoSplitter {
         //todo: using stats only get the shards that actually host data for this collection
         for ( String host : shardSet ){
             MongoURI thisUri = getNewURI( uri, host, slaveOk );
-            splits.add( new MongoInputSplit( thisUri, conf.getQuery(), conf.getFields(), conf.getSort(),
-                                             conf.getLimit(), conf.getSkip() ) );
+            splits.add( new MongoInputSplit( thisUri, conf.getInputKey(), conf.getQuery(), conf.getFields(),
+                                             conf.getSort(), conf.getLimit(), conf.getSkip() ) ); // TODO - Should the input Key be the shard key?
         }
         return splits;
     }
@@ -264,8 +264,8 @@ public class MongoSplitter {
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
                 splits.add(
-                        new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
-                                             conf.getSkip() ) );
+                        new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, conf.getFields(), conf.getSort(),  // TODO - should inputKey be the shard key?
+                                             conf.getLimit(), conf.getSkip() ) );
             }
 
             if ( log.isDebugEnabled() ){

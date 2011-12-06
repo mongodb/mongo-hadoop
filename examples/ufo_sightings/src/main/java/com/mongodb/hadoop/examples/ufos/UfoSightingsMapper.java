@@ -38,16 +38,19 @@ import java.util.*;
  */
 
 public class UfoSightingsMapper 
-        extends Mapper<ObjectId, BSONObject, Text, IntWritable> {
+        extends Mapper<String, BSONObject, Text, IntWritable> {
 
     @Override
-    public void map( final ObjectId oid,
+    public void map( final String location,
                      final BSONObject doc,
                      final Context pContext )
             throws IOException, InterruptedException{
 
         String shape = ( (String) doc.get( "shape" ) );
-        String location = ( (String) doc.get( "location" ) );
+        String _loc = ( (String) doc.get( "location" ) );
+        if (!_loc.equals(location)) 
+            throw new IllegalStateException("Sanity check failed. Custom Input Key Location doesn't match manual fetch. " +
+                        "Key Arg: " + location + " Manual Fetch: " + _loc);
 
         pContext.write( new Text( location ), new IntWritable( 1 ) );
     }

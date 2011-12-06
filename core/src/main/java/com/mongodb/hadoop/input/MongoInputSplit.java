@@ -30,16 +30,18 @@ import java.util.*;
 public class MongoInputSplit extends InputSplit implements Writable {
 
     public MongoInputSplit( MongoURI inputURI,
+                            String keyField,
                             DBObject query,
                             DBObject fields,
                             DBObject sort,
                             int limit,
                             int skip ){
         LOG.info( "Creating a new MongoInputSplit for MongoURI '"
-                   + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
-                   + sort + "', limit: " + limit + ", skip: " + skip + " ." );
+                   + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
+                   + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " ." );
 
         _mongoURI = inputURI;
+        _keyField = keyField;
         _querySpec = query;
         _fieldSpec = fields;
         _sortSpec = sort;
@@ -69,6 +71,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
      */
     public void write( final DataOutput out ) throws IOException{
         out.writeUTF( _mongoURI.toString() );
+        out.writeUTF(  _keyField );
         out.writeUTF( JSON.serialize( _querySpec ) );
         out.writeUTF( JSON.serialize( _fieldSpec ) );
         out.writeUTF( JSON.serialize( _sortSpec ) );
@@ -78,6 +81,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     public void readFields( DataInput in ) throws IOException{
         _mongoURI = new MongoURI( in.readUTF() );
+        _keyField = in.readUTF();
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
         _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
         _sortSpec = (DBObject) JSON.parse( in.readUTF() );
@@ -86,7 +90,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         getCursor();
 
         LOG.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
-                   + Arrays.toString( getLocations() ) + ", query = " + _querySpec
+                   + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
                    + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
                    + _skip + "}" );
     }
@@ -108,12 +112,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
+        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
     }
 
     public MongoInputSplit(){ }
-
-    private MongoURI _mongoURI;
 
     public MongoURI getMongoURI(){
         return _mongoURI;
@@ -139,6 +141,15 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _skip;
     }
 
+    /**
+     * The field to use as the Mapper Key
+     */
+    public String getKeyField(){
+        return _keyField;
+    }
+
+    private MongoURI _mongoURI;
+    private String _keyField;
     private DBObject _querySpec;
     private DBObject _fieldSpec;
     private DBObject _sortSpec;

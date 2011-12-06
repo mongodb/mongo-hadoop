@@ -27,6 +27,11 @@
     <value></value>
   </property>
   <property>
+      <!-- The field to pass as the mapper key. Defaults to _id if blank -->
+      <name>mongo.input.key</name>
+      <value>location</value>
+  </property>
+  <property>
     <!-- The fields, in JSON, to read [OPTIONAL] -->
     <name>mongo.input.fields</name>
     <value></value>
