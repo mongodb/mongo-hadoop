@@ -1,9 +1,6 @@
 MongoDB Hadoop Adapter
 =======================
 
-PLEASE BE CAREFUL WITH THIS IN PRODUCTION
-------------------------------------------
-We are still shaking out bugs and features, so make sure you test this in your setup before deploying it to production.
 
 We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 Update 1 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
 
@@ -43,17 +40,38 @@ examples for demonstrations of both approaches.
 You can specify a query, fields and sort specs in the XML config as JSON
 or programatically as a DBObject.
 
-Sharding is currently NOT supported explicitly (e.g. we don't use the chunks
-to read from individual shards).
-
-There are presently NO input splits - your entire collection is passed as a single
-split to a single mapper. If you have a problem which requires more discreet splits
-please email us to describe your problem
-
 ### Pig
 The MongoStorage Pig module is provided; it currently only supports _saving_ to MongoDB.
 Load support will be provided at a later date.
 
+Splitting up MongoDB Source Data for the InputFormat
+----------------------------------------------------
+Mongo-Hadoop supports the creation of multiple InputSplits on source data read from MongoDB to optimise/parallelise input processing for Mappers.
+
+If '*mongo.input.split.create_input_splits*' is **false** (it defaults to **true**) then NO splits are used. Hadoop will slurp your entire collection in as one big giant Input.  Mostly useful for debugging.
+
+If it is enabled (by default it is) then a few possible behaviors exist:
+
+  1. If the source collection is unsharded, we follow the "unsharded split" path (See below)  
+  2. If the source collection is sharded...
+    * If '*mongo.input.split.read_shard_chunks*' is enabled (defaults **true**) then we pull the chunk specs from the configuration server, and turn each shard chunk into an Input Split.  Basically, this means the mongodb sharding system does 99% of the preconfig work for us and is a good thing™
+    * If '*read_shard_chunks*' is disabled and '*mongo.input.split.read_from_shards*' is enabled (it defaults to **false**) then we connect to each shard (mongod or replica set) individually and each shard becomes an input split (it's entire content of that collection is one split).  This config should rarely be used.
+    * If '*read_shard_chunks*' is enabled and '*mongo.input.split.read_from_shards*' is enabled (it defaults to **false**) we read the chunks from the config server but then instead of reading chunks through mongos we read directly from the shards.  This seems at first like a good idea but if migrations, etc happen it can cause erratic behavior with chunks going away on a long job.  Not a recommended config for write heavy applications but could be nicely parallelising for read heavy apps.
+    * If both '*create_input_splits*' and '*read_from_shards*' are disabled then we pretend there is no sharding and use the "unsharded split" path, letting MongoHadoop calculate new splits which are read through mongos (if 'read_shard_chunks' is disabled we just slurp everything through mongos as a single split)
+
+# "Unsharded Splits"
+
+As aforementioned this can also be used in Sharding.  It refers to a system in which MongoHadoop calculates new splits.
+
+This is only used when '*mongo.input.split.create_input_splits*' is enabled for unsharded collections, and both enabled and '*read_shard_chunks*' disabled for sharded collections.
+
+In this case, MongoHadoop will generate multiple InputSplits.  The user has control over two factors in this system.
+
+* *mongo.input.split_size* - Indicates a number of megabytes that are the maximum size of each split.  I chose 8 as a default for now based on some assumptions and past experience with Hadoop in what will be a good default split size to feed in (the mongo default of 64 may be a bit too large).
+* *mongo.input.split.split_key_pattern* - Is a Mongo Key Pattern following [the same rules as picking a shard key](http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys)
+ for an existing Mongo collection (must be indexed, etc etc).  This will be used as the key for the split point.  It defaults to `{ _id: 1 }` but an experienced user may find it easy to optimize their mapper distribution by customizing this value.
+
+For all three paths, users may specify a custom query to filter the input data with *mongo.input.query* representing a JSON document.  This will be properly combined with the index filtering on input splits allowing you to MapReduce a subset of your data but still get efficient splitting.
 
 Examples
 ----------

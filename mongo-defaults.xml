@@ -71,7 +71,7 @@
         Defaults to _id
     --> 
     <name>mongo.input.split.split_key_pattern</name>
-    <value>_id</value>
+    <value>{ _id: 1 }</value>
   </property>
   <property>
     <!-- The field to pass as the mapper key. Defaults to _id if blank -->
