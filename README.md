@@ -30,7 +30,7 @@ Using the Adapter
 
 You will need the MongoDB Java Driver 2.6.3+.
 
-Issue tracking: https://github.com/mongodb/mongo-hadoop/issues
+Issue tracking: https://jira.mongodb.org/browse/HADOOP/
 
 Discussion: http://groups.google.com/group/mongodb-user/
 
