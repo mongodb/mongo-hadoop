@@ -66,6 +66,7 @@ public class MongoConfigUtil {
      * Defaults to {@code _id}
      */
     public static final String INPUT_KEY = "mongo.input.key";
+    public static final String INPUT_NOTIMEOUT = "mongo.input.notimeout";
     public static final String INPUT_QUERY = "mongo.input.query";
     public static final String INPUT_FIELDS = "mongo.input.fields";
     public static final String INPUT_SORT = "mongo.input.sort";
@@ -504,4 +505,11 @@ public class MongoConfigUtil {
         return conf.get( INPUT_KEY, "_id" );
     }
    
+    public static void setNoTimeout( Configuration conf, boolean value ) {
+        conf.setBoolean( INPUT_NOTIMEOUT, value );
+    }
+    
+    public static boolean isNoTimeout( Configuration conf ) {
+        return conf.getBoolean( INPUT_NOTIMEOUT, false );
+    }
 }

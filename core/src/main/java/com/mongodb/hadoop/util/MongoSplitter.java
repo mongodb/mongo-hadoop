@@ -147,14 +147,15 @@ public class MongoSplitter {
         log.trace( "Assembled Query: " + query );
 
         return new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), query, conf.getFields(), 
-                                    conf.getSort(), conf.getLimit(), conf.getSkip() );
+                                    conf.getSort(), conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
     }
     
     private static List<InputSplit> calculateSingleSplit( MongoConfig conf ){
         final List<InputSplit> splits = new ArrayList<InputSplit>( 1 );
         // no splits, no sharding
         splits.add( new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), conf.getQuery(), 
-                                         conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip() ) );
+                                         conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip(),
+                                         conf.isNoTimeout() ) );
 
 
         log.info( "Calculated " + splits.size() + " split objects." );
@@ -231,7 +232,8 @@ public class MongoSplitter {
         for ( String host : shardSet ){
             MongoURI thisUri = getNewURI( uri, host, slaveOk );
             splits.add( new MongoInputSplit( thisUri, conf.getInputKey(), conf.getQuery(), conf.getFields(),
-                                             conf.getSort(), conf.getLimit(), conf.getSkip() ) ); // TODO - Should the input Key be the shard key?
+                                             conf.getSort(), conf.getLimit(), conf.getSkip(), 
+                                             conf.isNoTimeout() ) ); // TODO - Should the input Key be the shard key?
         }
         return splits;
     }
@@ -344,7 +346,8 @@ public class MongoSplitter {
                 }
                 splits.add(
                         new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, conf.getFields(), conf.getSort(),  // TODO - should inputKey be the shard key?
-                                             conf.getLimit(), conf.getSkip() ) );
+                                             conf.getLimit(), conf.getSkip(), 
+                                             conf.isNoTimeout() ) );
             }
 
             if ( log.isDebugEnabled() ){

@@ -402,6 +402,14 @@ public class MongoConfig {
     public void setInputKey( String fieldName ) {
         MongoConfigUtil.setInputKey( _conf, fieldName );
     }
+    
+    public boolean isNoTimeout() {
+        return MongoConfigUtil.isNoTimeout( _conf );
+    }
+    
+    public void setNoTimeout( boolean value ) {
+        MongoConfigUtil.setNoTimeout( _conf, value );
+    }
 
     final Configuration _conf;
 

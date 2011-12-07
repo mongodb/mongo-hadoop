@@ -35,10 +35,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
                             DBObject fields,
                             DBObject sort,
                             int limit,
-                            int skip ){
+                            int skip,
+                            boolean noTimeout ){
         LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
                    + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
-                   + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " ." );
+                   + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " noTimeout? " + noTimeout + "." );
 
         _mongoURI = inputURI;
         _keyField = keyField;
@@ -47,8 +48,11 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _sortSpec = sort;
         _limit = limit;
         _skip = skip;
+        _notimeout = noTimeout;
         getCursor();
     }
+
+
 
     /**
      * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
@@ -77,6 +81,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         out.writeUTF( JSON.serialize( _sortSpec ) );
         out.writeInt( _limit );
         out.writeInt( _skip );
+        out.writeBoolean( _notimeout );
     }
 
     public void readFields( DataInput in ) throws IOException{
@@ -87,12 +92,13 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _sortSpec = (DBObject) JSON.parse( in.readUTF() );
         _limit = in.readInt();
         _skip = in.readInt();
+        _notimeout = in.readBoolean();
         getCursor();
 
         LOG.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
                    + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
                    + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
-                   + _skip + "}" );
+                   + _skip + ", noTimeout = " + _notimeout + "}" );
     }
 
     DBCursor getCursor(){
@@ -101,8 +107,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // todo - support limit/skip
         if ( _cursor == null ){
             _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
-            // It would be exceptionally bad for cursors to time out reading data for Hadoop. Disable
-            _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
+            if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }
 
@@ -153,6 +158,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private DBObject _querySpec;
     private DBObject _fieldSpec;
     private DBObject _sortSpec;
+    private boolean _notimeout;
     private int _limit = 0;
     private int _skip = 0;
     private long _length = -1;
