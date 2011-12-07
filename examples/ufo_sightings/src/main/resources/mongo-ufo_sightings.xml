@@ -13,12 +13,51 @@
   <property>
     <!-- If you are reading from mongo, the URI -->
     <name>mongo.input.uri</name>
-    <value>mongodb://127.0.0.1/ufos.sightings</value>
+    <value>mongodb://127.0.0.1:27018/ufos.sightings</value>
   </property>
   <property>
     <!-- If you are writing to mongo, the URI -->
     <name>mongo.output.uri</name>
     <value>mongodb://127.0.0.1/ufos.sightings_processed</value>
+  </property>
+  <property>
+    <!-- if the input collection is sharded, read each sharding chunk as Input Splits for Hadoop? 
+         NOTE: Combining with 'mongo.input.split.read_from_shards' can cause erratic/unexpected 
+         behavior as chunks will be forcibly read from their last known shard, rather than
+         through mongos which accounts for/allows for migrations.
+
+         You must also enable 'mongo.input.split.create_input_splits' for any chunk reading
+         to occur.
+      -->
+    <name>mongo.input.split.read_shard_chunks</name>
+    <value>false</value>
+  </property>
+  <property>
+    <!-- 
+        Should mongo-hadoop attempt to calculate 
+        InputSplits for you? 
+
+        *** If your input collection is sharded:
+            
+            You'll need to enable 'read_shard_chunks' also to read 
+            individual chunk data into the system.  Otherwise enabling this 
+            will use the "Unsharded" mode as described below.
+
+        *** If your input collection is unsharded (or you didn't enable chunk reading):
+
+        If creating input splits is true (the default), 'mongo.input.split_size' will
+        control the approx. # of megabytes assigned per calculated InputSplit.
+
+        You'll probably want to set 'mongo.input.split.split_key_pattern' as well
+        to control the split point (defaults to {_id: 1}).
+
+        If this is false, only one InputSplit will be created which is fairly inefficient
+        Hadoopery.
+
+        This setting is ignored on sharded collections, which instead check 'read_shard_chunks'
+    -->
+    <name>mongo.input.split.create_input_splits</name>
+    <value>true</value>
   </property>
   <property>
     <!-- The query, in JSON, to execute [OPTIONAL] -->
@@ -106,6 +145,13 @@
     <!-- Sort Comparator class [optional] -->
     <name>mongo.job.sort_comparator</name>
     <value></value>
+  </property>
+  <property>
+    <!-- IF you want to control the split size for input, set it here. 
+      Should be a long indicating # of docs per split 
+      Affects # of mappers so be careful what you do -->
+    <name>mongo.input.split_size</name>
+    <value>8</value>
   </property>
 
 </configuration>

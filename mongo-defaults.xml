@@ -11,9 +11,72 @@
     <value>false</value>
   </property>
   <property>
-      <!-- The field to pass as the mapper key. Defaults to _id if blank -->
-      <name>mongo.input.key</name>
-      <value></value>
+    <!-- if the input collection is sharded, read each sharding chunk as Input Splits for Hadoop? 
+         NOTE: Combining with 'mongo.input.split.read_from_shards' can cause erratic/unexpected 
+         behavior as chunks will be forcibly read from their last known shard, rather than
+         through mongos which accounts for/allows for migrations.
+
+         You must also enable 'mongo.input.split.create_input_splits' for any chunk reading
+         to occur.
+      -->
+    <name>mongo.input.split.read_shard_chunks</name>
+    <value>true</value>
+  </property>
+  <property>
+   <!-- Read directly from the shard servers? If enabled, connects directly to each
+        configured shard host or replica set.  If disabled (the default), 
+        sends all reads through mongos.
+
+        For most users this shouldn't be enabled.  
+        Left mutable for advanced users and/or the clinically insane.
+    -->
+    <name>mongo.input.split.read_from_shards</name>
+    <value>false</value>
+  </property>
+  <property>
+    <!-- 
+        Should mongo-hadoop attempt to calculate 
+        InputSplits for you? 
+
+        *** If your input collection is sharded:
+            
+            You'll need to enable 'read_shard_chunks' also to read 
+            individual chunk data into the system.  Otherwise enabling this 
+            will use the "Unsharded" mode as described below.
+
+        *** If your input collection is unsharded (or you didn't enable chunk reading):
+
+        If creating input splits is true (the default), 'mongo.input.split_size' will
+        control the approx. # of megabytes assigned per calculated InputSplit.
+
+        You'll probably want to set 'mongo.input.split.split_key_pattern' as well
+        to control the split point (defaults to {_id: 1}).
+
+        If this is false, only one InputSplit will be created which is fairly inefficient
+        Hadoopery.
+
+        This setting is ignored on sharded collections, which instead check 'read_shard_chunks'
+    -->
+    <name>mongo.input.split.create_input_splits</name>
+    <value>true</value>
+  </property>
+  <property>
+   <!-- If working on an unsharded collection and 'create_input_splits' is enabled,
+        this keyPattern will be used to calculate the splitpoint.  It needs to be a JSON
+        keyPattern spec following the *Exact same rules* as choosing a shard key for MongoDB 
+        on an existing collection which contains data.
+
+        That includes the key being indexed: http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+
+        Defaults to _id
+    --> 
+    <name>mongo.input.split.split_key_pattern</name>
+    <value>_id</value>
+  </property>
+  <property>
+    <!-- The field to pass as the mapper key. Defaults to _id if blank -->
+    <name>mongo.input.key</name>
+    <value></value>
   </property>
   <property>
     <!-- If you are reading from mongo, the URI -->

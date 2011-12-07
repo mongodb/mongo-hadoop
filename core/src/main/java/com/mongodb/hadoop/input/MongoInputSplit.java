@@ -36,7 +36,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
                             DBObject sort,
                             int limit,
                             int skip ){
-        LOG.info( "Creating a new MongoInputSplit for MongoURI '"
+        LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
                    + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
                    + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " ." );
 

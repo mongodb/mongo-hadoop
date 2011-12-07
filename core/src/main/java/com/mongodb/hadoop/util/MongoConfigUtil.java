@@ -77,10 +77,12 @@ public class MongoConfigUtil {
      * The number of megabytes per Split to create for the input data.
      *
      * Currently defaults to 8MB, tweak it as necessary for your code.
+     *
+     * This default will likely change as we research better options.
      */
     public static final String INPUT_SPLIT_SIZE = "mongo.input.split_size";
 
-    public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per split
+    public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
@@ -92,9 +94,11 @@ public class MongoConfigUtil {
      * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
      * rules outlined in the docs.
      *
+     * This must be a JSON document, and not just a field name!
+     *
      * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
      */
-    public static final String INPUT_SPLIT_KEY = "mongo.input.split.split_key";
+    public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
@@ -456,7 +460,41 @@ public class MongoConfigUtil {
         conf.getBoolean( SPLITS_SLAVE_OK, value );
     }
 
+    public static boolean createInputSplits( Configuration conf ) {
+        return conf.getBoolean( CREATE_INPUT_SPLITS, false );
+    }
+
+    public static void setCreateInputSplits( Configuration conf, boolean value ) {
+        conf.getBoolean( CREATE_INPUT_SPLITS, value );
+    }
+
+    public static void setInputSplitKeyPattern( Configuration conf, String pattern ) {
+        setJSON( conf, INPUT_SPLIT_KEY_PATTERN, pattern );
+    }
+
+    public static void setInputSplitKey( Configuration conf, DBObject key ) {
+        setDBObject( conf, INPUT_SPLIT_KEY_PATTERN, key );
+    }
     
+    public static String getInputSplitKeyPattern( Configuration conf ) {
+        return conf.get( INPUT_SPLIT_KEY_PATTERN, "{ \"_id\": 1 }" );
+    }
+    
+    public static DBObject getInputSplitKey( Configuration conf ) {
+        try {
+            final String json = getInputSplitKeyPattern( conf );
+            final DBObject obj = (DBObject) JSON.parse( json );
+            if ( obj == null )
+                return new BasicDBObject("_id", 1);
+            else
+                return obj;
+        }
+        catch ( final Exception e ) {
+            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject.", e );
+        }
+    }
+
+
     public static void setInputKey( Configuration conf, String fieldName ) {
         // TODO (bwm) - validate key rules?
         conf.set( INPUT_KEY, fieldName );
