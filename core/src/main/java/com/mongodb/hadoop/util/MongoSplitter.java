@@ -108,10 +108,13 @@ public class MongoSplitter {
         // Comes in a format where "min" and "max" are implicit and each entry is just a boundary key; not ranged
         BasicDBList splitData = (BasicDBList) data.get( "splitKeys" );
         
-        if (splitData.size() < 1) 
-            throw new IllegalStateException( "No splits were calculated." );
-        else if ( splitData.size() == 1 ) 
+        if (splitData.size() <= 1) {
+            if (splitData.size() < 1)
+                log.warn( "WARNING: No Input Splits were calculated by the split code. "
+                          + "Proceeding with a *single* split. Data may be too small, try lowering 'mongo.input.split_size' "
+                          + "if this is undesirable." );
             splits.add( _split( conf, q, null, null ) ); // no splits really. Just do the whole thing data is likely small
+        }
         else {
             log.info( "Calculated " + splitData.size() + " splits." );
 
