@@ -55,7 +55,6 @@
         If this is false, only one InputSplit will be created which is fairly inefficient
         Hadoopery.
 
-        This setting is ignored on sharded collections, which instead check 'read_shard_chunks'
     -->
     <name>mongo.input.split.create_input_splits</name>
     <value>true</value>

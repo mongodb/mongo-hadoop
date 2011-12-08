@@ -462,7 +462,7 @@ public class MongoConfigUtil {
     }
 
     public static boolean createInputSplits( Configuration conf ) {
-        return conf.getBoolean( CREATE_INPUT_SPLITS, false );
+        return conf.getBoolean( CREATE_INPUT_SPLITS, true );
     }
 
     public static void setCreateInputSplits( Configuration conf, boolean value ) {

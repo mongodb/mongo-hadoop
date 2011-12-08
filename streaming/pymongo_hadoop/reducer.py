@@ -1,5 +1,5 @@
 """Custom file class for reducing streaming BSON,
-based upon the Dumbo module at 
+based upon the Dumbo module at
 https://github.com/klbostee/dumbo
 """
 from itertools import groupby
@@ -25,7 +25,7 @@ class BSONReducer(object):
                 self.factory = factory
             else:
                 raise ValueError("Invalid Factory.  Must return a function expecting 2 arguments or be a function expecting 2 arguments.")
-            
+
         if not input_fh:
             self.input = BSONReducerInput(self)
         else:
@@ -36,10 +36,10 @@ class BSONReducer(object):
 
     def __call__(self, data):
         for key, values in data:
-            yield self.factory()(key, values) 
+            yield self.factory()(key, values)
 
     def factory(self):
-        """Processor factory used to consume reducer input        
+        """Processor factory used to consume reducer input
         Must return a callable (aka processor) that accepts two parameters
         "key" and "values", and returns an iterable of strings or None.
         """
