@@ -11,14 +11,19 @@
     <value>false</value>
   </property>
   <property>
+      <!-- The field to pass as the mapper key. Defaults to _id if blank -->
+      <name>mongo.input.key</name>
+      <value></value>
+  </property>
+  <property>
     <!-- If you are reading from mongo, the URI -->
     <name>mongo.input.uri</name>
-    <value>mongodb://localhost/demo.yield_historical.in</value>
+    <value>mongodb://127.0.0.1/demo.yield_historical.in</value>
   </property>
   <property>
     <!-- If you are writing to mongo, the URI -->
     <name>mongo.output.uri</name>
-    <value>mongodb://localhost/demo.yield_historical.out</value>
+    <value>mongodb://127.0.0.1/demo.yield_historical.out</value>
   </property>
   <property>
     <!-- The query, in JSON, to execute [OPTIONAL] -->
@@ -50,12 +55,12 @@
   <property>
     <!-- Class for the mapper -->
     <name>mongo.job.mapper</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldMapper</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldMapper</value>
   </property>
   <property>
     <!-- Reducer class -->
     <name>mongo.job.reducer</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldReducer</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer</value>
   </property>
   <property>
     <!-- InputFormat Class -->
@@ -91,7 +96,7 @@
   <property>
     <!-- Class for the combiner [optional] -->
     <name>mongo.job.combiner</name>
-    <value>com.mongodb.hadoop.examples.TreasuryYieldReducer</value>
+    <value>com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer</value>
   </property>
   <property>
     <!-- Partitioner class [optional] -->
