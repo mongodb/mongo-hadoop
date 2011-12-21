@@ -63,16 +63,58 @@ public class MongoConfigUtil {
     
     public static final String INPUT_REQUEST = "mongo.input.request";
 
+    /**
+     * The MongoDB field to read from for the Mapper Input.
+     *
+     * This will be fed to your mapper as the "Key" for the input.
+     *
+     * Defaults to {@code _id}
+     */
+    public static final String INPUT_KEY = "mongo.input.key";
+    public static final String INPUT_NOTIMEOUT = "mongo.input.notimeout";
     public static final String INPUT_QUERY = "mongo.input.query";
     public static final String INPUT_FIELDS = "mongo.input.fields";
     public static final String INPUT_SORT = "mongo.input.sort";
     public static final String INPUT_LIMIT = "mongo.input.limit";
     public static final String INPUT_SKIP = "mongo.input.skip";
-    // Number of *documents*, not bytes, to split on
+
+    /**
+     * When *not* using 'read_from_shards' or 'read_shard_chunks'
+     * The number of megabytes per Split to create for the input data.
+     *
+     * Currently defaults to 8MB, tweak it as necessary for your code.
+     *
+     * This default will likely change as we research better options.
+     */
     public static final String INPUT_SPLIT_SIZE = "mongo.input.split_size";
 
-    // Number of *documents*, not bytes, to split on
-    public static final int DEFAULT_SPLIT_SIZE = 1024; // 1000 docs per split
+    public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
+
+    /**
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
+     * to create custom input splits for you.  By default it will split on {@code _id}, which is a
+     * reasonable/sane default.
+     *
+     * If you want to customize that split point for efficiency reasons (such as different distribution)
+     * you may set this to any valid field name. The restriction on this key name are the *exact same rules*
+     * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
+     * rules outlined in the docs.
+     *
+     * This must be a JSON document, and not just a field name!
+     *
+     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     */
+    public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
+
+    /**
+     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
+     * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
+     * Hadoop will assign one InputSplit per mapper.
+     * 
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be
+     * assigned to Hadoop – severely reducing parallel mapping.
+     */
+    public static final String CREATE_INPUT_SPLITS = "mongo.input.split.create_input_splits";
 
     /**
      * If {@code true} in a sharded setup splits will be made to connect to individual backend {@code mongod}s.  This
@@ -90,6 +132,8 @@ public class MongoConfigUtil {
     /**
      * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the
      * URI.
+     *
+     * Defaults to {@code false}
      */
     public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
@@ -548,4 +592,55 @@ public class MongoConfigUtil {
         conf.getBoolean( SPLITS_SLAVE_OK, value );
     }
 
+    public static boolean createInputSplits( Configuration conf ) {
+        return conf.getBoolean( CREATE_INPUT_SPLITS, true );
+    }
+
+    public static void setCreateInputSplits( Configuration conf, boolean value ) {
+        conf.getBoolean( CREATE_INPUT_SPLITS, value );
+    }
+
+    public static void setInputSplitKeyPattern( Configuration conf, String pattern ) {
+        setJSON( conf, INPUT_SPLIT_KEY_PATTERN, pattern );
+    }
+
+    public static void setInputSplitKey( Configuration conf, DBObject key ) {
+        setDBObject( conf, INPUT_SPLIT_KEY_PATTERN, key );
+    }
+    
+    public static String getInputSplitKeyPattern( Configuration conf ) {
+        return conf.get( INPUT_SPLIT_KEY_PATTERN, "{ \"_id\": 1 }" );
+    }
+    
+    public static DBObject getInputSplitKey( Configuration conf ) {
+        try {
+            final String json = getInputSplitKeyPattern( conf );
+            final DBObject obj = (DBObject) JSON.parse( json );
+            if ( obj == null )
+                return new BasicDBObject("_id", 1);
+            else
+                return obj;
+        }
+        catch ( final Exception e ) {
+            throw new IllegalArgumentException( "Provided JSON String is not representable/parseable as a DBObject.", e );
+        }
+    }
+
+
+    public static void setInputKey( Configuration conf, String fieldName ) {
+        // TODO (bwm) - validate key rules?
+        conf.set( INPUT_KEY, fieldName );
+    }
+    
+    public static String getInputKey( Configuration conf ) {
+        return conf.get( INPUT_KEY, "_id" );
+    }
+   
+    public static void setNoTimeout( Configuration conf, boolean value ) {
+        conf.setBoolean( INPUT_NOTIMEOUT, value );
+    }
+    
+    public static boolean isNoTimeout( Configuration conf ) {
+        return conf.getBoolean( INPUT_NOTIMEOUT, false );
+    }
 }

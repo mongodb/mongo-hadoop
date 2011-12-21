@@ -7,6 +7,8 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
+
+import java.net.UnknownHostException;
 import java.util.*;
 
 /**
@@ -32,13 +34,28 @@ public class MongoSplitter {
              * split
              */
             throw new IllegalArgumentException(
-                    "skip() and limit() is not currently supported do to input split issues." );
+                    "skip() and limit() is not currently supported due to input split issues." );
         }
 
         /**
          * On the jobclient side we want *ONLY* the min and max ids for each
          * split; Actual querying will be done on the individual mappers.
          */
+    	MongoRequest mongoRequest = conf.getMongoRequest(path.toString());
+        MongoURI uri = mongoRequest.getInputURI();
+        Mongo mongo;
+        try {
+            mongo = uri.connect();
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException( " Unable to connect to MongoDB at '" + uri + "'", e);
+        }
+
+        DB db = mongo.getDB( uri.getDatabase() );
+        DBCollection coll = db.getCollection( uri.getCollection() );
+        final CommandResult stats = coll.getStats();
+        
+        final boolean isSharded = stats.getBoolean( "sharded", false );
+
         //connecting to the individual backend mongods is not safe, do not do so by default
         final boolean useShards = conf.canReadSplitsFromShards();
 
@@ -46,70 +63,133 @@ public class MongoSplitter {
 
         final boolean slaveOk = conf.canReadSplitsFromSecondary();
 
-        List<InputSplit> splits = null;
-
-        if ( useShards || useChunks ){
-            try {
-            	MongoRequest mongoRequest = conf.getMongoRequest(path.toString());
-                MongoURI uri = mongoRequest.getInputURI();
-                Mongo mongo = uri.connect();
-                try {
-                    DB db = mongo.getDB( uri.getDatabase() );
-                    DBCollection coll = db.getCollection( uri.getCollection() );
-                    final CommandResult stats = coll.getStats();
-                    final boolean isSharded = stats.getBoolean( "sharded", false );
-                    if ( isSharded ){ //don't proceed if the collection isn't actually sharded
-                        if ( useChunks ){
-                            splits = fetchSplitsViaChunks( mongo, mongoRequest, useShards, slaveOk );
-                        }else if ( useShards ){
-                            log.warn( "Fetching Input Splits directly from shards is potentially dangerous for data "
-                                      + "consistency should migrations occur during the retrieval." );
-                            splits = fetchSplitsFromShards( mongo, mongoRequest, slaveOk );
-                        }
-                        if ( splits == null )
-                            log.warn( "Failed to create/calculate Input Splits from Shard Chunks." );
-                    }
-                    else{
-                        log.info( "Collection is not sharded, will process as a single Input Split." );
-                        log.debug( "Sharding Stats Dump: " + stats );
-                    }
-                }
-                finally {
-                    if ( mongo != null )
-                        mongo.close();
-                    mongo = null;
-                }
-
-                if ( splits != null ){
-
-                    if ( log.isDebugEnabled() ){
-                        log.debug( "Calculated splits and returning them - splits: " + splits );
-                    }
-                    return splits;
-                }
-
-                log.warn( "Fallthrough code; splits is null." );
-                //If splits is null fall through to code below
+        log.info(" Calculate Splits Code ... Use Shards? " + useShards + ", Use Chunks? " + useChunks + "; Collection Sharded? " + isSharded);
+        if (conf.createInputSplits()) {
+            log.info( "Creation of Input Splits is enabled." );
+            if (isSharded && (useShards || useChunks)){  // todo I don't think these settings can be run together
+                if (useShards && useChunks)
+                    log.warn( "Combining 'use chunks' and 'read from shards directly' can have unexpected & erratic behavior in a live system due to chunk migrations. " );
+                log.info( "Sharding mode calculation entering." );
+                return calculateShardedSplits( conf, useShards, useChunks, slaveOk, mongoRequest, mongo );
             }
-            catch ( Exception e ) {
-                log.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
+            else { // perfectly ok for sharded setups to run with a normally calculated split. May even be more efficient for some cases
+                log.info( "Using Unsharded Split mode (Calculating multiple splits though)" );
+                return calculateUnshardedSplits( conf, slaveOk, mongoRequest, coll );
             }
+            
         }
-
-        // Number of *documents*, not bytes, to split on
-        List<MongoRequest> mongoRequests = conf.getMongoRequests();
-        
-        splits = new ArrayList<InputSplit>();
-        for(int i = 0; i < mongoRequests.size(); i++){
-        	MongoRequest req = mongoRequests.get(i);
-        	splits.add( new MongoInputSplit(req.getInputURI(), req.getQuery(), req.getFields(), req.getSort(), req.getLimit(), req.getSkip()));
+        else {
+            log.info( "Creation of Input Splits is disabled; Non-Split mode calculation entering." );
+            return calculateSingleSplit( conf );
         }
-        
+    }
 
-        if ( log.isDebugEnabled() ){
-            log.debug( "Calculated " + splits.size() + " split objects." );
+    private static List<InputSplit> calculateUnshardedSplits( MongoConfig conf, boolean slaveOk, 
+                                                              MongoRequest mongoRequest, DBCollection coll ){
+        final List<InputSplit> splits = new ArrayList<InputSplit>();
+        final DBObject splitKey = conf.getInputSplitKey(); // a bit slower but forces validation of the JSON
+        final int splitSize = conf.getSplitSize(); // in MB
+        final String ns = coll.getFullName();
+        final DBObject q = conf.getQuery();
+        
+        log.info( "Calculating unsharded input splits on namespace '" + ns + "' with Split Key '" + splitKey.toString() + "' and a split size of '" + splitSize + "'mb per" );
+
+        final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
+                                          add( "keyPattern", splitKey ).
+                                          add( "force", false ). // force:True is misbehaving it seems
+                                          add( "maxChunkSize", splitSize ).get();
+        
+        log.trace( "Issuing Command: " + cmd );
+        CommandResult data = coll.getDB().command( cmd );
+
+        if ( data.containsField( "$err" ) )
+            throw new IllegalArgumentException( "Error calculating splits: " + data );
+        else if ( (Double) data.get( "ok" ) != 1.0 )
+            throw new IllegalArgumentException( "Unable to calculate input splits: " + ( (String) data.get( "errmsg" ) ) );
+        
+        // Comes in a format where "min" and "max" are implicit and each entry is just a boundary key; not ranged
+        BasicDBList splitData = (BasicDBList) data.get( "splitKeys" );
+        
+        if (splitData.size() <= 1) {
+            if (splitData.size() < 1)
+                log.warn( "WARNING: No Input Splits were calculated by the split code. "
+                          + "Proceeding with a *single* split. Data may be too small, try lowering 'mongo.input.split_size' "
+                          + "if this is undesirable." );
+            splits.add( _split( conf, q, null, null ) ); // no splits really. Just do the whole thing data is likely small
+        }
+        else {
+            log.info( "Calculated " + splitData.size() + " splits." );
+            DBObject lastKey = (DBObject) splitData.get( 0 );
+
+            splits.add( _split( conf, q, null, lastKey ) ); // first "min" split
+
+            for (int i = 1; i < splitData.size(); i++ ) {
+                final DBObject _tKey = (DBObject) splitData.get( i );
+                splits.add( _split( conf, q, lastKey, _tKey) );
+                lastKey = _tKey;
+            }
+
+            splits.add( _split( conf, q, lastKey, null ) ); // last "max" split
         }
         return splits;
+    }
+
+    private static MongoInputSplit _split( MongoConfig conf, DBObject q, DBObject min, DBObject max ) {
+        BasicDBObjectBuilder b = BasicDBObjectBuilder.start( "$query", q );
+        if (min != null) // min ceiling
+           b.add( "$min", min );
+        
+        if (max != null) // max ceiling
+            b.add( "$max", max );
+
+        final DBObject query = b.get();
+        log.trace( "Assembled Query: " + query );
+
+        return new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), query, conf.getFields(), 
+                                    conf.getSort(), conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
+    }
+    
+    private static List<InputSplit> calculateSingleSplit( MongoConfig conf ){
+        final List<InputSplit> splits = new ArrayList<InputSplit>( 1 );
+        // no splits, no sharding
+        splits.add( new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), conf.getQuery(), 
+                                         conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip(),
+                                         conf.isNoTimeout() ) );
+
+        log.info( "Calculated " + splits.size() + " split objects." );
+        log.debug( "Dump of calculated splits ... " );
+        for ( InputSplit split : splits ) {
+            log.debug("\t Split: " + split.toString());
+        }
+
+        return splits;
+    }
+
+    private static List<InputSplit> calculateShardedSplits(MongoConfig conf, boolean useShards, boolean useChunks, boolean slaveOk, MongoRequest mongoRequest, Mongo mongo) {
+        final List<InputSplit> splits;
+        try {
+            if ( useChunks )
+                splits = fetchSplitsViaChunks( conf, mongo, mongoRequest, useShards, slaveOk );
+            else if ( useShards ){
+                log.warn( "Fetching Input Splits directly from shards is potentially dangerous for data "
+                          + "consistency should migrations occur during the retrieval." );
+                splits = fetchSplitsFromShards( conf, mongo, mongoRequest, slaveOk );
+            }
+            else throw new IllegalStateException( "Neither useChunks nor useShards enabled; failed to pick a valid state. " );
+
+            if ( splits == null )
+                throw new IllegalStateException( "Failed to create/calculate Input Splits from Shard Chunks; final splits content is 'null'." );
+
+            if ( log.isDebugEnabled() ){
+                log.debug( "Calculated splits and returning them - splits: " + splits );
+            }
+
+            return splits;
+        }
+        catch ( Exception e ) {
+            log.error( "Could not get splits (use_shards: " + useShards + ", use_chunks: " + useChunks + ")", e );
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -118,7 +198,7 @@ public class MongoSplitter {
      * mongos} can't necessarily connect to the individual {@code mongod}s. <li>there concurrency issues (if chunks are
      * in the process of getting moved around). </ol>
      */
-    private static List<InputSplit> fetchSplitsFromShards( Mongo mongo,
+    private static List<InputSplit> fetchSplitsFromShards( MongoConfig conf, Mongo mongo,
                                                            MongoRequest mongoRequest,
                                                            Boolean slaveOk ){
         log.warn( "WARNING getting splits that connect directly to the backend mongods"
@@ -149,8 +229,8 @@ public class MongoSplitter {
         //todo: using stats only get the shards that actually host data for this collection
         for ( String host : shardSet ){
             MongoURI thisUri = getNewURI( uri, host, slaveOk );
-            splits.add( new MongoInputSplit( thisUri, mongoRequest.getQuery(), mongoRequest.getFields(), mongoRequest.getSort(),
-            		mongoRequest.getLimit(), mongoRequest.getSkip() ) );
+            splits.add( new MongoInputSplit( thisUri, "", mongoRequest.getQuery(), mongoRequest.getFields(), mongoRequest.getSort(),
+            		mongoRequest.getLimit(), mongoRequest.getSkip(), conf.isNoTimeout() ) );
         }
         return splits;
     }
@@ -158,7 +238,7 @@ public class MongoSplitter {
     /**
      * This constructs splits using the chunk boundaries.
      */
-    private static List<InputSplit> fetchSplitsViaChunks( Mongo mongo,
+    private static List<InputSplit> fetchSplitsViaChunks( MongoConfig conf, Mongo mongo,
                                                           MongoRequest mongoRequest,
                                                           boolean useShards,
                                                           Boolean slaveOk){
@@ -262,8 +342,8 @@ public class MongoSplitter {
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
                 splits.add(
-                        new MongoInputSplit( inputURI, shardKeyQuery, mongoRequest.getFields(), mongoRequest.getSort(), mongoRequest.getLimit(),
-                                             mongoRequest.getSkip() ) );
+                		new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, mongoRequest.getFields(), mongoRequest.getSort(), mongoRequest.getLimit(),
+                                             mongoRequest.getSkip(), conf.isNoTimeout() ) );
             }
 
             if ( log.isDebugEnabled() ){

@@ -323,7 +323,106 @@ public class MongoConfig {
     public void setReadSplitsFromSecondary( boolean value ) {
         MongoConfigUtil.setReadSplitsFromSecondary( _conf, value );
     }
+    
+    /**
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
+     * to create custom input splits for you.  By default it will split on {@code _id}, which is a
+     * reasonable/sane default.
+     *
+     * If you want to customize that split point for efficiency reasons (such as different distribution)
+     * you may set this to any valid field name. The restriction on this key name are the *exact same rules*
+     * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
+     * rules outlined in the docs.
+     *
+     * This must be a JSON document, and not just a field name!
+     *
+     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     */
+    public String getInputSplitKeyPattern() {
+        return MongoConfigUtil.getInputSplitKeyPattern( _conf );
+    }
 
+    // Convenience by DBObject rather than "Pattern"
+    public DBObject getInputSplitKey() {
+        return MongoConfigUtil.getInputSplitKey( _conf );
+    }
+
+    /**
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
+     * to create custom input splits for you.  By default it will split on {@code _id}, which is a
+     * reasonable/sane default.
+     *
+     * If you want to customize that split point for efficiency reasons (such as different distribution)
+     * you may set this to any valid field name. The restriction on this key name are the *exact same rules*
+     * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
+     * rules outlined in the docs.
+     *
+     * This must be a JSON document, and not just a field name!
+     *
+     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     */
+    public void setInputSplitKeyPattern( String pattern ) {
+        MongoConfigUtil.setInputSplitKeyPattern( _conf, pattern );
+    }
+
+    // Convenience by DBObject rather than "Pattern"
+    public void setInputSplitKey( DBObject key ) {
+        MongoConfigUtil.setInputSplitKey( _conf, key );
+    }
+            
+    /**
+     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
+     * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
+     * Hadoop will assign one InputSplit per mapper.
+     *
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be
+     * assigned to Hadoop – severely reducing parallel mapping.
+     */
+    public boolean createInputSplits() {
+        return MongoConfigUtil.createInputSplits( _conf );
+    }
+
+    /**
+     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
+     * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
+     * Hadoop will assign one InputSplit per mapper.
+     *
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be
+     * assigned to Hadoop – severely reducing parallel mapping.
+     */
+    public void setCreateInputSplits( boolean value ) {
+        MongoConfigUtil.setCreateInputSplits( _conf, value );
+    }
+
+    /**
+     * The MongoDB field to read from for the Mapper Input.
+     *
+     * This will be fed to your mapper as the "Key" for the input.
+     *
+     * Defaults to {@code _id}
+     */
+    public String getInputKey() {
+        return MongoConfigUtil.getInputKey( _conf );
+    }
+
+    /**
+     * The MongoDB field to read from for the Mapper Input.
+     *
+     * This will be fed to your mapper as the "Key" for the input.
+     *
+     * Defaults to {@code _id}
+     */
+    public void setInputKey( String fieldName ) {
+        MongoConfigUtil.setInputKey( _conf, fieldName );
+    }
+    
+    public boolean isNoTimeout() {
+        return MongoConfigUtil.isNoTimeout( _conf );
+    }
+    
+    public void setNoTimeout( boolean value ) {
+        MongoConfigUtil.setNoTimeout( _conf, value );
+    }
 
     final Configuration _conf;
 

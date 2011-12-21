@@ -30,25 +30,30 @@ import java.util.*;
 public class MongoInputSplit extends InputSplit implements Writable {
 
     public MongoInputSplit( MongoURI inputURI,
+                            String keyField,
                             DBObject query,
                             DBObject fields,
                             DBObject sort,
                             int limit,
-                            int skip ){
-        if ( LOG.isDebugEnabled() ){
-            LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
-                       + inputURI + "', query: '" + query + "', fieldSpec: '" + fields + "', sort: '"
-                       + sort + "', limit: " + limit + ", skip: " + skip + " ." );
-        }
+                            int skip,
+                            boolean noTimeout ){
+        LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
+                   + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
+                   + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " noTimeout? " + noTimeout + "." );
 
         _mongoURI = inputURI;
+        _keyField = keyField;
         _querySpec = query;
         _fieldSpec = fields;
         _sortSpec = sort;
         _limit = limit;
         _skip = skip;
+        _notimeout = noTimeout;
         getCursor();
     }
+
+
+
     /**
      * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
      * in the split instead.
@@ -68,32 +73,32 @@ public class MongoInputSplit extends InputSplit implements Writable {
     /**
      * Serialize the Split instance
      */
-    @Override
     public void write( final DataOutput out ) throws IOException{
         out.writeUTF( _mongoURI.toString() );
+        out.writeUTF(  _keyField );
         out.writeUTF( JSON.serialize( _querySpec ) );
         out.writeUTF( JSON.serialize( _fieldSpec ) );
         out.writeUTF( JSON.serialize( _sortSpec ) );
         out.writeInt( _limit );
         out.writeInt( _skip );
+        out.writeBoolean( _notimeout );
     }
 
-    @Override
     public void readFields( DataInput in ) throws IOException{
         _mongoURI = new MongoURI( in.readUTF() );
+        _keyField = in.readUTF();
         _querySpec = (DBObject) JSON.parse( in.readUTF() );
         _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
         _sortSpec = (DBObject) JSON.parse( in.readUTF() );
         _limit = in.readInt();
         _skip = in.readInt();
+        _notimeout = in.readBoolean();
         getCursor();
 
-        if ( LOG.isDebugEnabled() ){
-            LOG.debug( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
-                       + Arrays.toString( getLocations() ) + ", query = " + _querySpec
-                       + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
-                       + _skip + "}" );
-        }
+        LOG.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
+                   + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
+                   + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
+                   + _skip + ", noTimeout = " + _notimeout + "}" );
     }
 
     DBCursor getCursor(){
@@ -102,6 +107,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // todo - support limit/skip
         if ( _cursor == null ){
             _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+            if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }
 
@@ -111,12 +117,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI + ", query=" + _querySpec + '}';
+        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
     }
 
     public MongoInputSplit(){ }
-
-    private MongoURI _mongoURI;
 
     public MongoURI getMongoURI(){
         return _mongoURI;
@@ -142,9 +146,19 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _skip;
     }
 
+    /**
+     * The field to use as the Mapper Key
+     */
+    public String getKeyField(){
+        return _keyField;
+    }
+
+    private MongoURI _mongoURI;
+    private String _keyField;
     private DBObject _querySpec;
     private DBObject _fieldSpec;
     private DBObject _sortSpec;
+    private boolean _notimeout;
     private int _limit = 0;
     private int _skip = 0;
     private long _length = -1;
