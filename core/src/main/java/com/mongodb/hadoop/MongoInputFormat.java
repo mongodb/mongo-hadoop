@@ -21,11 +21,14 @@ package com.mongodb.hadoop;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
 import com.mongodb.hadoop.util.*;
+
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
+import java.io.IOException;
 import java.util.*;
 
 // Commons
@@ -44,11 +47,10 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         return new com.mongodb.hadoop.input.MongoRecordReader( mis );
     }
 
-    @Override
-    public List<InputSplit> getSplits( JobContext context ){
+    public List<InputSplit> getSplits( JobContext context, Path path){
         final Configuration hadoopConfiguration = context.getConfiguration();
         final MongoConfig conf = new MongoConfig( hadoopConfiguration );
-        return MongoSplitter.calculateSplits( conf );
+        return MongoSplitter.calculateSplits( conf, path );
     }
 
 
@@ -57,4 +59,12 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     }
 
     private static final Log LOG = LogFactory.getLog( MongoInputFormat.class );
+
+	@Override
+	public List<InputSplit> getSplits(JobContext context) throws IOException,
+			InterruptedException {
+		List<MongoRequest> mongoRequests = MongoConfigUtil.getMongoRequests(context.getConfiguration());
+		return getSplits(context, new Path(mongoRequests.get(0).getInputURI().toString()));
+	}
+    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
 }
