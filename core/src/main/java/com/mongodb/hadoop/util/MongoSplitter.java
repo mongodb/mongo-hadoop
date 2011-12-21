@@ -5,8 +5,8 @@ import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.input.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
-
 import java.util.*;
 
 /**
@@ -24,7 +24,7 @@ import java.util.*;
 
 public class MongoSplitter {
 
-    public static List<InputSplit> calculateSplits( MongoConfig conf ){
+    public static List<InputSplit> calculateSplits( MongoConfig conf, Path path){
 
         if ( conf.getLimit() > 0 || conf.getSkip() > 0 ){
             /**
@@ -50,7 +50,8 @@ public class MongoSplitter {
 
         if ( useShards || useChunks ){
             try {
-                MongoURI uri = conf.getInputURI();
+            	MongoRequest mongoRequest = conf.getMongoRequest(path.toString());
+                MongoURI uri = mongoRequest.getInputURI();
                 Mongo mongo = uri.connect();
                 try {
                     DB db = mongo.getDB( uri.getDatabase() );
@@ -58,12 +59,12 @@ public class MongoSplitter {
                     final CommandResult stats = coll.getStats();
                     final boolean isSharded = stats.getBoolean( "sharded", false );
                     if ( isSharded ){ //don't proceed if the collection isn't actually sharded
-                        if ( useChunks )
-                            splits = fetchSplitsViaChunks( conf, uri, mongo, useShards, slaveOk );
-                        else if ( useShards ){
+                        if ( useChunks ){
+                            splits = fetchSplitsViaChunks( mongo, mongoRequest, useShards, slaveOk );
+                        }else if ( useShards ){
                             log.warn( "Fetching Input Splits directly from shards is potentially dangerous for data "
                                       + "consistency should migrations occur during the retrieval." );
-                            splits = fetchSplitsFromShards( conf, uri, mongo, slaveOk );
+                            splits = fetchSplitsFromShards( mongo, mongoRequest, slaveOk );
                         }
                         if ( splits == null )
                             log.warn( "Failed to create/calculate Input Splits from Shard Chunks." );
@@ -84,7 +85,6 @@ public class MongoSplitter {
                     if ( log.isDebugEnabled() ){
                         log.debug( "Calculated splits and returning them - splits: " + splits );
                     }
-
                     return splits;
                 }
 
@@ -97,17 +97,18 @@ public class MongoSplitter {
         }
 
         // Number of *documents*, not bytes, to split on
-        final int splitSize = conf.getSplitSize();
-        splits = new ArrayList<InputSplit>( 1 );
-        // no splits, no sharding
-        splits.add( new MongoInputSplit( conf.getInputURI(), conf.getQuery(), conf.getFields(), conf.getSort(),
-                                         conf.getLimit(), conf.getSkip() ) );
-
+        List<MongoRequest> mongoRequests = conf.getMongoRequests();
+        
+        splits = new ArrayList<InputSplit>();
+        for(int i = 0; i < mongoRequests.size(); i++){
+        	MongoRequest req = mongoRequests.get(i);
+        	splits.add( new MongoInputSplit(req.getInputURI(), req.getQuery(), req.getFields(), req.getSort(), req.getLimit(), req.getSkip()));
+        }
+        
 
         if ( log.isDebugEnabled() ){
             log.debug( "Calculated " + splits.size() + " split objects." );
         }
-
         return splits;
     }
 
@@ -117,12 +118,12 @@ public class MongoSplitter {
      * mongos} can't necessarily connect to the individual {@code mongod}s. <li>there concurrency issues (if chunks are
      * in the process of getting moved around). </ol>
      */
-    private static List<InputSplit> fetchSplitsFromShards( final MongoConfig conf,
-                                                           MongoURI uri,
-                                                           Mongo mongo,
+    private static List<InputSplit> fetchSplitsFromShards( Mongo mongo,
+                                                           MongoRequest mongoRequest,
                                                            Boolean slaveOk ){
         log.warn( "WARNING getting splits that connect directly to the backend mongods"
                   + " is risky and might not produce correct results" );
+        MongoURI uri = mongoRequest.getInputURI();
         DB configDb = mongo.getDB( "config" );
         DBCollection shardsColl = configDb.getCollection( "shards" );
 
@@ -148,8 +149,8 @@ public class MongoSplitter {
         //todo: using stats only get the shards that actually host data for this collection
         for ( String host : shardSet ){
             MongoURI thisUri = getNewURI( uri, host, slaveOk );
-            splits.add( new MongoInputSplit( thisUri, conf.getQuery(), conf.getFields(), conf.getSort(),
-                                             conf.getLimit(), conf.getSkip() ) );
+            splits.add( new MongoInputSplit( thisUri, mongoRequest.getQuery(), mongoRequest.getFields(), mongoRequest.getSort(),
+            		mongoRequest.getLimit(), mongoRequest.getSkip() ) );
         }
         return splits;
     }
@@ -157,21 +158,20 @@ public class MongoSplitter {
     /**
      * This constructs splits using the chunk boundaries.
      */
-    private static List<InputSplit> fetchSplitsViaChunks( final MongoConfig conf,
-                                                          MongoURI uri,
-                                                          Mongo mongo,
+    private static List<InputSplit> fetchSplitsViaChunks( Mongo mongo,
+                                                          MongoRequest mongoRequest,
                                                           boolean useShards,
-                                                          Boolean slaveOk ){
-        DBObject originalQuery = conf.getQuery();
+                                                          Boolean slaveOk){
 
-        if ( useShards )
+        if ( useShards ){
             log.warn( "WARNING getting splits that connect directly to the backend mongods"
                       + " is risky and might not produce correct results" );
-
+        }
+        DBObject originalQuery = mongoRequest.getQuery();
         if ( log.isDebugEnabled() ){
             log.debug( "getSplitsUsingChunks(): originalQuery: " + originalQuery );
         }
-
+        MongoURI uri = mongoRequest.getInputURI();
         DB configDB = mongo.getDB( "config" );
 
         Map<String, String> shardMap = null; //key: shardname, value: host
@@ -181,10 +181,11 @@ public class MongoSplitter {
             shardMap = new HashMap<String, String>();
             DBCollection shardsCollection = configDB.getCollection( "shards" );
             DBCursor cur = shardsCollection.find();
+
             try {
                 while ( cur.hasNext() ){
                     final BasicDBObject row = (BasicDBObject) cur.next();
-
+ 
                     String host = row.getString( "host" );
 
                     // for replica sets host will look like: "setname/localhost:20003,localhost:20004"
@@ -207,7 +208,7 @@ public class MongoSplitter {
         }
 
         DBCollection chunksCollection = configDB.getCollection( "chunks" );
-
+        
         /* Chunks looks like:
         { "_id" : "test.lines-_id_ObjectId('4d60b839874a8ad69ad8adf6')", "lastmod" : { "t" : 3000, "i" : 1 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b839874a8ad69ad8adf6") }, "max" : { "_id" : ObjectId("4d60b83a874a8ad69ad8d1a9") }, "shard" : "shard0000" }
         { "_id" : "test.lines-_id_ObjectId('4d60b848874a8ad69ada8756')", "lastmod" : { "t" : 3000, "i" : 19 }, "ns" : "test.lines", "min" : { "_id" : ObjectId("4d60b848874a8ad69ada8756") }, "max" : { "_id" : { $maxKey : 1 } }, "shard" : "shard0002" }
@@ -251,7 +252,7 @@ public class MongoSplitter {
                     log.debug( "[" + numChunks + "/" + numExpectedChunks + "] new query is: " + shardKeyQuery );
                 }
 
-                MongoURI inputURI = conf.getInputURI();
+                MongoURI inputURI = mongoRequest.getInputURI();
 
                 if ( useShards ){
                     final String shardname = row.getString( "shard" );
@@ -261,8 +262,8 @@ public class MongoSplitter {
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
                 splits.add(
-                        new MongoInputSplit( inputURI, shardKeyQuery, conf.getFields(), conf.getSort(), conf.getLimit(),
-                                             conf.getSkip() ) );
+                        new MongoInputSplit( inputURI, shardKeyQuery, mongoRequest.getFields(), mongoRequest.getSort(), mongoRequest.getLimit(),
+                                             mongoRequest.getSkip() ) );
             }
 
             if ( log.isDebugEnabled() ){
