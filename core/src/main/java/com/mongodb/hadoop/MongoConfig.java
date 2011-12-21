@@ -26,6 +26,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 import java.io.*;
+import java.util.List;
 
 // Hadoop
 // Commons
@@ -157,12 +158,24 @@ public class MongoConfig {
         MongoConfigUtil.setInputFormat( _conf, val );
     }
 
+    public MongoRequest getMongoRequest (String uri) {
+    	return MongoConfigUtil.getMongoRequest( _conf, uri );
+    }
+
+    public List<MongoRequest> getMongoRequests () {
+    	return MongoConfigUtil.getMongoRequests( _conf );
+    }
+
     public MongoURI getMongoURI( String key ){
         return MongoConfigUtil.getMongoURI( _conf, key );
     }
 
     public MongoURI getInputURI(){
         return MongoConfigUtil.getInputURI( _conf );
+    }
+
+    public MongoURI getInputURI(Class<? extends Mapper> mapper){
+        return MongoConfigUtil.getInputURI( _conf , mapper );
     }
 
     public DBCollection getOutputCollection(){
