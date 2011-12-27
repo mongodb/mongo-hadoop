@@ -272,7 +272,7 @@ public class MongoConfigUtil {
 
     	String mongoRequest = uri + ";" + inputFormatClass + ";" + mapperClass + ";" + query + ";" + fields + ";" + sort + ";" + limit + ";" + skip;
     	
-    	conf.set(INPUT_REQUEST, (inputRequests != null ? inputRequests + "," : "") + mongoRequest ); 
+    	conf.set(INPUT_REQUEST, (inputRequests != null ? inputRequests + "\t" : "") + mongoRequest ); 
     }
 
     public static void addMongoRequest( Configuration conf, String request ) {
@@ -322,7 +322,7 @@ public class MongoConfigUtil {
     
     public static MongoRequest getMongoRequest ( Configuration conf, String uri ){
     	if(conf.get(INPUT_REQUEST) != null){
-    		String[] requests = conf.get(INPUT_REQUEST).split(",");
+    		String[] requests = conf.get(INPUT_REQUEST).split("\t");
     		for(int i = 0; i < requests.length; i++){
     			if(requests[i].indexOf(uri) > -1){
     				MongoRequest mongoRequest;
@@ -342,7 +342,7 @@ public class MongoConfigUtil {
     public static List<MongoRequest> getMongoRequests ( Configuration conf ){
     	List<MongoRequest> mongoRequests = new ArrayList<MongoRequest>();
     	if(conf.get(INPUT_REQUEST) != null){
-    		String[] requests = conf.get(INPUT_REQUEST).split(",");
+    		String[] requests = conf.get(INPUT_REQUEST).split("\t");
     		for(int i = 0; i < requests.length; i++){
     			MongoRequest mongoRequest;
     			try{
