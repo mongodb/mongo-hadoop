@@ -20,7 +20,7 @@ public class MongoRequest {
 		mongoURI = new MongoURI(uri);
 		inputFormat = _inputFormat;
 		mapper = _mapper;
-		query =(DBObject) JSON.parse(_query);
+		query = (DBObject) JSON.parse(_query);
 		fields = (DBObject) JSON.parse(_fields);
 		sort = (DBObject) JSON.parse(_sort);
 		skip = _skip;

@@ -362,7 +362,7 @@ public class MongoSplitter {
                 cur.close();
         }
     }
-
+    
     private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ){
 
         String originalUriString = originalUri.toString();

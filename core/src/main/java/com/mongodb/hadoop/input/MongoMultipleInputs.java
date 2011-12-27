@@ -61,14 +61,18 @@ public class MongoMultipleInputs {
    */
   @SuppressWarnings("unchecked")
   public static void addInputPath(Job job, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
-		  DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
+		  String query, String fields, String sort, int limit, int skip) {
 	  Configuration conf = job.getConfiguration();
 	  MongoConfigUtil.addMongoRequest(conf, uri, inputFormatClass, mapperClass, query, fields, sort, limit, skip);
 	  
 	  job.setMapperClass(DelegatingMapper.class);
 	  job.setInputFormatClass(DelegatingInputFormat.class);
   }
-  // job, uri, inputformat, mapper, query, fields, sort
+  
+  public static void addInputPath(Job job, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
+		  DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
+	  addInputPath(job, uri, inputFormatClass, mapperClass, query != null ? query.toString() : "", fields != null ? fields.toString() : "", sort != null ? sort.toString() : "", limit, skip);
+  }
   public static void addInputPath(Job job, MongoURI uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
 		  DBObject query, DBObject fields, DBObject sort, int limit, int skip) {
 	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, fields, sort, limit, skip);
@@ -91,13 +95,29 @@ public class MongoMultipleInputs {
 		  DBObject query, DBObject fields) {
 	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, fields, null, 0, 0);
   }
+  public static void addInputPath(Job job, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
+		  String query, String fields) {
+	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, fields, null, 0, 0);
+  }
+  public static void addInputPath(Job job, MongoURI uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
+		  String query, String fields) {
+	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, fields, null, 0, 0);
+  }
   // job, uri, inputformat, mapper, query
   public static void addInputPath(Job job, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
 		  DBObject query) {
-	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, null, null, 0, 0);
+	  addInputPath(job, uri, inputFormatClass, mapperClass, query, null, null, 0, 0);
   }
   public static void addInputPath(Job job, MongoURI uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
 		  DBObject query) {
+	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, null, null, 0, 0);
+  }
+  public static void addInputPath(Job job, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
+		  String query) {
+	  addInputPath(job, uri, inputFormatClass, mapperClass, query, null, null, 0, 0);
+  }
+  public static void addInputPath(Job job, MongoURI uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass,
+		  String query) {
 	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, query, null, null, 0, 0);
   }
   // job, uri, inputformat, mapper
@@ -105,7 +125,7 @@ public class MongoMultipleInputs {
 	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, new BasicDBObject(), new BasicDBObject(), new BasicDBObject(), 0, 0);
   }
   public static void addInputPath(Job job, MongoURI uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass) {
-	  addInputPath(job, uri.toString(), inputFormatClass, mapperClass, null, null, null, 0, 0);
+	  addInputPath(job, uri, inputFormatClass, mapperClass, null, null, null, 0, 0);
   }
   /**
    * Retrieves a map of {@link Path}s to the {@link InputFormat} class
