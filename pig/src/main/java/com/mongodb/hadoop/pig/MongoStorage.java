@@ -26,6 +26,9 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.pig.*;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.util.*;
+import org.apache.pig.ResourceSchema;
+import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+
 
 import java.io.*;
 import java.util.*;
@@ -35,6 +38,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     // Pig specific settings
     static final String PIG_OUTPUT_SCHEMA = "mongo.pig.output.schema";
     static final String PIG_OUTPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.output.schema.udf_context";
+    protected ResourceSchema schema = null;
 
     public MongoStorage(){ }
 
@@ -42,18 +46,8 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     public void checkSchema( ResourceSchema schema ) throws IOException{
         final Properties properties =
                 UDFContext.getUDFContext().getUDFProperties( this.getClass(), new String[] { _udfContextSignature } );
-        properties.setProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT, parseSchema( schema ) );
+        properties.setProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT, schema.toString());
     }
-
-    public String parseSchema( ResourceSchema schema ){
-        final StringBuilder fields = new StringBuilder();
-        for ( final String field : schema.fieldNames() ){
-            fields.append( field );
-            fields.append( "," );
-        }
-        return fields.substring( 0, fields.length() - 1 );
-    }
-
 
     public void storeSchema( ResourceSchema schema, String location, Job job ){
         // not implemented
@@ -70,19 +64,130 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         final List<String> schema = Arrays.asList( config.get( PIG_OUTPUT_SCHEMA ).split( "," ) );
         log.info( "Stored Schema: " + schema );
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
-        for ( int i = 0; i < tuple.size(); i++ ){
+
+        ResourceFieldSchema[] fields = this.schema.getFields();
+        for (int i = 0; i < fields.length; i++) {
             log.info( "I: " + i + " tuple: " + tuple );
-            builder.add( schema.get( i ), tuple.get( i ) );
+            writeField(builder, fields[i], tuple.get(i));
         }
         _recordWriter.write( null, builder.get() );
     }
 
+    private void writeField(BasicDBObjectBuilder builder,
+                            ResourceSchema.ResourceFieldSchema field,
+                            Object d) throws IOException {
+
+        // If the field is missing or the value is null, write a null
+        if (d == null) {
+            builder.add( field.getName(), d );
+            return;
+        }
+
+        ResourceSchema s = field.getSchema();
+
+        // Based on the field's type, write it out
+        switch (field.getType()) {
+            case DataType.INTEGER:
+                builder.add( field.getName(), (Integer)d );
+                return;
+
+            case DataType.LONG:
+                builder.add( field.getName(), (Long)d );
+                return;
+
+            case DataType.FLOAT:
+                builder.add( field.getName(), (Float)d );
+                return;
+
+            case DataType.DOUBLE:
+                builder.add( field.getName(), (Double)d );
+                return;
+
+            case DataType.BYTEARRAY:
+                builder.add( field.getName(), d.toString() );
+                return;
+
+            case DataType.CHARARRAY:
+                builder.add( field.getName(), (String)d );
+                return;
+
+            // Given a TUPLE, create a Map so BSONEncoder will eat it
+            case DataType.TUPLE:
+                log.info( "In TUPLE!" );
+                if (s == null) {
+                    throw new IOException("Schemas must be fully specified to use "
+                            + "this storage function.  No schema found for field " +
+                            field.getName());
+                }
+                ResourceSchema.ResourceFieldSchema[] fs = s.getFields();
+                LinkedHashMap m = new java.util.LinkedHashMap();
+                for (int j = 0; j < fs.length; j++) {
+                    m.put(fs[j], ((Tuple) d).get(j));
+                }
+                builder.add( field.getName(), (Map)m );
+                return;
+
+            // Given a BAG, create an Array so BSONEnconder will eat it.
+            case DataType.BAG:
+                log.info( "In BAG!" );
+                if (s == null) {
+                    throw new IOException("Schemas must be fully specified to use "
+                            + "this storage function.  No schema found for field " +
+                            field.getName());
+                }
+                fs = s.getFields();
+                if (fs.length != 1 || fs[0].getType() != DataType.TUPLE) {
+                    throw new IOException("Found a bag without a tuple "
+                            + "inside!");
+                }
+                // Drill down the next level to the tuple's schema.
+                s = fs[0].getSchema();
+                if (s == null) {
+                    throw new IOException("Schemas must be fully specified to use "
+                            + "this storage function.  No schema found for field " +
+                            field.getName());
+                }
+                fs = s.getFields();
+
+                ArrayList a = new ArrayList<Map>();
+                for (Tuple t : (DataBag)d) {
+                    LinkedHashMap ma = new java.util.LinkedHashMap();
+                    for (int j = 0; j < fs.length; j++) {
+                        ma.put(fs[j].getName(), ((Tuple) t).get(j));
+                    }
+                    a.add(ma);
+                }
+
+                builder.add( field.getName(), a);
+                return;
+        }
+    }
+
 
     public void prepareToWrite( RecordWriter writer ) throws IOException{
+
         _recordWriter = (MongoRecordWriter) writer;
         log.info( "Preparing to write to " + _recordWriter );
         if ( _recordWriter == null )
             throw new IOException( "Invalid Record Writer" );
+        // Parse the schema from the string stored in the properties object.
+
+        UDFContext udfc = UDFContext.getUDFContext();
+        Properties p =
+                udfc.getUDFProperties(this.getClass(), new String[]{_udfContextSignature});
+
+        String strSchema = p.getProperty(PIG_OUTPUT_SCHEMA_UDF_CONTEXT);
+        if (strSchema == null) {
+            throw new IOException("Could not find schema in UDF context");
+        }
+
+        try {
+        // Parse the schema from the string stored in the properties object.
+        schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
