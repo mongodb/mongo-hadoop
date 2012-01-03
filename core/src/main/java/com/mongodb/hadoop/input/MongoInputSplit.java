@@ -19,10 +19,10 @@ package com.mongodb.hadoop.input;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.util.*;
-import com.mongodb.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.bson.*;
 
 import java.io.*;
 import java.util.*;
@@ -37,7 +37,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
                             int limit,
                             int skip,
                             boolean noTimeout ){
-        LOG.debug( "Creating a new MongoInputSplit for MongoURI '"
+        log.debug( "Creating a new MongoInputSplit for MongoURI '"
                    + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
                    + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " noTimeout? " + noTimeout + "." );
 
@@ -50,6 +50,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _skip = skip;
         _notimeout = noTimeout;
         getCursor();
+        getBSONDecoder();
+        getBSONEncoder();
     }
 
 
@@ -74,28 +76,58 @@ public class MongoInputSplit extends InputSplit implements Writable {
      * Serialize the Split instance
      */
     public void write( final DataOutput out ) throws IOException{
-        out.writeUTF( _mongoURI.toString() );
-        out.writeUTF(  _keyField );
-        out.writeUTF( JSON.serialize( _querySpec ) );
-        out.writeUTF( JSON.serialize( _fieldSpec ) );
-        out.writeUTF( JSON.serialize( _sortSpec ) );
-        out.writeInt( _limit );
-        out.writeInt( _skip );
-        out.writeBoolean( _notimeout );
+        BSONEncoder enc = getBSONEncoder();
+
+        BSONObject spec = BasicDBObjectBuilder.start().
+                                               add( "uri", _mongoURI.toString() ).
+                                               add( "key", _keyField ).
+                                               add( "query", _querySpec ).
+                                               add( "field", _fieldSpec ).                                              
+                                               add( "sort", _sortSpec ).
+                                               add( "limit", _limit ).
+                                               add( "skip", _skip ).
+                                               add( "notimeout", _notimeout ).get();
+
+        byte[] buf = enc.encode( spec );
+
+        out.write( buf );
     }
 
     public void readFields( DataInput in ) throws IOException{
-        _mongoURI = new MongoURI( in.readUTF() );
-        _keyField = in.readUTF();
-        _querySpec = (DBObject) JSON.parse( in.readUTF() );
-        _fieldSpec = (DBObject) JSON.parse( in.readUTF() );
-        _sortSpec = (DBObject) JSON.parse( in.readUTF() );
-        _limit = in.readInt();
-        _skip = in.readInt();
-        _notimeout = in.readBoolean();
+        BSONDecoder dec = getBSONDecoder();
+        BSONCallback cb = new BasicBSONCallback();
+        BSONObject spec;
+        // Read the BSON length from the start of the record
+        byte[] l = new byte[4];
+        try {
+            in.readFully( l );
+            int dataLen = org.bson.io.Bits.readInt( l );
+            if ( log.isDebugEnabled() ) log.debug( "*** Expected DataLen: " + dataLen );
+            byte[] data = new byte[dataLen + 4];
+            System.arraycopy( l, 0, data, 0, 4 );
+            in.readFully( data, 4, dataLen - 4 );
+            dec.decode( data, cb );
+            spec = (BSONObject) cb.get();
+            if ( log.isTraceEnabled() ) log.trace( "Decoded a BSON Object: " + spec );
+        }
+        catch ( Exception e ) {
+            /* If we can't read another length it's not an error, just return quietly. */
+            // TODO - Figure out how to gracefully mark this as an empty
+            log.info( "No Length Header available." + e );
+            spec = new BasicDBObject();
+        }         
+        
+        _mongoURI = new MongoURI((String) spec.get( "uri" ));
+        _keyField = (String) spec.get( "key" );
+        _querySpec = (DBObject) spec.get( "query" );
+        _fieldSpec = (DBObject) spec.get( "field" );
+        _sortSpec = (DBObject) spec.get( "sort" );
+        _limit = (Integer) spec.get( "limit" );
+        _skip = (Integer) spec.get( "skip" );
+        _notimeout = (Boolean) spec.get( "notimeout" );
         getCursor();
 
-        LOG.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
+        log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
                    + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
                    + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
                    + _skip + ", noTimeout = " + _notimeout + "}" );
@@ -114,6 +146,17 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return _cursor;
     }
 
+    BSONEncoder getBSONEncoder(){
+        if (_bsonEncoder == null) 
+            _bsonEncoder = new BSONEncoder();
+        return _bsonEncoder;
+    }
+    
+    BSONDecoder getBSONDecoder(){
+        if (_bsonDecoder == null)
+            _bsonDecoder = new BSONDecoder();
+        return _bsonDecoder;
+    }
 
     @Override
     public String toString(){
@@ -163,7 +206,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
     private int _skip = 0;
     private long _length = -1;
     private transient DBCursor _cursor;
+    private transient BSONEncoder _bsonEncoder;
+    private transient BSONDecoder _bsonDecoder;
 
-    private static final Log LOG = LogFactory.getLog( MongoInputSplit.class );
+    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
 
 }
