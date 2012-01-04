@@ -38,7 +38,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.DelegatingRecordReader;
-import org.apache.hadoop.mapreduce.lib.input.TaggedInputSplit;
+import org.apache.hadoop.mapreduce.lib.input.TaggedInputSplitGenerator;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import com.mongodb.hadoop.MongoInputFormat;
@@ -67,12 +67,12 @@ public class DelegatingInputFormat<K, V> extends InputFormat<K, V> {
 		  try{
 			  List<InputSplit> pathSplits = ((MongoInputFormat) formatClass).getSplits(jobCopy, entry.getKey());
 			  for (InputSplit pathSplit : pathSplits) {
-				  splits.add(new TaggedInputSplit(pathSplit, conf, formatClass.getClass(), mapperClass));
+				  splits.add(TaggedInputSplitGenerator.getTaggedInputSplit(pathSplit, conf, formatClass.getClass(), mapperClass));
 			  }
 		  }catch(ClassCastException e){
 			  List<InputSplit> pathSplits = formatClass.getSplits(jobCopy);
 			  for (InputSplit pathSplit : pathSplits) {
-				  splits.add(new TaggedInputSplit(pathSplit, conf, formatClass.getClass(), mapperClass));
+				  splits.add(TaggedInputSplitGenerator.getTaggedInputSplit(pathSplit, conf, formatClass.getClass(), mapperClass));
 			  }
 		  }
 	  }
