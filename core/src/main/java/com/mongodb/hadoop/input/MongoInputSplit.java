@@ -148,13 +148,13 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     BSONEncoder getBSONEncoder(){
         if (_bsonEncoder == null) 
-            _bsonEncoder = new BSONEncoder();
+            _bsonEncoder = new BasicBSONEncoder();
         return _bsonEncoder;
     }
     
     BSONDecoder getBSONDecoder(){
         if (_bsonDecoder == null)
-            _bsonDecoder = new BSONDecoder();
+            _bsonDecoder = new BasicBSONDecoder();
         return _bsonDecoder;
     }
 

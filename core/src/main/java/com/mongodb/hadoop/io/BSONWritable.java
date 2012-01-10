@@ -149,7 +149,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      */
     public void write( DataOutput out ) throws IOException{
 
-        BSONEncoder enc = new BSONEncoder();
+        BSONEncoder enc = new BasicBSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
         enc.putObject( _doc );
@@ -164,7 +164,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      * @see Writable#readFields(DataInput)
      */
     public void readFields( DataInput in ) throws IOException{
-        BSONDecoder dec = new BSONDecoder();
+        BSONDecoder dec = new BasicBSONDecoder();
         BSONCallback cb = new BasicBSONCallback();
         // Read the BSON length from the start of the record
         byte[] l = new byte[4];
@@ -193,7 +193,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      */
     @Override
     public String toString(){
-        BSONEncoder enc = new BSONEncoder();
+        BSONEncoder enc = new BasicBSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
         enc.putObject( _doc );
