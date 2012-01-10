@@ -466,7 +466,7 @@ public class MongoConfigUtil {
     }
 
     public static void setCreateInputSplits( Configuration conf, boolean value ) {
-        conf.getBoolean( CREATE_INPUT_SPLITS, value );
+        conf.setBoolean( CREATE_INPUT_SPLITS, value );
     }
 
     public static void setInputSplitKeyPattern( Configuration conf, String pattern ) {
