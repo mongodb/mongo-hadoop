@@ -259,7 +259,7 @@ public class MongoConfigUtil {
             return uri.connectCollection( _mongos.connect( uri ) );
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to collection.", e );
+            throw new IllegalArgumentException( "Unable to connect to collection: " + e.getMessage(), e );
         }
     }
 

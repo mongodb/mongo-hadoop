@@ -119,9 +119,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
         
         _mongoURI = new MongoURI((String) spec.get( "uri" ));
         _keyField = (String) spec.get( "key" );
-        _querySpec = (DBObject) spec.get( "query" );
-        _fieldSpec = (DBObject) spec.get( "field" );
-        _sortSpec = (DBObject) spec.get( "sort" );
+        _querySpec = new BasicDBObject( ((BSONObject) spec.get( "query" )).toMap() );
+        _fieldSpec = new BasicDBObject( ((BSONObject) spec.get( "field" )).toMap() ) ;
+        _sortSpec = new BasicDBObject( ((BSONObject) spec.get( "sort" )).toMap() );
         _limit = (Integer) spec.get( "limit" );
         _skip = (Integer) spec.get( "skip" );
         _notimeout = (Boolean) spec.get( "notimeout" );
@@ -194,6 +194,36 @@ public class MongoInputSplit extends InputSplit implements Writable {
      */
     public String getKeyField(){
         return _keyField;
+    }
+
+    public boolean equals( Object o ){
+        if ( this == o ) return true;
+        if ( o == null || getClass() != o.getClass() ) return false;
+
+        MongoInputSplit that = (MongoInputSplit) o;
+
+        if ( _limit != that._limit ) return false;
+        if ( _notimeout != that._notimeout ) return false;
+        if ( _skip != that._skip ) return false;
+        if ( _fieldSpec != null ? !_fieldSpec.equals( that._fieldSpec ) : that._fieldSpec != null ) return false;
+        if ( _keyField != null ? !_keyField.equals( that._keyField ) : that._keyField != null ) return false;
+        if ( _mongoURI != null ? !_mongoURI.toString().equals( that._mongoURI.toString() ) : that._mongoURI != null ) return false;
+        if ( _querySpec != null ? !_querySpec.equals( that._querySpec ) : that._querySpec != null ) return false;
+        if ( _sortSpec != null ? !_sortSpec.equals( that._sortSpec ) : that._sortSpec != null ) return false;
+
+        return true;
+    }
+
+    public int hashCode(){
+        int result = _mongoURI != null ? _mongoURI.hashCode() : 0;
+        result = 31 * result + ( _keyField != null ? _keyField.hashCode() : 0 );
+        result = 31 * result + ( _querySpec != null ? _querySpec.hashCode() : 0 );
+        result = 31 * result + ( _fieldSpec != null ? _fieldSpec.hashCode() : 0 );
+        result = 31 * result + ( _sortSpec != null ? _sortSpec.hashCode() : 0 );
+        result = 31 * result + ( _notimeout ? 1 : 0 );
+        result = 31 * result + _limit;
+        result = 31 * result + _skip;
+        return result;
     }
 
     private MongoURI _mongoURI;
