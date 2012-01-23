@@ -92,7 +92,7 @@ params are setup in the Java code.  You can run this with the ant task `wordcoun
 See examples/wordcount/src/main/resources/mongo-wordcount.xml for the example configuration.
 You can run this with the ant task `wordcountXML`, or with a hadoop command of:
 
-    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
+    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.wordcount.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
 
 You will need to copy the `mongo-java-driver.jar` file into your Hadoop `lib` directory before this will work.
 
