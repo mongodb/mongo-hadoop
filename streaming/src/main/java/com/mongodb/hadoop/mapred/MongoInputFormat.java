@@ -41,8 +41,8 @@ import com.mongodb.hadoop.io.*;
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split,
-                                                                      JobConf job,
-                                                                      Reporter reporter) {
+                                                                    JobConf job,
+                                                                    Reporter reporter) {
         if (!(split instanceof MongoInputSplit))
             throw new IllegalStateException("Creation of a new RecordReader requires a MongoInputSplit instance.");
 

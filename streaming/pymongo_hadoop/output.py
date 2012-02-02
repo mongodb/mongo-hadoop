@@ -3,8 +3,9 @@ from bson import _dict_to_bson
 
 
 class BSONOutput(object):
-    """Custom file class for encoding streaming BSON,
-    based upon the Dumbo "typedbytes" module at
+    """Custom file class for decoding streaming BSON,
+    based upon the Dumbo & "typedbytes" modules at
+    https://github.com/klbostee/dumbo &
     https://github.com/klbostee/typedbytes
     """
 

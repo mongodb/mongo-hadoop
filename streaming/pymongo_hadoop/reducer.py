@@ -54,7 +54,7 @@ class KeyValueBSONReducer(BSONReducer):
 
 
 
-def default_reducer(data): 
+def default_reducer(data):
     print >> sys.stderr, "*** Invoking default reducer function, this is unoptimized for your data and may be very slow."
 
 class BSONReducerInput(BSONInput):
@@ -65,21 +65,21 @@ class BSONReducerInput(BSONInput):
 
     # TODO - Combiner/KeyFunc
     def __init__(self, reducefunc):
-        """ 
-        reducer must be a function which takes a series of 
+        """
+        reducer must be a function which takes a series of
         pairs of Key, Values to process and returns an iterable
-        of (key, value) tuples OR a dict with key in _id 
+        of (key, value) tuples OR a dict with key in _id
         (recommended as a generator)
         """
         self.reducer = reducefunc
         super(BSONReducerInput, self).__init__()
-            
+
 
     def iter_reduce(self):
         data = groupby(self._reads(), lambda doc: doc['_id'])
         data = ((key, (v for v in values)) for key, values in data)
         return self.reducer(data)
-    
+
     __iter__ = iter_reduce
 
 class KeyValueBSONReducerInput(BSONReducerInput, KeyValueBSONInput):
@@ -91,6 +91,6 @@ class KeyValueBSONReducerInput(BSONReducerInput, KeyValueBSONInput):
         data = groupby(self._reads(), lambda k, v: k)
         data = ((key, (v for v in values)) for key, values in data)
         return self.reducer(data)
-    
+
     __iter__ = iter_reduce
 

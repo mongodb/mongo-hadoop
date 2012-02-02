@@ -11,5 +11,5 @@ def reducer(key, values):
         _sum += v['value']
     return (key, _sum / _count)
 
-        
+
 KeyValueBSONReducer(reducer, input_fh=KeyValueBSONInput())

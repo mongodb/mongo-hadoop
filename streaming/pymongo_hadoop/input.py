@@ -5,7 +5,8 @@ import struct
 
 class BSONInput(object):
     """Custom file class for decoding streaming BSON,
-    based upon the Dumbo "typedbytes" module at
+    based upon the Dumbo & "typedbytes" modules at
+    https://github.com/klbostee/dumbo &
     https://github.com/klbostee/typedbytes
     """
 
@@ -69,5 +70,5 @@ class KeyValueBSONInput(BSONInput):
                 yield doc['_id'], doc
             else:
                raise struct.error("Cannot read Key '_id' from Input Doc '%s'" % doc)
-       
+
     __iter__ = reads

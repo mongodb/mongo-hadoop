@@ -1,0 +1,1 @@
+hadoop jar target/mongo-hadoop-streaming-1.0-SNAPSHOT.jar -mapper twit_map.py -reducer twit_reduce.py -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -inputURI mongodb://127.0.0.1/test.live -outputURI mongodb://127.0.0.1/test.twit_reduction
