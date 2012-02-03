@@ -50,16 +50,59 @@
   </dependencies>
   <profiles>
       <profile>
-          <id>apache-hadoop-0.20</id> 
+          <id>apache-hadoop-1.0</id> 
           <activation>
               <activeByDefault>true</activeByDefault> 
+              <property>
+                  <name>hadoop.release</name> 
+                  <value>1.0</value>
+              </property>
+          </activation>
+         <modules>
+            <module>core</module>
+            <module>pig</module>
+            <module>flume</module>
+            <!-- Streaming is only enabled when you build
+                 with cloudera-hadoop or apache-hadoop-0.21
+            -->
+            <module>streaming</module> 
+        </modules>
+          <properties>
+              <hadoop.baseVersion>1.0.0</hadoop.baseVersion> 
+            <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+          </properties>
+          <repositories>
+              <repository>
+                  <id>central</id>
+                  <name>Central Maven Repository</name>
+                  <layout>default</layout>
+                  <url>http://repo1.maven.org/maven2/</url>
+                  <snapshots>
+                      <enabled>false</enabled>
+                  </snapshots>
+              </repository>
+          </repositories>
+      </profile> 
+      <profile>
+          <id>apache-hadoop-0.20</id> 
+          <activation>
+              <activeByDefault>false</activeByDefault> 
               <property>
                   <name>hadoop.release</name> 
                   <value>0.20</value>
               </property>
           </activation>
+         <modules>
+            <module>core</module>
+            <module>pig</module>
+            <module>flume</module>
+            <!-- Streaming is only enabled when you build
+                 with cloudera-hadoop or apache-hadoop-0.21  & 1.0
+            -->
+            <!-- <module>streaming</module>  -->
+          </modules>
           <properties>
-              <hadoop.baseVersion>0.20.203.0</hadoop.baseVersion> 
+              <hadoop.baseVersion>0.20.205.0</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
           </properties>
       </profile> 
