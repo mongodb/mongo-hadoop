@@ -45,7 +45,6 @@ object MongoHadoopBuild extends Build {
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ Seq( 
-    hadoopRelease := "1.0", 
     resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.mavenOrgRepo)
   )
 
