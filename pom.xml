@@ -4,7 +4,7 @@
   <groupId>org.mongodb</groupId>
   <artifactId>mongo-hadoop</artifactId>
   <packaging>pom</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-RC1</version>
   <name>MongoDB Hadoop Support</name>
   <url>http://github.com/mongodb/mongo-hadoop</url>
   <properties>
@@ -65,7 +65,7 @@
             <!-- Streaming is only enabled when you build
                  with cloudera-hadoop or apache-hadoop-0.21
             -->
-            <module>streaming</module> 
+            <!-- <module>streaming</module>  -->
         </modules>
           <properties>
             <hadoop.baseVersion>1.0.0</hadoop.baseVersion> 
