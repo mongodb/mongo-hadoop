@@ -36,9 +36,12 @@ object MongoHadoopBuild extends Build {
                                 base = file("streaming"), 
                                 settings = streamingSettings ) dependsOn( core )
 
+  lazy val flume = Project( id = "mongo-flume",
+                            base = file("flume"),
+                            settings = flumeSettings ) 
 
-
-  private val subProjects: Seq[ProjectReference] = scala.collection.mutable.Seq(projectToRef(core)) 
+  private lazy val subProjects: Seq[ProjectReference] = scala.collection.mutable.Seq(projectToRef(core),
+                                                                                     projectToRef(flume))
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ Seq( 
@@ -47,6 +50,10 @@ object MongoHadoopBuild extends Build {
 
   lazy val parentSettings = baseSettings ++ Seq( 
     publishArtifact := false
+  )
+
+  lazy val flumeSettings = baseSettings ++ Seq(
+    libraryDependencies ++= Seq("com.cloudera" % "flume-core" % "0.9.4-cdh3u3")
   )
 
   lazy val streamingSettings = baseSettings ++ Seq( 
