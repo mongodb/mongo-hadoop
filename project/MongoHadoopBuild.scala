@@ -45,7 +45,8 @@ object MongoHadoopBuild extends Build {
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ Seq( 
-    hadoopRelease := "1.0"
+    hadoopRelease := "1.0", 
+    resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.mavenOrgRepo)
   )
 
   lazy val parentSettings = baseSettings ++ Seq( 
@@ -64,6 +65,7 @@ object MongoHadoopBuild extends Build {
   })
   
   lazy val coreSettings: Seq[sbt.Project.Setting[_]] = baseSettings ++ Seq( 
+    libraryDependencies ++= Seq("org.mongodb" % "mongo-java-driver" % "2.7.3"),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
@@ -99,6 +101,15 @@ def hadoopDependency(hadoopVersion: String, useStreaming: Boolean): (Option[() =
   }
 
 
+}
+
+object Resolvers {
+  val scalaToolsSnapshots = "snapshots" at "http://scala-tools.org/repo-snapshots"
+  val scalaToolsReleases  = "releases" at "http://scala-tools.org/repo-releases"
+  //val sonatypeSnaps = "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  //val sonatypeRels = "releases" at "https://oss.sonatype.org/content/repositories/releases"
+  val clouderaRepo = "Cloudera Repository" at "https://repository.cloudera.com/content/repositories/releases/"
+  val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/org/"
 }
 
 // vim: set ts=2 sw=2 sts=2 et:
