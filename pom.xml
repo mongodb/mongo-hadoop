@@ -68,8 +68,9 @@
             <module>streaming</module> 
         </modules>
           <properties>
-              <hadoop.baseVersion>1.0.0</hadoop.baseVersion> 
+            <hadoop.baseVersion>1.0.0</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+            <pig.version>0.9.1</pig.version>
           </properties>
           <repositories>
               <repository>
@@ -102,8 +103,9 @@
             <!-- <module>streaming</module>  -->
           </modules>
           <properties>
-              <hadoop.baseVersion>0.20.205.0</hadoop.baseVersion> 
+            <hadoop.baseVersion>0.20.205.0</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+            <pig.version>0.9.1</pig.version>
           </properties>
       </profile> 
       <profile>
@@ -126,10 +128,11 @@
         <properties>
             <hadoop.baseVersion>0.21.0</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+            <pig.version>0.9.1</pig.version>
         </properties>
       </profile>
       <profile>
-          <id>cloudera-hadoop-cdh3u1</id> 
+          <id>cloudera-hadoop-cdh3u3</id> 
           <activation>
               <property>
                   <name>hadoop.release</name> 
@@ -146,8 +149,9 @@
             <module>streaming</module> 
         </modules>
         <properties>
-            <hadoop.baseVersion>0.20.2-cdh3u1</hadoop.baseVersion> 
+            <hadoop.baseVersion>0.20.2-cdh3u3</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+            <pig.version>0.8.1-cdh3u3</pig.version>
         </properties>
           <repositories>
               <repository>
@@ -179,8 +183,9 @@
             <module>streaming</module> 
         </modules>
         <properties>
-            <hadoop.baseVersion>0.20.2-cdh3u1</hadoop.baseVersion> 
+            <hadoop.baseVersion>0.20.2-cdh3u3</hadoop.baseVersion> 
             <mongo-hadoop.version>1.0_${hadoop.baseVersion}-SNAPSHOT</mongo-hadoop.version>
+            <pig.version>0.8.1-cdh3u3</pig.version>
         </properties>
           <repositories>
               <repository>
