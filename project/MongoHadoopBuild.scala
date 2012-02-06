@@ -45,7 +45,7 @@ object MongoHadoopBuild extends Build {
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ Seq( 
-    resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.mavenOrgRepo)
+    resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo)
   )
 
   lazy val parentSettings = baseSettings ++ Seq( 
@@ -53,7 +53,7 @@ object MongoHadoopBuild extends Build {
   )
 
   lazy val flumeSettings = baseSettings ++ Seq(
-    libraryDependencies ++= Seq("com.cloudera" % "flume-core" % "0.9.4-cdh3u3")
+    libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.flume)
   )
 
   lazy val streamingSettings = baseSettings ++ Seq( 
@@ -64,13 +64,26 @@ object MongoHadoopBuild extends Build {
   })
   
   lazy val coreSettings: Seq[sbt.Project.Setting[_]] = baseSettings ++ Seq( 
-    libraryDependencies ++= Seq("org.mongodb" % "mongo-java-driver" % "2.7.3"),
+    libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.junit),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
       if (hadoopDeps._1.isDefined) { subProjects :+ projectToRef(streaming) }
       hadoopDeps._2()
-  })
+    }, 
+    libraryDependencies <<= (scalaVersion, libraryDependencies) { (sv, deps) =>
+      val versionMap = Map("2.8.0" -> ("specs2_2.8.0", "1.5"),
+                           "2.8.1" -> ("specs2_2.8.1", "1.5"),
+                           "2.9.0" -> ("specs2_2.9.0", "1.7.1"),
+                           "2.9.0-1" -> ("specs2_2.9.0", "1.7.1"),
+                           "2.9.1" -> ("specs2_2.9.1", "1.7.1"))
+      val tuple = versionMap.getOrElse(sv, sys.error("Unsupported Scala version for Specs2"))
+      deps :+ ("org.specs2" % tuple._1 % tuple._2 % "test")
+    },
+    autoCompilerPlugins := true,
+    parallelExecution in Test := true,
+    testFrameworks += TestFrameworks.Specs2
+  )
 
 
 
@@ -107,8 +120,15 @@ object Resolvers {
   val scalaToolsReleases  = "releases" at "http://scala-tools.org/repo-releases"
   //val sonatypeSnaps = "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   //val sonatypeRels = "releases" at "https://oss.sonatype.org/content/repositories/releases"
-  val clouderaRepo = "Cloudera Repository" at "https://repository.cloudera.com/content/repositories/releases/"
+  val clouderaRepo = "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
+  val mitSimileRepo = "Simile Repo at MIT" at "http://simile.mit.edu/maven"
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/org/"
+}
+
+object Dependencies {
+  val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.7.3"
+  val junit = "junit" % "junit" % "4.10" % "test"
+  val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
 }
 
 // vim: set ts=2 sw=2 sts=2 et:
