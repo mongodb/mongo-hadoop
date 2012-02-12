@@ -38,6 +38,11 @@ object MongoHadoopBuild extends Build {
                            base = file("core"), 
                            settings = coreSettings )
 
+
+  lazy val pig = Project( id = "mongo-hadoop-pig",
+                          base = file("pig"),
+                          settings = baseSettings )
+
   lazy val streaming = Project( id = "mongo-hadoop-streaming", 
                                 base = file("streaming"), 
                                 settings = streamingSettings ) dependsOn( core )
