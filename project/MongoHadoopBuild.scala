@@ -25,6 +25,7 @@ object MongoHadoopBuild extends Build {
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
                                   "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
+                                  "default" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "cdh" -> hadoopDependencies(cdhHadoop, true, cdhPig),
                                   "cdh3" -> hadoopDependencies(cdhHadoop, true, cdhPig),
                                   "cloudera" -> hadoopDependencies(cdhHadoop, true, cdhPig)
@@ -73,12 +74,17 @@ object MongoHadoopBuild extends Build {
   /** Settings that are dependent on a hadoop version */
   lazy val dependentSettings = baseSettings ++ Seq(    
     moduleName <<= (hadoopRelease, moduleName) { (hr, mod) =>
-      val rel = coreHadoopMap.getOrElse(hr, 
-                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
-                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
-                    )._3
+      System.err.println("****** HR: " + hr)
+      if (hr == "default") 
+        mod
+      else {
+        val rel = coreHadoopMap.getOrElse(hr, 
+                      sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
+                                " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                      )._3
 
-      "%s_%s".format(mod, rel)
+        "%s_%s".format(mod, rel)
+      }
   })
 
   lazy val parentSettings = baseSettings ++ Seq( 
