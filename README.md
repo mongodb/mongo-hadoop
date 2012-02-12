@@ -1,6 +1,8 @@
 MongoDB Hadoop Adapter
 =======================
 
+CURRENT RELEASE: 1.0.0-rc0
+
 We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 Update 1 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
 
 The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
@@ -37,17 +39,17 @@ The Mongo-Hadoop adapter uses the [SBT Build Tool](https://github.com/harrah/xsb
 As there are a number of differing Hadoop vendors and releases deployed in the wild, we support 
 You can change the Hadoop version of the build by changing the value of `hadoopRelease` in the `build.sbt` file. Setting it to:
 
-        hadoopReleasein ThisBuild := "cdh3"
+   hadoopReleasein ThisBuild := "cdh3"
 
 or: 
 
 
-        hadoopRelease in ThisBuild := "cloudera"
+    hadoopRelease in ThisBuild := "cloudera"
 
 Will both build against Cloudera CDH3u3, while:
 
 
-        hadoopRelease in ThisBuild := "0.21"
+   hadoopRelease in ThisBuild := "0.21"
 
 
 Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
@@ -58,26 +60,29 @@ Once you have a copy of the compiled project, you'll need to place the "core" ja
 
 The currently supported Releases (And the valid keys for configuration) of Hadoop are as follows:
 
-    * Cloudera Release 3; this is based on Apache Hadoop 0.20.2, but includes many custom patches including binary streaming, and Pig 0.8.1.  *ALL* Modules are compiled with this including Streaming.
-        - cdh
-        - cdh3
-        - cloudera
-        - Maven Artifact: "org.mongodb.
+* Cloudera Release 3; this is based on Apache Hadoop 0.20.2, but includes many custom patches including binary streaming, and Pig 0.8.1.  *ALL* Modules are compiled with this including Streaming.
+    - cdh
+    - cdh3
+    - cloudera
+    - Maven Artifact: "org.mongodb" / "mongo-hadoop_cdh3u3"
 
 
-    * Apache Hadoop 0.20.205.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
-        - 0.20
-        - 0.20.x
+* Apache Hadoop 0.20.205.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
+    - 0.20
+    - 0.20.x
+    - Maven Artifact: "org.mongodb" / "mongo-hadoop_0.20.205.0"
 
-    * Apache Hadoop 1.0.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
-        - 1.0
-        - 1.0.x
+* Apache Hadoop 1.0.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
+    - 1.0
+    - 1.0.x
+    - Maven Artifact: "org.mongodb" / "mongo-hadoop_1.0.0"
 
-    * Apache Hadoop 0.21.0, this includes Pig 0.9.1 and Hadoop Streaming.
-        - 0.21
-        - 0.21.x
+* Apache Hadoop 0.21.0, this includes Pig 0.9.1 and Hadoop Streaming.
+    - 0.21
+    - 0.21.x
+    - *NOT* published to Maven due to dependency availability upstream
 
-    * Apache Hadoop 0.23 support is *forthcoming*; this is an alpha branch being focused on by [Hortonworks](http://hortonworks.com) and is technically "newer" than Apache Hadoop 1.0.
+* Apache Hadoop 0.23 support is *forthcoming*; this is an alpha branch being focused on by [Hortonworks](http://hortonworks.com) and is technically "newer" than Apache Hadoop 1.0.
 
 The following features are presently supported:
 
