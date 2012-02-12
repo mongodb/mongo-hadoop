@@ -183,16 +183,6 @@ Make sure you've built using `ant jar` and then run:
 
 You should find the results in the 'test' DB inside the 'pig.output' collection.
 
-TODO
-----------
-- Pick reasonable split points for non-sharded collections
-  * For initial release, no splits for non-sharded collections
-- [Elastic map/reduce support?](http://aws.amazon.com/elasticmapreduce/faqs)
-- Support for "Merge" Jobs (e.g. combine results of multiple map/reduces esp. from diff. inputs in a single join job - this is supported by Hadoop w/ implementation of special interfaces)
-- Full support for appropriate 'alternate' Hadoop Interfaces
-  * We already support Pig for Output (get input working)
-  * [Cascading](http://www.cascading.org/) Seems to be popular as well and should be evaluated
-
 
 KNOWN ISSUES
 --------------
