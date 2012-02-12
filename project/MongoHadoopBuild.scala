@@ -4,8 +4,15 @@ import Reference._
 
 object MongoHadoopBuild extends Build {
 
+  lazy val buildSettings = Seq(
+    version := "1.0.0-rc0",
+    crossScalaVersions := Nil,
+    crossPaths := false
+  )
+
   /** The version of Hadoop to build against. */
   lazy val hadoopRelease = SettingKey[String]("hadoop-release", "Hadoop Target Release Distro/Version")
+
 
   private val stockPig = "0.9.1"
   private val cdhRel = "cdh3u3"
@@ -25,8 +32,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val root = Project( id = "mongo-hadoop", 
                           base = file("."),
-                          aggregate = subProjects,
-                          settings = baseSettings )
+                          settings = baseSettings ) aggregate(core, streaming, flume)
 
   lazy val core = Project( id = "mongo-hadoop-core", 
                            base = file("core"), 
@@ -40,12 +46,19 @@ object MongoHadoopBuild extends Build {
                             base = file("flume"),
                             settings = flumeSettings ) 
 
-  private lazy val subProjects: Seq[ProjectReference] = scala.collection.mutable.Seq(projectToRef(core),
-                                                                                     projectToRef(flume))
 
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Seq( 
-    resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo)
+  lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
+    resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo),
+    moduleName <<= (hadoopRelease, moduleName) { (hr, mod) =>
+      val rel = coreHadoopMap.getOrElse(hr, 
+                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                    )._3
+
+      "%s_%s".format(mod, rel)
+    }
+
   )
 
   lazy val parentSettings = baseSettings ++ Seq( 
@@ -59,16 +72,28 @@ object MongoHadoopBuild extends Build {
   lazy val streamingSettings = baseSettings ++ Seq( 
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
-      val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+    val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
       streamingDeps._1.getOrElse(() => Seq.empty[ModuleID])()
-  })
+    },
+    skip in Compile <<= hadoopRelease.map(hr => {
+      val skip = !coreHadoopMap.getOrElse(hr, 
+                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                    )._1.isDefined
+      if (skip) System.err.println("*** Will not compile Hadoop Streaming, which is unsupported in this build of Hadoop")
+
+      skip
+    })
+  ) 
+      /*
+       *(compile in Compile) <<= {inc.Analysis.Empty})
+       */
   
-  lazy val coreSettings: Seq[sbt.Project.Setting[_]] = baseSettings ++ Seq( 
+  val coreSettings: Seq[sbt.Project.Setting[_]] = baseSettings ++ Seq( 
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.junit),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
-      if (hadoopDeps._1.isDefined) { subProjects :+ projectToRef(streaming) }
       hadoopDeps._2()
     }, 
     libraryDependencies <<= (scalaVersion, libraryDependencies) { (sv, deps) =>
@@ -87,12 +112,12 @@ object MongoHadoopBuild extends Build {
 
 
 
-def hadoopDependency(hadoopVersion: String, useStreaming: Boolean): (Option[() => Seq[ModuleID]], () => Seq[ModuleID]) = {
-    (if (useStreaming) Some(streamingDependency(hadoopVersion)) else None, () => {
+  def hadoopDependency(hadoopVersion: String, useStreaming: Boolean): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String) = {
+      (if (useStreaming) Some(streamingDependency(hadoopVersion)) else None, () => {
       println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(hadoopVersion))
 
       Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion)
-    })
+      }, hadoopVersion)
   }
 
   def pigDependency(pigVersion: String): () => Seq[ModuleID] = {
