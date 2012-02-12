@@ -145,7 +145,7 @@ params are setup in the Java code.  You can run this with the ant task `wordcoun
 See examples/wordcount/src/main/resources/mongo-wordcount.xml for the example configuration.
 You can run this with the ant task `wordcountXML`, or with a hadoop command of:
 
-    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
+    hadoop jar core/target/mongo-hadoop-core-1.0.0-rc0.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
 
 You will need to copy the `mongo-java-driver.jar` file into your Hadoop `lib` directory before this will work.
 
@@ -163,7 +163,7 @@ The sample data can be imported into the mongos host by calling (assumes mongos 
 
 You'll need to setup the mongo-hadoop and mongo-java-driver jars in your Hadoop installations "lib" directory; Once the data is imported, the test can be run by executing (on the Hadoop master):
 
-    hadoop jar core/target/mongo-hadoop-core-1.0-SNAPSHOT.jar com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
+    hadoop jar core/target/mongo-hadoop-core-1.0.0-rc0.jar com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
 
 To confirm the test ran successfully, look at the `demo` database and query the `yield_historical.out collection`.
 
