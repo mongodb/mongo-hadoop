@@ -187,8 +187,8 @@ You should find the results in the 'test' DB inside the 'pig.output' collection.
 KNOWN ISSUES
 --------------
 
-You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse.
-Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
+* You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse. Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
+* [HADOOP-19 - MongoStorage fails when tuples w/i bags are not named](https://jira.mongodb.org/browse/HADOOP-19) - This is due to an open Apache bug, [PIG-2509](https://issues.apache.org/jira/browse/PIG-2509).
 
 
 STREAMING
