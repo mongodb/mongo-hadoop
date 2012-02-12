@@ -57,6 +57,17 @@ object MongoHadoopBuild extends Build {
                     )._3
 
       "%s_%s".format(mod, rel)
+    },
+    libraryDependencies <<= (libraryDependencies) { deps =>
+      
+      val scala: ModuleID = deps.find { x => x.name == "scala-library" }.map ( y => 
+        y.copy(configurations = Some("test"))
+      ).get
+
+
+      val newDeps = deps.filterNot { x => x.name == "scala-library" }
+
+      newDeps :+ scala
     }
 
   )
