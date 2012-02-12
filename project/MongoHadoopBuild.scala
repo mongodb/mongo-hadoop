@@ -74,7 +74,6 @@ object MongoHadoopBuild extends Build {
   /** Settings that are dependent on a hadoop version */
   lazy val dependentSettings = baseSettings ++ Seq(    
     moduleName <<= (hadoopRelease, moduleName) { (hr, mod) =>
-      System.err.println("****** HR: " + hr)
       if (hr == "default") 
         mod
       else {
@@ -83,7 +82,11 @@ object MongoHadoopBuild extends Build {
                                 " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
                       )._3
 
-        "%s_%s".format(mod, rel)
+        
+        if (hr == "cloudera")
+          "%s_%s".format(mod, cdhRel)
+        else 
+          "%s_%s".format(mod, rel)
       }
   })
 
