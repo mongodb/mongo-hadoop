@@ -39,7 +39,7 @@ The Mongo-Hadoop adapter uses the [SBT Build Tool](https://github.com/harrah/xsb
 As there are a number of differing Hadoop vendors and releases deployed in the wild, we support 
 You can change the Hadoop version of the build by changing the value of `hadoopRelease` in the `build.sbt` file. Setting it to:
 
-   hadoopReleasein ThisBuild := "cdh3"
+    hadoopReleasein ThisBuild := "cdh3"
 
 or: 
 
@@ -49,7 +49,7 @@ or:
 Will both build against Cloudera CDH3u3, while:
 
 
-   hadoopRelease in ThisBuild := "0.21"
+    hadoopRelease in ThisBuild := "0.21"
 
 
 Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
