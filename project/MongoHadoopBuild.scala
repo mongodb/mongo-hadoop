@@ -19,15 +19,15 @@ object MongoHadoopBuild extends Build {
   private val cdhHadoop = "0.20.2-%s".format(cdhRel) // current "base" version they patch against
   private val cdhPig = "0.8.1-%s".format(cdhRel)
 
-  private val coreHadoopMap = Map("0.20" -> hadoopDependency("0.20.205.0", false),
-                                  "0.20.x" -> hadoopDependency("0.20.205.0", false),
-                                  "0.21" -> hadoopDependency("0.21.0", true),
-                                  "0.21.x" -> hadoopDependency("0.21.0", true), 
-                                  "1.0" -> hadoopDependency("1.0.0", false),
-                                  "1.0.x" -> hadoopDependency("1.0.0", false),
-                                  "cdh" -> hadoopDependency(cdhHadoop, true),
-                                  "cdh3" -> hadoopDependency(cdhHadoop, true),
-                                  "cloudera" -> hadoopDependency(cdhHadoop, true)
+  private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.205.0", false, stockPig),
+                                  "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
+                                  "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
+                                  "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
+                                  "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
+                                  "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
+                                  "cdh" -> hadoopDependencies(cdhHadoop, true, cdhPig),
+                                  "cdh3" -> hadoopDependencies(cdhHadoop, true, cdhPig),
+                                  "cloudera" -> hadoopDependencies(cdhHadoop, true, cdhPig)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop", 
@@ -41,7 +41,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
-                          settings = baseSettings ) dependsOn( core )
+                          settings = pigSettings ) dependsOn( core )
 
   lazy val streaming = Project( id = "mongo-hadoop-streaming", 
                                 base = file("streaming"), 
@@ -54,7 +54,7 @@ object MongoHadoopBuild extends Build {
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
-    resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo),
+    resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo, Resolvers.sonatypeRels),
 
     libraryDependencies <<= (libraryDependencies) { deps =>
       
@@ -105,11 +105,17 @@ object MongoHadoopBuild extends Build {
       skip
     })
   ) 
-      /*
-       *(compile in Compile) <<= {inc.Analysis.Empty})
-       */
-  
-  val coreSettings: Seq[sbt.Project.Setting[_]] = dependentSettings ++ Seq( 
+
+  val pigSettings = dependentSettings ++ Seq( 
+    resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
+    libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
+
+      val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+      hadoopDeps._4()
+    }
+  )
+
+  val coreSettings = dependentSettings ++ Seq( 
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.junit),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
@@ -132,12 +138,12 @@ object MongoHadoopBuild extends Build {
 
 
 
-  def hadoopDependency(hadoopVersion: String, useStreaming: Boolean): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String) = {
+  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
       (if (useStreaming) Some(streamingDependency(hadoopVersion)) else None, () => {
       println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(hadoopVersion))
 
       Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion)
-      }, hadoopVersion)
+      }, hadoopVersion, pigDependency(pigVersion))
   }
 
   def pigDependency(pigVersion: String): () => Seq[ModuleID] = {
@@ -163,11 +169,13 @@ object MongoHadoopBuild extends Build {
 object Resolvers {
   val scalaToolsSnapshots = "snapshots" at "http://scala-tools.org/repo-snapshots"
   val scalaToolsReleases  = "releases" at "http://scala-tools.org/repo-releases"
-  //val sonatypeSnaps = "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-  //val sonatypeRels = "releases" at "https://oss.sonatype.org/content/repositories/releases"
+  val sonatypeSnaps = "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  val sonatypeRels = "releases" at "https://oss.sonatype.org/content/repositories/releases"
   val clouderaRepo = "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
   val mitSimileRepo = "Simile Repo at MIT" at "http://simile.mit.edu/maven"
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/org/"
+  /** Seems to have thrift deps I need*/
+  val hypobytes = "Hypobytes" at "https://hypobytes.com/maven/content/groups/public"
 }
 
 object Dependencies {

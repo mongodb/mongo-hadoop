@@ -1,7 +1,6 @@
 MongoDB Hadoop Adapter
 =======================
 
-
 We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 Update 1 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
 
 The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
@@ -25,11 +24,55 @@ Contributors
 Using the Adapter
 ---------------------
 
-You will need the MongoDB Java Driver 2.6.3+.
+You will need the MongoDB Java Driver 2.7.3+.
 
 Issue tracking: https://jira.mongodb.org/browse/HADOOP/
 
 Discussion: http://groups.google.com/group/mongodb-user/
+
+## How To Build 
+
+The Mongo-Hadoop adapter uses the [SBT Build Tool](https://github.com/harrah/xsbt) tool for compilation.  The reason why this is used rather than Maven or Ant is to allow more discreet configuration of differing Hadoop versions. A self-bootstrapping copy of this tool is included in the distribution as `sbt`.  Creating a copy of the jar files can be done by running `./sbt package`.
+
+As there are a number of differing Hadoop vendors and releases deployed in the wild, we support 
+You can change the Hadoop version of the build by changing the value of `hadoopRelease` in the `build.sbt` file. Setting it to:
+
+        hadoopReleasein ThisBuild := "cdh3"
+
+or: 
+
+
+        hadoopRelease in ThisBuild := "cloudera"
+
+Will both build against Cloudera CDH3u3, while:
+
+
+        hadoopRelease in ThisBuild := "0.21"
+
+
+Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
+
+The currently supported Releases (And the valid keys for configuration) of Hadoop are as follows:
+
+    * Cloudera Release 3; this is based on Apache Hadoop 0.20.2, but includes many custom patches including binary streaming, and Pig 0.8.1.  *ALL* Modules are compiled with this including Streaming.
+        - cdh
+        - cdh3
+        - cloudera
+
+    * Apache Hadoop 0.20.205.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
+        - 0.20
+        - 0.20.x
+
+    * Apache Hadoop 1.0.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
+        - 1.0
+        - 1.0.x
+
+    * Apache Hadoop 0.21.0, this includes Pig 0.9.1 and Hadoop Streaming.
+        - 0.21
+        - 0.21.x
+
+    * Apache Hadoop 0.23 support is *forthcoming*; this is an alpha branch being focused on by [Hortonworks](http://hortonworks.com) and is technically "newer" than Apache Hadoop 1.0.
+
 
 The following features are presently supported:
 
@@ -160,17 +203,6 @@ Streaming support + MongoDB **requires** your Hadoop distribution include the pa
 For the mainline Apache Hadoop distribution, these patches were merged for the 0.21.0 release.  We have verified as well that the [Cloudera](http://cloudera.com) distribution (while based on 0.20.x still) includes these patches in CDH3 Update 1+ (We build against Update 3 now); anecdotal evidence (which needs confirmation) indicates they may have been there since CDH2, and likely exist in CDH3 as well.
 
 
-By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0; you can change the Hadoop version of the build in Maven by specifying the `hadoop.release` property:
-
-        mvn -Dhadoop.release=cdh3 
-        mvn -Dhadoop.release=cloudera
-
-Will both build against Cloudera CDH3u3, while:
-
-
-        mvn -Dhadoop.release=apache-hadoop-0.21
-
-
-Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
+By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0. 
 
 Additionally, note that Hadoop 1.0 is based on the 0.20 release.  As such, it *does not include* the patches necessary for streaming.  This is frustrating and upsetting but unfortunately out of our hands.  We are working on attempting to get these patches backported into a future release or finding an additional workaround.
