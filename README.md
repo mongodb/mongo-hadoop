@@ -52,12 +52,18 @@ Will both build against Cloudera CDH3u3, while:
 
 Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
 
+We also publish our releases to the central Maven repository; the artifacts are customized with the dependent release name. Our "default" build (which has no artifact name attached) is currently against Hadoop 1.0.
+        
+Once you have a copy of the compiled project, you'll need to place the "core" jar as well as the "mongo-java-driver" in the lib directory of each Hadoop server.
+
 The currently supported Releases (And the valid keys for configuration) of Hadoop are as follows:
 
     * Cloudera Release 3; this is based on Apache Hadoop 0.20.2, but includes many custom patches including binary streaming, and Pig 0.8.1.  *ALL* Modules are compiled with this including Streaming.
         - cdh
         - cdh3
         - cloudera
+        - Maven Artifact: "org.mongodb.
+
 
     * Apache Hadoop 0.20.205.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
         - 0.20
@@ -72,7 +78,6 @@ The currently supported Releases (And the valid keys for configuration) of Hadoo
         - 0.21.x
 
     * Apache Hadoop 0.23 support is *forthcoming*; this is an alpha branch being focused on by [Hortonworks](http://hortonworks.com) and is technically "newer" than Apache Hadoop 1.0.
-
 
 The following features are presently supported:
 
