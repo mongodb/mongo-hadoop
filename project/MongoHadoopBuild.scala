@@ -50,14 +50,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
     resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo),
-    moduleName <<= (hadoopRelease, moduleName) { (hr, mod) =>
-      val rel = coreHadoopMap.getOrElse(hr, 
-                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
-                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
-                    )._3
 
-      "%s_%s".format(mod, rel)
-    },
     libraryDependencies <<= (libraryDependencies) { deps =>
       
       val scala: ModuleID = deps.find { x => x.name == "scala-library" }.map ( y => 
@@ -72,6 +65,17 @@ object MongoHadoopBuild extends Build {
 
   )
 
+  /** Settings that are dependent on a hadoop version */
+  lazy val dependentSettings = baseSettings ++ Seq(    
+    moduleName <<= (hadoopRelease, moduleName) { (hr, mod) =>
+      val rel = coreHadoopMap.getOrElse(hr, 
+                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                    )._3
+
+      "%s_%s".format(mod, rel)
+  })
+
   lazy val parentSettings = baseSettings ++ Seq( 
     publishArtifact := false
   )
@@ -80,7 +84,7 @@ object MongoHadoopBuild extends Build {
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.flume)
   )
 
-  lazy val streamingSettings = baseSettings ++ Seq( 
+  lazy val streamingSettings = dependentSettings ++ Seq( 
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
     val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
@@ -100,7 +104,7 @@ object MongoHadoopBuild extends Build {
        *(compile in Compile) <<= {inc.Analysis.Empty})
        */
   
-  val coreSettings: Seq[sbt.Project.Setting[_]] = baseSettings ++ Seq( 
+  val coreSettings: Seq[sbt.Project.Setting[_]] = dependentSettings ++ Seq( 
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.junit),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
