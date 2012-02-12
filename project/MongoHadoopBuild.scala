@@ -7,7 +7,8 @@ object MongoHadoopBuild extends Build {
   lazy val buildSettings = Seq(
     version := "1.0.0-rc0",
     crossScalaVersions := Nil,
-    crossPaths := false
+    crossPaths := false,
+    organization := "org.mongodb"
   )
 
   /** The version of Hadoop to build against. */
@@ -112,7 +113,12 @@ object MongoHadoopBuild extends Build {
       if (skip) System.err.println("*** Will not compile Hadoop Streaming, which is unsupported in this build of Hadoop")
 
       skip
+    }),
+    publishArtifact <<= (hadoopRelease) (hr => {
+      !coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet)))._1.isDefined
     })
+
   ) 
 
   val pigSettings = dependentSettings ++ Seq( 
