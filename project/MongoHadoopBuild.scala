@@ -32,7 +32,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val root = Project( id = "mongo-hadoop", 
                           base = file("."),
-                          settings = baseSettings ) aggregate(core, streaming, flume)
+                          settings = baseSettings ) aggregate(core, streaming, flume, pig)
 
   lazy val core = Project( id = "mongo-hadoop-core", 
                            base = file("core"), 
@@ -41,7 +41,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
-                          settings = baseSettings )
+                          settings = baseSettings ) dependsOn( core )
 
   lazy val streaming = Project( id = "mongo-hadoop-streaming", 
                                 base = file("streaming"), 
