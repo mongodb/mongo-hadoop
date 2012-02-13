@@ -3,9 +3,10 @@ MongoDB Hadoop Adapter
 
 CURRENT RELEASE: 1.0.0-rc0
 
-We have tested with, and recommend the use of, Hadoop 0.20.203 or Cloudera CHD3 Update 1 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
+We have tested with, and recommend the use of, Hadoop 1.0 or Cloudera CHD3 Update 3 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
 
-The latest builds are tested primarily against MongoDB 1.8+ but should still work with 1.6.x
+This product is only supported on MongoDB 2.0+; although it should (mostly) work with 1.8.x, we cannot provide support for legacy builds of MongoDB with it.
+
 
 *NOTE*: If you have questions please email the [mongodb-user Mailing List](http://groups.google.com/group/mongodb-user), rather than directly contacting contributors or maintainers.
 
