@@ -1,31 +1,34 @@
-MongoDB Hadoop Adapter
-=======================
+# MongoDB Hadoop Adapter
 
 CURRENT RELEASE: 1.0.0-rc0
 
-We have tested with, and recommend the use of, Hadoop 1.0 or Cloudera CHD3 Update 3 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with MongoDB, please see the notes on Streaming Hadoop versions below.
+This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
+(Which ships 0.20.2).  If you wish to use Hadoop Streaming with
+MongoDB, please see the notes on Streaming Hadoop versions below.
 
-This product is only supported on MongoDB 2.0+; although it should (mostly) work with 1.8.x, we cannot provide support for legacy builds of MongoDB with it.
+This product is only supports on MongoDB 2.0+; although it should
+(mostly) work with 1.8.x. We cannot provide support for legacy MongoDB
+builds.
 
+**Note**: If you have questions please email the
+[mongodb-user Mailing List](http://groups.google.com/group/mongodb-user),
+rather than directly contacting contributors or maintainers.
 
-*NOTE*: If you have questions please email the [mongodb-user Mailing List](http://groups.google.com/group/mongodb-user), rather than directly contacting contributors or maintainers.
+## Maintainers
 
-Maintainers
-------------
 * Brendan McAdams <brendan@10gen.com>
 * Eliot Horowitz <erh@10gen.com>
 * Ryan Nitz
 
-Contributors
-------------
+## Contributors
+
 * Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
 * Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
 * Rushin Shah <rushin10@gmail.com> (Test Harness Code)
 * Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
 * Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
 
-Using the Adapter
----------------------
+## Support
 
 You will need the MongoDB Java Driver 2.7.3+.
 
@@ -33,177 +36,297 @@ Issue tracking: https://jira.mongodb.org/browse/HADOOP/
 
 Discussion: http://groups.google.com/group/mongodb-user/
 
-## How To Build 
+## Building the Adapter
 
-The Mongo-Hadoop adapter uses the [SBT Build Tool](https://github.com/harrah/xsbt) tool for compilation.  The reason why this is used rather than Maven or Ant is to allow more discreet configuration of differing Hadoop versions. A self-bootstrapping copy of this tool is included in the distribution as `sbt`.  Creating a copy of the jar files can be done by running `./sbt package`.
+The Mongo-Hadoop adapter uses the
+[SBT Build Tool](https://github.com/harrah/xsbt) tool for
+compilation. SBT provides superior support for discreet configurations
+targeting multiple Hadoop versions. The distribution includes
+self-bootstrapping copy of SBT in the distribution as `sbt`.  Create a
+copy of the jar files using the following command:
 
-As there are a number of differing Hadoop vendors and releases deployed in the wild, we support 
-You can change the Hadoop version of the build by changing the value of `hadoopRelease` in the `build.sbt` file. Setting it to:
+    ./sbt package
 
-    hadoopReleasein ThisBuild := "cdh3"
+The MongoDB Hadoop Adapter supports a number of Hadoop releases. You
+can change the Hadoop version supported by the build by modifying the
+value of `hadoopRelease` in the `build.sbt` file. For instance, set
+this value to:
 
-or: 
+    hadoopRelease in ThisBuild := "cdh3"
 
+or:
 
     hadoopRelease in ThisBuild := "cloudera"
 
-Will both build against Cloudera CDH3u3, while:
-
+Configures a build against Cloudera CDH3u3, while:
 
     hadoopRelease in ThisBuild := "0.21"
 
+Configures a build against Hadoop 0.21 from the mainline Apache distribution.
 
-Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
+Unfortunately, we are not aware of any Maven repositories that contain
+artifacts for Hadoop 0.21 at present. You may need to resolve these
+dependencies by hand if you chose to build using this
+configuration. We also publish releases to the central Maven
+repository with artifacts customized using the dependent release
+name. Our "default" build has no artifact name attached and supports
+Hadoop 1.0.
 
-We also publish our releases to the central Maven repository; the artifacts are customized with the dependent release name. Our "default" build (which has no artifact name attached) is currently against Hadoop 1.0.
-        
-Once you have a copy of the compiled project, you'll need to place the "core" jar as well as the "mongo-java-driver" in the lib directory of each Hadoop server.
+After building, you will need to place the "core" jar and the
+"mongo-java-driver" in the `lib` directory of each Hadoop server.
 
-The currently supported Releases (And the valid keys for configuration) of Hadoop are as follows:
+The MongoDB-Hadoop Adapter supports the following releases. Valid keys
+for configuration and Maven artifacts appear below each release.
 
-* Cloudera Release 3; this is based on Apache Hadoop 0.20.2, but includes many custom patches including binary streaming, and Pig 0.8.1.  *ALL* Modules are compiled with this including Streaming.
-    - cdh
-    - cdh3
-    - cloudera
-    - Maven Artifact: "org.mongodb" / "mongo-hadoop_cdh3u3"
+### Cloudera Release 3
 
+This derives from Apache Hadoop 0.20.2, but includes many custom
+patches. Patches include binary streaming, and Pig 0.8.1.  This
+target compiles *ALL* Modules, including Streaming.
 
-* Apache Hadoop 0.20.205.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
-    - 0.20
-    - 0.20.x
-    - Maven Artifact: "org.mongodb" / "mongo-hadoop_0.20.205.0"
+- cdh
+- cdh3
+- cloudera
+- Maven artifact: "org.mongodb" / "mongo-hadoop_cdh3u3"
 
-* Apache Hadoop 1.0.0, this includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
-    - 1.0
-    - 1.0.x
-    - Maven Artifact: "org.mongodb" / "mongo-hadoop_1.0.0"
+### Apache Hadoop 0.20.205.0
 
-* Apache Hadoop 0.21.0, this includes Pig 0.9.1 and Hadoop Streaming.
-    - 0.21
-    - 0.21.x
-    - *NOT* published to Maven due to dependency availability upstream
+This includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
 
-* Apache Hadoop 0.23 support is *forthcoming*; this is an alpha branch being focused on by [Hortonworks](http://hortonworks.com) and is technically "newer" than Apache Hadoop 1.0.
+- 0.20
+- 0.20.x
+- Maven artifact: "org.mongodb" / "mongo-hadoop_0.20.205.0"
 
-The following features are presently supported:
+### Apache Hadoop 1.0.0
 
-### Hadoop MapReduce
-Working Input and Output adapters for MongoDB are provided.
-These can be configured by XML or programatically - see the WordCount
-examples for demonstrations of both approaches.
-You can specify a query, fields and sort specs in the XML config as JSON
-or programatically as a DBObject.
+This includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
 
-#### Splitting up MongoDB Source Data for the InputFormat
-Mongo-Hadoop supports the creation of multiple InputSplits on source data read from MongoDB to optimise/parallelise input processing for Mappers.
+- 1.0
+- 1.0.x
+- Maven artifact: "org.mongodb" / "mongo-hadoop_1.0.0"
 
-If '*mongo.input.split.create_input_splits*' is **false** (it defaults to **true**) then NO splits are used. Hadoop will slurp your entire collection in as one big giant Input.  Mostly useful for debugging.
+## Apache Hadoop 0.21.0
 
-If it is enabled (by default it is) then a few possible behaviors exist:
+This includes Pig 0.9.1 and Hadoop Streaming.
 
-  1. If the source collection is unsharded, we follow the "unsharded split" path (See below)  
-  2. If the source collection is sharded...
-    * If '*mongo.input.split.read_shard_chunks*' is enabled (defaults **true**) then we pull the chunk specs from the configuration server, and turn each shard chunk into an Input Split.  Basically, this means the mongodb sharding system does 99% of the preconfig work for us and is a good thing™
-    * If '*read_shard_chunks*' is disabled and '*mongo.input.split.read_from_shards*' is enabled (it defaults to **false**) then we connect to each shard (mongod or replica set) individually and each shard becomes an input split (it's entire content of that collection is one split).  This config should rarely be used.
-    * If '*read_shard_chunks*' is enabled and '*mongo.input.split.read_from_shards*' is enabled (it defaults to **false**) we read the chunks from the config server but then instead of reading chunks through mongos we read directly from the shards.  This seems at first like a good idea but if migrations, etc happen it can cause erratic behavior with chunks going away on a long job.  Not a recommended config for write heavy applications but could be nicely parallelising for read heavy apps.
-    * If both '*create_input_splits*' and '*read_from_shards*' are disabled then we pretend there is no sharding and use the "unsharded split" path, letting MongoHadoop calculate new splits which are read through mongos (if 'read_shard_chunks' is disabled we just slurp everything through mongos as a single split)
+- 0.21
+- 0.21.x
 
-##### "Unsharded Splits"
+This build is **not** published to Maven because of upstream
+dependency availability.
 
-As aforementioned this can also be used in Sharding.  It refers to a system in which MongoHadoop calculates new splits.
+### Apache Hadoop 0.23
 
-This is only used when '*mongo.input.split.create_input_splits*' is enabled for unsharded collections, and both enabled and '*read_shard_chunks*' disabled for sharded collections.
+Support is *forthcoming*.
 
-In this case, MongoHadoop will generate multiple InputSplits.  The user has control over two factors in this system.
+This is an alpha branch with ongoing work by
+[Hortonworks](http://hortonworks.com). Apache Hadoop 0.23 is "newer"
+than Apache Hadoop 1.0.
 
-* *mongo.input.split_size* - Indicates a number of megabytes that are the maximum size of each split.  I chose 8 as a default for now based on some assumptions and past experience with Hadoop in what will be a good default split size to feed in (the mongo default of 64 may be a bit too large).
-* *mongo.input.split.split_key_pattern* - Is a Mongo Key Pattern following [the same rules as picking a shard key](http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys)
- for an existing Mongo collection (must be indexed, etc etc).  This will be used as the key for the split point.  It defaults to `{ _id: 1 }` but an experienced user may find it easy to optimize their mapper distribution by customizing this value.
+The MongoDB Hadoop Adapter currently supports the following features.
 
-For all three paths, users may specify a custom query to filter the input data with *mongo.input.query* representing a JSON document.  This will be properly combined with the index filtering on input splits allowing you to MapReduce a subset of your data but still get efficient splitting.
+## Hadoop MapReduce
 
+Provides working *Input* and *Output* adapters for MongoDB.  You may
+configure these adapters with XML or programatically. See the
+WordCount examples for demonstrations of both approaches.  You can
+specify a query, fields and sort specs in the XML config as JSON or
+programatically as a DBObject.
+
+### Splitting up MongoDB Source Data for the InputFormat
+
+The MongoDB Hadoop Adapter makes it possible to create multiple
+*InputSplits* on source data originating from MongoDB to
+optimize/paralellize input processing for Mappers.
+
+If '*mongo.input.split.create_input_splits*' is **false** (it defaults
+to **true**) then MongoHadoop will use **no** splits. Hadoop will
+treat the entire collection in a single, giant, *Input*.  This is
+primarily intended for debugging purposes.
+
+When true, as by default, the following possible behaviors exist:
+
+  1. For unsharded the source collections, MongoHadoop follows the
+     "unsharded split" path. (See below.)
+
+  2. For sharded source collections:
+
+     * If '*mongo.input.split.read_shard_chunks*' is **true**
+       (defaults **true**) then we pull the chunk specs from the
+       configuration server, and turn each shard chunk into an *Input
+       Split*.  Basically, this means the mongodb sharding system does
+       99% of the preconfig work for us and is a good thing™
+
+     * If '*read_shard_chunks*' is **false** and
+       '*mongo.input.split.read_from_shards*' is **true** (it defaults
+       to **false**) then we connect to the `mongod` or replica set
+       for each shard individually and each shard becomes an input
+       split. The entire content of the collection on the shard is one
+       split. Only use this configuration in rare situations.
+
+     * If '*read_shard_chunks*' is **true** and
+       '*mongo.input.split.read_from_shards*' is **true** (it defaults
+       to **false**) MongoHadoop reads the chunk boundaries from
+       the config server but then reads data directly from the shards
+       without using the `mongos`.  While this may seem like a good
+       idea, it can cause erratic behavior if MongoDB balances chunks
+       during a Hadoop job. This is not a recommended configuration
+       for write heavy applications but may provide effective
+       parallelism in read heavy apps.
+
+     * If both '*create_input_splits*' and '*read_from_shards*' are
+       **false** disabled then we pretend there is no sharding and use
+       the "unsharded split" path. When '*read_shard_chunks*' is
+       **false** MongoHadoop reads everything through mongos as a
+       single split.
+
+### "Unsharded Splits"
+
+"Unsharded Splits" refers to the system that MongoHadoop uses to
+calculate new splits. You may use "Unsharded splits" with sharded
+MongoDB options.
+
+This is only used:
+
+- for unsharded collections when
+  '*mongo.input.split.create_input_splits*' is **true**.
+
+- for sharded collections when
+  '*mongo.input.split.create_input_splits*' is **true** *and*
+  '*read_shard_chunks*' is **false**.
+
+In these cases, MongoHadoop generates multiple InputSplits. Users
+have control over two factors in this system.
+
+* *mongo.input.split_size* - Controls the maximum number of megabytes
+  of each split.  The current default is 8, based on assumptions
+  prior experience with Hadoop. MongoDB's default of 64 megabytes
+  may be a bit too large for most deployments.
+
+* *mongo.input.split.split_key_pattern* - Is a MongoDB key pattern
+  that follows [the same rules as shard key selection](http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys).
+  This key pattern has some requires, (i.e. must have an index,
+  unique, and present in all documents.) MongoHadoop uses this key to
+  determine split points. It defaults to `{ _id: 1 }` but you may find
+  that its more ideal  to optimize the mapper distribution by
+  configuring this value.
+
+For all three paths, you may specify a custom query filter for the
+input data. *mongo.input.query* represents a JSON document containing
+a MongoDB query.  This will be properly combined with the index
+filtering on input splits allowing you to MapReduce a subset of your
+data but still get efficient splitting.
 
 ### Pig
-The MongoStorage Pig module is provided; it currently only supports _saving_ to MongoDB.
-Load support will be provided at a later date.
 
-Examples
-----------
+MongoHadoop includes the MongoStorage module for Pig. Currently, this
+only supports *saving* data to MongoDB. Support for load support is
+forthcoming in a future release.
+
+## Examples
+
 ### WordCount
 
 There are two example WordCount processes for Hadoop MapReduce in `examples/wordcount`
 Both read strings from MongoDB and save the count of word frequency.
 
-They are configured to read documents in db `test`, collection `in`, where the string to
-count frequency of is defined in field `x`.
+These examples read documents in the `test` database, stored in the
+collection named `in`. They will count the frequency defined in field
+`x`.
 
-The results will be saved in db `test`, collection `out`.
+The examples save results in db `test`, collection `out`.
 
-`WordCount.java` is a programatically configured MapReduce job, where all of the configuration
-params are setup in the Java code.  You can run this with the ant task `wordcount`.
+`WordCount.java` is a programatically configured MapReduce job, where
+all of the configuration params are setup in the Java code.  You can
+run this with the ant task `wordcount`.
 
-`WordCountXMLConfig.java` is configured purely through XML files, with JSON for queries, etc.
-See examples/wordcount/src/main/resources/mongo-wordcount.xml for the example configuration.
-You can run this with the ant task `wordcountXML`, or with a hadoop command of:
+`WordCountXMLConfig.java` configures the MapReduce job using only XML
+files, with JSON for queries.  See
+`examples/wordcount/src/main/resources/mongo-wordcount.xml` for the
+example configuration.  You can run this with the ant task
+`wordcountXML`, or with a Hadoop command that resembles the following:
 
     hadoop jar core/target/mongo-hadoop-core-1.0.0-rc0.jar com.mongodb.hadoop.examples.WordCountXMLConfig -conf examples/wordcount/src/main/resources/mongo-wordcount.xml
 
-You will need to copy the `mongo-java-driver.jar` file into your Hadoop `lib` directory before this will work.
+You will need to copy the `mongo-java-driver.jar` file into your
+Hadoop `lib` directory before this will work.
 
 ### Treasury Yield
 
-The treasury yield example demonstrates working with a more complex input BSON document and calculating an average.
+The treasury yield example demonstrates working with a more complex
+input BSON document and calculating an average.
 
-It uses a database of daily US Treasury Bid Curves from 1990 to Sept. 2010 and runs them through to calculate annual averages.
+It uses a database of daily US Treasury Bid Curves from 1990 to
+Sept. 2010 and runs them through to calculate annual averages.
 
-There is a JSON file `examples/treasury_yield/src/main/resources/yield_historical_in.json` which you should import into the `yield_historical.in` collection in the `demo` db.
+There is a JSON file `examples/treasury_yield/src/main/resources/yield_historical_in.json`
+which you should import into the `yield_historical.in` collection in
+the `demo` db.
 
-The sample data can be imported into the mongos host by calling (assumes mongos running on 27017 on the same node):
+You may import the sample data into the `mongos` host by issuing the
+following command:
 
     mongoimport --db demo --collection yield_historical.in --type json --file examples/treasury_yield/src/main/resources/yield_historical_in.json
 
-You'll need to setup the mongo-hadoop and mongo-java-driver jars in your Hadoop installations "lib" directory; Once the data is imported, the test can be run by executing (on the Hadoop master):
+This command assumes that `mongos` is running on the localhost
+interface on port `27017`. You'll need to setup the mongo-hadoop and
+mongo-java-driver jars in your Hadoop installations "lib"
+directory. After importing the data, run the test with the following
+command on the Hadoop master:
 
     hadoop jar core/target/mongo-hadoop-core-1.0.0-rc0.jar com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig -conf examples/treasury_yield/src/main/resources/mongo-treasury_yield.xml
 
-To confirm the test ran successfully, look at the `demo` database and query the `yield_historical.out collection`.
+To confirm the test ran successfully, look at the `demo` database and
+query the `yield_historical.out collection`.
 
-###Pig
+### Pig
 
-We presently provide a modified version of the Pig Tutorial from the Pig distribution for testing.
+The MongoHadoop distribution includes a modified version of the Pig
+Tutorial from the Pig distribution for testing.
 
-This script differs from the pig tutorial in that it saves the job results to MongoDB.
+This script differs from the pig tutorial in that it saves the job
+results to MongoDB.
 
-The use of Pig assumes you have Hadoop & Pig installed and setup on your machine...
+The use of Pig assumes you have Hadoop and Pig installed and
+configured on your system.
 
 Make sure you've built using `ant jar` and then run:
 
-
     pig -x local examples/test.pig
 
-
-You should find the results in the 'test' DB inside the 'pig.output' collection.
-
-
-KNOWN ISSUES
---------------
-
-* You cannot configure bare regexes (e.g. /^foo/) in the config xml as they won't parse. Use {"$regex": "^foo", "$options": ""} instead. .. Make sure to omit the slashes.
-* [HADOOP-19 - MongoStorage fails when tuples w/i bags are not named](https://jira.mongodb.org/browse/HADOOP-19) - This is due to an open Apache bug, [PIG-2509](https://issues.apache.org/jira/browse/PIG-2509).
+You should find the results in the `test` DB inside the `pig.output`
+collection.
 
 
-STREAMING
-----------
+## KNOWN ISSUES
 
-Streaming support + MongoDB **requires** your Hadoop distribution include the patches for the following issues:
+### Open Issues
+
+* You cannot configure bare regexes (e.g. /^foo/) in the config xml as
+  they won't parse. Use {"$regex": "^foo", "$options": ""}
+  instead. .. Make sure to omit the slashes.
+
+* [HADOOP-19 - MongoStorage fails when tuples w/i bags are not named](https://jira.mongodb.org/browse/HADOOP-19)
+
+  This is due to an open Apache bug, [PIG-2509](https://issues.apache.org/jira/browse/PIG-2509).
+
+### Streaming
+
+Streaming support in MongoHadoop **requires** that the Hadoop
+distribution include the patches for the following issues:
 
 * [HADOOP-1722 - Make streaming to handle non-utf8 byte array](https://issues.apache.org/jira/browse/HADOOP-1722)
 * [HADOOP-5450 - Add support for application-specific typecodes to typed bytes](https://issues.apache.org/jira/browse/HADOOP-5450)
 * [MAPREDUCE-764 - TypedBytesInput's readRaw() does not preserve custom type codes](https://issues.apache.org/jira/browse/MAPREDUCE-764)
 
-For the mainline Apache Hadoop distribution, these patches were merged for the 0.21.0 release.  We have verified as well that the [Cloudera](http://cloudera.com) distribution (while based on 0.20.x still) includes these patches in CDH3 Update 1+ (We build against Update 3 now); anecdotal evidence (which needs confirmation) indicates they may have been there since CDH2, and likely exist in CDH3 as well.
+The mainline Apache Hadoop distribution merged these patches for the
+0.21.0 release. We have verified as well that the
+[Cloudera](http://cloudera.com) distribution (while based on 0.20.x
+still) includes these patches in CDH3 Update 1+ (We build against
+Update 3 now); anecdotal evidence (which needs confirmation) indicates
+they may have been there since CDH2, and likely exist in CDH3 as well.
 
 
-By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0. 
+By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0.
 
 Additionally, note that Hadoop 1.0 is based on the 0.20 release.  As such, it *does not include* the patches necessary for streaming.  This is frustrating and upsetting but unfortunately out of our hands.  We are working on attempting to get these patches backported into a future release or finding an additional workaround.
