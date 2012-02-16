@@ -1,4 +1,4 @@
-*.pyc
+o*.pyc
 *.class
 .classpath
 .project
@@ -28,3 +28,8 @@ flume/target/*/*
 flume/target/*
 pig/target/*/*
 pig/target/*
+mongo-*.jar
+project/target/*
+streaming/target/*
+target/*
+.lib/*
