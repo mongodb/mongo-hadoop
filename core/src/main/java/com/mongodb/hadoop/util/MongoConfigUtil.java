@@ -256,10 +256,23 @@ public class MongoConfigUtil {
 
     public static DBCollection getCollection( MongoURI uri ){
         try {
-            return uri.connectCollection( _mongos.connect( uri ) );
+            Mongo mongo = _mongos.connect( uri );
+            DB myDb = mongo.getDB(uri.getDatabase());
+
+            //if there's a username and password
+            if(uri.getUsername() != null && uri.getPassword() != null && !myDb.isAuthenticated()) {
+                boolean auth = myDb.authenticate(uri.getUsername(), uri.getPassword());
+                if(auth) {
+                    log.info("Sucessfully authenticated with collection.");
+                }
+                else {
+                    throw new IllegalArgumentException( "Unable to connect to collection." );
+                }
+            }
+            return uri.connectCollection(mongo);
         }
         catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to collection: " + e.getMessage(), e );
+            throw new IllegalArgumentException( "Unable to connect to collection." + e.getMessage(), e );
         }
     }
 
