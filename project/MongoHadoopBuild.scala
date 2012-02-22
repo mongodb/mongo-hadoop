@@ -24,6 +24,8 @@ object MongoHadoopBuild extends Build {
                                   "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
                                   "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
+                                  "0.23" -> hadoopDependencies("0.23.0", true, stockPig),
+                                  "0.23.x" -> hadoopDependencies("0.23.0", true, stockPig),
                                   "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "default" -> hadoopDependencies("1.0.0", false, stockPig),
