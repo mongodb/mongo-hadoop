@@ -1,5 +1,5 @@
 import sys
-from bson import _dict_to_bson
+from bson import BSON
 
 
 class BSONOutput(object):
@@ -20,7 +20,7 @@ class BSONOutput(object):
     def _write(self, obj):
         if isinstance(obj, dict):
             self._validate_write(obj)
-            self.fh.write(_dict_to_bson(obj, False))
+            self.fh.write(BSON.encode(obj, False))
         else:
             #raise Exception("Can only write a Dict. No support for direct BSON Serialization of '%s'" % type(obj))
             #print >> sys.stderr, "Bare (or non-dict) output value '%s' found.  Wrapping in a BSON object 'value' field." % obj
