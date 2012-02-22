@@ -7,7 +7,7 @@ import AssemblyKeys._
 object MongoHadoopBuild extends Build {
 
   lazy val buildSettings = Seq(
-    version := "1.0.0-rc0",
+    version := "1.0.0-rc1-SNAPSHOT",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
@@ -41,7 +41,7 @@ object MongoHadoopBuild extends Build {
 
   lazy val root = Project( id = "mongo-hadoop", 
                           base = file("."),
-                          settings = dependentSettings ) aggregate(core, streaming, flume, pig)
+                          settings = dependentSettings ) aggregate(core, flume, pig)
 
   lazy val core = Project( id = "mongo-hadoop-core", 
                            base = file("core"), 
@@ -112,7 +112,8 @@ object MongoHadoopBuild extends Build {
     mainClass in assembly := Some("com.mongodb.hadoop.streaming.MongoStreamJob"),
     excludedJars in assembly <<= (fullClasspath in assembly) map ( cp => 
       cp filterNot { x =>
-        x.data.getName.startsWith("hadoop-streaming") || x.data.getName.startsWith("mongo-java-driver")
+        x.data.getName.startsWith("hadoop-streaming") || x.data.getName.startsWith("mongo-java-driver") /*||
+        x.data.getName.startsWith("mongo-hadoop-core") */
       }
     ),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 

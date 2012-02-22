@@ -48,7 +48,7 @@ public class StreamJobPatch extends StreamJob {
         try{
           cmdLine = _parser.parse(_options, argv_, false);
         } catch(Exception oe) {
-          LOG.error(oe.getMessage());
+          LOG.error("*** " + oe.getMessage());
           exitUsage(argv_.length > 0 && "-info".equals(argv_[0]));
         }
         if (cmdLine != null){
