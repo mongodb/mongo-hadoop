@@ -15,23 +15,26 @@ object MongoHadoopBuild extends Build {
   lazy val hadoopRelease = SettingKey[String]("hadoop-release", "Hadoop Target Release Distro/Version")
 
 
-  private val stockPig = "0.9.1"
-  private val cdhRel = "cdh3u3"
-  private val cdhHadoop = "0.20.2-%s".format(cdhRel) // current "base" version they patch against
-  private val cdhPig = "0.8.1-%s".format(cdhRel)
+  private val stockPig = "0.9.2"
+  private val cdh3Rel = "cdh3u3"
+  private val cdh3Hadoop = "0.20.2-%s".format(cdh3Rel) // current "base" version they patch against
+  private val cdh3Pig = "0.8.1-%s".format(cdh3Rel)
+  private val cdh4Rel = "cdh4b1"
+  private val cdh4YarnHadoop = "0.23.0-%s".format(cdh4Rel) // current "base" version they patch against
+  private val cdh4CoreHadoop = "0.23.0-mr1-%s".format(cdh4Rel)
+  private val cdh4Pig = "0.9.2-%s".format(cdh4Rel)
 
   private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.205.0", false, stockPig),
                                   "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
                                   "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
-                                  "0.23" -> hadoopDependencies("0.23.0", true, stockPig),
-                                  "0.23.x" -> hadoopDependencies("0.23.0", true, stockPig),
+                                  "0.23" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
+                                  "0.23.x" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
+                                  "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
+                                  "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
                                   "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
-                                  "default" -> hadoopDependencies("1.0.0", false, stockPig),
-                                  "cdh" -> hadoopDependencies(cdhHadoop, true, cdhPig),
-                                  "cdh3" -> hadoopDependencies(cdhHadoop, true, cdhPig),
-                                  "cloudera" -> hadoopDependencies(cdhHadoop, true, cdhPig)
+                                  "default" -> hadoopDependencies("1.0.0", false, stockPig)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop", 
@@ -86,8 +89,10 @@ object MongoHadoopBuild extends Build {
                       )._3
 
         
-        if (hr == "cloudera")
-          "%s_%s".format(mod, cdhRel)
+        if (hr == "cdh3")
+          "%s_%s".format(mod, cdh3Rel)
+        else if (hr == "cdh4")
+          "%s_%s".format(mod, cdh4Rel)
         else 
           "%s_%s".format(mod, rel)
       }
@@ -155,11 +160,15 @@ object MongoHadoopBuild extends Build {
 
 
 
-  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
-      (if (useStreaming) Some(streamingDependency(hadoopVersion)) else None, () => {
-      println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(hadoopVersion))
+  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, altStreamingVer: Option[String] = None): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
+      (if (useStreaming) Some(streamingDependency(altStreamingVer.getOrElse(hadoopVersion))) else None, () => {
+      println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(altStreamingVer.getOrElse(hadoopVersion)))
 
-      Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion)
+      val dep = Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion)
+      if (altStreamingVer.isDefined)
+        dep ++ Seq("org.apache.hadoop" % "hadoop-common" % altStreamingVer.get)
+      else 
+        dep
       }, hadoopVersion, pigDependency(pigVersion))
   }
 

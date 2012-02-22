@@ -54,10 +54,6 @@ this value to:
 
     hadoopRelease in ThisBuild := "cdh3"
 
-or:
-
-    hadoopRelease in ThisBuild := "cloudera"
-
 Configures a build against Cloudera CDH3u3, while:
 
     hadoopRelease in ThisBuild := "0.21"
@@ -84,14 +80,12 @@ This derives from Apache Hadoop 0.20.2, but includes many custom
 patches. Patches include binary streaming, and Pig 0.8.1.  This
 target compiles *ALL* Modules, including Streaming.
 
-- cdh
 - cdh3
-- cloudera
 - Maven artifact: "org.mongodb" / "mongo-hadoop_cdh3u3"
 
 ### Apache Hadoop 0.20.205.0
 
-This includes Pig 0.9.1 and does *NOT* support Hadoop Streaming.
+This includes Pig 0.9.2 and does *NOT* support Hadoop Streaming.
 
 - 0.20
 - 0.20.x
