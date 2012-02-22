@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import Reference._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 
 object MongoHadoopBuild extends Build {
 
@@ -106,7 +108,13 @@ object MongoHadoopBuild extends Build {
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.flume)
   )
 
-  lazy val streamingSettings = dependentSettings ++ Seq( 
+  lazy val streamingSettings = dependentSettings ++ assemblySettings ++ Seq( 
+    mainClass in assembly := Some("com.mongodb.hadoop.streaming.MongoStreamJob"),
+    excludedJars in assembly <<= (fullClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("hadoop-streaming") || x.data.getName.startsWith("mongo-java-driver")
+      }
+    ),
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
     val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
