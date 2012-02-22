@@ -37,6 +37,12 @@ public class MongoStreamJob extends StreamJobPatch {
             jobConf_.setOutputKeyClass( BSONWritable.class );
             jobConf_.setOutputValueClass( BSONWritable.class );
             jobConf_.setOutputKeyComparatorClass( BSONComparator.class );
+            if (jobConf_.getOutputFormat() == null) {
+                jobConf_.setOutputFormat(com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+            }
+            if (jobConf_.getInputFormat() == null) {
+                jobConf_.setInputFormat(com.mongodb.hadoop.mapred.MongoInputFormat.class);
+            }
             log.info("Input Format: " + jobConf_.getInputFormat());
             log.info("Output Format: " + jobConf_.getOutputFormat());
             log.info("Key Class: " + jobConf_.getOutputKeyClass());
