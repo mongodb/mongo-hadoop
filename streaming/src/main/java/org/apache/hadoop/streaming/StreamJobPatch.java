@@ -139,9 +139,9 @@ public class StreamJobPatch extends StreamJob {
         addOption("cacheFile", "File name URI", "fileNameURI", Integer.MAX_VALUE, false);
         addOption("cacheArchive", "File name URI", "fileNameURI", Integer.MAX_VALUE, false);
         addOption("io", "Optional.", "spec", 1, false);
+        addOption("file", "File to be shipped in the Job jar file", "file", Integer.MAX_VALUE, false); 
         
         // boolean properties
-        
         addBoolOption("verbose", "print verbose output"); 
         addBoolOption("info", "print verbose output"); 
         addBoolOption("help", "print this help message"); 
