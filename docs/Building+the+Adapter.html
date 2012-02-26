@@ -1,0 +1,100 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html manifest="pamflet.manifest">
+      <head>
+        <title>MongoDB+Hadoop Connector — Building the Adapter</title>
+        <link type="text/css" media="screen, projection" rel="stylesheet" href="css/blueprint/screen.css"></link>
+        <link type="text/css" media="screen and (min-device-width: 800px), projection" rel="stylesheet" href="css/blueprint/grid.css"></link>
+        <link type="text/css" media="print" rel="stylesheet" href="css/blueprint/print.css"></link> 
+        <!--[if lt IE 8]>
+          <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection"/>
+        <![endif]-->
+        <link type="text/css" media="screen, projection" rel="stylesheet" href="css/pamflet.css"></link>
+        <link type="text/css" media="print" rel="stylesheet" href="css/pamflet-print.css"></link>
+        <link type="text/css" media="screen and (min-device-width: 800px), projection" rel="stylesheet" href="css/pamflet-grid.css"></link>
+        
+        <script src="js/jquery-1.6.2.min.js"></script>
+        <script src="js/jquery.collapse.js"></script>
+        <script src="js/pamflet.js"></script>
+        
+        <meta charset="utf-8"></meta>
+        <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+      </head>
+      <body>
+        <a class="page prev nav" href="Getting+Started.html">
+            <span class="space">&nbsp;</span>
+            <span class="flip">❧</span>
+          </a><a class="page next nav" href="Hadoop+Streaming+Support.html">
+            <span class="space">&nbsp;</span>
+            <span>❧</span>
+          </a>
+        <div class="container">
+          <div class="span-16 prepend-1 append-1">
+            <div class="top nav span-16 title">
+              <span>MongoDB+Hadoop Connector</span> — Building the Adapter
+            </div>
+          </div>
+          <div class="span-16 prepend-1 append-1 contents">
+            <h1 id="Building+the+Adapter">Building the Adapter</h1><p>The Mongo-Hadoop adapter uses the
+<a title="SBT Build Tool" href="https://github.com/harrah/xsbt">SBT Build Tool</a> tool for
+compilation. SBT provides superior support for discreet configurations
+targeting multiple Hadoop versions. The distribution includes
+self-bootstrapping copy of SBT in the distribution as <code>sbt</code>.  Create a
+copy of the jar files using the following command:
+</p><pre><code>./sbt package
+</code></pre><p>The MongoDB Hadoop Adapter supports a number of Hadoop releases. You
+can change the Hadoop version supported by the build by modifying the
+value of <code>hadoopRelease</code> in the <code>build.sbt</code> file. For instance, set
+this value to:
+</p><pre><code>hadoopRelease in ThisBuild := &quot;cdh3&quot;
+</code></pre><p>Configures a build against Cloudera CDH3u3, while:
+</p><pre><code>hadoopRelease in ThisBuild := &quot;1.0&quot;
+</code></pre><p>Configures a build against Hadoop 1.0 from the mainline Apache distribution.
+</p><p>We also publish releases to the central Maven
+repository with artifacts customized using the dependent release
+name. Our “default” build has no artifact name attached and supports
+Hadoop 1.0.
+</p><p>After building, you will need to place the <em>mongo-hadoop-core</em> jar and the
+<em>mongo-java-driver</em> in the <code>lib</code> directory of each Hadoop server.
+</p><h5 id="Streaming+Support">Streaming Support</h5><p>Certain builds of Hadoop do not support features necessary for <em>mongo-hadoop</em> Streaming, and building with those versions will not produce an artifact for <em>mongo-hadoop-streaming</em>.
+</p><p>The MongoDB-Hadoop Adapter supports the following releases. Valid keys
+for configuration and Maven artifacts appear below each release.
+</p><h4 id="Apache+Hadoop+1.0.0">Apache Hadoop 1.0.0</h4><p>This includes Pig 0.9.2 and does <em>NOT</em> support Hadoop Streaming.
+</p><ul><li>1.0
+</li><li>1.0.x
+</li><li>Maven artifact: “org.mongodb” / “mongo-hadoop_1.0.0”
+</li></ul><h4 id="Apache+Hadoop+0.20.205.0">Apache Hadoop 0.20.205.0</h4><p>This includes Pig 0.9.2 and does <em>NOT</em> support Hadoop Streaming.
+</p><ul><li>0.20
+</li><li>0.20.x
+</li><li>Maven artifact: “org.mongodb” / “mongo-hadoop_0.20.205.0”
+</li></ul><h4 id="Cloudera+Release+3">Cloudera Release 3</h4><p>This derives from Apache Hadoop 0.20.2, but includes many custom
+patches. Patches include binary streaming, and Pig 0.8.1.  This
+target compiles <em>ALL</em> Modules, including Streaming.
+</p><ul><li>cdh3
+</li><li>Maven artifact: “org.mongodb” / “mongo-hadoop_cdh3u3”
+</li></ul><h4 id="Apache+Hadoop+0.23">Apache Hadoop 0.23</h4><p>This is an alpha branch of Hadoop; despite the misleading version numbers, Apache Hadoop 0.23 is “newer” than Apache Hadoop 1.0. Hadoop 0.23 is also the basis for Cloudera’s CDH4 Beta. This target compiles <em>ALL</em> modules, including Streaming and Pig 0.9.2.  Note however that we <em>do not</em> support the next-generation <a  href="http://hadoop.apache.org/common/docs/r0.23.0/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN</a> at this time; support is planned for <em>mongo-hadoop</em> v1.1.
+</p><ul><li>0.23
+</li><li>0.23.x
+</li><li>Maven Artifact: “org.mongodb” / “mongo-hadoop_0.23.0” 
+</li></ul><h4 id="Cloudera+Release+4+%28Beta+1%29">Cloudera Release 4 (Beta 1)</h4><p>This is the latest beta of Cloudera’s distribution, based upon the 0.23 alpha branch of Hadoop; despite the misleading version numbers, Apache Hadoop 0.23 is “newer” than Apache Hadoop 1.0. This target compiles <em>ALL</em> modules, including Streaming and Pig 0.9.2.Note however that we <em>do not</em> support the next-generation <a  href="http://hadoop.apache.org/common/docs/r0.23.0/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN</a> at this time; support is planned for <em>mongo-hadoop</em> v1.1.
+</p><ul><li>cdh4
+</li><li>Maven Artifact: “org.mongodb” / “mongo-hadoop_cdh4b1” 
+</li></ul><h4 id="Apache+Hadoop+0.21.0">Apache Hadoop 0.21.0</h4><p>This includes Pig 0.9.1 and Hadoop Streaming.
+</p><ul><li>0.21
+</li><li>0.21.x
+</li></ul><p>This build is <strong>not</strong> published to Maven because of upstream
+dependency availability. 
+</p><p>Unfortunately, we are not aware of any Maven repositories that contain
+artifacts for Hadoop 0.21 at present. You may need to resolve these
+dependencies by hand if you chose to build using this
+configuration. 
+</p><div class="tocwrapper show">
+      <a class="tochead nav" style="display: none" href="#toc">❦</a>
+      <a name="toc"></a>
+      <h4 class="toctitle">Contents</h4>
+      <div class="tocbody">
+      <div><a href="MongoDB%2BHadoop+Connector.html">MongoDB+Hadoop Connector</a></div><ol class="toc"> <li><div><a href="Why+MongoDB%2BHadoop%3F.html">Why MongoDB+Hadoop?</a></div></li><li><div><a href="Getting+Started.html">Getting Started</a></div><ol class="toc"> <li><div class="current">Building the Adapter</div></li> </ol></li><li><div><a href="Hadoop+Streaming+Support.html">Hadoop Streaming Support</a></div><ol class="toc"> <li><div><a href="Building+Hadoop+Streaming+Support.html">Building Hadoop Streaming Support</a></div></li> </ol></li><li class="generated"><div><a href="Contents+in+Depth.html">Contents in Depth</a></div></li><li class="generated"><div><a href="Combined+Pages.html">Combined Pages</a></div></li> </ol></div></div>
+          </div>
+        </div>
+        <a class="fork nav" href="http://github.com/mongodb/mongo-hadoop"><img alt="Fork me on GitHub" src="img/fork.png"></img></a>
+      </body>
+    </html>
