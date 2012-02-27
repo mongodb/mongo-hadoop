@@ -1,0 +1,9 @@
+Getting Started
+===============
+
+To get started with MongoDB + Hadoop, you'll need a few things:
+
+* A MongoDB Installation (*mongo-hadoop* supports all MongoDB configurations including Sharding)
+* A working Hadoop Installation (a list of supported Hadoop distributions & versions is provided later in this document)
+* A basic understanding of how to work with Hadoop and Java projects.
+

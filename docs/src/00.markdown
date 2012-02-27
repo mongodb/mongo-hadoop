@@ -1,0 +1,44 @@
+MongoDB+Hadoop Connector
+========================
+
+**CURRENT RELEASE**: $version$
+
+
+The *Mongo+Hadoop Connector* (for brevitys sake, we'll refer to it as *mongo-hadoop* in this documentation) is a series of plugins for the [Apache Hadoop Platform][hadoop] to allow connectivity to [MongoDB][mongodb]. This connectivity takes the form of allowing both reading MongoDB data into Hadoop (for use in MapReduce jobs as well as other components of the Hadoop ecosystem), as well as writing the results of Hadoop jobs out to MongoDB. A forthcoming release will also allow for reading and writing static BSON files (ala *mongodump / mongorestore*) to allow offline batching; commonly, users find this to be a beneficial feature to run analytics against backup data.
+
+
+At this time, we support the "core" Hadoop APIs (now known as [Hadoop Common][hadoop-common]), in the form of *mongo-hadoop-core*. There is additionally support for other pieces of the Hadoop Ecosystem, including [Pig][pig] for ETL and [Streaming][hadoop-streaming] for running Mongo+Hadoop jobs with Python (future releases will support additional scripting languages such as Ruby). Although it is not dependent upon Hadoop, we also provide a connector for the [Flume][flume] distributed logging system.
+
+## Support 
+
+*mongo-hadoop* is dependent upon the MongoDB Java Driver -- currently version $javaDriver$.
+
+Bugs & Features should be tracked and requested on the [MongoDB Jira][jira]. If you have questions please email the
+[mongodb-user Mailing List][mongodb-user],
+rather than directly contacting contributors or maintainers.
+
+### Maintainers
+
+* Brendan McAdams <brendan@10gen.com>
+* Jeff Yemin <jeff.yemin@10gen.com>
+
+#### Contributors
+
+* Eliot Horowitz  <erh@10gen.com>
+* Ryan Nitz 
+* Joseph Shraibman <jks@iname.com> (Sharded Input Splits)
+* Sumin Xia <xiasumin1984@gmail.com> (Sharded Input Splits)
+* Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
+* Rushin Shah <rushin10@gmail.com> (Test Harness Code)
+* Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
+
+
+
+[mongodb]: http://mongodb.org "MongoDB"
+[hadoop]: http://apache.hadoop.org "Apache Hadoop"
+[hadoop-common]: http://hadoop.apache.org/common/ "Hadoop Common"
+[hadoop-streaming]: http://hadoop.apache.org/common/docs/current/streaming.html "Hadoop Streaming"
+[pig]: http://pig.apache.org "Apache Pig"
+[jira]: https://jira.mongodb.org/browse/HADOOP/ "MongoDB Jira"
+[flume]: https://github.com/cloudera/flume/wiki "Flume"
+[mongodb-user]: http://groups.google.com/group/mongodb-user "MongoDB User Mailing List"

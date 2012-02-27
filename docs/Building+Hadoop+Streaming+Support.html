@@ -1,0 +1,80 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat">
+<html manifest="pamflet.manifest">
+      <head>
+        <title>MongoDB+Hadoop Connector — Building Hadoop Streaming Support</title>
+        <link type="text/css" media="screen, projection" rel="stylesheet" href="css/blueprint/screen.css"></link>
+        <link type="text/css" media="screen and (min-device-width: 800px), projection" rel="stylesheet" href="css/blueprint/grid.css"></link>
+        <link type="text/css" media="print" rel="stylesheet" href="css/blueprint/print.css"></link> 
+        <!--[if lt IE 8]>
+          <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection"/>
+        <![endif]-->
+        <link type="text/css" media="screen, projection" rel="stylesheet" href="css/pamflet.css"></link>
+        <link type="text/css" media="print" rel="stylesheet" href="css/pamflet-print.css"></link>
+        <link type="text/css" media="screen and (min-device-width: 800px), projection" rel="stylesheet" href="css/pamflet-grid.css"></link>
+        
+        <script src="js/jquery-1.6.2.min.js"></script>
+        <script src="js/jquery.collapse.js"></script>
+        <script src="js/pamflet.js"></script>
+        <script type="text/javascript" src="js/prettify/prettify.js"></script><link type="text/css" rel="stylesheet" href="css/prettify.css"></link><script type="text/javascript"><!--
+        window.onload=function() { prettyPrint(); };
+      --></script>
+        <meta charset="utf-8"></meta>
+        <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+      </head>
+      <body>
+        <a class="page prev nav" href="Hadoop+Streaming+Support.html">
+            <span class="space">&nbsp;</span>
+            <span class="flip">❧</span>
+          </a><a class="page next nav" href="Contents+in+Depth.html">
+            <span class="space">&nbsp;</span>
+            <span>❧</span>
+          </a>
+        <div class="container">
+          <div class="span-16 prepend-1 append-1">
+            <div class="top nav span-16 title">
+              <span>MongoDB+Hadoop Connector</span> — Building Hadoop Streaming Support
+            </div>
+          </div>
+          <div class="span-16 prepend-1 append-1 contents">
+            <h1 id="Building+Hadoop+Streaming+Support">Building Hadoop Streaming Support</h1><p>As noted in the “Building the Adapter” guide, not every version of Hadoop supports the features required to use MongoDB with Streaming. Please consult those build instructions to ensure your version of Hadoop is supported for MongoDB + Streaming.
+</p><p>Due to the manner Hadoop Streaming is used, <em>mongo-hadoop-streaming</em> requires the construction of a “fat” (sometimes known as a “shaded” or “assembly”) jar, which contains all of its dependencies including the Java Driver. To this end, simply using the <code>package</code> task in <em>sbt</em> is not enough. To build a proper package, the following <em>sbt</em> command is used:
+</p><pre><code>./sbt mongo-hadoop-streaming/assembly
+</code></pre><p>This will create a new “fat” jar in: 
+</p><pre><code>streaming/target/mongo-hadoop-streaming-assembly-1.0.0.jar
+</code></pre><p>This jar file is runnable with <code>hadoop jar</code>, and contains all of the dependencies necessary to run the job. 
+</p><h3 id="Setting+up+Language+Support">Setting up Language Support</h3><p>Each individual scripting language will have different requirements for working with MongoDB + Hadoop Streaming.  Once you have the jar file built for <em>mongo-hadoop-streaming</em>, you will need to build and deploy the support libraries for your chosen language.
+</p><p>It will also be necessary to ensure these libraries are available on each Hadoop node in your cluster, along with the <em>mongo-hadoop-core</em> driver as outlined in the main setup instructions.  However, you do not need to distribute the <em>mongo-hadoop-streaming</em> jar anywhere.
+</p><h4 id="Python+Streaming+Setup">Python Streaming Setup</h4><p>Working with Python streaming support will require two Python modules installed on each cluster node:
+</p><ul><li>pymongo 2.0+ 
+</li><li>PyMongo_Hadoop
+</li></ul><p><em>pymongo</em> is available via the normal installation/distribution methods for Python modules.  PyMongo_Hadoop is distributed with this source, and you can build and distribute it from there.
+</p><h5 id="Building+PyMongo_Hadoop">Building PyMongo_Hadoop</h5><p>You will find the source for the <em>pymongo_hadoop</em> Python module under <code>streaming/language_support/python</code>. To create a package to distribute to each of your Hadoop nodes, the easiest process is:
+</p><pre><code>python setup.py bdist_egg
+</code></pre><p>After which you will find an egg file underneath the <code>dist</code> directory.  You may then install this egg file to each of your Hadoop nodes.  If you are working on a single development node, you may find it simpler to run the <code>develop</code> task on setup.py rather than installing an egg file.
+</p><p>The following Python script may prove useful in validating your installation on each node:
+</p><pre><code class="prettyprint lang-python">#!/usr/bin/env python
+
+try:
+    import pymongo
+    from bson import _elements_to_dict, InvalidBSON
+except:
+    raise Exception(&quot;Cannot find a valid pymongo installation.&quot;)
+
+try:
+    from pymongo_hadoop import BSONInput
+except:
+    raise Exception(&quot;Cannot find a valid pymongo_hadoop installation&quot;)
+
+print &quot;*** Everything looks OK. All required modules were found.&quot;
+
+</code></pre><div class="tocwrapper show">
+      <a class="tochead nav" style="display: none" href="#toc">❦</a>
+      <a name="toc"></a>
+      <h4 class="toctitle">Contents</h4>
+      <div class="tocbody">
+      <div><a href="MongoDB%2BHadoop+Connector.html">MongoDB+Hadoop Connector</a></div><ol class="toc"> <li><div><a href="Why+MongoDB%2BHadoop%3F.html">Why MongoDB+Hadoop?</a></div></li><li><div><a href="Getting+Started.html">Getting Started</a></div><ol class="toc"> <li><div><a href="Building+the+Adapter.html">Building the Adapter</a></div></li> </ol></li><li><div><a href="Hadoop+Streaming+Support.html">Hadoop Streaming Support</a></div><ol class="toc"> <li><div class="current">Building Hadoop Streaming Support</div></li> </ol></li><li class="generated"><div><a href="Contents+in+Depth.html">Contents in Depth</a></div></li><li class="generated"><div><a href="Combined+Pages.html">Combined Pages</a></div></li> </ol></div></div>
+          </div>
+        </div>
+        <a class="fork nav" href="http://github.com/mongodb/mongo-hadoop"><img alt="Fork me on GitHub" src="img/fork.png"></img></a>
+      </body>
+    </html>

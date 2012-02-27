@@ -1,0 +1,15 @@
+Hadoop Streaming Support
+========================
+
+[Hadoop Streaming][hadoop-streaming] is an add-on module to Hadoop which provides a facility for composing Hadoop jobs in non-JVM languages. With streaming, any programming language (or tool) which supports access to **STDIN** and **STDOUT** can be leveraged for data processing. To that end, an adapter for using MongoDB with Hadoop Streaming is provided in this package (as long as the build of Hadoop you are using supports the Streaming features we require).
+
+As working with MongoDB requires the ability to manipulate [BSON][bson], the options for languages to use with *mongo-hadoop-streaming* are somewhat more limited.  At this time, we provide a support module to work with Python, and supporting additional languages (such as Ruby) is planned for a future release.
+
+#### Availability of MongoDB Streaming Support
+
+Due to the manner Hadoop Streaming is used, *mongo-hadoop-streaming* requires the construction of a "fat" (sometimes known as a "shaded" or "assembly") jar, which contains all of its dependencies including the Java Driver.  This limits our ability to publish Streaming support to Maven.  Instead, if you'd like to leverage *mongo-hadoop-streaming* you should build it yourself, or download a preassembled jar from our [Github Page][github-page].
+
+
+[hadoop-streaming]: http://hadoop.apache.org/common/docs/current/streaming.html "Hadoop Streaming"
+[bson]: http://bsonspec.org
+[github-page]: https://github.com/mongodb/mongo-hadoop
