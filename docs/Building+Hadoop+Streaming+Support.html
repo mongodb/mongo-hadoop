@@ -40,7 +40,7 @@
 </p><p>Due to the manner Hadoop Streaming is used, <em>mongo-hadoop-streaming</em> requires the construction of a “fat” (sometimes known as a “shaded” or “assembly”) jar, which contains all of its dependencies including the Java Driver. To this end, simply using the <code>package</code> task in <em>sbt</em> is not enough. To build a proper package, the following <em>sbt</em> command is used:
 </p><pre><code>./sbt mongo-hadoop-streaming/assembly
 </code></pre><p>This will create a new “fat” jar in: 
-</p><pre><code>streaming/target/mongo-hadoop-streaming-assembly-1.0.0.jar
+</p><pre><code>streaming/target/mongo-hadoop-streaming-assembly-1.0.0-rc1.jar
 </code></pre><p>This jar file is runnable with <code>hadoop jar</code>, and contains all of the dependencies necessary to run the job. 
 </p><h3 id="Setting+up+Language+Support">Setting up Language Support</h3><p>Each individual scripting language will have different requirements for working with MongoDB + Hadoop Streaming.  Once you have the jar file built for <em>mongo-hadoop-streaming</em>, you will need to build and deploy the support libraries for your chosen language.
 </p><p>It will also be necessary to ensure these libraries are available on each Hadoop node in your cluster, along with the <em>mongo-hadoop-core</em> driver as outlined in the main setup instructions.  However, you do not need to distribute the <em>mongo-hadoop-streaming</em> jar anywhere.
@@ -72,7 +72,7 @@ print &quot;*** Everything looks OK. All required modules were found.&quot;
       <a name="toc"></a>
       <h4 class="toctitle">Contents</h4>
       <div class="tocbody">
-      <div><a href="MongoDB%2BHadoop+Connector.html">MongoDB+Hadoop Connector</a></div><ol class="toc"> <li><div><a href="Why+MongoDB%2BHadoop%3F.html">Why MongoDB+Hadoop?</a></div></li><li><div><a href="Getting+Started.html">Getting Started</a></div><ol class="toc"> <li><div><a href="Building+the+Adapter.html">Building the Adapter</a></div></li> </ol></li><li><div><a href="Hadoop+Streaming+Support.html">Hadoop Streaming Support</a></div><ol class="toc"> <li><div class="current">Building Hadoop Streaming Support</div></li> </ol></li><li class="generated"><div><a href="Contents+in+Depth.html">Contents in Depth</a></div></li><li class="generated"><div><a href="Combined+Pages.html">Combined Pages</a></div></li> </ol></div></div>
+      <div><a href="MongoDB%2BHadoop+Connector.html">MongoDB+Hadoop Connector</a></div><ol class="toc"> <li><div><a href="Frequently+Asked+Questions.html">Frequently Asked Questions</a></div></li><li><div><a href="Getting+Started.html">Getting Started</a></div><ol class="toc"> <li><div><a href="Building+the+Adapter.html">Building the Adapter</a></div></li><li><div><a href="Configuration+%26+Behavior.html">Configuration &amp; Behavior</a></div></li> </ol></li><li><div><a href="Hadoop+Streaming+Support.html">Hadoop Streaming Support</a></div><ol class="toc"> <li><div class="current">Building Hadoop Streaming Support</div></li> </ol></li><li class="generated"><div><a href="Contents+in+Depth.html">Contents in Depth</a></div></li><li class="generated"><div><a href="Combined+Pages.html">Combined Pages</a></div></li> </ol></div></div>
           </div>
         </div>
         <a class="fork nav" href="http://github.com/mongodb/mongo-hadoop"><img alt="Fork me on GitHub" src="img/fork.png"></img></a>
