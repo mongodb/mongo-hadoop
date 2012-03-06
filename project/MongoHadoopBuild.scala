@@ -133,9 +133,13 @@ object MongoHadoopBuild extends Build {
     publishArtifact <<= (hadoopRelease) (hr => {
       !coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
                               " Valid entries are in %s".format(hr, coreHadoopMap.keySet)))._1.isDefined
-    })
+    }),
+    assembly ~= { (jar) => 
+      println("*** Constructed Assembly Jar: %s".format(jar))
+      jar
+    }
 
-  ) 
+  )
 
   val pigSettings = dependentSettings ++ Seq( 
     resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
@@ -208,7 +212,7 @@ object Resolvers {
   val sonatypeRels = "releases" at "https://oss.sonatype.org/content/repositories/releases"
   val clouderaRepo = "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
   val mitSimileRepo = "Simile Repo at MIT" at "http://simile.mit.edu/maven"
-  val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/org/"
+  val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/"
   /** Seems to have thrift deps I need*/
   val hypobytes = "Hypobytes" at "https://hypobytes.com/maven/content/groups/public"
 }
