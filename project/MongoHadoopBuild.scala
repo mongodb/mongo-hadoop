@@ -180,6 +180,10 @@ object MongoHadoopBuild extends Build {
     "mongoimport -d mongo_hadoop -c yield_historical.in --drop examples/treasury_yield/src/main/resources/yield_historical_in.json" ! 
     
     "mongoimport -d mongo_hadoop -c ufo_sightings.in --drop examples/ufo_sightings/src/main/resources/ufo_awesome.json"  ! 
+    
+    println("********")
+    println("*** Loading the Enron, Word Count and Twitter sample data requires manual intervention.  Please see the respective documentation")
+    println("********")
   }
 
 
