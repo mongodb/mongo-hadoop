@@ -68,11 +68,13 @@ target compiles *ALL* Modules, including Streaming.
 
 #### Apache Hadoop 0.23
 
+(Currently building against 0.23.1)
+
 This is an alpha branch of Hadoop; despite the misleading version numbers, Apache Hadoop 0.23 is "newer" than Apache Hadoop 1.0. Hadoop 0.23 is also the basis for Cloudera's CDH4 Beta. This target compiles *ALL* modules, including Streaming and Pig $mainlinePig$.  Note however that we *do not* support the next-generation [YARN][hadoop-yarn] at this time; support is planned for *mongo-hadoop* v1.1.
 
 - 0.23
 - 0.23.x
-- Maven Artifact: "org.mongodb" / "mongo-hadoop_0.23.0" 
+- Maven Artifact: "org.mongodb" / "mongo-hadoop_0.23.1" 
 
 #### Cloudera Release 4 (Beta 1) 
 

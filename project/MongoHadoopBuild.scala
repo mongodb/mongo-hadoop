@@ -30,8 +30,10 @@ object MongoHadoopBuild extends Build {
                                   "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
                                   "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
-                                  "0.23" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
-                                  "0.23.x" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
+                                  "0.22" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
+                                  "0.22.x" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
+                                  "0.23" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
+                                  "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
                                   "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
                                   "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
@@ -173,15 +175,26 @@ object MongoHadoopBuild extends Build {
 
 
 
-  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, altStreamingVer: Option[String] = None): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
+  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, altStreamingVer: Option[String] = None, nextGen: Boolean = false): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
       (if (useStreaming) Some(streamingDependency(altStreamingVer.getOrElse(hadoopVersion))) else None, () => {
       println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(altStreamingVer.getOrElse(hadoopVersion)))
 
-      val dep = Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion)
-      if (altStreamingVer.isDefined)
-        dep ++ Seq("org.apache.hadoop" % "hadoop-common" % altStreamingVer.get)
+      val deps = if (altStreamingVer.isDefined || nextGen)
+        Seq("org.apache.hadoop" % "hadoop-common" % altStreamingVer.getOrElse(hadoopVersion))
       else 
-        dep
+        Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion, 
+            ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon"))
+
+      if (nextGen) {
+        def mrDep(mod: String) = "org.apache.hadoop" % "hadoop-mapreduce-client-%s".format(mod) % altStreamingVer.getOrElse(hadoopVersion) notTransitive() exclude("org.apache.hadoop", "hdfs")
+
+        deps ++ Seq(mrDep("core"), mrDep("common"), mrDep("shuffle"),
+                    mrDep("shuffle"), mrDep("app"), mrDep("jobclient"))
+      }
+      else 
+        deps
+
+
       }, hadoopVersion, pigDependency(pigVersion))
   }
 
