@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import Reference._
 import sbtassembly.Plugin._
+import Process._
 import AssemblyKeys._
 
 object MongoHadoopBuild extends Build {
@@ -15,6 +16,7 @@ object MongoHadoopBuild extends Build {
 
   /** The version of Hadoop to build against. */
   lazy val hadoopRelease = SettingKey[String]("hadoop-release", "Hadoop Target Release Distro/Version")
+  val loadSampleData = TaskKey[Unit]("load-sample-data", "Loads sample data for example programs")
 
 
   private val stockPig = "0.9.2"
@@ -43,11 +45,11 @@ object MongoHadoopBuild extends Build {
 
   lazy val root = Project( id = "mongo-hadoop", 
                           base = file("."),
-                          settings = dependentSettings ) aggregate(core, flume, pig)
+                          settings = dependentSettings ++ Seq(loadSampleDataTask)) aggregate(core, flume, pig)
 
   lazy val core = Project( id = "mongo-hadoop-core", 
                            base = file("core"), 
-                           settings = coreSettings )
+                           settings = coreSettings  ) 
 
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
@@ -173,6 +175,12 @@ object MongoHadoopBuild extends Build {
     testFrameworks += TestFrameworks.Specs2
   )
 
+  val loadSampleDataTask = loadSampleData := {
+    println("Loading Sample data ...")
+    "mongoimport -d mongo_hadoop -c yield_historical.in --drop examples/treasury_yield/src/main/resources/yield_historical_in.json" ! 
+    
+    "mongoimport -d mongo_hadoop -c ufo_sightings.in --drop examples/ufo_sightings/src/main/resources/ufo_awesome.json"  ! 
+  }
 
 
   def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, altStreamingVer: Option[String] = None, nextGen: Boolean = false): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {

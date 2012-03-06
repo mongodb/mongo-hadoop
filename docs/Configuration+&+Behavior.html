@@ -34,7 +34,7 @@
             </div>
           </div>
           <div class="span-16 prepend-1 append-1 contents">
-            <h1 id="Configuration+%26+Behavior">Configuration &amp; Behavior</h1><h2 id="Hadoop+MapReduce">Hadoop MapReduce</h2><p>Provides working <em>Input</em> and <em>Output</em> adapters for MongoDB.  You may
+            <h1 id="Configuration+%26+Behavior">Configuration &amp; Behavior</h1><h2 id="Hadoop+MapReduce">Hadoop MapReduce</h2><p>This package provides working <em>Input</em> and <em>Output</em> adapters for MongoDB.  You may
 configure these adapters with XML or programatically. See the
 WordCount examples for demonstrations of both approaches.  You can
 specify a query, fields and sort specs in the XML config as JSON or
@@ -50,32 +50,12 @@ primarily intended for debugging purposes.
 </p><ol><li><p>For unsharded the source collections, MongoHadoop follows the
 </p><p> “unsharded split” path. (See below.)
 </p></li><li><p>For sharded source collections:
-</p><ul><li>If <code>mongo.input.split.read_shard_chunks</code> is <strong>true</strong>
-(defaults <strong>true</strong>) then we pull the chunk specs from the
-configuration server, and turn each shard chunk into an <em>Input
-Split</em>.  Basically, this means the mongodb sharding system does
-</li></ul><p>   99% of the preconfig work for us and is a good thing‚Ñ¢
-</p><ul><li>If <code>read_shard_chunks</code> is <strong>false</strong> and
-<code>mongo.input.split.read_from_shards</code> is <strong>true</strong> (it defaults
-to <strong>false</strong>) then we connect to the <code>mongod</code> or replica set
-for each shard individually and each shard becomes an input
-split. The entire content of the collection on the shard is one
-split. Only use this configuration in rare situations.
-</li></ul><ul><li>If <code>read_shard_chunks</code> is <strong>true</strong> and
-<code>mongo.input.split.read_from_shards</code> is <strong>true</strong> (it defaults
-to <strong>false</strong>) MongoHadoop reads the chunk boundaries from
-the config server but then reads data directly from the shards
-without using the <code>mongos</code>.  While this may seem like a good
-idea, it can cause erratic behavior if MongoDB balances chunks
-during a Hadoop job. This is not a recommended configuration
-for write heavy applications but may provide effective
-parallelism in read heavy apps.
-</li></ul><ul><li>If both <code>create_input_splits</code> and <code>read_from_shards</code> are
-</li></ul><p>   <strong>false</strong> disabled then we pretend there is no sharding and use
-   the “unsharded split” path. When <code>read_shard_chunks</code> is
-   <strong>false</strong> MongoHadoop reads everything through mongos as a
-   single split.
-</p></li></ol><h3 id="%E2%80%9CUnsharded+Splits%E2%80%9C">“Unsharded Splits“</h3><p>“Unsharded Splits” refers to the system that MongoHadoop uses to
+</p><ul><li>If <code>mongo.input.split.read_shard_chunks</code> is <strong>true</strong> (defaults <strong>true</strong>) then we pull the chunk specs from the
+configuration server, and turn each shard chunk into an <em>Input Split</em>.  Basically, this means the mongodb sharding system does 99% of the preconfig work for us and is a good thing‚Ñ¢
+</li></ul><ul><li>If <code>read_shard_chunks</code> is <strong>false</strong> and <code>mongo.input.split.read_from_shards</code> is <strong>true</strong> (it defaults to <strong>false</strong>) then we connect to the <code>mongod</code> or replica set for each shard individually and each shard becomes an input split. The entire content of the collection on the shard is one split. Only use this configuration in rare situations.
+</li></ul><ul><li>If <code>read_shard_chunks</code> is <strong>true</strong> and <code>mongo.input.split.read_from_shards</code> is <strong>true</strong> (it defaults to <strong>false</strong>) MongoHadoop reads the chunk boundaries from the config server but then reads data directly from the shards without using the <code>mongos</code>.  While this may seem like a good idea, it can cause erratic behavior if MongoDB balances chunks during a Hadoop job. This is not a recommended configuration for write heavy applications but may provide effective parallelism in read heavy apps.
+</li></ul><ul><li>If both <code>create_input_splits</code> and <code>read_from_shards</code> are <strong>false</strong> disabled then we pretend there is no sharding and use the “unsharded split” path. When <code>read_shard_chunks</code> is <strong>false</strong> MongoHadoop reads everything through mongos as a single split.
+</li></ul></li></ol><h3 id="%E2%80%9CUnsharded+Splits%E2%80%9C">“Unsharded Splits“</h3><p>“Unsharded Splits” refers to the system that MongoHadoop uses to
 calculate new splits. You may use “Unsharded splits” with sharded
 MongoDB options.
 </p><p>This is only used:

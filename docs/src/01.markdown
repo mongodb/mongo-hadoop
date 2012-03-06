@@ -1,19 +1,19 @@
 Frequently Asked Questions
 ==========================
 
-## Do the MongoInputFormat/MongoOutputFormats use HDFS?
+### Do the MongoInputFormat/MongoOutputFormats use HDFS?
 
 No. The `Mongo\*Format` code is designed to not use HDFS, instead reading and writing data directly between MongoDB + Hadoop.
 
 A forthcoming release will offer a `BSONInputFormat` and `BSONOutputFormat` which will allow for working offline with MongoDB backup files (in BSON format) on HDFS and S3.
 
-## How does the MongoDB + Hadoop Connector differ from Sqoop?
+### How does the MongoDB + Hadoop Connector differ from Sqoop?
 
-From the [Sqoop Wiki][https://github.com/cloudera/sqoop/wiki]: *"Sqoop is a tool designed to import data from relational databases into Hadoop. Sqoop uses JDBC to connect to a database ... and automatically generates the necessary classes to import data into the Hadoop Distributed File System (HDFS)"*
+From the [Sqoop Wiki](https://github.com/cloudera/sqoop/wiki): *"Sqoop is a tool designed to import data from relational databases into Hadoop. Sqoop uses JDBC to connect to a database ... and automatically generates the necessary classes to import data into the Hadoop Distributed File System (HDFS)"*
 
 The MongoDB + Hadoop Connector does not work with HDFS, instead reading and writing directly between MongoDB and Hadoop for the highest possible performance.  This also allows for Hadoop jobs to have the freshest possible view of their input data without an intermediary export process.
 
-### Is integration possible between MongoDB and Sqoop?
+#### Is integration possible between MongoDB and Sqoop?
 
 As MongoDB is neither a relational database nor utilizes JDBC for connectivity, integration with Sqoop does not seem feasible at this time.
 
