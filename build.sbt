@@ -3,4 +3,4 @@ name := "mongo-hadoop"
 
 organization := "org.mongodb"
 
-hadoopRelease in ThisBuild := "0.23"
+hadoopRelease in ThisBuild := "0.22"

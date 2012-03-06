@@ -186,10 +186,18 @@ object MongoHadoopBuild extends Build {
             ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon"))
 
       if (nextGen) {
+        
         def mrDep(mod: String) = "org.apache.hadoop" % "hadoop-mapreduce-client-%s".format(mod) % altStreamingVer.getOrElse(hadoopVersion) notTransitive() exclude("org.apache.hadoop", "hdfs")
 
-        deps ++ Seq(mrDep("core"), mrDep("common"), mrDep("shuffle"),
-                    mrDep("shuffle"), mrDep("app"), mrDep("jobclient"))
+        
+        if (hadoopVersion.startsWith("0.22")) {
+            deps ++ Seq("org.apache.hadoop" % "hadoop-mapred" % altStreamingVer.getOrElse(hadoopVersion))
+        } else if (hadoopVersion.startsWith("0.23")) {
+          deps ++ Seq(mrDep("core"), mrDep("common"), mrDep("shuffle"),
+                      mrDep("shuffle"), mrDep("app"), mrDep("jobclient"))
+        } else {
+          sys.error("Don't know how to do any special mapping for Hadoop Version " + hadoopVersion)
+        }
       }
       else 
         deps
