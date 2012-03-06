@@ -84,6 +84,14 @@ This is the latest beta of Cloudera's distribution, based upon the 0.23 alpha br
 - cdh4
 - Maven Artifact: "org.mongodb" / "mongo-hadoop_cdh4b1" 
 
+### Apache Hadoop 0.22.0
+
+This includes Pig 0.9.1 and Hadoop Streaming.
+
+- 0.22
+- 0.22.0
+
+
 #### Apache Hadoop 0.21.0
 
 This includes Pig 0.9.1 and Hadoop Streaming.
