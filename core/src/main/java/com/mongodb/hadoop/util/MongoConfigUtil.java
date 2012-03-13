@@ -277,8 +277,10 @@ public class MongoConfigUtil {
     }
 
     public static DBCollection getOutputCollection( Configuration conf ){
-        try {
-            final MongoURI _uri = getOutputURI( conf );
+        final MongoURI _uri = getOutputURI( conf );
+	if(_uri == null)
+	    throw new IllegalArgumentException("Please set mongodb output uri.");
+	try{
             return getCollection( _uri );
         }
         catch ( final Exception e ) {
