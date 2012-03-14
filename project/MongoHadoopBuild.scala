@@ -194,8 +194,8 @@ object MongoHadoopBuild extends Build {
       val deps = if (altStreamingVer.isDefined || nextGen)
         Seq("org.apache.hadoop" % "hadoop-common" % altStreamingVer.getOrElse(hadoopVersion))
       else 
-        Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion, 
-            ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon"))
+        Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion/*, 
+            ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon")*/)
 
       if (nextGen) {
         
