@@ -36,7 +36,7 @@ object MongoHadoopBuild extends Build {
                                   "0.22.x" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
                                   "0.23" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
                                   "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
-                                  "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop)),
+                                  "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop), nextGen=true),
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
                                   "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
                                   "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
@@ -196,7 +196,6 @@ object MongoHadoopBuild extends Build {
       else 
         Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion/*, 
             ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon")*/)
-
       if (nextGen) {
         
         def mrDep(mod: String) = "org.apache.hadoop" % "hadoop-mapreduce-client-%s".format(mod) % altStreamingVer.getOrElse(hadoopVersion) notTransitive() exclude("org.apache.hadoop", "hdfs")
