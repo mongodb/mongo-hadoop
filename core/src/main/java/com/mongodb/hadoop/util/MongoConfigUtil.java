@@ -473,7 +473,7 @@ public class MongoConfigUtil {
     }
 
     public static void setReadSplitsFromSecondary( Configuration conf, boolean value ) {
-        conf.getBoolean( SPLITS_SLAVE_OK, value );
+        conf.setBoolean( SPLITS_SLAVE_OK, value );
     }
 
     public static boolean createInputSplits( Configuration conf ) {
