@@ -277,8 +277,10 @@ public class MongoConfigUtil {
     }
 
     public static DBCollection getOutputCollection( Configuration conf ){
-        try {
-            final MongoURI _uri = getOutputURI( conf );
+        final MongoURI _uri = getOutputURI( conf );
+	if(_uri == null)
+	    throw new IllegalArgumentException("Please set mongodb output uri.");
+	try{
             return getCollection( _uri );
         }
         catch ( final Exception e ) {
@@ -471,7 +473,7 @@ public class MongoConfigUtil {
     }
 
     public static void setReadSplitsFromSecondary( Configuration conf, boolean value ) {
-        conf.getBoolean( SPLITS_SLAVE_OK, value );
+        conf.setBoolean( SPLITS_SLAVE_OK, value );
     }
 
     public static boolean createInputSplits( Configuration conf ) {
