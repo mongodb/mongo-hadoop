@@ -52,7 +52,9 @@ public class StreamJobPatch extends StreamJob {
           exitUsage(argv_.length > 0 && "-info".equals(argv_[0]));
         }
         if (cmdLine != null){
-            _inputURI =  cmdLine.getOptionValue("inputURI"); 
+            _inputURI =  cmdLine.getOptionValue("inputURI");
+            _inputURIs = cmdLine.getOptionValues("inputURI");
+
             _outputURI =  cmdLine.getOptionValue("outputURI"); 
             verbose_ =  cmdLine.hasOption("verbose");
             detailedUsage_ = cmdLine.hasOption("info");
@@ -149,6 +151,7 @@ public class StreamJobPatch extends StreamJob {
     }
 
     protected String _inputURI;
+    protected String[] _inputURIs;
     protected String _outputURI;
     protected CommandLineParser _parser = new BasicParser(); 
     protected Options _options = new Options();

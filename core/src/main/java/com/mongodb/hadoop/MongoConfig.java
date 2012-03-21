@@ -161,8 +161,16 @@ public class MongoConfig {
         return MongoConfigUtil.getMongoURI( _conf, key );
     }
 
+    public MongoURI[] getMongoURIs( String key ){
+        return MongoConfigUtil.getMongoURIs( _conf, key );
+    }
+
     public MongoURI getInputURI(){
         return MongoConfigUtil.getInputURI( _conf );
+    }
+
+    public MongoURI[] getInputURIs(){
+        return MongoConfigUtil.getInputURIs( _conf );
     }
 
     public DBCollection getOutputCollection(){
@@ -177,16 +185,32 @@ public class MongoConfig {
         MongoConfigUtil.setMongoURI( _conf, key, value );
     }
 
+    public void setMongoURIs( String key, MongoURI[] values ){
+        MongoConfigUtil.setMongoURIs( _conf, key, values );
+    }
+
     public void setMongoURIString( String key, String value ){
         MongoConfigUtil.setMongoURIString( _conf, key, value );
+    }
+
+    public void setMongoURIsString( String key, String[] values ) {
+        MongoConfigUtil.setMongoURIsString( _conf, key, values );
     }
 
     public void setInputURI( String uri ){
         MongoConfigUtil.setInputURI( _conf, uri );
     }
 
+    public void setInputURIs( String[] uris ){
+        MongoConfigUtil.setInputURIs( _conf, uris );
+    }
+
     public void setInputURI( MongoURI uri ){
         MongoConfigUtil.setInputURI( _conf, uri );
+    }
+
+    public void setInputURIs( MongoURI[] uris ){
+        MongoConfigUtil.setInputURIs( _conf, uris );
     }
 
     public MongoURI getOutputURI(){

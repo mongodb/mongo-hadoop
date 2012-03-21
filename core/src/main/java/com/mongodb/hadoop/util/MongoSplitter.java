@@ -40,6 +40,9 @@ public class MongoSplitter {
          * split; Actual querying will be done on the individual mappers.
          */
         MongoURI uri = conf.getInputURI();
+        MongoURI[] uris = conf.getInputURIs();
+        log.info("MongoSplitter::calculateSplits(): uris=" + Arrays.toString(uris));
+
         Mongo mongo;
         try {
             mongo = uri.connect();
@@ -50,7 +53,7 @@ public class MongoSplitter {
         DB db = mongo.getDB( uri.getDatabase() );
         DBCollection coll = db.getCollection( uri.getCollection() );
         final CommandResult stats = coll.getStats();
-        
+
         final boolean isSharded = stats.getBoolean( "sharded", false );
 
         //connecting to the individual backend mongods is not safe, do not do so by default
@@ -74,7 +77,7 @@ public class MongoSplitter {
                 log.info( "Using Unsharded Split mode (Calculating multiple splits though)" );
                 return calculateUnshardedSplits( conf, slaveOk, uri, coll );
             }
-            
+
         }
         else {
             log.info( "Creation of Input Splits is disabled; Non-Split mode calculation entering." );
@@ -89,14 +92,14 @@ public class MongoSplitter {
         final int splitSize = conf.getSplitSize(); // in MB
         final String ns = coll.getFullName();
         final DBObject q = conf.getQuery();
-        
+
         log.info( "Calculating unsharded input splits on namespace '" + ns + "' with Split Key '" + splitKey.toString() + "' and a split size of '" + splitSize + "'mb per" );
 
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
                                           add( "keyPattern", splitKey ).
                                           add( "force", false ). // force:True is misbehaving it seems
                                           add( "maxChunkSize", splitSize ).get();
-        
+
         log.trace( "Issuing Command: " + cmd );
         CommandResult data = coll.getDB().command( cmd );
 
@@ -104,10 +107,10 @@ public class MongoSplitter {
             throw new IllegalArgumentException( "Error calculating splits: " + data );
         else if ( (Double) data.get( "ok" ) != 1.0 )
             throw new IllegalArgumentException( "Unable to calculate input splits: " + ( (String) data.get( "errmsg" ) ) );
-        
+
         // Comes in a format where "min" and "max" are implicit and each entry is just a boundary key; not ranged
         BasicDBList splitData = (BasicDBList) data.get( "splitKeys" );
-        
+
         if (splitData.size() <= 1) {
             if (splitData.size() < 1)
                 log.warn( "WARNING: No Input Splits were calculated by the split code. "
