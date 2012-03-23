@@ -157,16 +157,8 @@ public class MongoConfig {
         MongoConfigUtil.setInputFormat( _conf, val );
     }
 
-    public MongoURI getMongoURI( String key ){
-        return MongoConfigUtil.getMongoURI( _conf, key );
-    }
-
     public MongoURI[] getMongoURIs( String key ){
         return MongoConfigUtil.getMongoURIs( _conf, key );
-    }
-
-    public MongoURI getInputURI(){
-        return MongoConfigUtil.getInputURI( _conf );
     }
 
     public MongoURI[] getInputURIs(){
@@ -177,36 +169,16 @@ public class MongoConfig {
         return MongoConfigUtil.getOutputCollection( _conf );
     }
 
-    public DBCollection getInputCollection(){
-        return MongoConfigUtil.getInputCollection( _conf );
-    }
-
-    public void setMongoURI( String key, MongoURI value ){
-        MongoConfigUtil.setMongoURI( _conf, key, value );
-    }
-
     public void setMongoURIs( String key, MongoURI[] values ){
         MongoConfigUtil.setMongoURIs( _conf, key, values );
-    }
-
-    public void setMongoURIString( String key, String value ){
-        MongoConfigUtil.setMongoURIString( _conf, key, value );
     }
 
     public void setMongoURIsString( String key, String[] values ) {
         MongoConfigUtil.setMongoURIsString( _conf, key, values );
     }
 
-    public void setInputURI( String uri ){
-        MongoConfigUtil.setInputURI( _conf, uri );
-    }
-
     public void setInputURIs( String[] uris ){
         MongoConfigUtil.setInputURIs( _conf, uris );
-    }
-
-    public void setInputURI( MongoURI uri ){
-        MongoConfigUtil.setInputURI( _conf, uri );
     }
 
     public void setInputURIs( MongoURI[] uris ){
@@ -334,7 +306,7 @@ public class MongoConfig {
     public void setReadSplitsFromSecondary( boolean value ) {
         MongoConfigUtil.setReadSplitsFromSecondary( _conf, value );
     }
-    
+
     /**
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
      * to create custom input splits for you.  By default it will split on {@code _id}, which is a
@@ -380,7 +352,7 @@ public class MongoConfig {
     public void setInputSplitKey( DBObject key ) {
         MongoConfigUtil.setInputSplitKey( _conf, key );
     }
-            
+
     /**
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
      * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
@@ -426,11 +398,11 @@ public class MongoConfig {
     public void setInputKey( String fieldName ) {
         MongoConfigUtil.setInputKey( _conf, fieldName );
     }
-    
+
     public boolean isNoTimeout() {
         return MongoConfigUtil.isNoTimeout( _conf );
     }
-    
+
     public void setNoTimeout( boolean value ) {
         MongoConfigUtil.setNoTimeout( _conf, value );
     }

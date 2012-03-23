@@ -106,7 +106,7 @@ public class WordCountSplitTest extends MongoTool {
         final com.mongodb.MongoURI outputUri = MongoConfigUtil.getOutputURI( conf );
         if ( outputUri == null )
             throw new IllegalStateException( "output uri is not set" );
-        if ( MongoConfigUtil.getInputURI( conf ) == null )
+        if ( MongoConfigUtil.getInputURIs( conf ) == null )
             throw new IllegalStateException( "input uri is not set" );
         final String outputCollectionName = outputUri.getCollection();
 
@@ -162,7 +162,8 @@ public class WordCountSplitTest extends MongoTool {
     private final static void test( boolean useShards, boolean useChunks, Boolean slaveok, boolean useQuery )
             throws Exception{
         final Configuration conf = new Configuration();
-        MongoConfigUtil.setInputURI( conf, "mongodb://localhost:30000/test.lines" );
+        String[] inputURIs = {"mongodb://localhost:30000/test.lines"};
+        MongoConfigUtil.setInputURI( conf, inputURIs );
         conf.setBoolean( MongoConfigUtil.SPLITS_USE_SHARDS, useShards );
         conf.setBoolean( MongoConfigUtil.SPLITS_USE_CHUNKS, useChunks );
 

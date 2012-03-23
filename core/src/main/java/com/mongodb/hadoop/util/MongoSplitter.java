@@ -40,7 +40,6 @@ public class MongoSplitter {
          * split; Actual querying will be done on the individual mappers.
          */
         MongoURI[] uris = conf.getInputURIs();
-        log.info("MongoSplitter::calculateSplits(): uris=" + Arrays.toString(uris));
 
         //connecting to the individual backend mongods is not safe, do not do so by default
         final boolean useShards = conf.canReadSplitsFromShards();
@@ -82,7 +81,7 @@ public class MongoSplitter {
             }
             else {
                 log.info( "Creation of Input Splits is disabled; Non-Split mode calculation entering." );
-                splits.addAll(calculateSingleSplit( conf ));
+                splits.addAll(calculateSingleSplit( conf, uri ));
             }
         }
 
@@ -157,10 +156,10 @@ public class MongoSplitter {
                                     conf.getSort(), conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
     }
     
-    private static List<InputSplit> calculateSingleSplit( MongoConfig conf ){
+    private static List<InputSplit> calculateSingleSplit( MongoConfig conf, MongoURI uri ){
         final List<InputSplit> splits = new ArrayList<InputSplit>( 1 );
         // no splits, no sharding
-        splits.add( new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), conf.getQuery(), 
+        splits.add( new MongoInputSplit( uri, conf.getInputKey(), conf.getQuery(), 
                                          conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip(),
                                          conf.isNoTimeout() ) );
 
@@ -342,7 +341,6 @@ public class MongoSplitter {
                     log.debug( "[" + numChunks + "/" + numExpectedChunks + "] new query is: " + shardKeyQuery );
                 }
 
-                //MongoURI inputURI = conf.getInputURI();
                 MongoURI inputURI = uri;
 
                 if ( useShards ){

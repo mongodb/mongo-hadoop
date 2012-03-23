@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.regex.*;
 
 public class StreamJobPatch extends StreamJob {
-    
+
     protected void processArguments() throws Exception {
         log.info("Setup Options'");
         setupOptions();
@@ -52,7 +52,6 @@ public class StreamJobPatch extends StreamJob {
           exitUsage(argv_.length > 0 && "-info".equals(argv_[0]));
         }
         if (cmdLine != null){
-            _inputURI =  cmdLine.getOptionValue("inputURI");
             _inputURIs = cmdLine.getOptionValues("inputURI");
 
             _outputURI =  cmdLine.getOptionValue("outputURI"); 
@@ -62,14 +61,14 @@ public class StreamJobPatch extends StreamJob {
             mapCmd_ = cmdLine.getOptionValue("mapper"); 
             comCmd_ = cmdLine.getOptionValue("combiner"); 
             redCmd_ = cmdLine.getOptionValue("reducer"); 
-      
-                     
+
+
             String fsName = cmdLine.getOptionValue("dfs");
             if (null != fsName){
                 LOG.warn("-dfs option is deprecated, please use -fs instead.");
                 config_.set("fs.default.name", fsName);
             }
-      
+
             inputFormatSpec_ = "com.mongodb.hadoop.mapred.MongoInputFormat";
             outputFormatSpec_ = "com.mongodb.hadoop.mapred.MongoOutputFormat";
             additionalConfSpec_ = cmdLine.getOptionValue("additionalconfspec"); 
@@ -78,7 +77,7 @@ public class StreamJobPatch extends StreamJob {
             mapDebugSpec_ = cmdLine.getOptionValue("mapdebug");    
             reduceDebugSpec_ = cmdLine.getOptionValue("reducedebug");
             ioSpec_ = "bson";
-      
+
             String[] car = cmdLine.getOptionValues("cacheArchive"); 
             if (null != car && car.length > 0){
                 LOG.warn("-cacheArchive option is deprecated, please use -archives instead.");
@@ -94,7 +93,7 @@ public class StreamJobPatch extends StreamJob {
                     cacheFiles = (cacheFiles == null)?s :cacheFiles + "," + s;  
                 }
             }
-      
+
             String[] jobconf = cmdLine.getOptionValues("jobconf"); 
             if (null != jobconf && jobconf.length > 0){
                 LOG.warn("-jobconf option is deprecated, please use -D instead.");
@@ -103,7 +102,7 @@ public class StreamJobPatch extends StreamJob {
                     config_.set(parts[0], parts[1]);
                 }
             }
-      
+
             String[] cmd = cmdLine.getOptionValues("cmdenv"); 
             if (null != cmd && cmd.length > 0){
                 for(String s : cmd) {
@@ -119,15 +118,15 @@ public class StreamJobPatch extends StreamJob {
 
     }
     private void setupOptions(){
-    
-        addOption("inputURI", "MongoDB URI for where to read input data from", 
+
+        addOption("inputURI", "MongoDB URI for where to read input data from",
                               "inputURI", 1, true);
-        addOption("outputURI", "MongoDB URI for where to write output data to", 
+        addOption("outputURI", "MongoDB URI for where to write output data to",
                                "outputURI", 1, true);
         addOption("mapper", "The streaming command to run", "cmd", 1, false);
         addOption("combiner", "The streaming command to run", "cmd", 1, false);
-        // reducer could be NONE 
-        addOption("reducer", "The streaming command to run", "cmd", 1, false); 
+        // reducer could be NONE
+        addOption("reducer", "The streaming command to run", "cmd", 1, false);
         addOption("jt", "Optional. Override JobTracker configuration", "<h:p>|local", 1, false);
         addOption("additionalconfspec", "Optional.", "spec", 1, false);
         addOption("inputformat", "Optional.", "spec", 1, false);
@@ -141,19 +140,18 @@ public class StreamJobPatch extends StreamJob {
         addOption("cacheFile", "File name URI", "fileNameURI", Integer.MAX_VALUE, false);
         addOption("cacheArchive", "File name URI", "fileNameURI", Integer.MAX_VALUE, false);
         addOption("io", "Optional.", "spec", 1, false);
-        addOption("file", "File to be shipped in the Job jar file", "file", Integer.MAX_VALUE, false); 
-        
+        addOption("file", "File to be shipped in the Job jar file", "file", Integer.MAX_VALUE, false);
+
         // boolean properties
-        addBoolOption("verbose", "print verbose output"); 
-        addBoolOption("info", "print verbose output"); 
-        addBoolOption("help", "print this help message"); 
-        addBoolOption("debug", "print debug output"); 
+        addBoolOption("verbose", "print verbose output");
+        addBoolOption("info", "print verbose output");
+        addBoolOption("help", "print this help message");
+        addBoolOption("debug", "print debug output");
     }
 
-    protected String _inputURI;
     protected String[] _inputURIs;
     protected String _outputURI;
-    protected CommandLineParser _parser = new BasicParser(); 
+    protected CommandLineParser _parser = new BasicParser();
     protected Options _options = new Options();
     private static final Log log = LogFactory.getLog(StreamJobPatch.class);
 }
