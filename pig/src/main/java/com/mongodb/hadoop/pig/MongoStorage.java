@@ -122,7 +122,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                 ResourceSchema.ResourceFieldSchema[] fs = s.getFields();
                 LinkedHashMap m = new java.util.LinkedHashMap();
                 for (int j = 0; j < fs.length; j++) {
-                    m.put(fs[j], ((Tuple) d).get(j));
+                    m.put(fs[j].getName(), ((Tuple) d).get(j));
                 }
                 builder.add( field.getName(), (Map)m );
                 return;
