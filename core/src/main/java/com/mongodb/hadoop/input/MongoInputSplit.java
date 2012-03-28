@@ -163,7 +163,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
     }
 
-    public MongoInputSplit(){ }
+    MongoInputSplit(){ }
 
     public MongoURI getMongoURI(){
         return _mongoURI;

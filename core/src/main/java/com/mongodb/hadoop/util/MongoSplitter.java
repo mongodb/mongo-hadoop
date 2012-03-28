@@ -40,6 +40,9 @@ public class MongoSplitter {
          * split; Actual querying will be done on the individual mappers.
          */
         MongoURI uri = conf.getInputURI();
+
+	if(uri == null)
+            throw new IllegalArgumentException(" Please set the mongodb input uri.");
         Mongo mongo;
         try {
             mongo = uri.connect();
