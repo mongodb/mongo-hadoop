@@ -1,3 +1,4 @@
+import collections
 import sys
 from bson import BSON
 
@@ -31,7 +32,11 @@ class BSONOutput(object):
     def _writes(self, iterable):
         w = self.write
         for obj in iterable:
-            w(obj)
+            if isinstance(obj, dict):
+                w(obj)
+            elif isinstance(obj, collections.Iterable):
+                for o in obj:
+                    w(o)
 
     writes = _writes
 
