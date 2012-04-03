@@ -146,7 +146,7 @@ object MongoHadoopBuild extends Build {
   )
 
   val pigSettings = dependentSettings ++ Seq( 
-    resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
+    //resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
