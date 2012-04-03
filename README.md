@@ -21,7 +21,7 @@ rather than directly contacting contributors or maintainers.
 * Ryan Nitz
 
 ## Contributors
-
+* Russell Jurney (@rjurney) (Lots of significant Pig improvements)
 * Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
 * Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
 * Rushin Shah <rushin10@gmail.com> (Test Harness Code)
