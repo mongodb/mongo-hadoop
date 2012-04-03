@@ -62,12 +62,10 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     public void putNext( Tuple tuple ) throws IOException{
         final Configuration config = _recordWriter.getContext().getConfiguration();
         final List<String> schema = Arrays.asList( config.get( PIG_OUTPUT_SCHEMA ).split( "," ) );
-        log.info( "Stored Schema: " + schema );
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
 
         ResourceFieldSchema[] fields = this.schema.getFields();
         for (int i = 0; i < fields.length; i++) {
-            log.info( "I: " + i + " tuple: " + tuple );
             writeField(builder, fields[i], tuple.get(i));
         }
         _recordWriter.write( null, builder.get() );
@@ -113,7 +111,6 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
             // Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
-                log.info( "In TUPLE!" );
                 if (s == null) {
                     throw new IOException("Schemas must be fully specified to use "
                             + "this storage function.  No schema found for field " +
@@ -129,7 +126,6 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
             // Given a BAG, create an Array so BSONEnconder will eat it.
             case DataType.BAG:
-                log.info( "In BAG!" );
                 if (s == null) {
                     throw new IOException("Schemas must be fully specified to use "
                             + "this storage function.  No schema found for field " +
@@ -163,7 +159,6 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         }
     }
 
-
     public void prepareToWrite( RecordWriter writer ) throws IOException{
 
         _recordWriter = (MongoRecordWriter) writer;
@@ -190,20 +185,17 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         }
     }
 
-
     public OutputFormat getOutputFormat() throws IOException{
         final MongoOutputFormat outputFmt = new MongoOutputFormat();
         log.info( "OutputFormat... " + outputFmt );
         return outputFmt;
     }
 
-
     public String relToAbsPathForStoreLocation( String location, org.apache.hadoop.fs.Path curDir ) throws IOException{
         // Don't convert anything - override to keep base from messing with URI
         log.info( "Converting path: " + location + "(curDir: " + curDir + ")" );
         return location;
     }
-
 
     public void setStoreLocation( String location, Job job ) throws IOException{
         final Configuration config = job.getConfiguration();
@@ -217,12 +209,10 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         config.set( PIG_OUTPUT_SCHEMA, properties.getProperty( PIG_OUTPUT_SCHEMA_UDF_CONTEXT ) );
     }
 
-
     public void setStoreFuncUDFContextSignature( String signature ){
         _udfContextSignature = signature;
     }
 
     String _udfContextSignature = null;
     MongoRecordWriter _recordWriter = null;
-
 }
