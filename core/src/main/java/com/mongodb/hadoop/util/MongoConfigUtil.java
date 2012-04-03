@@ -17,6 +17,8 @@
 
 package com.mongodb.hadoop.util;
 
+import java.util.*;
+
 import com.mongodb.*;
 import com.mongodb.util.*;
 import org.apache.commons.logging.*;
@@ -55,7 +57,7 @@ public class MongoConfigUtil {
     public static final String JOB_OUTPUT_KEY = "mongo.job.output.key";
     public static final String JOB_OUTPUT_VALUE = "mongo.job.output.value";
 
-    public static final String INPUT_URI = "mongo.input.uri";
+    public static final String INPUT_URIS = "mongo.input.uris";
     public static final String OUTPUT_URI = "mongo.output.uri";
 
     /**
@@ -250,8 +252,24 @@ public class MongoConfigUtil {
             return null;
     }
 
-    public static MongoURI getInputURI( Configuration conf ){
-        return getMongoURI( conf, INPUT_URI );
+    public static MongoURI[] getMongoURIs( Configuration conf, String key ){
+        final String[] raw_uris = conf.get( key ).replace("[", "").replace("]", "").split(", ");
+        MongoURI[] uris = new MongoURI[raw_uris.length];
+
+        for( int i = 0; i < raw_uris.length; i++ ) {
+            if ( raw_uris[i] != null && !raw_uris[i].trim().isEmpty() ) {
+                uris[i] = new MongoURI(raw_uris[i]);
+            }
+            else {
+                uris[i] = null;
+            }
+        }
+
+        return uris;
+    }
+
+    public static MongoURI[] getInputURIs( Configuration conf ){
+        return getMongoURIs( conf, INPUT_URIS );
     }
 
     public static DBCollection getCollection( MongoURI uri ){
@@ -286,17 +304,6 @@ public class MongoConfigUtil {
         }
     }
 
-    public static DBCollection getInputCollection( Configuration conf ){
-        try {
-            final MongoURI _uri = getInputURI( conf );
-            return getCollection( _uri );
-        }
-        catch ( final Exception e ) {
-            throw new IllegalArgumentException(
-                    "Unable to connect to MongoDB Input Collection at '" + getInputURI( conf ) + "'", e );
-        }
-    }
-
     public static void setMongoURI( Configuration conf, String key, MongoURI value ){
         conf.set( key, value.toString() ); // todo - verify you can toString a
         // URI object
@@ -313,12 +320,30 @@ public class MongoConfigUtil {
         }
     }
 
-    public static void setInputURI( Configuration conf, String uri ){
-        setMongoURIString( conf, INPUT_URI, uri );
+    public static void setMongoURIs( Configuration conf, String key, MongoURI[] values ) {
+        conf.set( key, Arrays.toString(values) );
     }
 
-    public static void setInputURI( Configuration conf, MongoURI uri ){
-        setMongoURI( conf, INPUT_URI, uri );
+    public static void setMongoURIsString( Configuration conf, String key, String[] values ){
+        MongoURI[] uris = new MongoURI[values.length];
+        for(int i = 0; i < values.length; i++) {
+            try {
+                uris[i] = new MongoURI( values[i] );
+            }
+            catch ( final Exception e ) {
+                throw new IllegalArgumentException( "Invalid Mongo URI '" + values[i] + "' for Input URI", e);
+            }
+        }
+
+        setMongoURIs( conf, key, uris );
+    }
+
+    public static void setInputURIs( Configuration conf, String[] uris ){
+        setMongoURIsString( conf, INPUT_URIS, uris );
+    }
+
+    public static void setInputURIs( Configuration conf, MongoURI[] uris ){
+        setMongoURIs( conf, INPUT_URIS, uris );
     }
 
     public static MongoURI getOutputURI( Configuration conf ){
@@ -489,11 +514,11 @@ public class MongoConfigUtil {
     public static void setInputSplitKey( Configuration conf, DBObject key ) {
         setDBObject( conf, INPUT_SPLIT_KEY_PATTERN, key );
     }
-    
+
     public static String getInputSplitKeyPattern( Configuration conf ) {
         return conf.get( INPUT_SPLIT_KEY_PATTERN, "{ \"_id\": 1 }" );
     }
-    
+
     public static DBObject getInputSplitKey( Configuration conf ) {
         try {
             final String json = getInputSplitKeyPattern( conf );
@@ -513,15 +538,15 @@ public class MongoConfigUtil {
         // TODO (bwm) - validate key rules?
         conf.set( INPUT_KEY, fieldName );
     }
-    
+
     public static String getInputKey( Configuration conf ) {
         return conf.get( INPUT_KEY, "_id" );
     }
-   
+
     public static void setNoTimeout( Configuration conf, boolean value ) {
         conf.setBoolean( INPUT_NOTIMEOUT, value );
     }
-    
+
     public static boolean isNoTimeout( Configuration conf ) {
         return conf.getBoolean( INPUT_NOTIMEOUT, false );
     }

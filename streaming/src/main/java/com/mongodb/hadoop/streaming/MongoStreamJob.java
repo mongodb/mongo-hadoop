@@ -31,7 +31,7 @@ public class MongoStreamJob extends StreamJobPatch {
             log.info( "Process Args" );
             processArguments();
             log.info( "Args processed." );
-            MongoConfigUtil.setInputURI( conf, _inputURI );
+            MongoConfigUtil.setInputURIs( conf, _inputURIs );
             MongoConfigUtil.setOutputURI( conf, _outputURI );
             setJobConf();
             jobConf_.setOutputKeyClass( BSONWritable.class );

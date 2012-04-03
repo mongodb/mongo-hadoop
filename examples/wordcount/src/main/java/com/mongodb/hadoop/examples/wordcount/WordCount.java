@@ -74,7 +74,8 @@ public class WordCount {
     public static void main( String[] args ) throws Exception{
 
         final Configuration conf = new Configuration();
-        MongoConfigUtil.setInputURI( conf, "mongodb://localhost/test.in" );
+        String[] inputURIs = {"mongodb://localhost/test.in"};
+        MongoConfigUtil.setInputURIs( conf, inputURIs );
         MongoConfigUtil.setOutputURI( conf, "mongodb://localhost/test.out" );
         System.out.println( "Conf: " + conf );
 
