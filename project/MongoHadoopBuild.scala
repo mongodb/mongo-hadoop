@@ -8,7 +8,7 @@ import AssemblyKeys._
 object MongoHadoopBuild extends Build {
 
   lazy val buildSettings = Seq(
-    version := "1.0.0-rc1-SNAPSHOT",
+    version := "1.0.0-SNAPSHOT",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
@@ -64,6 +64,10 @@ object MongoHadoopBuild extends Build {
                             base = file("flume"),
                             settings = flumeSettings ) 
 
+
+  lazy val treasuryExample  = Project( id = "treasury-example",
+                                     base = file("examples/treasury_yield"),
+                                     settings = exampleSettings ) dependsOn( core )
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
@@ -145,6 +149,7 @@ object MongoHadoopBuild extends Build {
 
   )
 
+  val exampleSettings = dependentSettings 
   val pigSettings = dependentSettings ++ Seq( 
     //resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
