@@ -124,6 +124,16 @@ object MongoHadoopBuild extends Build {
         x.data.getName.startsWith("mongo-hadoop-core") */
       }
     ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
     val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
