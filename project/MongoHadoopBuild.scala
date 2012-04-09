@@ -151,7 +151,7 @@ object MongoHadoopBuild extends Build {
 
   val exampleSettings = dependentSettings 
   val pigSettings = dependentSettings ++ Seq( 
-    //resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
+    resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
@@ -251,13 +251,15 @@ object Resolvers {
   val mitSimileRepo = "Simile Repo at MIT" at "http://simile.mit.edu/maven"
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/"
   /** Seems to have thrift deps I need*/
-  val hypobytes = "Hypobytes" at "https://hypobytes.com/maven/content/groups/public"
+  val rawsonApache = "rawsonApache" at "http://people.apache.org/~rawson/repo/"
+
 }
 
 object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.7.3"
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
+
 }
 
 // vim: set ts=2 sw=2 sts=2 et:
