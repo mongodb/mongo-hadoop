@@ -18,21 +18,24 @@ package com.mongodb.hadoop;
 
 // Mongo
 
-import com.mongodb.*;
-import com.mongodb.hadoop.input.*;
+import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
-import org.bson.*;
+import org.bson.BSONObject;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.List;
 
 // Commons
 // Hadoop
 // Java
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
+
 
     @Override
     public RecordReader<Object, BSONObject> createRecordReader( InputSplit split, TaskAttemptContext context ){
@@ -43,18 +46,30 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
         return new com.mongodb.hadoop.input.MongoRecordReader( mis );
     }
-
-    @Override
-    public List<InputSplit> getSplits( JobContext context ){
+    /*
+    public List<InputSplit> getSplits( JobContext context, Path path){
         final Configuration hadoopConfiguration = context.getConfiguration();
         final MongoConfig conf = new MongoConfig( hadoopConfiguration );
-        return MongoSplitter.calculateSplits( conf );
+        return MongoSplitter.calculateSplits( conf, path );
     }
-
+    */
 
     public boolean verifyConfiguration( Configuration conf ){
         return true;
     }
 
-    private static final Log LOG = LogFactory.getLog( MongoInputFormat.class );
+    public List<InputSplit> getSplits( JobContext context, Path path){
+        final Configuration hadoopConfiguration = context.getConfiguration();
+        final MongoConfig conf = new MongoConfig( hadoopConfiguration );
+        return MongoSplitter.calculateSplits( conf, path );
+    }
+
+
+    @Override
+    public List<InputSplit> getSplits(JobContext context) throws IOException,
+            InterruptedException {
+        List<MongoRequest> mongoRequests = MongoConfigUtil.getMongoRequests(context.getConfiguration());
+        return getSplits(context, new Path(mongoRequests.get(0).getInputURI().toString()));
+    }
+    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
 }

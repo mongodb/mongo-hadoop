@@ -187,7 +187,13 @@ public class BSONWritable implements BSONObject, WritableComparable {
         }
 
     }
-
+    /**
+     * {@inheritDoc}
+     */
+    public String toJSONString(){
+        return _doc.toString();
+    }
+    
     /**
      * {@inheritDoc}
      */
