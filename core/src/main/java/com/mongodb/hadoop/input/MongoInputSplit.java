@@ -82,7 +82,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
                                                add( "uri", _mongoURI.toString() ).
                                                add( "key", _keyField ).
                                                add( "query", _querySpec ).
-                                               add( "field", _fieldSpec ).                                              
+                                               add( "field", _fieldSpec ).
                                                add( "sort", _sortSpec ).
                                                add( "limit", _limit ).
                                                add( "skip", _skip ).
@@ -115,13 +115,13 @@ public class MongoInputSplit extends InputSplit implements Writable {
             // TODO - Figure out how to gracefully mark this as an empty
             log.info( "No Length Header available." + e );
             spec = new BasicDBObject();
-        }         
-        
+        }
+
         _mongoURI = new MongoURI((String) spec.get( "uri" ));
-        _keyField = (String) spec.get( "key" );
-        _querySpec = new BasicDBObject( ((BSONObject) spec.get( "query" )).toMap() );
-        _fieldSpec = new BasicDBObject( ((BSONObject) spec.get( "field" )).toMap() ) ;
-        _sortSpec = new BasicDBObject( ((BSONObject) spec.get( "sort" )).toMap() );
+        _keyField = spec.containsField("key") ? (String) spec.get( "key" ) : "";
+        _querySpec = spec.containsField("query") && spec.get("query") != null ? new BasicDBObject( ((BSONObject) spec.get( "query" )).toMap() ) : new BasicDBObject();
+        _fieldSpec = spec.containsField("field") && spec.get("field") != null ?new BasicDBObject( ((BSONObject) spec.get( "field" )).toMap() ) : new BasicDBObject() ;
+        _sortSpec = spec.containsField("sort") && spec.get("sort") != null ?new BasicDBObject( ((BSONObject) spec.get( "sort" )).toMap() ) : new BasicDBObject();
         _limit = (Integer) spec.get( "limit" );
         _skip = (Integer) spec.get( "skip" );
         _notimeout = (Boolean) spec.get( "notimeout" );
@@ -147,7 +147,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
     }
 
     BSONEncoder getBSONEncoder(){
-        if (_bsonEncoder == null) 
+        if (_bsonEncoder == null)
             _bsonEncoder = new BasicBSONEncoder();
         return _bsonEncoder;
     }

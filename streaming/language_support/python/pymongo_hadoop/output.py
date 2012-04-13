@@ -4,9 +4,14 @@ from bson import BSON
 
 
 class BSONOutput(object):
+<<<<<<< HEAD
     """Custom file class for decoding streaming BSON,
     based upon the Dumbo & "typedbytes" modules at
     https://github.com/klbostee/dumbo &
+=======
+    """Custom file class for encoding streaming BSON,
+    based upon the Dumbo "typedbytes" module at
+>>>>>>> develop/multipleinputs
     https://github.com/klbostee/typedbytes
     """
 

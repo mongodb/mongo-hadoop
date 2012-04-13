@@ -17,6 +17,9 @@
 
 package com.mongodb.hadoop.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.mongodb.*;
 import com.mongodb.util.*;
 import org.apache.commons.logging.*;
@@ -57,6 +60,9 @@ public class MongoConfigUtil {
 
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String OUTPUT_URI = "mongo.output.uri";
+
+    public static final String INPUT_REQUEST = "mongo.input.request";
+    public static final String INPUT_REQUEST_KEY = "mongo.input.request.key";
 
     /**
      * The MongoDB field to read from for the Mapper Input.
@@ -241,6 +247,118 @@ public class MongoConfigUtil {
     public static void setInputFormat( Configuration conf, Class<? extends InputFormat> val ){
         conf.setClass( JOB_INPUT_FORMAT, val, InputFormat.class );
     }
+    public static void setMongoRequests( Configuration conf, String requests ) {
+    	try{
+    		BasicDBList reqs = (BasicDBList) JSON.parse(requests);
+    		for(int i = 0; i < reqs.size(); i++){
+    			addMongoRequest(conf, (BasicDBObject) reqs.get(i));
+    		}
+    	}catch(Exception ex){
+    		log.error("cannot parse " + requests);
+    	}
+    }
+    public static void setMongoRequests( Configuration conf, List<DBObject> requests ) {
+		for(int i = 0; i < requests.size(); i++){
+			addMongoRequest(conf, (BasicDBObject) requests.get(i));
+		}        
+    }
+    public static void setMongoRequests( Configuration conf, DBObject ... requests ) {
+		for(int i = 0; i < requests.length; i++){
+			addMongoRequest(conf, (BasicDBObject) requests[i]);
+		}
+    }
+
+    public static void addMongoRequest( Configuration conf, String uri, String inputFormatClass, String mapperClass, String query, String fields, String sort, int limit, int skip ) {
+		String inputRequests = conf.get(INPUT_REQUEST);
+
+    	String mongoRequest = uri + ";" + inputFormatClass + ";" + mapperClass + ";" + query + ";" + fields + ";" + sort + ";" + limit + ";" + skip;
+    	
+    	conf.set(INPUT_REQUEST, (inputRequests != null ? inputRequests + "\t" : "") + mongoRequest ); 
+    }
+
+    public static void addMongoRequest( Configuration conf, String request ) {
+    	try{
+        	addMongoRequest(conf, (DBObject) JSON.parse(request));    		
+    	}catch(JSONParseException ex){
+        	addMongoRequest(conf, request.toString(), "", "", "", "", "", 0, 0);
+    	}
+    }
+    public static void addMongoRequest( Configuration conf, MongoURI request ) {
+    	addMongoRequest(conf, request.toString());
+    }
+    public static void addMongoRequest( Configuration conf, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass, 
+    		String query) {
+    	addMongoRequest(conf, uri, inputFormatClass.getName(), mapperClass.getName(), query, "", "", 0, 0);
+    }
+    public static void addMongoRequest( Configuration conf, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass, 
+    		String query, String fields) {
+    	addMongoRequest(conf, uri, inputFormatClass.getName(), mapperClass.getName(), query, fields, "", 0, 0);
+    }
+    public static void addMongoRequest( Configuration conf, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass, 
+    		DBObject query, DBObject fields, DBObject sort, int limit, int skip ) {
+    	addMongoRequest(conf, uri, inputFormatClass.getName(), mapperClass.getName(), query.toString(), fields.toString(), sort.toString(), limit, skip);
+    }
+
+    public static void addMongoRequest( Configuration conf, String uri, Class<? extends InputFormat> inputFormatClass, Class<? extends Mapper> mapperClass, 
+    		String query, String fields, String sort, int limit, int skip ) {
+    	addMongoRequest(conf, uri, inputFormatClass.getName(), mapperClass.getName(), query, fields, sort, limit, skip);
+    }
+
+    public static void addMongoRequest( Configuration conf, DBObject request ) {
+		// validation
+		if(!request.containsField("uri")){
+			log.error("there are no uri");
+			//throw new Exception("no uri");
+		}else{
+			addMongoRequest(conf, request.get("uri").toString(),
+					(request.containsField("inputFormatClass") ? request.get("inputFormatClass").toString() : ""), 
+					(request.containsField("mapperClass") ? request.get("mapperClass").toString() : ""), 
+					(request.containsField("query") ? request.get("query").toString() : ""), 
+					(request.containsField("fields") ? request.get("fields").toString(): ""), 
+					(request.containsField("sort") ? request.get("sort").toString() : ""), 
+					(request.containsField("limit") ? (int) Integer.valueOf((String) request.get("limit")) : 0),
+					(request.containsField("skip") ? (int) Integer.valueOf((String) request.get("skip")): 0));
+		}
+    }
+    
+    public static MongoRequest getMongoRequest ( Configuration conf, String uri ){
+    	if(conf.get(INPUT_REQUEST) != null){
+    		String[] requests = conf.get(INPUT_REQUEST).split("\t");
+    		for(int i = 0; i < requests.length; i++){
+    			if(requests[i].indexOf(uri) > -1){
+    				MongoRequest mongoRequest;
+    				try{
+    					mongoRequest = new MongoRequest(requests[i]);
+    				}catch(JSONParseException ex){
+        				String[] attrs = requests[i].split(";");
+        				mongoRequest = new MongoRequest(attrs[0], attrs[1], attrs[2], attrs[3], attrs[4], attrs[5], (int) Integer.valueOf(attrs[6]), (int) Integer.valueOf(attrs[7]));    					
+    				}
+    				return mongoRequest;
+    			}
+    		}
+    	}
+    	return null;
+    }
+    
+    public static List<MongoRequest> getMongoRequests ( Configuration conf ){
+    	List<MongoRequest> mongoRequests = new ArrayList<MongoRequest>();
+    	if(conf.get(INPUT_REQUEST) != null){
+    		String[] requests = conf.get(INPUT_REQUEST).split("\t");
+    		for(int i = 0; i < requests.length; i++){
+    			MongoRequest mongoRequest;
+    			try{
+        			mongoRequest = new MongoRequest(requests[i]);
+    			}catch(JSONParseException ex){
+    				String[] attrs = requests[i].split(";");
+    				mongoRequest = new MongoRequest(attrs[0], attrs[1], attrs[2], attrs[3], attrs[4], attrs[5], (int) Integer.valueOf(attrs[6]), (int) Integer.valueOf(attrs[7]));
+    			}
+    			if(mongoRequest != null){
+    				mongoRequests.add(mongoRequest);
+    			}
+    		}
+    	}
+    	return mongoRequests;
+    }
 
     public static MongoURI getMongoURI( Configuration conf, String key ){
         final String raw = conf.get( key );
@@ -251,7 +369,20 @@ public class MongoConfigUtil {
     }
 
     public static MongoURI getInputURI( Configuration conf ){
-        return getMongoURI( conf, INPUT_URI );
+    	List<MongoRequest> uriList = getMongoRequests(conf);
+    	return uriList.get(0).getInputURI();
+    }
+
+    public static MongoURI getInputURI( Configuration conf , Class<? extends Mapper> mapper){
+    	String[] mapperMap = conf.get("mapred.input.dir.mappers").split(",");
+    	for(int i = 0; i < mapperMap.length; i++){
+    		String[] pathmap = mapperMap[i].split(";");
+    		if(pathmap[1].equals(mapper.getName())){
+    			return new MongoURI(pathmap[0]);
+    		}
+    	}
+    	
+    	return null;
     }
 
     public static DBCollection getCollection( MongoURI uri ){
@@ -314,11 +445,11 @@ public class MongoConfigUtil {
     }
 
     public static void setInputURI( Configuration conf, String uri ){
-        setMongoURIString( conf, INPUT_URI, uri );
+        addMongoRequest(conf, uri);
     }
 
     public static void setInputURI( Configuration conf, MongoURI uri ){
-        setMongoURI( conf, INPUT_URI, uri );
+        addMongoRequest(conf, uri);
     }
 
     public static MongoURI getOutputURI( Configuration conf ){
@@ -383,6 +514,11 @@ public class MongoConfigUtil {
         return getDBObject( conf, INPUT_QUERY );
     }
 
+    public static DBObject getQuery( Configuration conf, String uri ){
+    	getMongoRequest(conf, uri);
+        return getDBObject( conf, INPUT_QUERY );
+    }
+
     public static void setFields( Configuration conf, String fields ){
         setJSON( conf, INPUT_FIELDS, fields );
     }
@@ -396,6 +532,9 @@ public class MongoConfigUtil {
      * use JSON.serialize()
      */
     public static DBObject getFields( Configuration conf ){
+        return getDBObject( conf, INPUT_FIELDS );
+    }
+    public static DBObject getFields( Configuration conf, String uri ){
         return getDBObject( conf, INPUT_FIELDS );
     }
 
@@ -414,8 +553,14 @@ public class MongoConfigUtil {
     public static DBObject getSort( Configuration conf ){
         return getDBObject( conf, INPUT_SORT );
     }
+    public static DBObject getSort( Configuration conf, String uri ){
+        return getDBObject( conf, INPUT_SORT );
+    }
 
     public static int getLimit( Configuration conf ){
+        return conf.getInt( INPUT_LIMIT, 0 );
+    }
+    public static int getLimit( Configuration conf, String uri ){
         return conf.getInt( INPUT_LIMIT, 0 );
     }
 
@@ -424,6 +569,9 @@ public class MongoConfigUtil {
     }
 
     public static int getSkip( Configuration conf ){
+        return conf.getInt( INPUT_SKIP, 0 );
+    }
+    public static int getSkip( Configuration conf, String uri ){
         return conf.getInt( INPUT_SKIP, 0 );
     }
 
