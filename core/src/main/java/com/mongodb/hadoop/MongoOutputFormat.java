@@ -27,6 +27,9 @@ import org.apache.hadoop.mapreduce.*;
 // Hadoop
 
 public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
+    
+    private final String[] updateKeys;
+    private final boolean multiUpdate;
 
     public void checkOutputSpecs( final JobContext context ){ }
 
@@ -41,7 +44,15 @@ public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
         return new MongoRecordWriter( MongoConfigUtil.getOutputCollection( context.getConfiguration() ), context );
     }
 
-    public MongoOutputFormat(){ }
+    public MongoOutputFormat(){ 
+        multiUpdate = false;
+        updateKeys = null;
+    }
+    
+    public MongoOutputFormat(String[] updateKeys, boolean multiUpdate) {
+        this.updateKeys = updateKeys;
+        this.multiUpdate = multiUpdate;
+    }
 
     private static final Log LOG = LogFactory.getLog( MongoOutputFormat.class );
 }
