@@ -46,6 +46,21 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         this.options = null;
     }
     
+    /**
+     * Takes a list of arguments of two types: 
+     * <ul>
+     * <li>A single set of keys to base updating on in the format:<br />
+     * 'update [time, user]' or 'multi [timer, user] for multi updates</li>
+     * 
+     * <li>Multiple indexes to ensure in the format:<br />
+     * '{time: 1, user: 1},{unique: true}'<br />
+     * (The syntax is exactly like db.col.ensureIndex())</li>
+     * </ul>
+     * Example:<br />
+     * STORE Result INTO '$db' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}').
+     * @param args
+     * @throws ParseException
+     */
     public MongoStorage(String... args) throws ParseException {
         this.options = MongoStorageOptions.parseArguments(args);
     }
