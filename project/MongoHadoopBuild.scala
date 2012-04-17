@@ -8,7 +8,7 @@ import AssemblyKeys._
 object MongoHadoopBuild extends Build {
 
   lazy val buildSettings = Seq(
-    version := "1.0.0-SNAPSHOT",
+    version := "1.0.0",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
@@ -38,9 +38,9 @@ object MongoHadoopBuild extends Build {
                                   "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
                                   "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop), nextGen=true),
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
-                                  "1.0" -> hadoopDependencies("1.0.0", false, stockPig),
-                                  "1.0.x" -> hadoopDependencies("1.0.0", false, stockPig),
-                                  "default" -> hadoopDependencies("1.0.0", false, stockPig)
+                                  "1.0" -> hadoopDependencies("1.0.2", false, stockPig),
+                                  "1.0.x" -> hadoopDependencies("1.0.2", false, stockPig),
+                                  "default" -> hadoopDependencies("1.0.2", false, stockPig)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop", 
@@ -124,6 +124,16 @@ object MongoHadoopBuild extends Build {
         x.data.getName.startsWith("mongo-hadoop-core") */
       }
     ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
     val streamingDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
@@ -151,7 +161,7 @@ object MongoHadoopBuild extends Build {
 
   val exampleSettings = dependentSettings 
   val pigSettings = dependentSettings ++ Seq( 
-    //resolvers ++= Seq(Resolvers.hypobytes), /** Seems to have thrift deps I need*/
+    resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
@@ -251,13 +261,15 @@ object Resolvers {
   val mitSimileRepo = "Simile Repo at MIT" at "http://simile.mit.edu/maven"
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/"
   /** Seems to have thrift deps I need*/
-  val hypobytes = "Hypobytes" at "https://hypobytes.com/maven/content/groups/public"
+  val rawsonApache = "rawsonApache" at "http://people.apache.org/~rawson/repo/"
+
 }
 
 object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.7.3"
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
+
 }
 
 // vim: set ts=2 sw=2 sts=2 et:

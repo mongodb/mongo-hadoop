@@ -1,0 +1,1 @@
+hadoop jar target/mongo-hadoop-streaming-assembly*.jar -mapper examples/enron/enron_map.py -reducer examples/enron/enron_reduce.py -inputURI mongodb://127.0.0.1/enron_mail.messages -outputURI mongodb://127.0.0.1/enron_mail.output -file  examples/enron/enron_map.py  -file examples/enron/enron_reduce.py

@@ -6,7 +6,7 @@ This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with
 MongoDB, please see the notes on Streaming Hadoop versions below.
 
-This product is only supports on MongoDB 2.0+; although it should
+This product only supports MongoDB 2.0+; although it should
 (mostly) work with 1.8.x. We cannot provide support for legacy MongoDB
 builds.
 
@@ -62,7 +62,7 @@ Configures a build against Hadoop 0.21 from the mainline Apache distribution.
 
 Unfortunately, we are not aware of any Maven repositories that contain
 artifacts for Hadoop 0.21 at present. You may need to resolve these
-dependencies by hand if you chose to build using this
+dependencies by hand if you choose to build using this
 configuration. We also publish releases to the central Maven
 repository with artifacts customized using the dependent release
 name. Our "default" build has no artifact name attached and supports
@@ -135,7 +135,7 @@ optimize/paralellize input processing for Mappers.
 
 If '*mongo.input.split.create_input_splits*' is **false** (it defaults
 to **true**) then MongoHadoop will use **no** splits. Hadoop will
-treat the entire collection in a single, giant, *Input*.  This is
+treat the entire collection as a single, giant, *Input*.  This is
 primarily intended for debugging purposes.
 
 When true, as by default, the following possible behaviors exist:
@@ -151,32 +151,32 @@ When true, as by default, the following possible behaviors exist:
        Split*.  Basically, this means the mongodb sharding system does
        99% of the preconfig work for us and is a good thing™
 
-     * If '*read_shard_chunks*' is **false** and
+     * If '*mongo.input.split.read_shard_chunks*' is **false** and
        '*mongo.input.split.read_from_shards*' is **true** (it defaults
        to **false**) then we connect to the `mongod` or replica set
        for each shard individually and each shard becomes an input
        split. The entire content of the collection on the shard is one
        split. Only use this configuration in rare situations.
 
-     * If '*read_shard_chunks*' is **true** and
+     * If '*mongo.input.split.read_shard_chunks*' is **true** and
        '*mongo.input.split.read_from_shards*' is **true** (it defaults
        to **false**) MongoHadoop reads the chunk boundaries from
        the config server but then reads data directly from the shards
        without using the `mongos`.  While this may seem like a good
        idea, it can cause erratic behavior if MongoDB balances chunks
        during a Hadoop job. This is not a recommended configuration
-       for write heavy applications but may provide effective
-       parallelism in read heavy apps.
+       for write-heavy applications but may provide effective
+       parallelism in read-heavy apps.
 
-     * If both '*create_input_splits*' and '*read_from_shards*' are
-       **false** disabled then we pretend there is no sharding and use
-       the "unsharded split" path. When '*read_shard_chunks*' is
+     * If both '*mongo.input.split.create_input_splits*' and '*mongo.input.split.read_from_shards*' are
+       **false** then we pretend there is no sharding and use
+       the "unsharded split" path. When '*mongo.input.split.read_shard_chunks*' is
        **false** MongoHadoop reads everything through mongos as a
        single split.
 
 ### "Unsharded Splits"
 
-"Unsharded Splits" refers to the system that MongoHadoop uses to
+"Unsharded Splits" refers to the method that MongoHadoop uses to
 calculate new splits. You may use "Unsharded splits" with sharded
 MongoDB options.
 
@@ -187,7 +187,7 @@ This is only used:
 
 - for sharded collections when
   '*mongo.input.split.create_input_splits*' is **true** *and*
-  '*read_shard_chunks*' is **false**.
+  '*mongo.input.split.read_shard_chunks*' is **false**.
 
 In these cases, MongoHadoop generates multiple InputSplits. Users
 have control over two factors in this system.
@@ -199,10 +199,10 @@ have control over two factors in this system.
 
 * *mongo.input.split.split_key_pattern* - Is a MongoDB key pattern
   that follows [the same rules as shard key selection](http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys).
-  This key pattern has some requires, (i.e. must have an index,
+  This key pattern has some requirements, (i.e. must have an index,
   unique, and present in all documents.) MongoHadoop uses this key to
   determine split points. It defaults to `{ _id: 1 }` but you may find
-  that its more ideal  to optimize the mapper distribution by
+  that it's more ideal to optimize the mapper distribution by
   configuring this value.
 
 For all three paths, you may specify a custom query filter for the
@@ -214,8 +214,8 @@ data but still get efficient splitting.
 ### Pig
 
 MongoHadoop includes the MongoStorage module for Pig. Currently, this
-only supports *saving* data to MongoDB. Support for load support is
-forthcoming in a future release.
+only supports *saving* data to MongoDB. Support for loading data from MongodDB 
+is forthcoming in a future release.
 
 ## Examples
 

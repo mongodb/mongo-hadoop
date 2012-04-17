@@ -6,4 +6,4 @@ organization := "org.mongodb"
 seq(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 
 
-hadoopRelease in ThisBuild := "cdh4"
+hadoopRelease in ThisBuild := "default"

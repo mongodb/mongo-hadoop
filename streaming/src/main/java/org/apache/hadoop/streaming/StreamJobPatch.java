@@ -60,7 +60,15 @@ public class StreamJobPatch extends StreamJob {
             mapCmd_ = cmdLine.getOptionValue("mapper"); 
             comCmd_ = cmdLine.getOptionValue("combiner"); 
             redCmd_ = cmdLine.getOptionValue("reducer"); 
-      
+            String[] values = cmdLine.getOptionValues("file");
+
+            if (values != null && values.length > 0) {
+                for (String file : values) {
+                   super.packageFiles_.add(file);
+                }
+
+                validate(super.packageFiles_);
+            }
                      
             String fsName = cmdLine.getOptionValue("dfs");
             if (null != fsName){
@@ -115,6 +123,17 @@ public class StreamJobPatch extends StreamJob {
           exitUsage(argv_.length > 0 && "-info".equals(argv_[0]));
         }
 
+    }
+
+      
+    private static void validate(final List<String> values) throws IllegalArgumentException {
+        for (String file : values) {
+          File f = new File(file);  
+          if (!f.canRead()) {
+            throw new IllegalArgumentException("File : " + f.getAbsolutePath() 
+                                               + " is not readable."); 
+          }
+        }
     }
     private void setupOptions(){
     
