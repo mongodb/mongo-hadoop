@@ -25,10 +25,23 @@ import org.bson.*;
 import java.io.*;
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
+    
+    private final String[] updateKeys;
+    private final boolean multiUpdate;
 
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx ){
+        this(c, ctx, null);
+    }
+    
+    public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx, String[] updateKeys) {
+        this(c, ctx, updateKeys, false);
+    }
+    
+    public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx, String[] updateKeys, boolean multi) {
         _collection = c;
         _context = ctx;
+        this.updateKeys = updateKeys;
+        this.multiUpdate = false;
     }
 
     public void close( TaskAttemptContext context ){
@@ -95,11 +108,30 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
 
         try {
-            _collection.save( o );
+            if (updateKeys == null) {
+                _collection.save( o );
+            } else {
+                // Form the query fields
+                DBObject query = new BasicDBObject(updateKeys.length);
+                for (String updateKey : updateKeys) {
+                    query.put(updateKey, o.get(updateKey));
+                    o.removeField(updateKey);
+                }
+                // If _id is null remove it, we don't want to override with null _id
+                if (o.get("_id") == null) {
+                    o.removeField("_id");
+                }
+                DBObject set = new BasicDBObject().append("$set", o);
+                _collection.update(query, set, true, multiUpdate);
+            }
         }
         catch ( final MongoException e ) {
             throw new IOException( "can't write to mongo", e );
         }
+    }
+    
+    public void ensureIndex(DBObject index, DBObject options) {
+        _collection.ensureIndex(index, options);
     }
 
     public TaskAttemptContext getContext(){

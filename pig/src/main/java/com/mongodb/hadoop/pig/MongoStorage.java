@@ -31,6 +31,7 @@ import org.apache.pig.ResourceSchema.ResourceFieldSchema;
 
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.*;
 
 public class MongoStorage extends StoreFunc implements StoreMetadata {
@@ -39,8 +40,30 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     static final String PIG_OUTPUT_SCHEMA = "mongo.pig.output.schema";
     static final String PIG_OUTPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.output.schema.udf_context";
     protected ResourceSchema schema = null;
+    private final MongoStorageOptions options;
 
-    public MongoStorage(){ }
+    public MongoStorage(){ 
+        this.options = null;
+    }
+    
+    /**
+     * Takes a list of arguments of two types: 
+     * <ul>
+     * <li>A single set of keys to base updating on in the format:<br />
+     * 'update [time, user]' or 'multi [timer, user] for multi updates</li>
+     * 
+     * <li>Multiple indexes to ensure in the format:<br />
+     * '{time: 1, user: 1},{unique: true}'<br />
+     * (The syntax is exactly like db.col.ensureIndex())</li>
+     * </ul>
+     * Example:<br />
+     * STORE Result INTO '$db' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}').
+     * @param args
+     * @throws ParseException
+     */
+    public MongoStorage(String... args) throws ParseException {
+        this.options = MongoStorageOptions.parseArguments(args);
+    }
 
 
     public void checkSchema( ResourceSchema schema ) throws IOException{
@@ -178,15 +201,20 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
         try {
         // Parse the schema from the string stored in the properties object.
-        schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+            schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
         }
         catch (Exception e) {
             e.printStackTrace();
         }
+        
+        // If we are insuring any indexes do so now:
+        for (MongoStorageOptions.Index in : options.getIndexes()) {
+            _recordWriter.ensureIndex(in.index, in.options);
+        }
     }
 
     public OutputFormat getOutputFormat() throws IOException{
-        final MongoOutputFormat outputFmt = new MongoOutputFormat();
+        final MongoOutputFormat outputFmt = new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
         log.info( "OutputFormat... " + outputFmt );
         return outputFmt;
     }
