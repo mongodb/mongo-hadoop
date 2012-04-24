@@ -1,6 +1,6 @@
 # MongoDB Hadoop Adapter
 
-CURRENT RELEASE: 1.0.0-rc0
+CURRENT RELEASE: 1.0.0
 
 This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with
