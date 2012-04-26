@@ -1,0 +1,22 @@
+{
+  "author": "Mike O'Brien <mikeo@10gen.com> (http://mpobrien.net)",
+  "name": "node_mongo_hadoop",
+  "description": "Bindings to connect to the MongoDB adapter for writing Map/Reduce jobs in Javascript with Hadoop Streaming.",
+  "version": "0.0.2",
+  "homepage": "api.mongodb.org/hadoop",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mpobrien/node_mongo_hadoop.git"
+  },
+  "main": "./node_mongo_hadoop",
+  "dependencies": {
+    "mongodb": "*",
+    "buffers": "*",
+    "underscore": "*"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}

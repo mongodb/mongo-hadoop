@@ -1,0 +1,1 @@
+hadoop jar target/mongo-hadoop-streaming-assembly*.jar -mapper examples/enron/enron_map.js -reducer examples/enron/enron_reduce.js -inputURI mongodb://127.0.0.1/enron_mail.messages -outputURI mongodb://127.0.0.1/enron_mail.output -file  examples/enron/enron_map.js  -file examples/enron/enron_reduce.js
