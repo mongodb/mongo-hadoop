@@ -13,7 +13,7 @@ function mapFunc(doc, callback){
         var to_field = doc['headers']['To']
         var recips = []
         to_field.split(',').forEach(function(to){
-          callback( {'_id': {'f':from_field, 't':to.trim()}, 'count': 1} )
+          callback( {'_id': {'f':from_field, 't':trimString(to)}, 'count': 1} )
         });
     }
 }
