@@ -1,5 +1,9 @@
 # MongoDB Hadoop Adapter
 
+The MongoDB Hadoop Adapter is a plugin for Hadoop that provides Hadoop the ability to
+use MongoDB as an input source and/or an output source. 
+
+
 CURRENT RELEASE: 1.0.0
 
 This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
