@@ -7,7 +7,7 @@ use MongoDB as an input source and/or an output source.
 CURRENT RELEASE: 1.0.0
 
 This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
-(Which ships 0.20.2).  If you wish to use Hadoop Streaming with
+(which is based on Hadoop 1.0).  If you wish to use Hadoop Streaming with
 MongoDB, please see the notes on Streaming Hadoop versions below.
 
 This product only supports MongoDB 2.0+; although it should
@@ -80,7 +80,7 @@ for configuration and Maven artifacts appear below each release.
 
 ### Cloudera Release 3
 
-This derives from Apache Hadoop 0.20.2, but includes many custom
+This derives from Apache Hadoop 1.0, but includes many custom
 patches. Patches include binary streaming, and Pig 0.8.1.  This
 target compiles *ALL* Modules, including Streaming.
 
@@ -113,13 +113,10 @@ This includes Pig 0.9.1 and Hadoop Streaming.
 This build is **not** published to Maven because of upstream
 dependency availability.
 
-### Apache Hadoop 0.23
+### Apache Hadoop 2.0
 
-Support is *forthcoming*.
-
-This is an alpha branch with ongoing work by
-[Hortonworks](http://hortonworks.com). Apache Hadoop 0.23 is "newer"
-than Apache Hadoop 1.0.
+Support is *forthcoming*. Hadoop 2.0 is currently in alpha.
+Hadoop 2.0 was previously called Hadoop 0.23.
 
 The MongoDB Hadoop Adapter currently supports the following features.
 
