@@ -32,3 +32,4 @@ project/target/*
 streaming/target/*
 target/*
 .lib/*
+*.gem
