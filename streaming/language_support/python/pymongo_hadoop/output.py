@@ -32,7 +32,7 @@ class BSONOutput(object):
     def _writes(self, iterable):
         w = self.write
         for obj in iterable:
-            if isinstance(obj, dict):
+            if isinstance(obj, dict) or (isinstance(obj, tuple) and len(obj) == 2):
                 w(obj)
             elif isinstance(obj, collections.Iterable):
                 for o in obj:
