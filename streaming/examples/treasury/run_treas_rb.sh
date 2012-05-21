@@ -1,0 +1,1 @@
+hadoop jar target/mongo-hadoop-streaming-assembly*.jar -mapper examples/treasury/mapper.rb -reducer examples/treasury/reducer.rb -inputURI mongodb://127.0.0.1/demo.yield_historical.in -outputURI mongodb://127.0.0.1/demo.yield_historical.streaming.out
