@@ -1,0 +1,5 @@
+require 'bson'
+require 'mongo-hadoop/input'
+require 'mongo-hadoop/output'
+require 'mongo-hadoop/mapper'
+require 'mongo-hadoop/reducer'

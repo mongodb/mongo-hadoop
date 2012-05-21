@@ -1,0 +1,1 @@
+hadoop jar target/mongo-hadoop-streaming-assembly*.jar -mapper examples/twitter/twit_map.rb -reducer examples/twitter/twit_reduce.rb -inputURI mongodb://127.0.0.1/test.live -outputURI mongodb://127.0.0.1/test.twit_reduction
