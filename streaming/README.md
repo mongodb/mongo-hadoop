@@ -9,16 +9,17 @@ Streaming support + MongoDB **requires** your Hadoop distribution include the pa
 
 For the mainline Apache Hadoop distribution, these patches were merged for the 0.21.0 release.  We have verified as well that the [Cloudera](http://cloudera.com) distribution (while based on 0.20.x still) includes these patches in CDH3 Update 1; anecdotal evidence (which needs confirmation) indicates they may have been there since CDH2, and likely exist in CDH3 as well.
 
+Building Streaming
+------------------
 
-By default, The Mongo-Hadoop project builds against Apache 0.20.203 which does *not* include these patches.  To build/enable Streaming support you must build against either Cloudera CDH3u1 or Hadoop 0.21.0; you can change the Hadoop version of the build in Maven by specifying the `hadoop.release` property:
+`./sbt mongo-hadoop-streaming/assembly`
 
-        mvn -Dhadoop.release=cdh3 
-        mvn -Dhadoop.release=cloudera
+This will create a new “fat” jar in: `streaming/target/mongo-hadoop-streaming-assembly-1.0.0.jar`
 
-Will both build against Cloudera CDH3u1, while:
+This jar file is runnable with hadoop jar, and contains all of the dependencies necessary to run the job.
 
+Setting up Language Support
 
-        mvn -Dhadoop.release=apache-hadoop-0.21
+Each individual scripting language will have different requirements for working with MongoDB + Hadoop Streaming. Once you have the jar file built for mongo-hadoop-streaming, you will need to build and deploy the support libraries for your chosen language.
 
-
-Will build against Hadoop 0.21 from the mainline Apache distribution.  Unfortunately we are not aware of any Maven Repositories which currently contain artifacts for Hadoop 0.21, and you may need to resolve these dependencies by hand if you choose to go down the 'Vanilla' route.
+It will also be necessary to ensure these libraries are available on each Hadoop node in your cluster, along with the mongo-hadoop-core driver as outlined in the main setup instructions. However, you do not need to distribute the mongo-hadoop-streaming jar anywhere.
