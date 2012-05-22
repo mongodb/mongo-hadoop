@@ -6,7 +6,7 @@ use MongoDB as an input source and/or an output source.
 
 CURRENT RELEASE: 1.0.0
 
-This release primarly supports Hadoop 1.0 or Cloudera CHD3 Update 3
+This release primarly supports Hadoop 1.0 or Cloudera CDH3 Update 3
 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with
 MongoDB, please see the notes on Streaming Hadoop versions below.
 
