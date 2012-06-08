@@ -48,7 +48,7 @@ public class MongoSplitter {
         }
 
         DB db = mongo.getDB( uri.getDatabase() );
-        DBCollection coll = db.getCollection( uri.getCollection() );
+        DBCollection coll = MongoConfigUtil.getCollection(uri); //db.getCollection( uri.getCollection() );
         final CommandResult stats = coll.getStats();
         
         final boolean isSharded = stats.getBoolean( "sharded", false );
