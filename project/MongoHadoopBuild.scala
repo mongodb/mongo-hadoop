@@ -7,11 +7,13 @@ import AssemblyKeys._
 
 object MongoHadoopBuild extends Build {
 
+
   lazy val buildSettings = Seq(
     version := "1.0.0",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
+
   )
 
   /** The version of Hadoop to build against. */
@@ -28,7 +30,7 @@ object MongoHadoopBuild extends Build {
   private val cdh4CoreHadoop = "0.23.0-mr1-%s".format(cdh4Rel)
   private val cdh4Pig = "0.9.2-%s".format(cdh4Rel)
 
-  private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.205.0", false, stockPig),
+  private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.2-hawk", false, "0.9.0-mortar"),
                                   "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
                                   "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
@@ -207,9 +209,9 @@ object MongoHadoopBuild extends Build {
       println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(altStreamingVer.getOrElse(hadoopVersion)))
 
       val deps = if (altStreamingVer.isDefined || nextGen)
-        Seq("org.apache.hadoop" % "hadoop-common" % altStreamingVer.getOrElse(hadoopVersion))
+        Seq(/**"org.apache.hadoop" % "hadoop-common" % altStreamingVer.getOrElse(hadoopVersion)*/)
       else 
-        Seq("org.apache.hadoop" % "hadoop-core" % hadoopVersion/*, 
+        Seq(/**"org.apache.hadoop" % "hadoop-core" % hadoopVersion, 
             ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion notTransitive()).exclude("commons-daemon", "commons-daemon")*/)
       if (nextGen) {
         
@@ -217,10 +219,10 @@ object MongoHadoopBuild extends Build {
 
         
         if (hadoopVersion.startsWith("0.22")) {
-            deps ++ Seq("org.apache.hadoop" % "hadoop-mapred" % altStreamingVer.getOrElse(hadoopVersion))
+            deps ++ Seq(/**"org.apache.hadoop" % "hadoop-mapred" % altStreamingVer.getOrElse(hadoopVersion)*/)
         } else if (hadoopVersion.startsWith("0.23")) {
-          deps ++ Seq(mrDep("core"), mrDep("common"), mrDep("shuffle"),
-                      mrDep("shuffle"), mrDep("app"), mrDep("jobclient"))
+          deps ++ Seq(/**mrDep("core"), mrDep("common"), mrDep("shuffle"),
+                      mrDep("shuffle"), mrDep("app"), mrDep("jobclient")*/)
         } else {
           sys.error("Don't know how to do any special mapping for Hadoop Version " + hadoopVersion)
         }
@@ -237,7 +239,7 @@ object MongoHadoopBuild extends Build {
       println("*** Adding Pig Dependency for Version '%s'".format(pigVersion))
 
       Seq(
-        "org.apache.pig" % "pig" % pigVersion      
+        /**"org.apache.pig" % "pig" % pigVersion     */
       )
     }
   }
@@ -271,5 +273,6 @@ object Dependencies {
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
 
 }
+
 
 // vim: set ts=2 sw=2 sts=2 et:
