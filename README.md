@@ -217,9 +217,9 @@ data but still get efficient splitting.
 
 ### Pig
 
-MongoHadoop includes the MongoStorage module for Pig. Currently, this
-only supports *saving* data to MongoDB. Support for loading data from MongodDB 
-is forthcoming in a future release.
+MongoHadoop includes the MongoStorage and the MongoLoader module for Pig.
+Examples of loading and storing to a MongoDB from Pig can be found
+in `examples/pigtutorial`.
 
 ## Examples
 
@@ -282,18 +282,28 @@ query the `yield_historical.out collection`.
 The MongoHadoop distribution includes a modified version of the Pig
 Tutorial from the Pig distribution for testing.
 
-This script differs from the pig tutorial in that it saves the job
-results to MongoDB.
+This script differs from the pig tutorial in that it loads the data
+from a MongoDB and saves the results to a MongoDB.
 
 The use of Pig assumes you have Hadoop and Pig installed and
 configured on your system.
 
-Make sure you've built using `ant jar` and then run:
+To populate your MongoDB with the relevant data for the example
+configure the script `examples/pigtutorial/populateMongo.pig` to
+include the connection URI to your MongoDB, then run:
 
-    pig -x local examples/test.pig
+	pig -x local examples/pigtutorial/populateMongo.pig
 
-You should find the results in the `test` DB inside the `pig.output`
-collection.
+Next configure the script `examples/pigtutorial/test.pig` to include 
+the connection URI to your MongoDB. Make sure you've built 
+using `ant jar`, then run:
+
+    pig -x local examples/pigtutorial/test.pig
+
+You should find the data and the results in your MongoDB.
+
+NOTE - Make sure these version artifacts on the built jars match those
+in the script
 
 
 ## KNOWN ISSUES
