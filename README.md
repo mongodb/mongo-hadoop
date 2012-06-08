@@ -219,7 +219,7 @@ data but still get efficient splitting.
 
 MongoHadoop includes the MongoStorage and the MongoLoader module for Pig.
 Examples of loading and storing to a MongoDB from Pig can be found
-in `examples/pigtutorial` example.
+in `examples/pigtutorial`.
 
 ## Examples
 
