@@ -44,7 +44,7 @@ Discussion: http://groups.google.com/group/mongodb-user/
 
 The Mongo-Hadoop adapter uses the
 [SBT Build Tool](https://github.com/harrah/xsbt) tool for
-compilation. SBT provides superior support for discreet configurations
+compilation. SBT provides superior support for discrete configurations
 targeting multiple Hadoop versions. The distribution includes
 self-bootstrapping copy of SBT in the distribution as `sbt`.  Create a
 copy of the jar files using the following command:
