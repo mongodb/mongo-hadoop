@@ -31,7 +31,6 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         _cursor = split.getCursor();
     }
 
-    @Override
     public void close(){
         if ( _cursor != null )
             _cursor.close();
