@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.input;
+package com.mongodb.hadoop.hive.input;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.Log;
@@ -8,10 +8,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
 import java.io.DataInputStream;
@@ -37,27 +34,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * limitations under the License.
  */
 
-public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritable> {
+public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private FileSplit fileSplit;
-    private Configuration conf;
     private BSONReader rdr;
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
     private BSONWritable value;
+    private Configuration conf;
 
-    @Override
-    public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
-        this.fileSplit = (FileSplit) inputSplit;
-        this.conf = context.getConfiguration();
+    public BSONFileRecordReader(Configuration conf, FileSplit fileSplit) throws IOException {
+        this.fileSplit = fileSplit;
+        this.conf = conf;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-        FSDataInputStream in = null;
-        in = fs.open(file);
+        FSDataInputStream in = fs.open(file);
         rdr = new BSONReader(in);
     }
 
-    @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
+    protected boolean nextKeyValue() throws IOException {
         if (rdr.hasNext()) {
             value = new BSONWritable( rdr.next() );
             return true;
@@ -66,23 +60,36 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         }
     }
 
-    @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-        return NullWritable.get();
-    }
-
-    @Override
-    public BSONWritable getCurrentValue() throws IOException, InterruptedException {
-        return value;
-    }
-
-    @Override
-    public float getProgress() throws IOException, InterruptedException {
+    public float getProgress() throws IOException {
         return rdr.hasNext() ? 1.0f : 0.0f;
     }
 
 
-    @Override
+    public boolean next(NullWritable key, BSONWritable value) throws IOException {
+        if ( nextKeyValue() ){
+            log.trace( "Had another k/v" );
+            value.putAll( this.value );
+            return true;
+        }
+        else{
+            log.info( "Cursor exhausted." );
+            value = null;
+            return false;
+        }
+    }
+
+    public NullWritable createKey() {
+        return NullWritable.get();
+    }
+
+    public BSONWritable createValue() {
+        return new BSONWritable();
+    }
+
+    public long getPos() throws IOException {
+        return 0;
+    }
+
     public void close() throws IOException {
         // do nothing
     }
