@@ -153,8 +153,18 @@ public class BSONSerde implements SerDe {
                 LOG.trace("***" + x);
                 // Attempt typesafe casting
                 if (!doc.containsField(colName)) {
-                    value = null;
-                } else if (ti.getTypeName().equalsIgnoreCase(
+                    LOG.debug("Cannot find field '" + colName + "' in " + doc.keySet());
+                    for (String k : doc.keySet()) {
+                        if (k.trim().equalsIgnoreCase(colName)) {
+                            colName = k;
+                            LOG.debug("K: " + k + "colName: " + colName);
+                        } else {
+                            LOG.info("FAIL ... K: " + k + "colName: " + colName);
+                        }
+
+                    }
+                }
+                if (ti.getTypeName().equalsIgnoreCase(
                                 Constants.DOUBLE_TYPE_NAME)) {
                     value = (Double) doc.get(colName);
                 } else if (ti.getTypeName().equalsIgnoreCase(
