@@ -158,10 +158,7 @@ public class BSONSerde implements SerDe {
                         if (k.trim().equalsIgnoreCase(colName)) {
                             colName = k;
                             LOG.debug("K: " + k + "colName: " + colName);
-                        } else {
-                            LOG.info("FAIL ... K: " + k + "colName: " + colName);
-                        }
-
+                        } 
                     }
                 }
                 if (ti.getTypeName().equalsIgnoreCase(
