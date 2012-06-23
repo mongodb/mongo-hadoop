@@ -77,6 +77,7 @@ object MongoHadoopBuild extends Build {
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
     resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo, Resolvers.sonatypeRels),
 
+    libraryDependencies += ("com.novocode" % "junit-interface" % "0.8" % "test"),
     libraryDependencies <<= (libraryDependencies) { deps =>
       
       val scala: ModuleID = deps.find { x => x.name == "scala-library" }.map ( y => 
@@ -165,7 +166,23 @@ object MongoHadoopBuild extends Build {
 
   val exampleSettings = dependentSettings 
 
-  val pigSettings = dependentSettings ++ Seq( 
+  val pigSettings = dependentSettings ++ assemblySettings ++ Seq( 
+    excludedJars in assembly <<= (fullClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-pig")
+      }
+    ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
+ 
     resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
