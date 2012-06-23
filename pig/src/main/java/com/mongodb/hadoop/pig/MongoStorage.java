@@ -214,7 +214,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
     public OutputFormat getOutputFormat() throws IOException{
-        final MongoOutputFormat outputFmt = new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
+        final MongoOutputFormat outputFmt = options == null ? new MongoOutputFormat() : new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
         log.info( "OutputFormat... " + outputFmt );
         return outputFmt;
     }
