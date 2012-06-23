@@ -304,10 +304,6 @@ collection.
   they won't parse. Use {"$regex": "^foo", "$options": ""}
   instead. .. Make sure to omit the slashes.
 
-* [HADOOP-19 - MongoStorage fails when tuples w/i bags are not named](https://jira.mongodb.org/browse/HADOOP-19)
-
-  This is due to an open Apache bug, [PIG-2509](https://issues.apache.org/jira/browse/PIG-2509).
-
 ### Streaming
 
 Streaming support in MongoHadoop **requires** that the Hadoop
