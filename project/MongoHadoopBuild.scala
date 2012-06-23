@@ -55,6 +55,10 @@ object MongoHadoopBuild extends Build {
                            base = file("hive"),
                            settings = hiveSettings ) dependsOn( core )
 
+  lazy val scoobi = Project( id = "mongo-hadoop-scoobi",
+                          base = file("scoobi"),
+                          settings = scoobiSettings ) dependsOn( core )
+
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
                           settings = pigSettings ) dependsOn( core )
@@ -115,6 +119,29 @@ object MongoHadoopBuild extends Build {
 
   lazy val parentSettings = baseSettings ++ Seq( 
     publishArtifact := false
+  )
+
+  lazy val scoobiSettings = baseSettings ++ assemblySettings ++ Seq( 
+    mainClass in assembly := Some("com.mongodb.hadoop.scoobi.test.TestJob"),
+    excludedJars in assembly <<= (dependencyClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-scoobi") || x.data.getName.startsWith("scoobi") || x.data.getName.startsWith("casbah") || x.data.getName.startsWith("scala-library")
+      }
+    ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
+ 
+    libraryDependencies ++= Seq(Dependencies.casbah, Dependencies.scoobi),
+    resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.nictaScoobi),
+    scalacOptions ++= Seq("-Ydependent-method-types", "-deprecation")
   )
 
   lazy val flumeSettings = baseSettings ++ Seq(
@@ -305,6 +332,7 @@ object Resolvers {
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/"
   /** Seems to have thrift deps I need*/
   val rawsonApache = "rawsonApache" at "http://people.apache.org/~rawson/repo/"
+  val nictaScoobi = "Nicta Scoobi" at "http://nicta.github.com/scoobi/releases/"
 
 }
 
@@ -313,6 +341,8 @@ object Dependencies {
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
   val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.9.0"
+  val casbah = "org.mongodb" %% "casbah" % "2.3.0"
+  val scoobi = "com.nicta" %% "scoobi" % "0.4.0" % "provided" 
 }
 
 // vim: set ts=2 sw=2 sts=2 et:
