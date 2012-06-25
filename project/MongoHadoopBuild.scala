@@ -9,7 +9,7 @@ object MongoHadoopBuild extends Build {
 
 
   lazy val buildSettings = Seq(
-    version := "1.0.0",
+    version := "1.1.0-SNAPSHOT",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
@@ -40,9 +40,9 @@ object MongoHadoopBuild extends Build {
                                   "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
                                   "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop), nextGen=true),
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
-                                  "1.0" -> hadoopDependencies("1.0.2", false, stockPig),
-                                  "1.0.x" -> hadoopDependencies("1.0.2", false, stockPig),
-                                  "default" -> hadoopDependencies("1.0.2", false, stockPig)
+                                  "1.0" -> hadoopDependencies("1.0.3", false, stockPig),
+                                  "1.0.x" -> hadoopDependencies("1.0.3", false, stockPig),
+                                  "default" -> hadoopDependencies("1.0.3", false, stockPig)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop", 
@@ -53,6 +53,13 @@ object MongoHadoopBuild extends Build {
                            base = file("core"), 
                            settings = coreSettings  ) 
 
+  lazy val hive = Project( id = "mongo-hadoop-hive",
+                           base = file("hive"),
+                           settings = hiveSettings ) dependsOn( core )
+
+  lazy val scoobi = Project( id = "mongo-hadoop-scoobi",
+                          base = file("scoobi"),
+                          settings = scoobiSettings ) dependsOn( core )
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
@@ -72,9 +79,11 @@ object MongoHadoopBuild extends Build {
                                      settings = exampleSettings ) dependsOn( core )
 
 
+
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
     resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo, Resolvers.sonatypeRels),
 
+    libraryDependencies += ("com.novocode" % "junit-interface" % "0.8" % "test"),
     libraryDependencies <<= (libraryDependencies) { deps =>
       
       val scala: ModuleID = deps.find { x => x.name == "scala-library" }.map ( y => 
@@ -112,6 +121,29 @@ object MongoHadoopBuild extends Build {
 
   lazy val parentSettings = baseSettings ++ Seq( 
     publishArtifact := false
+  )
+
+  lazy val scoobiSettings = baseSettings ++ assemblySettings ++ Seq( 
+    mainClass in assembly := Some("com.mongodb.hadoop.scoobi.test.TestJob"),
+    excludedJars in assembly <<= (dependencyClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-scoobi") || x.data.getName.startsWith("scoobi") || x.data.getName.startsWith("casbah") || x.data.getName.startsWith("scala-library")
+      }
+    ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
+ 
+    libraryDependencies ++= Seq(Dependencies.casbah, Dependencies.scoobi),
+    resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.nictaScoobi),
+    scalacOptions ++= Seq("-Ydependent-method-types", "-deprecation")
   )
 
   lazy val flumeSettings = baseSettings ++ Seq(
@@ -162,13 +194,51 @@ object MongoHadoopBuild extends Build {
   )
 
   val exampleSettings = dependentSettings 
-  val pigSettings = dependentSettings ++ Seq( 
+
+  val pigSettings = dependentSettings ++ assemblySettings ++ Seq( 
+    excludedJars in assembly <<= (fullClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-pig")
+      }
+    ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
+ 
     resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) => 
 
       val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
       hadoopDeps._4()
     }
+  )
+
+  val hiveSettings = dependentSettings ++ assemblySettings ++ Seq( 
+    excludedJars in assembly <<= (fullClasspath in assembly) map ( cp => 
+      cp filterNot { x =>
+        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-hive")
+      }
+    ),
+    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
+      ((base * "*").get collect {
+        case f if f.getName.toLowerCase == "git-hash" => f
+        case f if f.getName.toLowerCase == "license" => f
+      })  ++
+      ((base / "META-INF" * "*").get collect {
+        case f if f.getName.toLowerCase == "license" => f
+        case f if f.getName.toLowerCase == "manifest.mf" => f
+      })
+    } },
+ 
+    resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
+    libraryDependencies ++= Seq(Dependencies.hiveSerDe)
   )
 
   val coreSettings = dependentSettings ++ Seq( 
@@ -179,12 +249,12 @@ object MongoHadoopBuild extends Build {
       hadoopDeps._2()
     }, 
     libraryDependencies <<= (scalaVersion, libraryDependencies) { (sv, deps) =>
-      val versionMap = Map("2.8.0" -> ("specs2_2.8.0", "1.5"),
-                           "2.8.1" -> ("specs2_2.8.1", "1.5"),
+      val versionMap = Map("2.8.1" -> ("specs2_2.8.1", "1.5"),
                            "2.9.0" -> ("specs2_2.9.0", "1.7.1"),
                            "2.9.0-1" -> ("specs2_2.9.0", "1.7.1"),
-                           "2.9.1" -> ("specs2_2.9.1", "1.7.1"))
-      val tuple = versionMap.getOrElse(sv, sys.error("Unsupported Scala version for Specs2"))
+                           "2.9.1" -> ("specs2_2.9.1", "1.7.1"),
+                           "2.9.2" -> ("specs2_2.9.2", "1.10"))
+      val tuple = versionMap.getOrElse(sv, sys.error("Unsupported Scala version '%s' for Specs2".format(sv)))
       deps :+ ("org.specs2" % tuple._1 % tuple._2 % "test")
     },
     autoCompilerPlugins := true,
@@ -264,6 +334,7 @@ object Resolvers {
   val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/"
   /** Seems to have thrift deps I need*/
   val rawsonApache = "rawsonApache" at "http://people.apache.org/~rawson/repo/"
+  val nictaScoobi = "Nicta Scoobi" at "http://nicta.github.com/scoobi/releases/"
 
 }
 
@@ -271,7 +342,9 @@ object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.7.3"
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
-
+  val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.9.0"
+  val casbah = "org.mongodb" %% "casbah" % "2.3.0"
+  val scoobi = "com.nicta" %% "scoobi" % "0.4.0" % "provided" 
 }
 
 

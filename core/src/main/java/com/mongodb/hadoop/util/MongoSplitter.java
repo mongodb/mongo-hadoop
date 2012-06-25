@@ -40,15 +40,10 @@ public class MongoSplitter {
          * split; Actual querying will be done on the individual mappers.
          */
         MongoURI uri = conf.getInputURI();
-        Mongo mongo;
-        try {
-            mongo = uri.connect();
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException( " Unable to connect to MongoDB at '" + uri + "'", e);
-        }
-
-        DB db = mongo.getDB( uri.getDatabase() );
-        DBCollection coll = MongoConfigUtil.getCollection(uri); //db.getCollection( uri.getCollection() );
+        DBCollection coll = MongoConfigUtil.getCollection(uri);
+        DB db = coll.getDB(); 
+        Mongo mongo = db.getMongo();
+        
         final CommandResult stats = coll.getStats();
         
         final boolean isSharded = stats.getBoolean( "sharded", false );

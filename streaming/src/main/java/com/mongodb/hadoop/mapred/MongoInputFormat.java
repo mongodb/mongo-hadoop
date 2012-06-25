@@ -36,10 +36,10 @@ import org.bson.*;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.mapred.input.*;
 import com.mongodb.hadoop.io.*;
-
-@SuppressWarnings("deprecation")
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
+
+@SuppressWarnings("deprecation")
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split,
                                                                     JobConf job,
                                                                     Reporter reporter) {

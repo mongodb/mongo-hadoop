@@ -29,6 +29,7 @@ REGISTER core/target/mongo-hadoop-core.jar
 REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;
 REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
+
 -- Use the MongoLoader to query return the fields 'user', 'time', 'query' to Pig
 -- Input: (user,time,query) 
 raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user', 'time', 'query') AS (user, time, query);
@@ -75,4 +76,5 @@ ordered_uniq_frequency = ORDER filtered_uniq_frequency BY hour, score;
 
 -- Use the PigStorage function to store the results. 
 -- Output: (hour, n-gram, score, count, average_counts_among_all_hours)
+
 STORE ordered_uniq_frequency INTO 'mongodb://localhost/demo.output' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:false, dropDups: false}');
