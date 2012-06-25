@@ -9,7 +9,7 @@ REGISTER mongo-java-driver.jar;
 -- Use the PigStorage function to load the excite log file into the raw bag as an array of records.
 -- Input: (user,time,query) 
 -- raw = LOAD 'mongodb://tmillar:mortartest@ds033097.mongolab.com:33097/mortardb.input' USING com.mongodb.hadoop.pig.MongoLoader() AS (user, time, query);
-raw = LOAD 'mongodb://tmillar:mortartest@ds033097.mongolab.com:33097/mortardb.input' USING com.mongodb.hadoop.pig.MongoLoader('user', 'time', 'query') AS (user, time, query);
+raw = LOAD 'mongodb://localhost/demo.input' USING com.mongodb.hadoop.pig.MongoLoader('user:chararray, time:chararray, query:chararray');
 
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
@@ -55,5 +55,5 @@ ordered_uniq_frequency = ORDER filtered_uniq_frequency BY hour, score;
 
 -- Use the PigStorage function to store the results. 
 -- Output: (hour, n-gram, score, count, average_counts_among_all_hours)
-STORE ordered_uniq_frequency INTO 'mongodb://tmillar:mortartest@ds033097.mongolab.com:33097/mortardb.output' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:false, dropDups: false}');
+STORE ordered_uniq_frequency INTO 'mongodb://localhost/demo.output' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:false, dropDups: false}');
 
