@@ -411,6 +411,14 @@ public class MongoConfig {
         MongoConfigUtil.setNoTimeout( _conf, value );
     }
 
+    public int getWriteW() {
+        return MongoConfigUtil.getWriteW( _conf );
+    }
+
+    public void setWriteW( int value ) {
+        MongoConfigUtil.setWriteW( _conf, value );
+    }
+
     final Configuration _conf;
 
     private static final Log LOG = LogFactory.getLog( MongoConfig.class );

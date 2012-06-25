@@ -58,6 +58,8 @@ public class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String OUTPUT_URI = "mongo.output.uri";
 
+    public static final String OUTPUT_WRITE_W = "mongo.output.write.w";
+
     /**
      * The MongoDB field to read from for the Mapper Input.
      *
@@ -524,5 +526,13 @@ public class MongoConfigUtil {
     
     public static boolean isNoTimeout( Configuration conf ) {
         return conf.getBoolean( INPUT_NOTIMEOUT, false );
+    }
+
+    public static int getWriteW( Configuration conf ) {
+        return conf.getInt( OUTPUT_WRITE_W, 0 ); // default to 0, "don't check writes"
+    }
+
+    public static void setWriteW( Configuration conf, int value ) { 
+        conf.setInt( OUTPUT_WRITE_W, value );
     }
 }

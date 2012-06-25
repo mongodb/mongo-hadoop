@@ -29,6 +29,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx ){
         _collection = c;
         _context = ctx;
+        _w = com.mongodb.hadoop.util.MongoConfigUtil.getWriteW( ctx.getConfiguration() );
+        WriteConcern wc = new WriteConcern( _w );
+        _collection.setWriteConcern( wc );
     }
 
     public void close( TaskAttemptContext context ){
@@ -108,5 +111,6 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     final DBCollection _collection;
     final TaskAttemptContext _context;
+    final int _w;
 }
 
