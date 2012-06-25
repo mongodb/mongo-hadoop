@@ -1,4 +1,3 @@
-javacOptions += "-g"
 
 name := "mongo-hadoop"
 
