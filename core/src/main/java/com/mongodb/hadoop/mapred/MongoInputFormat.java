@@ -19,22 +19,17 @@ package com.mongodb.hadoop.mapred;
 
 import java.util.*;
 
-import com.mongodb.hadoop.input.*;
 import com.mongodb.hadoop.mapred.input.MongoInputSplit;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapreduce.*;
-import org.bson.*;
 
 import com.mongodb.hadoop.MongoConfig;
-import com.mongodb.hadoop.mapred.input.*;
 import com.mongodb.hadoop.io.*;
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 

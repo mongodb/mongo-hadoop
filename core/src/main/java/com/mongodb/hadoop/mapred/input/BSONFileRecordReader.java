@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.hive.input;
+package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.Log;

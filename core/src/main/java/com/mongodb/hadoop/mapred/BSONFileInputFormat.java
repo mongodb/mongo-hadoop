@@ -1,5 +1,6 @@
-package com.mongodb.hadoop.hive.input;
+package com.mongodb.hadoop.mapred;
 
+import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.*;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.mapred;
+package com.mongodb.hadoop.streaming;
 
 import com.mongodb.*;
 

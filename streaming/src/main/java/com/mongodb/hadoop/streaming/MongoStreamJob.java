@@ -1,6 +1,8 @@
 package com.mongodb.hadoop.streaming;
 
 import com.mongodb.hadoop.io.*;
+import com.mongodb.hadoop.mapred.MongoInputFormat;
+import com.mongodb.hadoop.mapred.MongoOutputFormat;
 import com.mongodb.hadoop.streaming.io.MongoIdentifierResolver;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
@@ -9,7 +11,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.streaming.*;
 import org.apache.hadoop.streaming.io.IdentifierResolver;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.commons.cli.*;
 
 import java.io.IOException;
 
@@ -38,10 +39,10 @@ public class MongoStreamJob extends StreamJobPatch {
             jobConf_.setOutputValueClass( BSONWritable.class );
             jobConf_.setOutputKeyComparatorClass( BSONComparator.class );
             if (jobConf_.getOutputFormat() == null) {
-                jobConf_.setOutputFormat(com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+                jobConf_.setOutputFormat(MongoOutputFormat.class);
             }
             if (jobConf_.getInputFormat() == null) {
-                jobConf_.setInputFormat(com.mongodb.hadoop.mapred.MongoInputFormat.class);
+                jobConf_.setInputFormat(MongoInputFormat.class);
             }
             log.info("Input Format: " + jobConf_.getInputFormat());
             log.info("Output Format: " + jobConf_.getOutputFormat());
