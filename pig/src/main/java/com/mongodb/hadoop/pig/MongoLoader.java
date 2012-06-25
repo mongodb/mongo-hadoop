@@ -30,24 +30,19 @@ import java.util.*;
 public class MongoLoader extends LoadFunc implements LoadPushDown {
 	private static final Log log = LogFactory.getLog( MongoStorage.class );
 	private TupleFactory tupleFactory = TupleFactory.getInstance();
+	private BagFactory bagFactory = BagFactory.getInstance();
     // Pig specific settings
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
     protected ResourceSchema schema = null;
-    private ArrayList<String> projectionArray;
+    
+    ResourceFieldSchema[] fields;
     //private final MongoStorageOptions options;
     
     public MongoLoader () {
     
     }
-    
-    public MongoLoader(String ... fieldNames) {
-    	projectionArray = new  ArrayList<String>();
-    	for(String field : fieldNames) {
-    		projectionArray.add(field);
-    	}
-    }
-    
+
 	@Override
 	public void setLocation(String location, Job job) throws IOException {
 		final Configuration config = job.getConfiguration();
@@ -75,9 +70,75 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		if(_recordReader == null)
 			throw new IOException("Invalid Record Reader");
 		
+		UDFContext udfc = UDFContext.getUDFContext();
+		Configuration c = udfc.getJobConf();
+		Properties p = udfc.getUDFProperties(this.getClass(), new String[]{_udfContextSignature});
+		
+		String strSchema = c.get("mongo.pig.output.schema");
+		if(strSchema == null) {
+			throw new IOException("Please define a schema");
+		}
+		
+		ResourceSchema schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+		fields = schema.getFields();
+		
         
 	}
-
+	private Object readField(Object obj, ResourceFieldSchema field) throws IOException {
+		switch (field.getType()) {
+		case DataType.INTEGER:
+			return Integer.parseInt(obj.toString());
+		case DataType.LONG:
+			return Long.parseLong(obj.toString());
+		case DataType.FLOAT:
+			return Float.parseFloat(obj.toString());
+		case DataType.DOUBLE:
+			return Double.parseDouble(obj.toString());
+		case DataType.BYTEARRAY:
+			return obj;
+		case DataType.CHARARRAY:
+			return obj.toString().toCharArray();
+		case DataType.TUPLE:
+			ResourceSchema s = field.getSchema();
+			ResourceFieldSchema[] fs = s.getFields();
+			Tuple t = tupleFactory.newTuple(fs.length);
+			
+			BasicDBObject val = (BasicDBObject)obj;
+			
+			for(int j = 0; j < fs.length; j++) {
+				t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
+			}
+			
+			return t;
+			
+		case DataType.BAG:
+			s = field.getSchema();
+			fs = s.getFields();
+			
+			s = fs[0].getSchema();
+			fs = s.getFields();
+			
+			DataBag bag = bagFactory.newDefaultBag();
+			
+			BasicDBList vals = (BasicDBList)obj;
+						
+			for(int j = 0; j < vals.size(); j++) {
+				
+				t = tupleFactory.newTuple(fs.length);
+				for(int k = 0; k < fs.length; k++) {
+					t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
+				}
+				bag.add(t);
+			}
+			
+			
+			return bag;
+		default:
+			return obj;
+		}
+		
+	}
+	
 	@Override
 	public Tuple getNext() throws IOException {
 		BSONObject val = null;
@@ -90,10 +151,16 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 			throw new IOException(ie);
 		}
 		
+		Tuple t = tupleFactory.newTuple(fields.length);
+		
+		for(int i = 0; i < fields.length; i++) {
+			t.set(i, readField(val.get(fields[i].getName()), fields[i]));
+		}
+		
 		//log.info("Line:" + val.toString());
 		
 		//log.info("Projection String: " + this.projectionArray);
-		ArrayList<Object> protoTuple = new ArrayList<Object>();
+		/*ArrayList<Object> protoTuple = new ArrayList<Object>();
 		
 		for(String key: val.keySet())
 		{
@@ -102,7 +169,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 			}
 		}
 		
-		Tuple t = tupleFactory.newTuple(protoTuple);
+		Tuple t = tupleFactory.newTuple(protoTuple);*/
 		
 		//Tuple t = tupleFactory.newTuple(2);
 		//t.set(0, "test");
@@ -120,7 +187,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
     
     @Override
     public void setUDFContextSignature( String signature ){
-        this._udfContextSignature = signature;
+        _udfContextSignature = signature;
     }
 
     String _udfContextSignature = null;
