@@ -25,10 +25,14 @@ import org.bson.BSONObject
 import com.mongodb.hadoop.scoobi.MongoInput.MongoWireFormat
 
 
-class TestJob extends ScoobiApp {
+object TestJob extends ScoobiApp {
   def run() {
     implicit val wf = new MongoWireFormat
     val data = MongoInput.fromCollection[BSONObject](MongoConnection()("playbookstore")("books"))
+    val x = data.map(doc => (doc.get("title").asInstanceOf[String], 1)).groupByKey
+    System.err.println(x)
+    persist(toTextFile(x, "./test"))
+
   }
 
 }

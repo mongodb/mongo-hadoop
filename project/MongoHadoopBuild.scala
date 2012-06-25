@@ -55,9 +55,6 @@ object MongoHadoopBuild extends Build {
                            base = file("hive"),
                            settings = hiveSettings ) dependsOn( core )
 
-  lazy val scoobi = Project( id = "mongo-hadoop-scoobi",
-                          base = file("scoobi"),
-                          settings = scoobiSettings ) dependsOn( core )
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
@@ -121,28 +118,6 @@ object MongoHadoopBuild extends Build {
     publishArtifact := false
   )
 
-  lazy val scoobiSettings = baseSettings ++ assemblySettings ++ Seq( 
-    mainClass in assembly := Some("com.mongodb.hadoop.scoobi.test.TestJob"),
-    excludedJars in assembly <<= (dependencyClasspath in assembly) map ( cp => 
-      cp filterNot { x =>
-        x.data.getName.startsWith("mongo-hadoop-core") || x.data.getName.startsWith("mongo-java-driver") || x.data.getName.startsWith("mongo-hadoop-scoobi") || x.data.getName.startsWith("scoobi") || x.data.getName.startsWith("casbah") || x.data.getName.startsWith("scala-library")
-      }
-    ),
-    excludedFiles in assembly := { (bases: Seq[File]) => bases flatMap { base => 
-      ((base * "*").get collect {
-        case f if f.getName.toLowerCase == "git-hash" => f
-        case f if f.getName.toLowerCase == "license" => f
-      })  ++
-      ((base / "META-INF" * "*").get collect {
-        case f if f.getName.toLowerCase == "license" => f
-        case f if f.getName.toLowerCase == "manifest.mf" => f
-      })
-    } },
- 
-    libraryDependencies ++= Seq(Dependencies.casbah, Dependencies.scoobi),
-    resolvers ++= Seq(Resolvers.clouderaRepo, Resolvers.nictaScoobi),
-    scalacOptions ++= Seq("-Ydependent-method-types", "-deprecation")
-  )
 
   lazy val flumeSettings = baseSettings ++ Seq(
     libraryDependencies ++= Seq(Dependencies.mongoJavaDriver, Dependencies.flume)
