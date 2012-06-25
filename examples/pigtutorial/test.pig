@@ -23,12 +23,16 @@
 -- Register the tutorial JAR file so that the included UDFs can be called in the script.
 
 -- Based on the Pig tutorial ,modified for Mongo support tests
-REGISTER pigtutorial.jar;
-REGISTER mongo-hadoop-pig-assembly.jar;
+REGISTER target/mongo-hadoop.jar;
+REGISTER pig/target/mongo-hadoop-pig.jar
+REGISTER core/target/mongo-hadoop-core.jar
+REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;
+REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
--- Use the PigStorage function to load the excite log file into the raw bag as an array of records.
+
+-- Use the MongoLoader to query return the fields 'user', 'time', 'query' to Pig
 -- Input: (user,time,query) 
-raw = LOAD 'excite-small.log' USING PigStorage('\t') AS (user, time, query);
+raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user', 'time', 'query') AS (user, time, query);
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
 clean1 = FILTER raw BY org.apache.pig.tutorial.NonURLDetector(query);
@@ -72,4 +76,5 @@ ordered_uniq_frequency = ORDER filtered_uniq_frequency BY hour, score;
 
 -- Use the PigStorage function to store the results. 
 -- Output: (hour, n-gram, score, count, average_counts_among_all_hours)
-STORE ordered_uniq_frequency INTO 'mongodb://localhost/demo.pig.output' USING com.mongodb.hadoop.pig.MongoStorage();
+
+STORE ordered_uniq_frequency INTO 'mongodb://localhost/demo.output' USING com.mongodb.hadoop.pig.MongoStorage('update [time, servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:false, dropDups: false}');
