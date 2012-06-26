@@ -5,6 +5,15 @@
     <name>mongo.job.verbose</name>
     <value>false</value>
   </property>
+  <!-- it is *strongly* recommended for consistent behavior that you disable speculative execution in hadoop  -->
+  <property>
+      <name>mapred.map.tasks.speculative.execution</name> 
+      <value>false</value>
+  </property>
+   <property>
+      <name>mapred.reduce.tasks.speculative.execution</name> 
+      <value>false</value>
+  </property>
   <property>
     <!-- Run the job in the foreground and wait for response, or background it? -->
     <name>mongo.job.background</name>
