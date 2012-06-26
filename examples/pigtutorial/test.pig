@@ -32,7 +32,7 @@ REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
 -- Use the MongoLoader to query return the fields 'user', 'time', 'query' to Pig
 -- Input: (user,time,query) 
-raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user', 'time', 'query') AS (user, time, query);
+raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user, time, query');
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
 clean1 = FILTER raw BY org.apache.pig.tutorial.NonURLDetector(query);

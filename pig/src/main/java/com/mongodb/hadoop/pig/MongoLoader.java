@@ -15,11 +15,15 @@ import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.logicalLayer.FrontendException;
 import org.apache.pig.impl.util.*;
+import org.apache.pig.parser.ParserException;
+import org.apache.pig.Expression;
+import org.apache.pig.LoadMetadata;
 import org.apache.pig.LoadPushDown;
 import org.apache.pig.ResourceSchema;
 import org.apache.pig.LoadPushDown.RequiredField;
 import org.apache.pig.LoadPushDown.RequiredFieldResponse;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+import org.apache.pig.ResourceStatistics;
 import org.bson.BSONObject;
 
 
@@ -27,7 +31,7 @@ import java.io.*;
 import java.text.ParseException;
 import java.util.*;
 
-public class MongoLoader extends LoadFunc implements LoadPushDown {
+public class MongoLoader extends LoadFunc implements LoadMetadata {
 	private static final Log log = LogFactory.getLog( MongoStorage.class );
 	private TupleFactory tupleFactory = TupleFactory.getInstance();
 	private BagFactory bagFactory = BagFactory.getInstance();
@@ -40,7 +44,17 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
     //private final MongoStorageOptions options;
     
     public MongoLoader () {
+    	throw new IllegalArgumentException("Undefined Schema");
+    }
     
+    public MongoLoader (String userSchema) {
+    	try {
+			schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
+			fields = schema.getFields();
+		} catch (ParserException e) {
+			// TODO Auto-generated catch block
+			throw new IllegalArgumentException("Invalid Schema Format");
+		}
     }
 
 	@Override
@@ -70,6 +84,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		if(_recordReader == null)
 			throw new IOException("Invalid Record Reader");
 		
+		/*
 		UDFContext udfc = UDFContext.getUDFContext();
 		Configuration c = udfc.getJobConf();
 		Properties p = udfc.getUDFProperties(this.getClass(), new String[]{_udfContextSignature});
@@ -82,9 +97,14 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		ResourceSchema schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
 		fields = schema.getFields();
 		
+		*/
+		
         
 	}
 	private Object readField(Object obj, ResourceFieldSchema field) throws IOException {
+		if(obj == null)
+			return null;
+		
 		switch (field.getType()) {
 		case DataType.INTEGER:
 			return Integer.parseInt(obj.toString());
@@ -97,7 +117,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		case DataType.BYTEARRAY:
 			return obj;
 		case DataType.CHARARRAY:
-			return obj.toString().toCharArray();
+			return obj.toString();
 		case DataType.TUPLE:
 			ResourceSchema s = field.getSchema();
 			ResourceFieldSchema[] fs = s.getFields();
@@ -193,17 +213,35 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
     String _udfContextSignature = null;
     MongoRecordReader _recordReader = null;
 
+
 	@Override
-	public List<OperatorSet> getFeatures() {
+	public ResourceSchema getSchema(String location, Job job)
+			throws IOException {
+		if (schema != null) {
+			return schema;
+		}
+		return null;
+	}
+
+	@Override
+	public ResourceStatistics getStatistics(String location, Job job)
+			throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RequiredFieldResponse pushProjection(
-			RequiredFieldList requiredFieldList) throws FrontendException {
-		log.info("HERE");
+	public String[] getPartitionKeys(String location, Job job)
+			throws IOException {
+		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void setPartitionFilter(Expression partitionFilter)
+			throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 
 
