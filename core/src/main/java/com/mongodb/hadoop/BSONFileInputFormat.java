@@ -1,13 +1,4 @@
 package com.mongodb.hadoop;
-
-import com.mongodb.hadoop.input.BSONFileRecordReader;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-
-import java.io.IOException;
-
 /**
  * Copyright (c) 2008 - 2012 10gen, Inc. <http://10gen.com>
  * <p/>
@@ -23,6 +14,15 @@ import java.io.IOException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import com.mongodb.hadoop.input.BSONFileRecordReader;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+
+import java.io.IOException;
+
 
 public class BSONFileInputFormat extends FileInputFormat {
 
