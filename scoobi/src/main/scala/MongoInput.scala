@@ -19,15 +19,16 @@ package scoobi
 
 import com.nicta.scoobi.{DList, WireFormat}
 import org.apache.hadoop.io.ObjectWritable
-import com.mongodb.hadoop.io.BSONWritable
+import com.mongodb.hadoop.io.{DBObjectWritable, BSONWritable}
 import com.nicta.scoobi.io.{InputConverter, DataSource}
 import com.nicta.scoobi.impl.Configured
 import org.apache.hadoop.mapreduce.Job
 import com.mongodb.casbah.{MongoCollection, MongoCursor}
 import org.bson.BSONObject
-import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.Imports._
 import java.io.{DataInput, DataOutput}
 import org.apache.commons.logging.LogFactory
+import com.mongodb.hadoop.util.MongoConfigUtil
 
 
 object MongoInput {
@@ -46,8 +47,20 @@ object MongoInput {
     DList.fromSource(source)
   }
 
+  class MongoWireFormat extends WireFormat[DBObject] {
+    def fromWire(in: DataInput): DBObject = {
+      log.info("[from] Input: " + in)
+      val w = new DBObjectWritable()
+      w.readFields(in)
+      w
+    }
 
-  class MongoWireFormat extends WireFormat[BSONObject] {
+    def toWire(x: DBObject, out: DataOutput) {
+      log.info("[to] X: " + x + " out: " + out)
+    }
+  }
+
+  class BSONWireFormat extends WireFormat[BSONObject] {
     def fromWire(in: DataInput): BSONObject = {
       log.info("[from] Input: " + in)
       val w = new BSONWritable()
@@ -69,6 +82,21 @@ object MongoInput {
     def inputCheck() {}
 
     def inputConfigure(job: Job) {
+      // Extract information to setup our Hadoop job
+      // TODO - We currently cannot support authentication!
+      val query = cursor.query
+      val coll = cursor.underlying.getCollection
+      val db = coll.getDB
+      val conn = db.getMongo
+      val addr = conn.getAddress
+
+      val inputURI = "mongodb://%s:%s/%s.%s".format(addr.getHost, addr.getPort,
+                                                    db.getName, coll.getName)
+
+      log.info("*** Input URI: %s".format(inputURI))
+      log.info("*** Input Query: %s".format(query))
+      MongoConfigUtil.setInputURI( job.getConfiguration, inputURI )
+      MongoConfigUtil.setQuery( job.getConfiguration, query )
       configure(job)
     }
 

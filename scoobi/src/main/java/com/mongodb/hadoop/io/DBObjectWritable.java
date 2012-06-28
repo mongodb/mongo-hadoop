@@ -1,5 +1,7 @@
 package com.mongodb.hadoop.io;
 
+import com.mongodb.DBObject;
+
 /**
  * Copyright (c) 2008 - 2012 10gen, Inc. <http://10gen.com>
  * <p/>
@@ -16,5 +18,13 @@ package com.mongodb.hadoop.io;
  * limitations under the License.
  */
 
-public class DBObjectWritable {
+public class DBObjectWritable extends BSONWritable implements DBObject {
+    @Override
+    public void markAsPartialObject() {
+    }
+
+    @Override
+    public boolean isPartialObject() {
+        return false;
+    }
 }

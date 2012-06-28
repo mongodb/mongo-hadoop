@@ -20,19 +20,18 @@ package test
  */
 
 import com.mongodb.casbah.Imports._
+import com.mongodb.hadoop.scoobi.MongoInput.{MongoWireFormat}
 import com.nicta.scoobi.Scoobi._
-import org.bson.BSONObject
-import com.mongodb.hadoop.scoobi.MongoInput.MongoWireFormat
 
 
 object TestJob extends ScoobiApp {
   def run() {
     implicit val wf = new MongoWireFormat
-    val data = MongoInput.fromCollection[BSONObject](MongoConnection()("playbookstore")("books"))
-    val x = data.map(doc => (doc.get("title").asInstanceOf[String], 1)).groupByKey
-    System.err.println(x)
+    val data = MongoInput.fromCollection[DBObject](MongoConnection()("playbookstore")("books"))
+    val authors: DList[String] = data.flatMap( doc => doc.as[Seq[String]]("author") )
+    val grouped: DList[(String, Iterable[Int])] = authors.map(_ -> 1).groupByKey
+    val x: DList[(String, Int)] = grouped.combine(_+_)
     persist(toTextFile(x, "./test"))
-
   }
 
 }
