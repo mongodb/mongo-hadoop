@@ -30,8 +30,12 @@ REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;
 REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
 
--- Use the MongoLoader to query return the fields 'user', 'time', 'query' to Pig
+-- Use the MongoLoader to query and return the fields 'user', 'time', 'query' to Pig
 -- Input: (user,time,query) 
+
+-- MongoLoader requires that you pass the schema into the constructor. This is because as of right now there
+-- is no reliable way of getting the schema in the loadfunc. Due to the nature of MongoDB, the schema is required
+-- to properly pull and order fields out of MongoDB
 raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user, time, query');
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
