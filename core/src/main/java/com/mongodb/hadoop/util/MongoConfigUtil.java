@@ -266,7 +266,7 @@ public class MongoConfigUtil {
                     log.info("Sucessfully authenticated with collection.");
                 }
                 else {
-                    throw new IllegalArgumentException( "Unable to connect to collection." );
+                    throw new IllegalArgumentException( "Unable to connect to collection.  Invalid username/password provided." );
                 }
             }
             return uri.connectCollection(mongo);
