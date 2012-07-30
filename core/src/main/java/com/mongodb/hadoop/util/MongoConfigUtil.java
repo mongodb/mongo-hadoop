@@ -262,6 +262,16 @@ public class MongoConfigUtil {
             //if there's a username and password
             if(uri.getUsername() != null && uri.getPassword() != null && !myDb.isAuthenticated()) {
                 boolean auth = myDb.authenticate(uri.getUsername(), uri.getPassword());
+                if (!auth) {
+                    // Attempt to login as an admin.  Admins can only login to the "admin" database
+                    DB adminDB = mongo.getDB("admin");
+                    if (adminDB.isAuthenticated()) {
+                        auth = true;
+                    } else {
+                        auth = adminDB.authenticate(uri.getUsername(), uri.getPassword());
+                    }
+                }
+                
                 if(auth) {
                     log.info("Sucessfully authenticated with collection.");
                 }
