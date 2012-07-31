@@ -1,9 +1,9 @@
 
 -- Based on the Pig tutorial ,modified for Mongo support tests
 REGISTER pigtutorial.jar;
-REGISTER ../pig/target/mongo-hadoop-pig_0.20.2-hawk-1.0.0.jar;
-REGISTER ../target/mongo-hadoop_0.20.2-hawk-1.0.0.jar;
-REGISTER ../core/target/mongo-hadoop-core_0.20.2-hawk-1.0.0.jar;
+REGISTER ../pig/target/mongo-hadoop-pig_0.20.205.0-1.0.0.jar;
+--REGISTER ../target/mongo-hadoop_0.20.205.0-1.0.0.jar;
+REGISTER ../core/target/mongo-hadoop-core_0.20.205.0-1.0.0.jar;
 REGISTER mongo-java-driver.jar;
 
 -- Use the PigStorage function to load the excite log file into the raw bag as an array of records.

@@ -31,7 +31,7 @@ object MongoHadoopBuild extends Build {
   private val cdh4Pig = "0.9.2-%s".format(cdh4Rel)
 
   private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.2-hawk", false, "0.9.0-mortar"),
-                                  "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
+                                  "0.20.x" -> hadoopDependencies("0.20.205.0", false, "0.9.0-mortar"),
                                   "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
                                   "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig), 
                                   "0.22" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
