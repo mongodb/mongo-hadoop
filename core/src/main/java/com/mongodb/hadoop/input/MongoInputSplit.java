@@ -136,9 +136,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
     DBCursor getCursor(){
         // Return the cursor with the split's query, etc. already slotted in for
         // them.
-        // todo - support limit/skip
         if ( _cursor == null ){
-            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec ).limit(_limit).skip(_skip);
             if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }
@@ -160,7 +159,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
+        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + ", limit=" + _limit + ", skip=" + _skip +'}';
     }
 
     public MongoInputSplit(){ }
