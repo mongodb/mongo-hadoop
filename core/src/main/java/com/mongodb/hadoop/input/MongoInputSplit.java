@@ -137,7 +137,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // Return the cursor with the split's query, etc. already slotted in for
         // them.
         if ( _cursor == null ){
-            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec ).limit(_limit).skip(_skip);
+            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec ).limit(_limit);
+            if (_skip > 0) {
+                _cursor.skip(_skip);
+            }
             if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }
