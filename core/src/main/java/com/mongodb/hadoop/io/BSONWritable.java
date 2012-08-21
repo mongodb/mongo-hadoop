@@ -60,6 +60,13 @@ public class BSONWritable implements BSONObject, WritableComparable {
         this();
         putAll( doc );
     }
+    
+    /**
+     * Clears the map of existing data, to make this object reusable since Hadoop expects it to be.
+     */
+    public void clear() {
+        ((BasicBSONObject)_doc).clear();
+    }
 
     /**
      * {@inheritDoc}
