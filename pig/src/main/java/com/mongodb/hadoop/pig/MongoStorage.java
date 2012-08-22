@@ -207,9 +207,11 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             e.printStackTrace();
         }
         
-        // If we are insuring any indexes do so now:
-        for (MongoStorageOptions.Index in : options.getIndexes()) {
-            _recordWriter.ensureIndex(in.index, in.options);
+        if(options != null) {
+            // If we are insuring any indexes do so now:
+            for (MongoStorageOptions.Index in : options.getIndexes()) {
+                _recordWriter.ensureIndex(in.index, in.options);
+            }
         }
     }
 

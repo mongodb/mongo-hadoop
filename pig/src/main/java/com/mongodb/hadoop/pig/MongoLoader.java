@@ -79,10 +79,14 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 			throw new IOException("Please define a schema");
 		}
 		
-		ResourceSchema schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+		try {
+			ResourceSchema schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+        }
+
 		fields = schema.getFields();
-		
-        
 	}
 	private Object readField(Object obj, ResourceFieldSchema field) throws IOException {
 		switch (field.getType()) {

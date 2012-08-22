@@ -1,3 +1,5 @@
+require 'bson'
+
 class BSONInput
   include Enumerable
   
