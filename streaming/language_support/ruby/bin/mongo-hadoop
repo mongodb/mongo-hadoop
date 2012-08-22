@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+require "thor"
+
+class MongoHadoop < Thor
+  include Thor::Actions
+
+  def self.source_root
+    File.dirname(__FILE__)
+  end
+
+  desc "create PROJECT_NAME", "Create a new Mongo Hadoop project"
+  method_option :assembly, :type => :string, :default => "mongo-hadoop-streaming-assembly*.jar"
+  method_option :uri, :type => :string, :aliases => "-h", :default => "mongodb://127.0.0.1"
+  method_option :database, :type => :string, :aliases => "-d", :default => "mongo_hadoop"
+  method_option :in, :type => :string, :aliases => "-i", :default => "project.in"
+  method_option :out, :type => :string, :aliases => "-o", :default => "project.out"
+
+  def create(name)
+    @name = name
+    @streaming_assembly = options[:assembly]
+
+    base_uri = options[:uri]
+    db = options[:database]
+    @input_uri = "#{base_uri}/#{db}.#{options[:in]}"
+    @output_uri = "#{base_uri}/#{db}.#{options[:out]}"
+
+    create_mapper
+    create_reducer
+    create_runner
+  end
+
+  private
+
+  def create_mapper
+    template '../templates/mapper.tt', "#{@name}/mapper.rb"
+    chmod "#{@name}/mapper.rb", 0766, :verbose => false
+  end
+
+  def create_reducer
+    template '../templates/reducer.tt', "#{@name}/reducer.rb"
+    chmod "#{@name}/reducer.rb", 0766, :verbose => false
+  end
+
+  def create_runner
+    template '../templates/runner.tt', "#{@name}/run.sh"
+    chmod "#{@name}/run.sh", 0766, :verbose => false
+  end
+end
+
+MongoHadoop.start

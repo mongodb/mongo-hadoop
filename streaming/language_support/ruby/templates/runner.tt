@@ -1,0 +1,7 @@
+hadoop jar <%= @streaming_assembly %> \
+-mapper ./mapper.rb \
+-reducer ./reducer.rb \
+-inputURI  <%= @input_uri %> \
+-outputURI <%= @output_uri %> \
+-inputformat com.mongodb.hadoop.mapred.MongoInputFormat \
+-outputformat com.mongodb.hadoop.mapred.MongoOutputFormat \
