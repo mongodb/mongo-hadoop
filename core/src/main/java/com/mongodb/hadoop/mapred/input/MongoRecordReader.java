@@ -92,13 +92,17 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
 
     public boolean next( BSONWritable key, BSONWritable value ){
         if ( nextKeyValue() ){
-            log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
-            value.putAll( getCurrentValue() );
+			if(getCurrentValue() instanceof LazyDBReadableBytes){
+				LazyDBReadableBytes lazyCurrent = (LazyDBReadableBytes)getCurrentValue();
+				value.initialize( lazyCurrent.getRawData() );
+			}else{
+				value.putAll(getCurrentValue());
+			}
             return true;
         }
         else{
-            log.info( "Cursor exhausted." );
+            log.info( "Cursor exhausted!" );
             return false;
         }
     }

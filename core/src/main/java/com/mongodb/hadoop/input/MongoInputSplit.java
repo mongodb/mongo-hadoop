@@ -18,6 +18,7 @@
 package com.mongodb.hadoop.input;
 
 import com.mongodb.*;
+import com.mongodb.hadoop.io.*;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.io.*;
@@ -138,7 +139,9 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // them.
         // todo - support limit/skip
         if ( _cursor == null ){
-            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+			DBCollection collection = MongoConfigUtil.getCollection( _mongoURI );
+			collection.setDBDecoderFactory(LazyDBReadableBytesDecoder.FACTORY);
+			_cursor = collection.find( _querySpec, _fieldSpec ).sort( _sortSpec );
             if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             _cursor.slaveOk();
         }

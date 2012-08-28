@@ -34,11 +34,15 @@ import java.util.*;
 @SuppressWarnings( "deprecation" )
 public class BSONWritable implements BSONObject, WritableComparable {
 
+	private static final byte[] emptyBSONbytes = new BasicBSONEncoder().encode(new BasicBSONObject());
+
     /**
      * Constructs a new instance.
      */
     public BSONWritable(){
-        _doc = new BasicBSONObject();
+		//log.info(emptyBSONbytes);
+		_doc = new LazyDBReadableBytes(new BasicBSONEncoder().encode(new BasicBSONObject()) );
+        //_doc = new BasicBSONObject();
     }
 
     /**
@@ -51,6 +55,11 @@ public class BSONWritable implements BSONObject, WritableComparable {
         copy( other );
     }
 
+	public BSONWritable( BSONByteBuffer rawBytes){
+		this();
+		initialize(rawBytes);
+	}
+
     /**
      * Constructs a new instance around an existing BSONObject
      *
@@ -60,6 +69,10 @@ public class BSONWritable implements BSONObject, WritableComparable {
         this();
         putAll( doc );
     }
+
+	public void initialize(BSONByteBuffer rawBytes){
+		_doc = (LazyDBReadableBytes)(dec.readObject(rawBytes.array()));
+	}
 
     /**
      * {@inheritDoc}
@@ -97,12 +110,17 @@ public class BSONWritable implements BSONObject, WritableComparable {
         return _doc.get( key );
     }
 
+    public BSONByteBuffer getRaw(){
+		return this._doc.getRawData();
+	}
+
     /**
      * {@inheritDoc}
      *
      * @see BSONObject#toMap()
      */
     public Map toMap(){
+		log.warn("iterating entire object");
         return _doc.toMap();
     }
 
@@ -148,13 +166,13 @@ public class BSONWritable implements BSONObject, WritableComparable {
      * @see Writable#write(DataOutput)
      */
     public void write( DataOutput out ) throws IOException{
-
-        BSONEncoder enc = new BasicBSONEncoder();
-        BasicOutputBuffer buf = new BasicOutputBuffer();
-        enc.set( buf );
-        enc.putObject( _doc );
-        enc.done();
-        buf.pipe( out );
+		out.write(this._doc.getRawData().array());
+//         BSONEncoder enc = new BasicBSONEncoder();
+//         BasicOutputBuffer buf = new BasicOutputBuffer();
+//         enc.set( buf );
+//         enc.putObject( _doc );
+//         enc.done();
+//         buf.pipe( out );
     }
 
 
@@ -164,8 +182,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      * @see Writable#readFields(DataInput)
      */
     public void readFields( DataInput in ) throws IOException{
-        BSONDecoder dec = new BasicBSONDecoder();
-        BSONCallback cb = new BasicBSONCallback();
+        BSONCallback cb = new LazyDBReadableBytesCallback(null);
         // Read the BSON length from the start of the record
         byte[] l = new byte[4];
         try {
@@ -175,24 +192,23 @@ public class BSONWritable implements BSONObject, WritableComparable {
             byte[] data = new byte[dataLen + 4];
             System.arraycopy( l, 0, data, 0, 4 );
             in.readFully( data, 4, dataLen - 4 );
-            dec.decode( data, cb );
-            _doc = (BSONObject) cb.get();
+			_doc = (LazyDBReadableBytes)(dec.readObject(data));
             if ( log.isTraceEnabled() ) log.trace( "Decoded a BSON Object: " + _doc );
         }
         catch ( Exception e ) {
             /* If we can't read another length it's not an error, just return quietly. */
             // TODO - Figure out how to gracefully mark this as an empty
             log.info( "No Length Header available." + e );
-            _doc = new BasicDBObject();
+            _doc = new LazyDBReadableBytes(emptyBSONbytes);
         }
-
-    }
+	}
 
     /**
      * {@inheritDoc}
      */
     @Override
     public String toString(){
+		log.warn("iterating entire object - tostring");
         BSONEncoder enc = new BasicBSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
@@ -210,6 +226,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
      */
     protected synchronized void copy( Writable other ){
         if ( other != null ){
+			log.warn("copying raw obj");
             try {
                 DataOutputBuffer out = new DataOutputBuffer();
                 other.write( out );
@@ -271,7 +288,9 @@ public class BSONWritable implements BSONObject, WritableComparable {
         return ( this._doc != null ? this._doc.hashCode() : 0 );
     }
 
-    protected BSONObject _doc;
+    //protected BSONObject _doc;
+	protected LazyDBReadableBytes _doc;
+    protected LazyDBReadableBytesDecoder dec = new LazyDBReadableBytesDecoder();
 
 
     private static final Log log = LogFactory.getLog( BSONWritable.class );
