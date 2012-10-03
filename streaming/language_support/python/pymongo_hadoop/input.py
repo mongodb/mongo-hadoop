@@ -1,4 +1,5 @@
-from bson import _elements_to_dict, InvalidBSON
+from bson import InvalidBSON, BSON
+from bson.binary import Binary
 
 import sys
 import struct
@@ -19,13 +20,12 @@ class BSONInput(object):
         try:
             size_bits = self.fh.read(4)
             size = struct.unpack("<i", size_bits)[0] - 4 # BSON size byte includes itself 
-            data = self.fh.read(size)
-            if len(data) != size:
+            data = size_bits + self.fh.read(size)
+            if len(data) != size + 4:
                 raise struct.error("Unable to cleanly read expected BSON Chunk; EOF, underful buffer or invalid object size.")
-            if data[size - 1] != "\x00":
+            if data[size + 4 - 1] != "\x00":
                 raise InvalidBSON("Bad EOO in BSON Data")
-            chunk = data[:size - 1]
-            doc = _elements_to_dict(chunk, dict, True)
+            doc = BSON(data).decode(tz_aware=True)
             return doc
         except struct.error, e:
             #print >> sys.stderr, "Parsing Length record failed: %s" % e
