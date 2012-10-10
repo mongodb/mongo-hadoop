@@ -1,4 +1,4 @@
-REGISTER target/mongo-hadoop.jar;
+-- REGISTER target/mongo-hadoop.jar;
 REGISTER pig/target/mongo-hadoop-pig.jar
 REGISTER core/target/mongo-hadoop-core.jar
 REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;

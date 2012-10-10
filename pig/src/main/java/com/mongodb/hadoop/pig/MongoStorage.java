@@ -207,16 +207,25 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             e.printStackTrace();
         }
         
-        // If we are insuring any indexes do so now:
-        for (MongoStorageOptions.Index in : options.getIndexes()) {
-            _recordWriter.ensureIndex(in.index, in.options);
+        if(options != null) {
+        	// If we are insuring any indexes do so now:
+        	for (MongoStorageOptions.Index in : options.getIndexes()) {
+        		_recordWriter.ensureIndex(in.index, in.options);
+        	}
         }
     }
 
     public OutputFormat getOutputFormat() throws IOException{
-        final MongoOutputFormat outputFmt = options == null ? new MongoOutputFormat() : new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
-        log.info( "OutputFormat... " + outputFmt );
-        return outputFmt;
+    	if(options != null) {
+    		final MongoOutputFormat outputFmt = new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
+            log.info( "OutputFormat... " + outputFmt );
+            return outputFmt;
+    	}
+    	else {
+    		final MongoOutputFormat outputFmt = new MongoOutputFormat();
+            log.info( "OutputFormat... " + outputFmt );
+            return outputFmt;
+    	}
     }
 
     public String relToAbsPathForStoreLocation( String location, org.apache.hadoop.fs.Path curDir ) throws IOException{
