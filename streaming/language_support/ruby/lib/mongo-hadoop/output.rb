@@ -1,3 +1,5 @@
+require 'bson'
+
 class BSONOutput
   def initialize(stream=nil)
     @stream = stream || $stdout

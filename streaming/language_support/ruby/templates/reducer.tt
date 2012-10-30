@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+require 'mongo-hadoop'
+
+MongoHadoop::reduce do |key, values|
+  { :_id => key, :count => values.size }
+end

@@ -1,5 +1,8 @@
-class MongoHadoop
-  def self.reduce
+require 'mongo-hadoop/input'
+require 'mongo-hadoop/output'
+
+module MongoHadoop
+  def reduce
     input = BSONInput.new
     output = BSONOutput.new
     
@@ -10,7 +13,7 @@ class MongoHadoop
     end
   end
 
-  def self.kvreduce
+  def kvreduce
     kvinput = BSONKeyValueInput.new
     kvoutput = BSONKeyValueOutput.new
 

@@ -7,12 +7,14 @@ Gem::Specification.new do |s|
   s.authors     = ["Tyler Brock"]
   s.email       = 'tyler.brock@gmail.com'
   s.files       = [
-    "lib/mongo-hadoop.rb",
+    "bin/mongo-hadoop",
     "lib/mongo-hadoop/input.rb",
     "lib/mongo-hadoop/output.rb",
     "lib/mongo-hadoop/mapper.rb",
     "lib/mongo-hadoop/reducer.rb"
   ]
+  s.executables = ['mongo-hadoop']
   s.homepage = 'http://github.com/mongodb/mongo-hadoop'
   s.add_dependency 'bson'
+  s.add_dependency 'thor'
 end
