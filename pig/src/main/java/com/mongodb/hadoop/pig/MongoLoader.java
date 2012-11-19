@@ -80,7 +80,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		}
 		
 		try {
-			ResourceSchema schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+			schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
 		}
 		catch (Exception e) {
 			e.printStackTrace();
