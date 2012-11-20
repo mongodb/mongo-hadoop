@@ -1,33 +1,38 @@
 package com.mongodb.hadoop.pig;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.*;
-import com.mongodb.hadoop.input.*;
-import com.mongodb.hadoop.output.MongoRecordWriter;
-import com.mongodb.hadoop.util.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.pig.*;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
-import org.apache.pig.data.*;
-import org.apache.pig.impl.logicalLayer.FrontendException;
-import org.apache.pig.impl.util.*;
-import org.apache.pig.LoadPushDown;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.pig.Expression;
+import org.apache.pig.LoadFunc;
+import org.apache.pig.LoadMetadata;
 import org.apache.pig.ResourceSchema;
-import org.apache.pig.LoadPushDown.RequiredField;
-import org.apache.pig.LoadPushDown.RequiredFieldResponse;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+import org.apache.pig.ResourceStatistics;
+import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
+import org.apache.pig.data.BagFactory;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataType;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.util.Utils;
+import org.apache.pig.parser.ParserException;
 import org.bson.BSONObject;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.input.MongoRecordReader;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
-import java.io.*;
-import java.text.ParseException;
-import java.util.*;
-
-public class MongoLoader extends LoadFunc implements LoadPushDown {
+public class MongoLoader extends LoadFunc implements LoadMetadata {
 	private static final Log log = LogFactory.getLog( MongoStorage.class );
 	private TupleFactory tupleFactory = TupleFactory.getInstance();
 	private BagFactory bagFactory = BagFactory.getInstance();
@@ -37,10 +42,18 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
     protected ResourceSchema schema = null;
     
     ResourceFieldSchema[] fields;
-    //private final MongoStorageOptions options;
     
     public MongoLoader () {
+    	throw new IllegalArgumentException("Undefined Schema");
+    }
     
+    public MongoLoader (String userSchema) {
+    	try {
+			schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
+			fields = schema.getFields();
+		} catch (ParserException e) {
+			throw new IllegalArgumentException("Invalid Schema Format");
+		}
     }
 
 	@Override
@@ -67,78 +80,84 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		this._recordReader = (MongoRecordReader) reader;
 		log.info("Preparing to read with " + _recordReader);
 		
-		if(_recordReader == null)
+		if(_recordReader == null) {
 			throw new IOException("Invalid Record Reader");
-		
-		UDFContext udfc = UDFContext.getUDFContext();
-		Configuration c = udfc.getJobConf();
-		Properties p = udfc.getUDFProperties(this.getClass(), new String[]{_udfContextSignature});
-		
-		String strSchema = c.get("mongo.pig.output.schema");
-		if(strSchema == null) {
-			throw new IOException("Please define a schema");
 		}
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+    protected Object readField(Object obj, ResourceFieldSchema field) throws IOException {
+		if(obj == null)
+			return null;
 		
 		try {
-			schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-        }
+    		switch (field.getType()) {
+    		case DataType.INTEGER:
+    			return Integer.parseInt(obj.toString());
+    		case DataType.LONG:
+    			return Long.parseLong(obj.toString());
+    		case DataType.FLOAT:
+    			return Float.parseFloat(obj.toString());
+    		case DataType.DOUBLE:
+    			return Double.parseDouble(obj.toString());
+    		case DataType.BYTEARRAY:
+    			return obj;
+    		case DataType.CHARARRAY:
+    			return obj.toString();
+    		case DataType.TUPLE:
+    			ResourceSchema s = field.getSchema();
+    			ResourceFieldSchema[] fs = s.getFields();
+    			Tuple t = tupleFactory.newTuple(fs.length);
+    			
+    			BasicDBObject val = (BasicDBObject)obj;
+    			
+    			for(int j = 0; j < fs.length; j++) {
+    				t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
+    			}
+    			
+    			return t;
+    			
+    		case DataType.BAG:
+    			s = field.getSchema();
+    			fs = s.getFields();
+    			
+    			s = fs[0].getSchema();
+    			fs = s.getFields();
+    			
+    			DataBag bag = bagFactory.newDefaultBag();
+    			
+    			BasicDBList vals = (BasicDBList)obj;
+    						
+    			for(int j = 0; j < vals.size(); j++) {
+    				t = tupleFactory.newTuple(fs.length);
+    				for(int k = 0; k < fs.length; k++) {
+    					t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
+    				}
+    				bag.add(t);
+    			}
+    			
+    			return bag;
 
-		fields = schema.getFields();
-	}
-	private Object readField(Object obj, ResourceFieldSchema field) throws IOException {
-		switch (field.getType()) {
-		case DataType.INTEGER:
-			return Integer.parseInt(obj.toString());
-		case DataType.LONG:
-			return Long.parseLong(obj.toString());
-		case DataType.FLOAT:
-			return Float.parseFloat(obj.toString());
-		case DataType.DOUBLE:
-			return Double.parseDouble(obj.toString());
-		case DataType.BYTEARRAY:
-			return obj;
-		case DataType.CHARARRAY:
-			return obj.toString().toCharArray();
-		case DataType.TUPLE:
-			ResourceSchema s = field.getSchema();
-			ResourceFieldSchema[] fs = s.getFields();
-			Tuple t = tupleFactory.newTuple(fs.length);
-			
-			BasicDBObject val = (BasicDBObject)obj;
-			
-			for(int j = 0; j < fs.length; j++) {
-				t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
-			}
-			
-			return t;
-			
-		case DataType.BAG:
-			s = field.getSchema();
-			fs = s.getFields();
-			
-			s = fs[0].getSchema();
-			fs = s.getFields();
-			
-			DataBag bag = bagFactory.newDefaultBag();
-			
-			BasicDBList vals = (BasicDBList)obj;
-						
-			for(int j = 0; j < vals.size(); j++) {
-				
-				t = tupleFactory.newTuple(fs.length);
-				for(int k = 0; k < fs.length; k++) {
-					t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
-				}
-				bag.add(t);
-			}
-			
-			
-			return bag;
-		default:
-			return obj;
+    		case DataType.MAP:
+                s = field.getSchema();
+                fs = s.getFields();
+                
+                BasicDBObject inputMap = (BasicDBObject) obj;
+                
+                Map outputMap = new HashMap();
+                for (String key : inputMap.keySet()) {
+                    outputMap.put(key, readField(inputMap.get(key), fs[0]));
+                }
+                return outputMap;
+
+    		default:
+    			return obj;
+    		}
+		} catch (Exception e) {
+		    String fieldName = field.getName() == null ? "" : field.getName();
+		    String type = DataType.genTypeToNameMap().get(field.getType());
+		    log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
+		    return null;
 		}
 		
 	}
@@ -160,25 +179,7 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
 		for(int i = 0; i < fields.length; i++) {
 			t.set(i, readField(val.get(fields[i].getName()), fields[i]));
 		}
-		
-		//log.info("Line:" + val.toString());
-		
-		//log.info("Projection String: " + this.projectionArray);
-		/*ArrayList<Object> protoTuple = new ArrayList<Object>();
-		
-		for(String key: val.keySet())
-		{
-			if(projectionArray.contains(key)) {
-				protoTuple.add(projectionArray.indexOf(key), val.get(key));
-			}
-		}
-		
-		Tuple t = tupleFactory.newTuple(protoTuple);*/
-		
-		//Tuple t = tupleFactory.newTuple(2);
-		//t.set(0, "test");
-		
-		
+
 		return t;
 	}
 	
@@ -198,17 +199,32 @@ public class MongoLoader extends LoadFunc implements LoadPushDown {
     MongoRecordReader _recordReader = null;
 
 	@Override
-	public List<OperatorSet> getFeatures() {
+	public ResourceSchema getSchema(String location, Job job)
+			throws IOException {
+		if (schema != null) {
+			return schema;
+		}
+		return null;
+	}
+
+	@Override
+	public ResourceStatistics getStatistics(String location, Job job)
+			throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RequiredFieldResponse pushProjection(
-			RequiredFieldList requiredFieldList) throws FrontendException {
-		log.info("HERE");
+	public String[] getPartitionKeys(String location, Job job)
+			throws IOException {
+		// TODO Auto-generated method stub
 		return null;
 	}
 
-
+	@Override
+	public void setPartitionFilter(Expression partitionFilter)
+			throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
 }
