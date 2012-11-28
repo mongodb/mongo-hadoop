@@ -22,17 +22,24 @@
 
 -- Register the tutorial JAR file so that the included UDFs can be called in the script.
 
--- Based on the Pig tutorial ,modified for Mongo support tests
+-- Based on the Pig tutorial, modified for Mongo support tests
+
+-- Modify these three paths so that they point to the jar files built for your distribution of hadoop.
 REGISTER target/mongo-hadoop.jar;
 REGISTER pig/target/mongo-hadoop-pig.jar
 REGISTER core/target/mongo-hadoop-core.jar
-REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;
-REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
+-- Modify this path to refer to the mongoDB java driver JAR file
+-- download here: https://github.com/mongodb/mongo-java-driver/downloads
+REGISTER examples/pigtutorial/lib/mongo-java-driver.jar;
+
+-- Modify this path to refer to the jar file of the pig tutorial.
+-- You can build it by running "ant jar" in the tutorial/ folder of your pig distribution.
+REGISTER examples/pigtutorial/lib/pigtutorial.jar;
 
 -- Use the MongoLoader to query return the fields 'user', 'time', 'query' to Pig
 -- Input: (user,time,query) 
-raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user', 'time', 'query') AS (user, time, query);
+raw = LOAD 'mongodb://localhost/demo.excitelog' USING com.mongodb.hadoop.pig.MongoLoader('user:chararray, time:chararray, query:chararray') AS (user, time, query);
 
 -- Call the NonURLDetector UDF to remove records if the query field is empty or a URL. 
 clean1 = FILTER raw BY org.apache.pig.tutorial.NonURLDetector(query);
