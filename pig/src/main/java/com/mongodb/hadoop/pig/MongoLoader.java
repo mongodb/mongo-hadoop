@@ -33,115 +33,125 @@ import com.mongodb.hadoop.input.MongoRecordReader;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 
 public class MongoLoader extends LoadFunc implements LoadMetadata {
-	private static final Log log = LogFactory.getLog( MongoStorage.class );
-	private TupleFactory tupleFactory = TupleFactory.getInstance();
-	private BagFactory bagFactory = BagFactory.getInstance();
+    private static final Log log = LogFactory.getLog( MongoStorage.class );
+    private TupleFactory tupleFactory = TupleFactory.getInstance();
+    private BagFactory bagFactory = BagFactory.getInstance();
     // Pig specific settings
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
+    
     protected ResourceSchema schema = null;
     
     ResourceFieldSchema[] fields;
     
     public MongoLoader () {
-    	throw new IllegalArgumentException("Undefined Schema");
+        try {
+            //If no schema is passed in we'll load the whole document as a map.
+            schema = new ResourceSchema(Utils.getSchemaFromString("document:map[]"));
+        } catch (ParserException e) {
+            //Should never get here
+            throw new IllegalArgumentException("Error constructing default MongoLoader schema");
+        }
     }
     
     public MongoLoader (String userSchema) {
-    	try {
-			schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
-			fields = schema.getFields();
-		} catch (ParserException e) {
-			throw new IllegalArgumentException("Invalid Schema Format");
-		}
+        try {
+            schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
+            fields = schema.getFields();
+        } catch (ParserException e) {
+            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage());
+        }
     }
 
-	@Override
-	public void setLocation(String location, Job job) throws IOException {
-		final Configuration config = job.getConfiguration();
+    @Override
+    public void setLocation(String location, Job job) throws IOException {
+        final Configuration config = job.getConfiguration();
         log.info( "Load Location Config: " + config + " For URI: " + location );
         if ( !location.startsWith( "mongodb://" ) ) {
             throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string." );
         }
         MongoConfigUtil.setInputURI( config, location );
         
-	}
+    }
 
-	@Override
-	public InputFormat getInputFormat() throws IOException {
-		final MongoInputFormat inputFormat = new MongoInputFormat();
-		log.info("InputFormat..." + inputFormat);
-		return inputFormat;
-	}
+    @Override
+    public InputFormat getInputFormat() throws IOException {
+        final MongoInputFormat inputFormat = new MongoInputFormat();
+        return inputFormat;
+    }
 
-	@Override
-	public void prepareToRead(RecordReader reader, PigSplit split)
-			throws IOException {
-		this._recordReader = (MongoRecordReader) reader;
-		log.info("Preparing to read with " + _recordReader);
-		
-		if(_recordReader == null) {
-			throw new IOException("Invalid Record Reader");
-		}
-	}
-	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public void prepareToRead(RecordReader reader, PigSplit split)
+            throws IOException {
+        this._recordReader = (MongoRecordReader) reader;
+
+        if(_recordReader == null) {
+            throw new IOException("Invalid Record Reader");
+        }
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     protected Object readField(Object obj, ResourceFieldSchema field) throws IOException {
-		if(obj == null)
-			return null;
-		
-		try {
-    		switch (field.getType()) {
-    		case DataType.INTEGER:
-    			return Integer.parseInt(obj.toString());
-    		case DataType.LONG:
-    			return Long.parseLong(obj.toString());
-    		case DataType.FLOAT:
-    			return Float.parseFloat(obj.toString());
-    		case DataType.DOUBLE:
-    			return Double.parseDouble(obj.toString());
-    		case DataType.BYTEARRAY:
-    			return obj;
-    		case DataType.CHARARRAY:
-    			return obj.toString();
-    		case DataType.TUPLE:
-    			ResourceSchema s = field.getSchema();
-    			ResourceFieldSchema[] fs = s.getFields();
-    			Tuple t = tupleFactory.newTuple(fs.length);
-    			
-    			BasicDBObject val = (BasicDBObject)obj;
-    			
-    			for(int j = 0; j < fs.length; j++) {
-    				t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
-    			}
-    			
-    			return t;
-    			
-    		case DataType.BAG:
-    			s = field.getSchema();
-    			fs = s.getFields();
-    			
-    			s = fs[0].getSchema();
-    			fs = s.getFields();
-    			
-    			DataBag bag = bagFactory.newDefaultBag();
-    			
-    			BasicDBList vals = (BasicDBList)obj;
-    						
-    			for(int j = 0; j < vals.size(); j++) {
-    				t = tupleFactory.newTuple(fs.length);
-    				for(int k = 0; k < fs.length; k++) {
-    					t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
-    				}
-    				bag.add(t);
-    			}
-    			
-    			return bag;
-
-    		case DataType.MAP:
+        if(obj == null)
+            return null;
+        
+        try {
+            switch (field.getType()) {
+            case DataType.INTEGER:
+                return Integer.parseInt(obj.toString());
+            case DataType.LONG:
+                return Long.parseLong(obj.toString());
+            case DataType.FLOAT:
+                return Float.parseFloat(obj.toString());
+            case DataType.DOUBLE:
+                return Double.parseDouble(obj.toString());
+            case DataType.BYTEARRAY:
+                return obj;
+            case DataType.CHARARRAY:
+                return obj.toString();
+            case DataType.TUPLE:
+                ResourceSchema s = field.getSchema();
+                ResourceFieldSchema[] fs = s.getFields();
+                Tuple t = tupleFactory.newTuple(fs.length);
+                
+                BasicDBObject val = (BasicDBObject)obj;
+                
+                for(int j = 0; j < fs.length; j++) {
+                    t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
+                }
+                
+                return t;
+                
+            case DataType.BAG:
                 s = field.getSchema();
                 fs = s.getFields();
                 
+                s = fs[0].getSchema();
+                fs = s.getFields();
+                
+                DataBag bag = bagFactory.newDefaultBag();
+                
+                BasicDBList vals = (BasicDBList)obj;
+                            
+                for(int j = 0; j < vals.size(); j++) {
+                    t = tupleFactory.newTuple(fs.length);
+                    for(int k = 0; k < fs.length; k++) {
+                        t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
+                    }
+                    bag.add(t);
+                }
+                
+                return bag;
+
+            case DataType.MAP:
+                s = field.getSchema();
+                if (s != null) {
+                    fs = s.getFields();
+                } else {
+                    //If no internal schema for the map was specified - treat everything as a bytearray.
+                    fs = new ResourceSchema(Utils.getSchemaFromString("b:bytearray")).getFields();
+                }
+
                 BasicDBObject inputMap = (BasicDBObject) obj;
                 
                 Map outputMap = new HashMap();
@@ -150,40 +160,45 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
                 }
                 return outputMap;
 
-    		default:
-    			return obj;
-    		}
-		} catch (Exception e) {
-		    String fieldName = field.getName() == null ? "" : field.getName();
-		    String type = DataType.genTypeToNameMap().get(field.getType());
-		    log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
-		    return null;
-		}
-		
-	}
-	
-	@Override
-	public Tuple getNext() throws IOException {
-		BSONObject val = null;
-		try {
-			if(!_recordReader.nextKeyValue()) return null;
-			
-			val = _recordReader.getCurrentValue();
-		}
-		catch (Exception ie) {
-			throw new IOException(ie);
-		}
-		
-		Tuple t = tupleFactory.newTuple(fields.length);
-		
-		for(int i = 0; i < fields.length; i++) {
-			t.set(i, readField(val.get(fields[i].getName()), fields[i]));
-		}
+            default:
+                return obj;
+            }
+        } catch (Exception e) {
+            String fieldName = field.getName() == null ? "" : field.getName();
+            String type = DataType.genTypeToNameMap().get(field.getType());
+            log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
+            return null;
+        }
+    }
+    
+    @Override
+    public Tuple getNext() throws IOException {
+        BSONObject val = null;
+        try {
+            if(!_recordReader.nextKeyValue()) return null;
+            
+            val = _recordReader.getCurrentValue();
+        }
+        catch (Exception ie) {
+            throw new IOException(ie);
+        }
+        
+        Tuple t;
+        if (fields != null) {
+            t = tupleFactory.newTuple(fields.length);
+            
+            for(int i = 0; i < fields.length; i++) {
+                t.set(i, readField(val.get(fields[i].getName()), fields[i]));
+            }
+        } else {
+            t = tupleFactory.newTuple(1);
+            t.set(0, readField(val, schema.getFields()[0]));
+        }
 
-		return t;
-	}
-	
-	public String relativeToAbsolutePath(String location, org.apache.hadoop.fs.Path curDir)
+        return t;
+    }
+    
+    public String relativeToAbsolutePath(String location, org.apache.hadoop.fs.Path curDir)
      throws IOException {
         // Don't convert anything - override to keep base from messing with URI
         log.info( "Converting path: " + location + "(curDir: " + curDir + ")" );
@@ -198,33 +213,32 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     String _udfContextSignature = null;
     MongoRecordReader _recordReader = null;
 
-	@Override
-	public ResourceSchema getSchema(String location, Job job)
-			throws IOException {
-		if (schema != null) {
-			return schema;
-		}
-		return null;
-	}
+    @Override
+    public ResourceSchema getSchema(String location, Job job)
+            throws IOException {
+        if (schema != null) {
+            return schema;
+        }
+        return null;
+    }
 
-	@Override
-	public ResourceStatistics getStatistics(String location, Job job)
-			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ResourceStatistics getStatistics(String location, Job job)
+            throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public String[] getPartitionKeys(String location, Job job)
-			throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public String[] getPartitionKeys(String location, Job job)
+            throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void setPartitionFilter(Expression partitionFilter)
-			throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void setPartitionFilter(Expression partitionFilter)
+            throws IOException {
+        // TODO Auto-generated method stub
+    }
 }
