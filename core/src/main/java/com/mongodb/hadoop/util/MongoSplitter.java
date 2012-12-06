@@ -40,10 +40,19 @@ public class MongoSplitter {
          * split; Actual querying will be done on the individual mappers.
          */
         MongoURI uri = conf.getInputURI();
-        DBCollection coll = MongoConfigUtil.getCollection(uri);
-        DB db = coll.getDB(); 
+
+        DBCollection coll;
+        DB db;
+        try {
+            coll = MongoConfigUtil.getCollection(uri);
+            db = coll.getDB();
+        } catch (Exception e) {
+            String message = e.getMessage() + "\n\nMongo connection strings are required to be of the form:\n" +
+                    " mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]]/database.collection";
+            throw new IllegalStateException(message, e);
+        }
         Mongo mongo = db.getMongo();
-        
+
         final CommandResult stats = coll.getStats();
         
         final boolean isSharded = stats.getBoolean( "sharded", false );
