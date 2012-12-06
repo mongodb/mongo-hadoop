@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.Tuple;
+import org.bson.BSONObject;
 import org.junit.Test;
 
 import com.mongodb.BasicDBList;
@@ -176,6 +177,21 @@ public class MongoLoaderTest {
     }
     
     @Test
+    public void testReadField_simpleMapNoSchema() throws Exception {
+        String userSchema = "m:[]";
+        BasicDBObject obj = new BasicDBObject()
+            .append("k1", 1)
+            .append("k2", 2);
+        
+        MongoLoader ml = new MongoLoader(userSchema);
+        Map m = (Map) ml.readField(obj, ml.fields[0]);
+
+        assertEquals(2, m.size());
+        assertEquals(1, m.get("k1"));
+        assertEquals(2, m.get("k2"));
+    }
+    
+    @Test
     public void testReadField_simpleMap() throws Exception {
         String userSchema = "m:[int]";
         BasicDBObject obj = new BasicDBObject()
@@ -214,5 +230,18 @@ public class MongoLoaderTest {
         
         Tuple t2 = (Tuple) m.get("v2");
         assertEquals("t21 value", t2.get(0));
+    }
+    
+    @Test
+    public void testReadField_noUserSchema() throws Exception {
+        BSONObject val = new BasicDBObject()
+            .append("t1", "t11 value")
+            .append("t2", 12);
+        
+        MongoLoader ml = new MongoLoader();
+        Map result = (Map) ml.readField(val, ml.schema.getFields()[0]);
+        assertEquals(2, result.size());
+        assertEquals("t11 value", result.get("t1"));
+        assertEquals(12, result.get("t2"));
     }
 }
