@@ -94,7 +94,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         _recordWriter.write( null, builder.get() );
     }
 
-    private void writeField(BasicDBObjectBuilder builder,
+    protected void writeField(BasicDBObjectBuilder builder,
                             ResourceSchema.ResourceFieldSchema field,
                             Object d) throws IOException {
 
@@ -178,6 +178,12 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                 }
 
                 builder.add( field.getName(), a);
+                return;
+            case DataType.MAP:
+                Map map = (Map) d;
+                for(Object key : map.keySet()) {
+                    builder.add(key.toString(), map.get(key));
+                }
                 return;
         }
     }
