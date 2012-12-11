@@ -23,7 +23,7 @@ import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.Utils;
-import org.apache.pig.parser.ParserException;
+//import org.apache.pig.parser.ParserException;
 import org.bson.BSONObject;
 
 import com.mongodb.BasicDBList;
@@ -51,7 +51,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     	try {
 			schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
 			fields = schema.getFields();
-		} catch (ParserException e) {
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Invalid Schema Format");
 		}
     }
