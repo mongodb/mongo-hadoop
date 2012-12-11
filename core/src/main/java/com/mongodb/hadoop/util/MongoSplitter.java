@@ -1,13 +1,29 @@
 package com.mongodb.hadoop.util;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.*;
-import com.mongodb.hadoop.input.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import java.net.UnknownHostException;
-import java.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.mapreduce.InputSplit;
+
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.CommandResult;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.MongoURI;
+import com.mongodb.hadoop.MongoConfig;
+import com.mongodb.hadoop.input.MongoInputSplit;
 
 /**
  * Copyright (c) 2010, 2011 10gen, Inc. <http://10gen.com>
@@ -309,11 +325,13 @@ public class MongoSplitter {
         try {
             int numChunks = 0;
             final int numExpectedChunks = cur.size();
+            Map<String, LinkedList<InputSplit>> shardToSplits = new HashMap<String, LinkedList<InputSplit>>();
 
-            final List<InputSplit> splits = new ArrayList<InputSplit>( numExpectedChunks );
             while ( cur.hasNext() ){
                 numChunks++;
                 final BasicDBObject row = (BasicDBObject) cur.next();
+                final String shardName = row.getString( "shard" );
+
                 DBObject minObj = ( (DBObject) row.get( "min" ) );
                 DBObject shardKeyQuery = new BasicDBObject();
                 DBObject min = new BasicDBObject();
@@ -342,16 +360,39 @@ public class MongoSplitter {
                 MongoURI inputURI = conf.getInputURI();
 
                 if ( useShards ){
-                    final String shardname = row.getString( "shard" );
-
-                    String host = shardMap.get( shardname );
-
+                    String host = shardMap.get( shardName );
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
-                splits.add(
-                        new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, conf.getFields(), conf.getSort(),  // TODO - should inputKey be the shard key?
-                                             conf.getLimit(), conf.getSkip(), 
-                                             conf.isNoTimeout() ) );
+                
+                LinkedList<InputSplit> shardSplits = shardToSplits.get(shardName);
+                if (shardSplits == null) {
+                    shardSplits = new LinkedList<InputSplit>();
+                    shardToSplits.put(shardName, shardSplits);
+                }
+                
+                MongoInputSplit mongoInputSplit = new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, conf.getFields(), conf.getSort(),  // TODO - should inputKey be the shard key?
+                                     conf.getLimit(), conf.getSkip(), 
+                                     conf.isNoTimeout() );
+                shardSplits.add( mongoInputSplit );
+            }
+            
+            //Round robin splits across shards
+            final List<InputSplit> splits = new ArrayList<InputSplit>( numChunks );
+            int splitIndex = 0;
+            while (splitIndex < numChunks) {
+                Set<String> shardSplitsToRemove = new HashSet<String>();
+                for (Map.Entry<String, LinkedList<InputSplit>> shardSplits: shardToSplits.entrySet()) {
+                    LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
+                    InputSplit split = shardSplitsList.pop();
+                    splits.add(splitIndex, split);
+                    splitIndex++;
+                    if (shardSplitsList.isEmpty()) {
+                        shardSplitsToRemove.add(shardSplits.getKey());
+                    }
+                }
+                for (String shardName : shardSplitsToRemove) {
+                    shardToSplits.remove(shardName);
+                }
             }
 
             if ( log.isDebugEnabled() ){
