@@ -367,24 +367,8 @@ public class MongoSplitter {
                 shardSplits.add( mongoInputSplit );
             }
             
-            //Round robin splits across shards
-            final List<InputSplit> splits = new ArrayList<InputSplit>( numChunks );
-            int splitIndex = 0;
-            while (splitIndex < numChunks) {
-                Set<String> shardSplitsToRemove = new HashSet<String>();
-                for (Map.Entry<String, LinkedList<InputSplit>> shardSplits: shardToSplits.entrySet()) {
-                    LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
-                    InputSplit split = shardSplitsList.pop();
-                    splits.add(splitIndex, split);
-                    splitIndex++;
-                    if (shardSplitsList.isEmpty()) {
-                        shardSplitsToRemove.add(shardSplits.getKey());
-                    }
-                }
-                for (String shardName : shardSplitsToRemove) {
-                    shardToSplits.remove(shardName);
-                }
-            }
+            final List<InputSplit> splits = createSplitList(numChunks,
+                    shardToSplits);
 
             if ( log.isDebugEnabled() ){
                 log.debug( "MongoInputFormat.getSplitsUsingChunks(): There were "
@@ -401,6 +385,38 @@ public class MongoSplitter {
             if ( cur != null )
                 cur.close();
         }
+    }
+
+    /**
+     * Round robin splits across shards.  The splits are going to end up as Map jobs
+     * processed in the same order as the splits.  We want to have continuous map
+     * jobs be on separate shards so that as you're completing map jobs the work
+     * is spread evenly across shard machines.
+     * 
+     * @param numChunks - Number of chunks
+     * @param shardToSplits - Map of shardName to list of splits on that shard.
+     * @return
+     */
+    protected static List<InputSplit> createSplitList(int numChunks,
+            Map<String, LinkedList<InputSplit>> shardToSplits) {
+        final List<InputSplit> splits = new ArrayList<InputSplit>( numChunks );
+        int splitIndex = 0;
+        while (splitIndex < numChunks) {
+            Set<String> shardSplitsToRemove = new HashSet<String>();
+            for (Map.Entry<String, LinkedList<InputSplit>> shardSplits: shardToSplits.entrySet()) {
+                LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
+                InputSplit split = shardSplitsList.pop();
+                splits.add(splitIndex, split);
+                splitIndex++;
+                if (shardSplitsList.isEmpty()) {
+                    shardSplitsToRemove.add(shardSplits.getKey());
+                }
+            }
+            for (String shardName : shardSplitsToRemove) {
+                shardToSplits.remove(shardName);
+            }
+        }
+        return splits;
     }
 
     private static MongoURI getNewURI( MongoURI originalUri, String newServerUri, Boolean slaveok ){
