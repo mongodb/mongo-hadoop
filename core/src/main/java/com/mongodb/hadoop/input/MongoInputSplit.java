@@ -54,8 +54,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
         getBSONEncoder();
     }
 
-
-
     /**
      * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
      * in the split instead.
@@ -226,7 +224,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
         return result;
     }
 
-    private MongoURI _mongoURI;
+    protected MongoURI _mongoURI;
     private String _keyField;
     private DBObject _querySpec;
     private DBObject _fieldSpec;
