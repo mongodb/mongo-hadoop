@@ -91,6 +91,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 			return null;
 		
 		try {
+			if(field == null){
+				return obj;
+			}
+
     		switch (field.getType()) {
     		case DataType.INTEGER:
     			return Integer.parseInt(obj.toString());
@@ -140,13 +144,16 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
     		case DataType.MAP:
                 s = field.getSchema();
-                fs = s.getFields();
-                
+                fs = s != null ? s.getFields() : null;
                 BasicDBObject inputMap = (BasicDBObject) obj;
                 
                 Map outputMap = new HashMap();
                 for (String key : inputMap.keySet()) {
-                    outputMap.put(key, readField(inputMap.get(key), fs[0]));
+					if(fs != null){
+						outputMap.put(key, readField(inputMap.get(key), fs[0]));
+					}else{
+						outputMap.put(key, readField(inputMap.get(key), null));
+					}
                 }
                 return outputMap;
 
