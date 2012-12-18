@@ -24,6 +24,8 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
+import java.util.*;
+
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
  */
@@ -242,6 +244,20 @@ public class MongoConfigUtil {
         conf.setClass( JOB_INPUT_FORMAT, val, InputFormat.class );
     }
 
+    public static List<MongoURI> getMongoURIs( Configuration conf, String key ){
+        final String raw = conf.get( key );
+        if (raw != null && !raw.trim().isEmpty() ) {
+            List<MongoURI> result = new LinkedList<MongoURI>();
+            String[] split = raw.split(" ");
+            for (String mongoURI : split) {
+                result.add(new MongoURI(mongoURI));
+            }
+            return result;
+        }
+        else
+            return Collections.emptyList();
+    }
+
     public static MongoURI getMongoURI( Configuration conf, String key ){
         final String raw = conf.get( key );
         if ( raw != null && !raw.trim().isEmpty() )
@@ -252,6 +268,14 @@ public class MongoConfigUtil {
 
     public static MongoURI getInputURI( Configuration conf ){
         return getMongoURI( conf, INPUT_URI );
+    }
+
+    public static List<DBCollection> getCollections( List<MongoURI> uris ){
+        List<DBCollection> dbCollections = new LinkedList<DBCollection>();
+        for (MongoURI uri : uris) {
+            dbCollections.add(getCollection(uri));
+        }
+        return dbCollections;
     }
 
     public static DBCollection getCollection( MongoURI uri ){
@@ -278,8 +302,18 @@ public class MongoConfigUtil {
 
     public static DBCollection getOutputCollection( Configuration conf ){
         try {
-            final MongoURI _uri = getOutputURI( conf );
-            return getCollection( _uri );
+            final MongoURI _uri = getOutputURI(conf);
+            return getCollection(_uri);
+        }
+        catch ( final Exception e ) {
+            throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
+        }
+    }
+
+    public static List<DBCollection> getOutputCollections( Configuration conf ){
+        try {
+            final List<MongoURI> _uris = getOutputURIs(conf);
+            return getCollections(_uris);
         }
         catch ( final Exception e ) {
             throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
@@ -288,7 +322,7 @@ public class MongoConfigUtil {
 
     public static DBCollection getInputCollection( Configuration conf ){
         try {
-            final MongoURI _uri = getInputURI( conf );
+            final MongoURI _uri = getInputURI(conf);
             return getCollection( _uri );
         }
         catch ( final Exception e ) {
@@ -318,7 +352,11 @@ public class MongoConfigUtil {
     }
 
     public static void setInputURI( Configuration conf, MongoURI uri ){
-        setMongoURI( conf, INPUT_URI, uri );
+        setMongoURI(conf, INPUT_URI, uri);
+    }
+
+    public static List<MongoURI> getOutputURIs( Configuration conf ){
+        return getMongoURIs(conf, OUTPUT_URI);
     }
 
     public static MongoURI getOutputURI( Configuration conf ){
