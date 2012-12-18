@@ -33,3 +33,4 @@ streaming/target/*
 target/*
 .lib/*
 *.gem
+testing/*.pyc
