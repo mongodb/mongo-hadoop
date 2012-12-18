@@ -5,7 +5,6 @@ import subprocess
 import os
 import time
 HADOOP_HOME=os.environ['HADOOP_HOME']
-HADOOP_VER=os.environ['HADOOPVER']
 #declare -a job_args
 #cd ..
 
