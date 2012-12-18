@@ -4,9 +4,24 @@ import mongo_manager
 import subprocess
 import os
 import time
-HADOOP_HOME="/Users/mike/hadoop/hadoop-1.0.4"
+HADOOP_HOME=os.environ['HADOOP_HOME']
+HADOOP_VER=os.environ['HADOOPVER']
 #declare -a job_args
 #cd ..
+
+MONGO_HADOOP_ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+JOBJAR_PATH=os.path.join(MONGO_HADOOP_ROOT,
+    "examples",
+    "treasury_yield",
+    "target",
+    "treasury-example_*.jar")
+JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
+    'examples',
+    'treasury_yield',
+    'src',
+    'main',
+    'resources',
+    'yield_historical_in.json')
 
 parameters = {
   "mongo.job.verbose":"true",
@@ -36,14 +51,14 @@ class TestBasic(unittest.TestCase):
         mongo_manager.mongo_import(self.server_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
-                                   "/Users/mike/projects/mongo-hadoop/examples/treasury_yield/src/main/resources/yield_historical_in.json")
+                                   JSONFILE_PATH)
         print "server is ready."
 
     def test_treasury(self):
         print "running treasury example test."
         cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
         cmd.append("jar")
-        cmd.append("/Users/mike/projects/mongo-hadoop/examples/treasury_yield/target/treasury-example_1.0.3-1.1.0-SNAPSHOT.jar")
+        cmd.append(JOBJAR_PATH)
         #cmd.append("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
 
         for key, val in parameters.items():
@@ -55,7 +70,7 @@ class TestBasic(unittest.TestCase):
         cmd.append("-D")
         cmd.append("mongo.output.uri=mongodb://%s/mongo_hadoop.yield_historical.out" % self.server_hostname)
 
-        subprocess.call(cmd)
+        subprocess.call(' '.join(cmd), shell=True)
         self.assertEqual( self.server.connection()['mongo_hadoop']['yield_historical.out'].count(), 21 )
         print ' '.join(cmd)
 
@@ -85,7 +100,7 @@ class TestSharded(unittest.TestCase):
         mongo_manager.mongo_import(self.mongos_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
-                                   "/Users/mike/projects/mongo-hadoop/examples/treasury_yield/src/main/resources/yield_historical_in.json")
+                                   JSONFILE_PATH)
         self.mongos_connection['admin'].command("enablesharding", "mongo_hadoop")
         self.mongos_connection['admin'].command("shardCollection", "mongo_hadoop.yield_historical.in", key={"_id":1})
         self.mongos_connection['admin'].command("split", "mongo_hadoop.yield_historical.in", find={"_id":1})
@@ -94,8 +109,7 @@ class TestSharded(unittest.TestCase):
         print "running treasury example test."
         cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
         cmd.append("jar")
-        cmd.append("/Users/mike/projects/mongo-hadoop/examples/treasury_yield/target/treasury-example_1.0.3-1.1.0-SNAPSHOT.jar")
-        #cmd.append("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        cmd.append(JOBJAR_PATH)
 
         for key, val in parameters.items():
             cmd.append("-D")
@@ -106,7 +120,7 @@ class TestSharded(unittest.TestCase):
         cmd.append("-D")
         cmd.append("mongo.output.uri=mongodb://%s/mongo_hadoop.yield_historical.out" % self.mongos_hostname)
 
-        subprocess.call(cmd)
+        subprocess.call(' '.join(cmd), shell=True)
         self.assertEqual( self.mongos_connection['mongo_hadoop']['yield_historical.out'].count(), 21 )
         print ' '.join(cmd)
 
