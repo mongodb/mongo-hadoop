@@ -68,6 +68,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     public boolean next(NullWritable key, BSONWritable value) throws IOException {
         if ( nextKeyValue() ){
             log.trace( "Had another k/v" );
+            value.clear();
             value.putAll( this.value );
             return true;
         }

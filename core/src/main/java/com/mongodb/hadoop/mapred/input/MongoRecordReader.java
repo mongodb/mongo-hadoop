@@ -94,6 +94,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         if ( nextKeyValue() ){
             log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
+            value.clear();
             value.putAll( getCurrentValue() );
             return true;
         }
