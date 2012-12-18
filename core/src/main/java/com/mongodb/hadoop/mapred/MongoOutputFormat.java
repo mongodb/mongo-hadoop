@@ -40,7 +40,7 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
     }
 
     public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) {
-        return new MongoRecordWriter(MongoConfigUtil.getOutputCollection(job), job);
+        return new MongoRecordWriter(MongoConfigUtil.getOutputCollections(job), job);
     }
 
 }
