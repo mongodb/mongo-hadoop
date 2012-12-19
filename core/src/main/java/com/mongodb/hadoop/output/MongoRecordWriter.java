@@ -31,6 +31,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     
     private final String[] updateKeys;
     private final boolean multiUpdate;
+    private int roundRobinCounter = 0;
 
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx ){
         this(c, ctx, null);
@@ -90,8 +91,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
 
         try {
-            // CARSTEN do the calculation
-            DBCollection dbCollection = getDbCollectionByHashCode(key, value);
+            DBCollection dbCollection = getDbCollectionByHashCode();
 
             if (updateKeys == null) {
                 dbCollection.save(o);
@@ -115,9 +115,8 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
     }
 
-    private DBCollection getDbCollectionByHashCode(K key, V value) {
-        int hash = key.hashCode() + value.hashCode();
-        int hostIndex = (hash & 0x7FFFFFFF) % numberOfHosts;
+    private synchronized DBCollection getDbCollectionByHashCode() {
+        int hostIndex = (roundRobinCounter++ & 0x7FFFFFFF) % numberOfHosts;
         return _collections.get(hostIndex);
     }
 

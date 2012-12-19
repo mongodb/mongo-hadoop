@@ -70,7 +70,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         }
 
         try {
-            DBCollection collection = getDbCollectionByHashCode(key, value);
+            DBCollection collection = getDbCollectionByHashCode();
             collection.save(o);
         }
         catch (final MongoException e) {
@@ -78,9 +78,8 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         }
     }
 
-    private DBCollection getDbCollectionByHashCode(K key, V value) {
-        int hash = key.hashCode() + value.hashCode();
-        int hostIndex = (hash & 0x7FFFFFFF) % _numberOfHosts;
+    private synchronized DBCollection getDbCollectionByHashCode() {
+        int hostIndex = (_roundRobinCounter++ & 0x7FFFFFFF) % _numberOfHosts;
         return _collections.get(hostIndex);
     }
 
@@ -88,6 +87,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         return _conf;
     }
 
+    int _roundRobinCounter = 0;
     final int _numberOfHosts;
     final List<DBCollection> _collections;
     final JobConf _conf;

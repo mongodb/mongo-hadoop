@@ -19,6 +19,7 @@ package com.mongodb.hadoop.util;
 
 import com.mongodb.*;
 import com.mongodb.util.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
@@ -248,7 +249,7 @@ public class MongoConfigUtil {
         final String raw = conf.get( key );
         if (raw != null && !raw.trim().isEmpty() ) {
             List<MongoURI> result = new LinkedList<MongoURI>();
-            String[] split = raw.split(" ");
+            String[] split = StringUtils.split(raw);
             for (String mongoURI : split) {
                 result.add(new MongoURI(mongoURI));
             }
