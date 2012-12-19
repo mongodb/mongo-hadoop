@@ -91,7 +91,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
 
         try {
-            DBCollection dbCollection = getDbCollectionByHashCode();
+            DBCollection dbCollection = getDbCollectionByRoundRobin();
 
             if (updateKeys == null) {
                 dbCollection.save(o);
@@ -115,7 +115,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
     }
 
-    private synchronized DBCollection getDbCollectionByHashCode() {
+    private synchronized DBCollection getDbCollectionByRoundRobin() {
         int hostIndex = (roundRobinCounter++ & 0x7FFFFFFF) % numberOfHosts;
         return _collections.get(hostIndex);
     }

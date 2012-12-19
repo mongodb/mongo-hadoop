@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.*;
-import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
@@ -70,7 +69,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         }
 
         try {
-            DBCollection collection = getDbCollectionByHashCode();
+            DBCollection collection = getDbCollectionByRoundRobin();
             collection.save(o);
         }
         catch (final MongoException e) {
@@ -78,7 +77,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         }
     }
 
-    private synchronized DBCollection getDbCollectionByHashCode() {
+    private synchronized DBCollection getDbCollectionByRoundRobin() {
         int hostIndex = (_roundRobinCounter++ & 0x7FFFFFFF) % _numberOfHosts;
         return _collections.get(hostIndex);
     }
