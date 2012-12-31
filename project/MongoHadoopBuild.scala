@@ -73,6 +73,10 @@ object MongoHadoopBuild extends Build {
                                      base = file("examples/treasury_yield"),
                                      settings = exampleSettings ) dependsOn( core )
 
+  lazy val enronExample  = Project( id = "enron-example",
+                                     base = file("examples/enron"),
+                                     settings = exampleSettings ) dependsOn( core )
+
 
 
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq( 
