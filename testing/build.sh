@@ -9,6 +9,7 @@ rm ../build2.sbt
 cd ..
 ./sbt package
 ./sbt treasury-example/package
+./sbt enron-example/package
 rm $HADOOP_HOME/lib/mongo-hadoop*.jar
 cp core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/lib/
 cp target/mongo-hadoop_*.jar $HADOOP_HOME/lib/
