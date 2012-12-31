@@ -3,6 +3,7 @@ import org.bson.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.io.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
@@ -26,7 +27,7 @@ public class EnronMailMapper
 										.add("f", from)
 										.add("t", to)
 										.get();
-				context.write( outKey, new IntWritable(1) );
+				context.write( new BSONWritable(outKey), new IntWritable(1) );
 			}
 		}
 	}
