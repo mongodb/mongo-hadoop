@@ -17,6 +17,8 @@ import org.bson.*;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -45,6 +47,11 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
     private BSONWritable value;
+	byte[] headerBuf = new byte[4];
+	private FSDataInputStream in;
+
+	BasicBSONCallback callback = new BasicBSONCallback();
+	BasicBSONDecoder decoder = new BasicBSONDecoder();
 
     @Override
     public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -52,19 +59,35 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         this.conf = context.getConfiguration();
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-        FSDataInputStream in = null;
-        in = fs.open(file);
-        rdr = new BSONLoader(in);
+		in = fs.open(file);
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        if (rdr.hasNext()) {
-            value = new BSONWritable( rdr.next() );
-            return true;
-        } else {
+		try{
+			int bytesRead = in.read(in.getPos(), headerBuf, 0, 4);
+			if(bytesRead != 4){
+				throw new Exception("couldn't read a complete BSON header.");
+			}
+			//TODO just parse the integer so we don't init a bytebuf every time
+
+			int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
+            byte[] data = new byte[bsonDocSize + 4];
+            System.arraycopy( headerBuf, 0, data, 0, 4 );
+			in.seek(in.getPos() + 4);
+            bytesRead = in.read(in.getPos(), data, 4, bsonDocSize - 4);
+			if(bytesRead!=bsonDocSize-4){
+				throw new Exception("couldn't read a complete BSON doc.");
+			}
+			in.seek(in.getPos() + bsonDocSize - 4);
+            decoder.decode( data, callback );
+            BSONObject obj =  (BSONObject)callback.get();
+			value = new BSONWritable(obj);
+			return true;
+		}catch(Exception e){
+			e.printStackTrace();
             return false;
-        }
+		}
     }
 
     @Override
@@ -79,7 +102,8 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 
     @Override
     public float getProgress() throws IOException, InterruptedException {
-        return rdr.hasNext() ? 1.0f : 0.0f;
+		return 1.0f;
+        //return rdr.hasNext() ? 1.0f : 0.0f;
     }
 
     @Override
