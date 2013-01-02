@@ -20,11 +20,12 @@ rather than directly contacting contributors or maintainers.
 
 ## Maintainers
 
-* Brendan McAdams <brendan@10gen.com>
-* Eliot Horowitz <erh@10gen.com>
-* Ryan Nitz
+* Mike O'Brien <mikeo@10gen.com>
 
 ## Contributors
+* Brendan McAdams <brendan@10gen.com>
+* Eliot Horowitz <erh@10gen.com>
+* Ryan Nitz <ryan@10gen.com>
 * Russell Jurney (@rjurney) (Lots of significant Pig improvements)
 * Sarthak Dudhara <sarthak.83@gmail.com> (BSONWritable comparable interface)
 * Priya Manda <priyakanth024@gmail.com> (Test Harness Code)
