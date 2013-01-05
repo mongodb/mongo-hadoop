@@ -36,14 +36,17 @@ import java.util.List;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.commons.logging.*;
+
 
 public class BSONFileInputFormat extends FileInputFormat {
+
+    private static final Log log = LogFactory.getLog( BSONFileInputFormat.class );
 
     @Override
     public RecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
         BSONFileRecordReader reader = new BSONFileRecordReader();
         reader.initialize(split, context);
-		System.out.println(reader);
         return reader;
     }
 
@@ -58,7 +61,7 @@ public class BSONFileInputFormat extends FileInputFormat {
 		List<FileStatus> statuses = listStatus(context);
 		for (FileStatus file : statuses) {
 			Path path = file.getPath();
-			System.out.println("generating splits for " + path);
+            log.info("generating splits for " + path);
 			FileSystem fs = path.getFileSystem(context.getConfiguration());
 			long length = file.getLen();
 			BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
@@ -74,6 +77,8 @@ public class BSONFileInputFormat extends FileInputFormat {
 				FSDataInputStream fsDataStream = fs.open(path);
 				long curSplitLen = 0;
 				long curSplitStart = 0;
+				long curSplitEnd = 0;
+                log.info("Split size: " + splitSize + " bytes.");
 				while(fsDataStream.getPos() + 1 < length){
 					fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
 					//TODO check that 4 bytes were actually read successfully, otherwise error
@@ -82,32 +87,36 @@ public class BSONFileInputFormat extends FileInputFormat {
 					bb.order(ByteOrder.LITTLE_ENDIAN);
 					int bsonDocSize = bb.getInt();
 					if(curSplitLen + bsonDocSize >= splitSize){
-						splits.add(new FileSplit(path, curSplitStart,
+                        FileSplit split = new FileSplit(path, curSplitStart,
 								   curSplitLen,
-								   blkLocations[blkLocations.length-1].getHosts()));
+								   blkLocations[blkLocations.length-1].getHosts());
+						splits.add(split);
 						curSplitLen = 0;
 						curSplitStart = fsDataStream.getPos() + bsonDocSize;
-						System.out.println("new split " + splits.size());
+                        log.info("Creating new split (" + splits.size() + ") " + split.toString());
 					}
 					curSplitLen += bsonDocSize;
 
 					fsDataStream.seek(fsDataStream.getPos() + bsonDocSize);
 					numDocs++;
 					if(numDocs % 10000 == 0){
-						System.out.println("got " + numDocs + " docs");
+                        log.info("read " + numDocs + " docs, " + fsDataStream.getPos() + " bytes read.");
 					}
 				}
 				if(curSplitLen > 0){
-					System.out.println("one more split");
-					splits.add(new FileSplit(path, curSplitStart,
-							   curSplitLen,
-							   blkLocations[blkLocations.length-1].getHosts()));
+                    FileSplit split = new FileSplit(path,
+                                        curSplitStart,
+                                        curSplitLen,
+                                        blkLocations[blkLocations.length-1].getHosts());
+					splits.add(split);
+                    log.info("Final split (" + splits.size() + ") " + split.toString());
 				}
 
 			}
 		}
 
-		return splits;
+        return splits;
+		//return new ArrayList<InputSplit>();
 
     }
 
