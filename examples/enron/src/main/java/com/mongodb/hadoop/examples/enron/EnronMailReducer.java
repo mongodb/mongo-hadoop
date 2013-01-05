@@ -34,23 +34,22 @@ import java.util.*;
 
 public class EnronMailReducer
 	extends Reducer <BSONObject, IntWritable, BSONObject, IntWritable> {
+
+    private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
+
     @Override
     public void reduce( final BSONObject pKey,
                         final Iterable<IntWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
         int sum = 0;
+        LOG.info( "Reducing Key: " + pKey);
         for ( final IntWritable value : pValues ){
-            LOG.debug( "Key: " + pKey + " Value: " + value );
             sum += value.get();
         }
-
-        LOG.debug( "Count for emails between " + pKey.toString() + " was " + sum);
-
         pContext.write( pKey, new IntWritable(sum) );
     }
 
-    private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
 
 }
 

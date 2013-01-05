@@ -14,6 +14,8 @@ import java.util.*;
 public class EnronMailMapper
 	extends Mapper<NullWritable,BSONObject, BSONObject, IntWritable>{
 
+    private static final Log LOG = LogFactory.getLog( EnronMailMapper.class );
+
 
 	@Override
 	public void map(NullWritable key, BSONObject val, final Context context)
@@ -23,11 +25,17 @@ public class EnronMailMapper
 			if(headers.containsKey("From") && headers.containsKey("To")){
 				String from = (String)headers.get("From");
 				String to = (String)headers.get("To");
-				BSONObject outKey = BasicDBObjectBuilder.start()
-										.add("f", from)
-										.add("t", to)
-										.get();
-				context.write( new BSONWritable(outKey), new IntWritable(1) );
+                String[] recips = to.split(",");
+                for(int i=0;i<recips.length;i++){
+                    String recip = recips[i].trim();
+                    if(recip.length() > 0){
+                        BSONObject outKey = BasicDBObjectBuilder.start()
+                                                .add("f", from)
+                                                .add("t", recip)
+                                                .get();
+                        context.write( new BSONWritable(outKey), new IntWritable(1) );
+                    }
+                }
 			}
 		}
 	}
