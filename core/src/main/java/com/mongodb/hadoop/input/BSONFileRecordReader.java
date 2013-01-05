@@ -49,6 +49,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
     private BSONWritable value;
 	byte[] headerBuf = new byte[4];
 	private FSDataInputStream in;
+    private int numDocsRead = 0;
 
 	BasicBSONCallback callback = new BasicBSONCallback();
 	BasicBSONDecoder decoder = new BasicBSONDecoder();
@@ -60,11 +61,19 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
 		in = fs.open(file);
+        in.seek(fileSplit.getStart());
+        log.info(System.identityHashCode(this) + " ok - Creating record reader with input split: " + inputSplit.toString());
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
 		try{
+            if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
+                //TODO clean up/close data streams
+                log.info("reached end of file split:");
+                return false;
+            }
+
 			int bytesRead = in.read(in.getPos(), headerBuf, 0, 4);
 			if(bytesRead != 4){
 				throw new Exception("couldn't read a complete BSON header.");
@@ -83,9 +92,14 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             decoder.decode( data, callback );
             BSONObject obj =  (BSONObject)callback.get();
 			value = new BSONWritable(obj);
+            numDocsRead++;
+            if(numDocsRead % 1000 == 0){
+                log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+            }
 			return true;
 		}catch(Exception e){
-			e.printStackTrace();
+            log.info(e.getMessage());
+            log.info("finished reading input split, docs read: " + numDocsRead);
             return false;
 		}
     }
