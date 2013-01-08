@@ -108,7 +108,7 @@ public class MongoSplitter {
                 log.warn( "WARNING: No Input Splits were calculated by the split code. "
                           + "Proceeding with a *single* split. Data may be too small, try lowering 'mongo.input.split_size' "
                           + "if this is undesirable." );
-			splits.add( _split( conf, q, null, null ) ); // no splits really. Just do the whole thing data is likely small
+            splits.add( _split( conf, q, null, null ) ); // no splits really. Just do the whole thing data is likely small
         }
         else {
             log.info( "Calculated " + splitData.size() + " splits." );
@@ -337,17 +337,17 @@ public class MongoSplitter {
 
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
-				MongoInputSplit split = new MongoInputSplit( inputURI,
-						conf.getInputKey(),
-						originalQuery,
-						conf.getFields(),
-						conf.getSort(),  // TODO - should inputKey be the shard key?
+                MongoInputSplit split = new MongoInputSplit( inputURI,
+                        conf.getInputKey(),
+                        originalQuery,
+                        conf.getFields(),
+                        conf.getSort(),  // TODO - should inputKey be the shard key?
                         conf.getLimit(),
-						conf.getSkip(), 
+                        conf.getSkip(), 
                         conf.isNoTimeout());
-				split.setSpecialMin(min);
-				split.setSpecialMax(max);
-				splits.add(split);
+                        split.setSpecialMin(min);
+                        split.setSpecialMax(max);
+                        splits.add(split);
             }
 
             if ( log.isDebugEnabled() ){
