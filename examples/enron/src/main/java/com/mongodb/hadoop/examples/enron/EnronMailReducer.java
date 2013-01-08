@@ -43,7 +43,6 @@ public class EnronMailReducer
                         final Context pContext )
             throws IOException, InterruptedException{
         int sum = 0;
-        LOG.info( "Reducing Key: " + pKey);
         for ( final IntWritable value : pValues ){
             sum += value.get();
         }
