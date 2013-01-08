@@ -322,8 +322,6 @@ public class MongoSplitter {
                 /** We have to put something for $query or we'll fail; if no original query use an empty DBObj */
                 if ( originalQuery == null )
                     originalQuery = new BasicDBObject();
-                shardKeyQuery.put( "$min", min );
-                shardKeyQuery.put( "$max", max );
                 shardKeyQuery.put( "$query", originalQuery );
 
                 if ( log.isDebugEnabled() ){
@@ -339,10 +337,17 @@ public class MongoSplitter {
 
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
-                splits.add(
-                        new MongoInputSplit( inputURI, conf.getInputKey(), shardKeyQuery, conf.getFields(), conf.getSort(),  // TODO - should inputKey be the shard key?
-                                             conf.getLimit(), conf.getSkip(), 
-                                             conf.isNoTimeout() ) );
+                MongoInputSplit split = new MongoInputSplit( inputURI,
+                        conf.getInputKey(),
+                        originalQuery,
+                        conf.getFields(),
+                        conf.getSort(),  // TODO - should inputKey be the shard key?
+                        conf.getLimit(),
+                        conf.getSkip(), 
+                        conf.isNoTimeout());
+                        split.setSpecialMin(min);
+                        split.setSpecialMax(max);
+                        splits.add(split);
             }
 
             if ( log.isDebugEnabled() ){
