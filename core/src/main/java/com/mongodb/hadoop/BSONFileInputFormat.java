@@ -16,6 +16,7 @@ package com.mongodb.hadoop;
  */
 
 import com.mongodb.hadoop.input.BSONFileRecordReader;
+import com.mongodb.hadoop.util.BSONSplitter;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -31,6 +32,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.conf.*;
 import java.io.IOException;
 
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 import java.nio.ByteBuffer;
@@ -61,59 +63,47 @@ public class BSONFileInputFormat extends FileInputFormat {
 		List<FileStatus> statuses = listStatus(context);
 		for (FileStatus file : statuses) {
 			Path path = file.getPath();
-            log.info("generating splits for " + path);
-			FileSystem fs = path.getFileSystem(context.getConfiguration());
-			long length = file.getLen();
-			BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-			if (length != 0) { 
-				long blockSize = file.getBlockSize();
-				long splitSize = computeSplitSize(blockSize, minSize, maxSize);
+            Path splitFilePath =  new Path(path.getParent() + 
+                                           "." +path.getName()
+                                           + ".splits");
+            FileSystem fs = path.getFileSystem(hadoopConfiguration);
+            FileStatus splitFileStatus = null;
+            try{
+                splitFileStatus = fs.getFileStatus(splitFilePath);
+            }catch(IOException ioe){
+                //split file not found
+            }
+            if(splitFileStatus == null || splitFileStatus.isDir()){
+                log.error("no pre-built splits found for " + path);
+                BSONSplitter bsonSplitter = new BSONSplitter();
+                bsonSplitter.setConf(hadoopConfiguration);
+                bsonSplitter.setInputPath(path);
+                bsonSplitter.readSplits();
+                try{
+                    bsonSplitter.writeSplits();
+                }catch(IOException ioe){
+                    log.error("couldn't save splits information: " + ioe.getMessage());
+                }
 
-				long bytesRemaining = length;
-
-				ByteBuffer bb;
-				byte[] headerBuf = new byte[4];
-				int numDocs = 0;
-				FSDataInputStream fsDataStream = fs.open(path);
-				long curSplitLen = 0;
-				long curSplitStart = 0;
-				long curSplitEnd = 0;
-                log.info("Split size: " + splitSize + " bytes.");
-				while(fsDataStream.getPos() + 1 < length){
-					fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
-					//TODO check that 4 bytes were actually read successfully, otherwise error
-					//TODO just parse the integer so we don't init a bytebuf every time
-					bb = ByteBuffer.wrap(headerBuf);
-					bb.order(ByteOrder.LITTLE_ENDIAN);
-					int bsonDocSize = bb.getInt();
-					if(curSplitLen + bsonDocSize >= splitSize){
-                        FileSplit split = new FileSplit(path, curSplitStart,
-								   curSplitLen,
-								   blkLocations[blkLocations.length-1].getHosts());
-						splits.add(split);
-						curSplitLen = 0;
-						curSplitStart = fsDataStream.getPos() + bsonDocSize;
-                        log.info("Creating new split (" + splits.size() + ") " + split.toString());
-					}
-					curSplitLen += bsonDocSize;
-
-					fsDataStream.seek(fsDataStream.getPos() + bsonDocSize);
-					numDocs++;
-					if(numDocs % 10000 == 0){
-                        log.info("read " + numDocs + " docs, " + fsDataStream.getPos() + " bytes read.");
-					}
-				}
-				if(curSplitLen > 0){
-                    FileSplit split = new FileSplit(path,
-                                        curSplitStart,
-                                        curSplitLen,
-                                        blkLocations[blkLocations.length-1].getHosts());
-					splits.add(split);
-                    log.info("Final split (" + splits.size() + ") " + split.toString());
-				}
-
-			}
-		}
+                Map<Path, List<FileSplit>> splitsMap = bsonSplitter.getSplitsMap();
+                for(Map.Entry<Path, List<FileSplit>> entry : splitsMap.entrySet()) {
+                    Path key = entry.getKey();
+                    List<FileSplit> value = entry.getValue();
+                    splits.addAll(value);
+                }
+            }else{
+                BSONSplitter bsonSplitter = new BSONSplitter();
+                bsonSplitter.setConf(hadoopConfiguration);
+                bsonSplitter.readSplitsForFile(splitFileStatus);
+                Map<Path, List<FileSplit>> splitsMap = bsonSplitter.getSplitsMap();
+                for(Map.Entry<Path, List<FileSplit>> entry : splitsMap.entrySet()) {
+                    Path key = entry.getKey();
+                    List<FileSplit> value = entry.getValue();
+                    splits.addAll(value);
+                }
+                
+            }
+        }
 
         return splits;
 		//return new ArrayList<InputSplit>();
