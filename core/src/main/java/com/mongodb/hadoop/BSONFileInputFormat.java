@@ -61,6 +61,11 @@ public class BSONFileInputFormat extends FileInputFormat {
 
 		Path[] bsonInputPaths = getInputPaths(context);
 		List<FileStatus> statuses = listStatus(context);
+        log.info("files to process: ");
+        for(FileStatus s : statuses){
+            log.info(s.getPath().toString());
+        }
+
 		for (FileStatus file : statuses) {
 			Path path = file.getPath();
             Path splitFilePath =  new Path(path.getParent() + 
@@ -71,6 +76,7 @@ public class BSONFileInputFormat extends FileInputFormat {
             try{
                 splitFileStatus = fs.getFileStatus(splitFilePath);
             }catch(IOException ioe){
+                log.info("no split file found.");
                 //split file not found
             }
             if(splitFileStatus == null || splitFileStatus.isDir()){
@@ -92,9 +98,10 @@ public class BSONFileInputFormat extends FileInputFormat {
                     splits.addAll(value);
                 }
             }else{
+                log.info("Found splits file at: " + splitFilePath);
                 BSONSplitter bsonSplitter = new BSONSplitter();
                 bsonSplitter.setConf(hadoopConfiguration);
-                bsonSplitter.readSplitsForFile(splitFileStatus);
+                bsonSplitter.loadSplits(splitFileStatus, file);
                 Map<Path, List<FileSplit>> splitsMap = bsonSplitter.getSplitsMap();
                 for(Map.Entry<Path, List<FileSplit>> entry : splitsMap.entrySet()) {
                     Path key = entry.getKey();
@@ -103,6 +110,10 @@ public class BSONFileInputFormat extends FileInputFormat {
                 }
                 
             }
+        }
+
+        for(InputSplit s : splits){
+            log.info("split at: " + s.toString());
         }
 
         return splits;
