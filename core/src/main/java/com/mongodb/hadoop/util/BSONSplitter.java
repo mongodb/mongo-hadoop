@@ -31,6 +31,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 import org.bson.BSONObject;
 import org.bson.BasicBSONEncoder;
+import org.bson.BasicBSONDecoder;
 
 public class BSONSplitter extends Configured implements Tool {
 
@@ -39,6 +40,7 @@ public class BSONSplitter extends Configured implements Tool {
     private Map<Path, List<FileSplit>> splitsMap;
     private Path inputPath;
     private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
+    private BasicBSONDecoder bsonDec = new BasicBSONDecoder();
 
 
     private static final PathFilter hiddenFileFilter = new PathFilter(){
@@ -66,6 +68,38 @@ public class BSONSplitter extends Configured implements Tool {
 
     public void setInputPath(Path p){
         this.inputPath = p;
+    }
+
+    public void loadSplits(FileStatus file, FileStatus sourceFile) throws IOException{
+        List<FileSplit> splits = new ArrayList<FileSplit>();
+        FileSystem fs = sourceFile.getPath().getFileSystem(getConf());
+        FSDataInputStream fsDataStream = fs.open(file.getPath());
+        long length = file.getLen();
+        BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, 0, length);
+        ByteBuffer bb;
+        while(fsDataStream.getPos() < length){
+            byte[] headerBuf = new byte[4];
+			int bytesRead = fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
+			if(bytesRead != 4){
+				throw new IOException("couldn't read a complete BSON header.");
+			}
+			int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
+            byte[] data = new byte[bsonDocSize + 4];
+            System.arraycopy( headerBuf, 0, data, 0, 4 );
+			fsDataStream.seek(fsDataStream.getPos() + 4);
+            bytesRead = fsDataStream.read(fsDataStream.getPos(), data, 4, bsonDocSize - 4);
+			if(bytesRead!=bsonDocSize-4){
+				throw new IOException("couldn't read a complete BSON doc.");
+			}
+			fsDataStream.seek(fsDataStream.getPos() + bsonDocSize - 4);
+            BSONObject splitInfo = bsonDec.readObject(data);
+            long start = (Long)splitInfo.get("start");
+            long splitLen = (Long)splitInfo.get("length");
+            FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
+                            blkLocations[blkLocations.length-1].getHosts());
+            splits.add(split);
+        }
+        this.splitsMap.put(sourceFile.getPath(), splits);
     }
 
     public void readSplitsForFile(FileStatus file) throws IOException{
@@ -161,13 +195,13 @@ public class BSONSplitter extends Configured implements Tool {
     
     public void readSplits() throws IOException{
         this.splitsMap.clear();
-        //for(Path p : getInputPaths()){
-        List<FileStatus> files = getFilesInPath(this.inputPath);
-        for(FileStatus file : files){
-            Path path = file.getPath();
-            log.info("generating splits for " + path);
-            readSplitsForFile(file);
+        if(this.inputPath == null){
+            throw new IllegalStateException("Input path has not been set.");
         }
+        //for(Path p : getInputPaths()){
+        FileSystem fs = this.inputPath.getFileSystem(getConf()); 
+        FileStatus file = fs.getFileStatus(this.inputPath);
+        readSplitsForFile(file);
     }
 
     public Map<Path, List<FileSplit>> getSplitsMap(){
@@ -197,7 +231,22 @@ public class BSONSplitter extends Configured implements Tool {
         return result;
     }
 
+    public void testReadFile() throws IOException{
+        Path path = this.inputPath;
+        FileSystem fs = path.getFileSystem(getConf());
+        FileStatus file = fs.getFileStatus(path);
+        FSDataInputStream fsDataStream = fs.open(path);
+        long length = file.getLen();
+        while(fsDataStream.getPos() < length){
+            byte[] headerBuf = new byte[4];
+            fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
+            fsDataStream.seek(fsDataStream.getPos() + 1000);
+        }
+    }
+
     public int run( String[] args ) throws Exception{
+        this.setInputPath(new Path(getConf().get("mapred.input.dir", "")));
+        //testReadFile();
         readSplits();
         writeSplits();
         return 0;
