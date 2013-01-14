@@ -75,8 +75,6 @@ public class BSONSplitter extends Configured implements Tool {
         FileSystem fs = sourceFile.getPath().getFileSystem(getConf());
         FSDataInputStream fsDataStream = fs.open(file.getPath());
         long length = file.getLen();
-        BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, 0, length);
-        ByteBuffer bb;
         while(fsDataStream.getPos() < length){
             byte[] headerBuf = new byte[4];
 			int bytesRead = fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
@@ -95,11 +93,28 @@ public class BSONSplitter extends Configured implements Tool {
             BSONObject splitInfo = bsonDec.readObject(data);
             long start = (Long)splitInfo.get("start");
             long splitLen = (Long)splitInfo.get("length");
+            BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
+            int blockIndex = getLargestBlockIndex(blkLocations);
             FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
-                            blkLocations[blkLocations.length-1].getHosts());
+                            blkLocations[blockIndex].getHosts());
             splits.add(split);
         }
         this.splitsMap.put(sourceFile.getPath(), splits);
+    }
+
+    public static int getLargestBlockIndex(BlockLocation[] blockLocations){
+        int retVal = -1;
+        if( blockLocations == null ){
+            return retVal;
+        }
+        long max = 0;
+        for(int i=0;i<blockLocations.length;i++){
+            BlockLocation blk = blockLocations[i];
+            if(blk.getLength() > max){
+                retVal = i;
+            }
+        }
+        return retVal;
     }
 
     public void readSplitsForFile(FileStatus file) throws IOException{
@@ -110,12 +125,10 @@ public class BSONSplitter extends Configured implements Tool {
         log.info("generating splits for " + path);
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
-        BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
         if (length != 0) { 
             long blockSize = file.getBlockSize();
             long splitSize = Math.max(minSize, Math.min(maxSize, blockSize));
             long bytesRemaining = length;
-            ByteBuffer bb;
             byte[] headerBuf = new byte[4];
             int numDocs = 0;
             FSDataInputStream fsDataStream = fs.open(path);
@@ -127,13 +140,13 @@ public class BSONSplitter extends Configured implements Tool {
                 fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
                 //TODO check that 4 bytes were actually read successfully, otherwise error
                 //TODO just parse the integer so we don't init a bytebuf every time
-                bb = ByteBuffer.wrap(headerBuf);
-                bb.order(ByteOrder.LITTLE_ENDIAN);
-                int bsonDocSize = bb.getInt();
+			    int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
                 if(curSplitLen + bsonDocSize >= splitSize){
+                    BlockLocation[] blkLocations = fs.getFileBlockLocations(file, curSplitStart, curSplitLen);
+                    int blockIndex = getLargestBlockIndex(blkLocations);
                     FileSplit split = new FileSplit(path, curSplitStart,
                             curSplitLen,
-                            blkLocations[blkLocations.length-1].getHosts());
+                            blkLocations[blockIndex].getHosts());
                     splits.add(split);
                     curSplitLen = 0;
                     curSplitStart = fsDataStream.getPos() + bsonDocSize;
@@ -148,10 +161,12 @@ public class BSONSplitter extends Configured implements Tool {
                 }
             }
             if(curSplitLen > 0){
+                BlockLocation[] blkLocations = fs.getFileBlockLocations(file, curSplitStart, curSplitLen);
+                int blockIndex = getLargestBlockIndex(blkLocations);
                 FileSplit split = new FileSplit(path,
                         curSplitStart,
                         curSplitLen,
-                        blkLocations[blkLocations.length-1].getHosts());
+                        blkLocations[blockIndex].getHosts());
                 splits.add(split);
                 log.info("Final split (" + splits.size() + ") " + split.toString());
             }
