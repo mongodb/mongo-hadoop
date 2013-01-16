@@ -19,6 +19,7 @@ import org.apache.pig.ResourceStatistics;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -39,6 +40,8 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     // Pig specific settings
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
+    
+    static final String PIG_INNER_MAP_SCHEMA_NAME = "inner_map";
     
     protected ResourceSchema schema = null;
     
@@ -94,7 +97,11 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     protected Object readField(Object obj, ResourceFieldSchema field) throws IOException {
         if(obj == null)
             return null;
-        
+
+        if (field == null) {
+            field = inferFieldSchema(obj);
+        }
+
         try {
             switch (field.getType()) {
             case DataType.INTEGER:
@@ -130,13 +137,27 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
                 fs = s.getFields();
                 
                 DataBag bag = bagFactory.newDefaultBag();
-                
+
                 BasicDBList vals = (BasicDBList)obj;
-                            
+
                 for(int j = 0; j < vals.size(); j++) {
                     t = tupleFactory.newTuple(fs.length);
+                    Object embeddedField = vals.get(j);
+
                     for(int k = 0; k < fs.length; k++) {
-                        t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
+                        String fieldName = fs[k].getName();
+                        Object nextFieldVal = null;
+                        ResourceFieldSchema recursiveFieldSchema = null;
+                        if (fieldName.equals(PIG_INNER_MAP_SCHEMA_NAME)) {
+                            //TODO: jkarn - This is kind of wonky.  Right now if the field is inner_map that means (mostly) 
+                            //that its the schema for the bag I made up.  In this case we leave recursiveFieldSchema null
+                            //so that readField will infer the schema.
+                            nextFieldVal = embeddedField;
+                        } else {
+                            nextFieldVal = ((BasicDBObject) embeddedField).get(fieldName);
+                            recursiveFieldSchema = fs[k];
+                        }
+                        t.set(k, readField(nextFieldVal, recursiveFieldSchema));
                     }
                     bag.add(t);
                 }
@@ -145,18 +166,20 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
             case DataType.MAP:
                 s = field.getSchema();
+                
+                //If no internal schema for the map was specified - use null and let readField infer the schema
+                //by looking at the object
+                ResourceFieldSchema innerFieldSchema = null;
                 if (s != null) {
                     fs = s.getFields();
-                } else {
-                    //If no internal schema for the map was specified - treat everything as a bytearray.
-                    fs = new ResourceSchema(Utils.getSchemaFromString("b:bytearray")).getFields();
+                    innerFieldSchema = fs[0];
                 }
 
                 BasicDBObject inputMap = (BasicDBObject) obj;
                 
                 Map outputMap = new HashMap();
                 for (String key : inputMap.keySet()) {
-                    outputMap.put(key, readField(inputMap.get(key), fs[0]));
+                    outputMap.put(key, readField(inputMap.get(key), innerFieldSchema));
                 }
                 return outputMap;
 
@@ -168,6 +191,32 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             String type = DataType.genTypeToNameMap().get(field.getType());
             log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
             return null;
+        }
+    }
+    
+    protected ResourceFieldSchema inferFieldSchema(Object o) {
+        if (o instanceof BasicDBList) {
+            try {
+                return new ResourceSchema(Utils.getSchemaFromString("inner_bag:bag{inner_tuple:tuple(" + PIG_INNER_MAP_SCHEMA_NAME + ":map[])}")).getFields()[0];
+            } catch (ParserException e) {
+                log.error("Parser exception: ", e);
+                return null;
+            }
+        } else if (o instanceof BasicDBObject) {
+            try {
+                return new ResourceSchema(Utils.getSchemaFromString(PIG_INNER_MAP_SCHEMA_NAME + ":map[]")).getFields()[0];
+            } catch (ParserException e) {
+                log.error("Parser exception: ", e);
+                return null;
+            }
+        //TODO: jkarn - try to cast to different data types
+        } else {
+            try {
+                return new ResourceSchema(Utils.getSchemaFromString("c:chararray")).getFields()[0];
+            } catch (ParserException e) {
+                log.error("Parser exception: ", e);
+                return null;
+            }
         }
     }
     

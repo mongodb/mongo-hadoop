@@ -187,8 +187,8 @@ public class MongoLoaderTest {
         Map m = (Map) ml.readField(obj, ml.fields[0]);
 
         assertEquals(2, m.size());
-        assertEquals(1, m.get("k1"));
-        assertEquals(2, m.get("k2"));
+        assertEquals("1", m.get("k1"));
+        assertEquals("2", m.get("k2"));
     }
     
     @Test
@@ -233,6 +233,91 @@ public class MongoLoaderTest {
     }
     
     @Test
+    public void testReadField_mapWithMap_noSchema() throws Exception {
+        BasicDBObject v1 = new BasicDBObject()
+            .append("t1", "t11 value")
+            .append("t2", 12);
+        BasicDBObject v2 = new BasicDBObject()
+            .append("t1", "t21 value")
+            .append("t2", 22);
+        BasicDBObject obj = new BasicDBObject()
+            .append("v1", v1)
+            .append("v2", v2);
+        
+        MongoLoader ml = new MongoLoader();
+        Map m = (Map) ml.readField(obj, ml.schema.getFields()[0]);
+
+        assertEquals(2, m.size());
+        
+        Map m1 = (Map) m.get("v1");
+        assertEquals("t11 value", m1.get("t1"));
+        assertEquals("12", m1.get("t2"));
+        
+        Map m2 = (Map) m.get("v2");
+        assertEquals("t21 value", m2.get("t1"));
+    }
+    
+    @Test
+    public void testReadField_mapWithList_noSchema() throws Exception {
+        BasicDBObject v1 = new BasicDBObject()
+            .append("t1", "t1 value")
+            .append("t2", 12);
+        BasicDBObject v2 = new BasicDBObject()
+            .append("t1", "t1 value")
+            .append("t2", 22);
+        BasicDBList vl = new BasicDBList();
+        vl.add(v1);
+        vl.add(v2);
+        
+        BasicDBObject obj = new BasicDBObject()
+            .append("some_list", vl);
+
+        MongoLoader ml = new MongoLoader();
+        Map m = (Map) ml.readField(obj, ml.schema.getFields()[0]);
+
+        assertEquals(1, m.size());
+        
+        DataBag bag = (DataBag) m.get("some_list");
+        assertEquals(2, bag.size());
+        
+        Iterator<Tuple> bit = bag.iterator();
+        Tuple t = bit.next();
+        
+        assertEquals(1, t.size());
+        
+        Map innerMap = (Map) t.get(0);
+        assertEquals("t1 value", innerMap.get("t1"));
+    }
+    
+    @Test
+    public void testReadField_mapWithSimpleList_noSchema() throws Exception {
+        BasicDBList vl = new BasicDBList();
+        vl.add("v1");
+        vl.add("v2");
+        
+        BasicDBObject obj = new BasicDBObject()
+            .append("some_list", vl);
+
+        MongoLoader ml = new MongoLoader();
+        Map m = (Map) ml.readField(obj, ml.schema.getFields()[0]);
+
+        assertEquals(1, m.size());
+        
+        DataBag bag = (DataBag) m.get("some_list");
+        assertEquals(2, bag.size());
+        
+        Iterator<Tuple> bit = bag.iterator();
+        Tuple t = bit.next();
+        
+        assertEquals(1, t.size());
+        assertEquals("v1", t.get(0));
+        
+        t = bit.next();
+        assertEquals(1, t.size());
+        assertEquals("v2", t.get(0));
+    }
+    
+    @Test
     public void testReadField_noUserSchema() throws Exception {
         BSONObject val = new BasicDBObject()
             .append("t1", "t11 value")
@@ -242,6 +327,6 @@ public class MongoLoaderTest {
         Map result = (Map) ml.readField(val, ml.schema.getFields()[0]);
         assertEquals(2, result.size());
         assertEquals("t11 value", result.get("t1"));
-        assertEquals(12, result.get("t2"));
+        assertEquals("12", result.get("t2"));
     }
 }
