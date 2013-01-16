@@ -106,7 +106,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             case DataType.DOUBLE:
                 return Double.parseDouble(obj.toString());
             case DataType.BYTEARRAY:
-                return obj;
+                return new DataByteArray(obj.toString());
             case DataType.CHARARRAY:
                 return obj.toString();
             case DataType.TUPLE:
