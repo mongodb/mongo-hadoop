@@ -302,6 +302,15 @@ public class MongoConfig {
     public void setShardChunkSplittingEnabled( boolean value) {
         MongoConfigUtil.setShardChunkSplittingEnabled( _conf, value );
     }
+    
+
+    public boolean isRangeQueryEnabled(){
+        return MongoConfigUtil.isRangeQueryEnabled( _conf );
+    }
+
+    public void setRangeQueryEnabled(boolean value){
+        MongoConfigUtil.setRangeQueryEnabled( _conf, value );
+    }
 
     public boolean canReadSplitsFromSecondary() {
         return MongoConfigUtil.canReadSplitsFromSecondary( _conf );
