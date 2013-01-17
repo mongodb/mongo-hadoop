@@ -132,6 +132,13 @@ public class MongoConfigUtil {
      */
     public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
+    /**
+     * If true then queries for splits will be constructed using $lt/$gt instead of $min and $max.
+     *
+     * Defaults to {@code false}
+     */
+    public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
+
     public static boolean isJobVerbose( Configuration conf ){
         return conf.getBoolean( JOB_VERBOSE, false );
     }
@@ -441,8 +448,26 @@ public class MongoConfigUtil {
 
     /**
      * if TRUE,
+     * Splits will be queried using $lt/$gt instead of $max and $min.
+     * This allows the database's query optimizer to choose the best index, 
+     * instead of being forced to use the one in the $max/$min keys.
+     * This will only work if the key used for splitting is *not* a compound key.
+     * Make sure that all values under the splitting key are of the same type, or
+     * this will cause incomplete results.
+     * @return
+     */
+    public static boolean isRangeQueryEnabled( Configuration conf ){
+        return conf.getBoolean( SPLITS_USE_RANGEQUERY, false );
+    }
+
+    public static void setRangeQueryEnabled( Configuration conf, boolean value ){
+        conf.setBoolean( SPLITS_USE_RANGEQUERY, value );
+    }
+
+    /**
+     * if TRUE,
      * Splits will be read by connecting to the individual shard servers,
-     *  however this really isn't safe unless you know what you're doing.
+     * Only use this 
      *  ( issue has to do with chunks moving / relocating during balancing phases)
      * @return
      */
