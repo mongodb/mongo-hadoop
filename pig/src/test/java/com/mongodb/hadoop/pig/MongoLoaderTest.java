@@ -95,6 +95,60 @@ public class MongoLoaderTest {
     }
     
     @Test
+    public void testReadField_listAsTuple() throws IOException {
+        String userSchema = "b:{t:(f1:int, f2:int)}";
+        BasicDBList bag = new BasicDBList();
+        BasicDBList t1 = new BasicDBList();
+        t1.add(1);
+        t1.add(2);
+        BasicDBList t2 = new BasicDBList();
+        t2.add(3);
+        t2.add(4);
+        bag.add(t1);
+        bag.add(t2);
+        MongoLoader ml = new MongoLoader(userSchema);
+        
+        Object result = ml.readField(bag, ml.fields[0]);
+        
+        DataBag b = (DataBag) result;
+        Iterator<Tuple> bit = b.iterator();
+        
+        Tuple firstInnerT = bit.next();
+        assertEquals(2, firstInnerT.size());
+        assertEquals(1, firstInnerT.get(0));
+        assertEquals(2, firstInnerT.get(1));
+
+        Tuple secondInnerT = bit.next();
+        assertEquals(2, secondInnerT.size());
+        assertEquals(3, secondInnerT.get(0));
+        assertEquals(4, secondInnerT.get(1));
+    }
+    
+    @Test
+    public void testReadField_listOfUnnamedSimpleObjects() throws IOException {
+        String userSchema = "b:{t:()}";
+        BasicDBList bag = new BasicDBList();
+        bag.add("val1");
+        bag.add("val2");
+        MongoLoader ml = new MongoLoader(userSchema);
+
+        Object result = ml.readField(bag, ml.fields[0]);
+        
+        DataBag b = (DataBag) result;
+        Iterator<Tuple> bit = b.iterator();
+        
+        Tuple firstInnerT = bit.next();
+        assertEquals(1, firstInnerT.size());
+        assertEquals("val1", firstInnerT.get(0));
+
+        Tuple secondInnerT = bit.next();
+        assertEquals(1, secondInnerT.size());
+        assertEquals("val2", secondInnerT.get(0));
+
+        assertFalse(bit.hasNext());
+    }
+    
+    @Test
     public void testReadField_simpleBag() throws IOException {
         String userSchema = "b:{(t1:chararray, t2:chararray)}";
         BasicDBList bag = new BasicDBList();
@@ -181,14 +235,20 @@ public class MongoLoaderTest {
         String userSchema = "m:[]";
         BasicDBObject obj = new BasicDBObject()
             .append("k1", 1)
-            .append("k2", 2);
+            .append("k2", 2)
+            .append("k3", 3.0)
+            .append("k4", 4L)
+            .append("k5", 5.0f);
         
         MongoLoader ml = new MongoLoader(userSchema);
         Map m = (Map) ml.readField(obj, ml.fields[0]);
 
-        assertEquals(2, m.size());
-        assertEquals("1", m.get("k1"));
-        assertEquals("2", m.get("k2"));
+        assertEquals(5, m.size());
+        assertEquals(1, m.get("k1"));
+        assertEquals(2, m.get("k2"));
+        assertEquals(3.0, m.get("k3"));
+        assertEquals(4L, m.get("k4"));
+        assertEquals(5.0f, m.get("k5"));
     }
     
     @Test
@@ -251,7 +311,7 @@ public class MongoLoaderTest {
         
         Map m1 = (Map) m.get("v1");
         assertEquals("t11 value", m1.get("t1"));
-        assertEquals("12", m1.get("t2"));
+        assertEquals(12, m1.get("t2"));
         
         Map m2 = (Map) m.get("v2");
         assertEquals("t21 value", m2.get("t1"));
@@ -327,6 +387,6 @@ public class MongoLoaderTest {
         Map result = (Map) ml.readField(val, ml.schema.getFields()[0]);
         assertEquals(2, result.size());
         assertEquals("t11 value", result.get("t1"));
-        assertEquals("12", result.get("t2"));
+        assertEquals(12, result.get("t2"));
     }
 }

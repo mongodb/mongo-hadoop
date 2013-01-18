@@ -41,8 +41,6 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
     
-    static final String PIG_INNER_MAP_SCHEMA_NAME = "inner_map";
-    
     protected ResourceSchema schema = null;
     
     ResourceFieldSchema[] fields;
@@ -120,48 +118,57 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
                 ResourceSchema s = field.getSchema();
                 ResourceFieldSchema[] fs = s.getFields();
                 Tuple t = tupleFactory.newTuple(fs.length);
-                
-                BasicDBObject val = (BasicDBObject)obj;
-                
-                for(int j = 0; j < fs.length; j++) {
-                    t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
-                }
-                
-                return t;
-                
-            case DataType.BAG:
-                s = field.getSchema();
-                fs = s.getFields();
-                
-                s = fs[0].getSchema();
-                fs = s.getFields();
-                
-                DataBag bag = bagFactory.newDefaultBag();
 
+                if (obj instanceof BasicDBObject) {
+                    BasicDBObject val = (BasicDBObject)obj;
+                    for(int j = 0; j < fs.length; j++) {
+                        t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
+                    }
+                } else if (obj instanceof BasicDBList) {
+                    //This happens when a user wants to turn a list into a tuple.
+                    BasicDBList vals = (BasicDBList) obj;
+                    for (int j = 0; j < fs.length; j++) {
+                        t.set(j, readField(vals.get(j), fs[j]));
+                    }
+                }
+                return t;
+
+            case DataType.BAG:
+                //We already know the bag has tuples, so skip that schema and get the schema of the tuple.
+                s = field.getSchema();
+                ResourceFieldSchema[] tuplefs = s.getFields();
+                s = tuplefs[0].getSchema();
+
+                DataBag bag = bagFactory.newDefaultBag();
                 BasicDBList vals = (BasicDBList)obj;
 
-                for(int j = 0; j < vals.size(); j++) {
-                    t = tupleFactory.newTuple(fs.length);
-                    Object embeddedField = vals.get(j);
-
-                    for(int k = 0; k < fs.length; k++) {
-                        String fieldName = fs[k].getName();
-                        Object nextFieldVal = null;
-                        ResourceFieldSchema recursiveFieldSchema = null;
-                        if (fieldName.equals(PIG_INNER_MAP_SCHEMA_NAME)) {
-                            //TODO: jkarn - This is kind of wonky.  Right now if the field is inner_map that means (mostly) 
-                            //that its the schema for the bag I made up.  In this case we leave recursiveFieldSchema null
-                            //so that readField will infer the schema.
-                            nextFieldVal = embeddedField;
-                        } else {
-                            nextFieldVal = ((BasicDBObject) embeddedField).get(fieldName);
-                            recursiveFieldSchema = fs[k];
-                        }
-                        t.set(k, readField(nextFieldVal, recursiveFieldSchema));
+                if (s == null) {
+                    //Handle lack of schema - We'll create a separate tuple for each item in this bag.
+                    for(int j = 0; j < vals.size(); j++) {
+                        t = tupleFactory.newTuple(1);
+                        t.set(0, readField(vals.get(j), null));
+                        bag.add(t);
                     }
-                    bag.add(t);
+                } else {
+                    fs = s.getFields();
+                    for(int j = 0; j < vals.size(); j++) {
+                        t = tupleFactory.newTuple(fs.length);
+                        Object embeddedField = vals.get(j);
+
+                        if (embeddedField instanceof BasicDBObject) {
+                            for(int k = 0; k < fs.length; k++) {
+                                String fieldName = fs[k].getName();
+                                t.set(k, readField(((BasicDBObject) embeddedField).get(fieldName), fs[k]));
+                            }
+                        } else {
+                            //This happens when a user declares an array as a tuple in the schema.  
+                            //We try to make that work to provide a way of retrieving an ordered list.
+                            t = (Tuple) readField(embeddedField, tuplefs[0]);
+                        }
+                        bag.add(t);
+                    }
                 }
-                
+
                 return bag;
 
             case DataType.MAP:
@@ -194,29 +201,30 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         }
     }
     
-    protected ResourceFieldSchema inferFieldSchema(Object o) {
+    protected ResourceFieldSchema inferFieldSchema(Object o) throws ParserException {
         if (o instanceof BasicDBList) {
-            try {
-                return new ResourceSchema(Utils.getSchemaFromString("inner_bag:bag{inner_tuple:tuple(" + PIG_INNER_MAP_SCHEMA_NAME + ":map[])}")).getFields()[0];
-            } catch (ParserException e) {
-                log.error("Parser exception: ", e);
-                return null;
-            }
+            return getResourceFieldSchemaFromString("b:bag{t:tuple()}");
         } else if (o instanceof BasicDBObject) {
-            try {
-                return new ResourceSchema(Utils.getSchemaFromString(PIG_INNER_MAP_SCHEMA_NAME + ":map[]")).getFields()[0];
-            } catch (ParserException e) {
-                log.error("Parser exception: ", e);
-                return null;
-            }
-        //TODO: jkarn - try to cast to different data types
+            return getResourceFieldSchemaFromString("m:map[]");
+        } else if (o instanceof Integer) {
+            return getResourceFieldSchemaFromString("i:int");
+        } else if (o instanceof Long) {
+            return getResourceFieldSchemaFromString("l:long");
+        } else if (o instanceof Float) {
+            return getResourceFieldSchemaFromString("f:float");
+        } else if (o instanceof Double) {
+            return getResourceFieldSchemaFromString("d:double");
         } else {
-            try {
-                return new ResourceSchema(Utils.getSchemaFromString("c:chararray")).getFields()[0];
-            } catch (ParserException e) {
-                log.error("Parser exception: ", e);
-                return null;
-            }
+            return getResourceFieldSchemaFromString("c:chararray");
+        }
+    }
+
+    private ResourceFieldSchema getResourceFieldSchemaFromString(String schemaString) throws ParserException {
+        try {
+            return new ResourceSchema(Utils.getSchemaFromString(schemaString)).getFields()[0];
+        } catch (ParserException e) {
+            log.error("Parser exception: ", e);
+            throw e;
         }
     }
     
