@@ -17,19 +17,22 @@
 package com.mongodb.hadoop.output;
 
 import org.apache.hadoop.mapreduce.*;
+import org.apache.commons.logging.*;
 
 public class MongoOutputCommiter extends OutputCommitter {
 
+    private static final Log log = LogFactory.getLog( MongoOutputCommiter.class );
+
     public void abortTask( TaskAttemptContext taskContext ){
-        System.out.println( "should abort task" );
+        log.info("Aborting task.");
     }
 
     public void cleanupJob( JobContext jobContext ){
-        System.out.println( "should cleanup job" );
+        log.info("Cleaning up job.");
     }
 
     public void commitTask( TaskAttemptContext taskContext ){
-        System.out.println( "should commit task" );
+        log.info("Committing task.");
     }
 
     public boolean needsTaskCommit( TaskAttemptContext taskContext ){
@@ -37,10 +40,11 @@ public class MongoOutputCommiter extends OutputCommitter {
     }
 
     public void setupJob( JobContext jobContext ){
-        System.out.println( "should setup job" );
+        log.info("Setting up job.");
     }
 
     public void setupTask( TaskAttemptContext taskContext ){
-        System.out.println( "should setup context" );
+        log.info("Setting up task.");
     }
+
 }
