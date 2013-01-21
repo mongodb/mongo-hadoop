@@ -3,6 +3,7 @@ package com.mongodb.hadoop.pig;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +42,16 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
     
+    static Map<String, String> MONGO_TO_PIG_NAME_REPLACEMENTS = new HashMap<String, String>();
+    static {
+        MONGO_TO_PIG_NAME_REPLACEMENTS.put("_id", "underscore_id");
+    }
+    
+    static Map<String, String> PIG_TO_MONGO_NAME_REPLACEMENTS = new HashMap<String, String>();
+    static {
+        PIG_TO_MONGO_NAME_REPLACEMENTS.put("underscore_id", "_id");
+    }
+    
     protected ResourceSchema schema = null;
     
     ResourceFieldSchema[] fields;
@@ -57,11 +68,30 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     
     public MongoLoader (String userSchema) {
         try {
+            userSchema = getPigAcceptableUserSchema(userSchema);
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
             fields = schema.getFields();
         } catch (ParserException e) {
+            log.error(e);
             throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Need to handle cases where a valid mongo name is an invalid pig name.
+     * 
+     * @param userSchema
+     * @return
+     */
+    protected String getPigAcceptableUserSchema(String userSchema) {
+        userSchema = userSchema.replaceAll("\\s","");
+        for (Entry<String, String> e : MONGO_TO_PIG_NAME_REPLACEMENTS.entrySet()) {
+            if (userSchema.startsWith(e.getKey())) {
+                userSchema = userSchema.replaceFirst(e.getKey(), e.getValue());
+            }
+            userSchema = userSchema.replaceAll("," + e.getKey(), "," + e.getValue());
+        }
+        return userSchema;
     }
 
     @Override
@@ -245,7 +275,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             t = tupleFactory.newTuple(fields.length);
             
             for(int i = 0; i < fields.length; i++) {
-                t.set(i, readField(val.get(fields[i].getName()), fields[i]));
+                String pigFieldName = fields[i].getName();
+                String replacementMongoFieldName = PIG_TO_MONGO_NAME_REPLACEMENTS.get(pigFieldName);
+                String fieldName = replacementMongoFieldName != null ? replacementMongoFieldName : pigFieldName;
+                t.set(i, readField(val.get(fieldName), fields[i]));
             }
         } else {
             t = tupleFactory.newTuple(1);
