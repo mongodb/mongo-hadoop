@@ -72,8 +72,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
             fields = schema.getFields();
         } catch (ParserException e) {
-            log.error(e);
-            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage());
+            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage(), e);
         }
     }
     
