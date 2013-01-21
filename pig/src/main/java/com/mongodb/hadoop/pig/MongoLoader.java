@@ -3,6 +3,7 @@ package com.mongodb.hadoop.pig;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,6 +20,7 @@ import org.apache.pig.ResourceStatistics;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -40,6 +42,16 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
     
+    static Map<String, String> MONGO_TO_PIG_NAME_REPLACEMENTS = new HashMap<String, String>();
+    static {
+        MONGO_TO_PIG_NAME_REPLACEMENTS.put("_id", "underscore_id");
+    }
+    
+    static Map<String, String> PIG_TO_MONGO_NAME_REPLACEMENTS = new HashMap<String, String>();
+    static {
+        PIG_TO_MONGO_NAME_REPLACEMENTS.put("underscore_id", "_id");
+    }
+    
     protected ResourceSchema schema = null;
     
     ResourceFieldSchema[] fields;
@@ -56,11 +68,29 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     
     public MongoLoader (String userSchema) {
         try {
+            userSchema = getPigAcceptableUserSchema(userSchema);
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
             fields = schema.getFields();
         } catch (ParserException e) {
-            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage());
+            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Need to handle cases where a valid mongo name is an invalid pig name.
+     * 
+     * @param userSchema
+     * @return
+     */
+    protected String getPigAcceptableUserSchema(String userSchema) {
+        userSchema = userSchema.replaceAll("\\s","");
+        for (Entry<String, String> e : MONGO_TO_PIG_NAME_REPLACEMENTS.entrySet()) {
+            if (userSchema.startsWith(e.getKey())) {
+                userSchema = userSchema.replaceFirst(e.getKey(), e.getValue());
+            }
+            userSchema = userSchema.replaceAll("," + e.getKey(), "," + e.getValue());
+        }
+        return userSchema;
     }
 
     @Override
@@ -94,7 +124,11 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     protected Object readField(Object obj, ResourceFieldSchema field) throws IOException {
         if(obj == null)
             return null;
-        
+
+        if (field == null) {
+            field = inferFieldSchema(obj);
+        }
+
         try {
             switch (field.getType()) {
             case DataType.INTEGER:
@@ -106,57 +140,82 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             case DataType.DOUBLE:
                 return Double.parseDouble(obj.toString());
             case DataType.BYTEARRAY:
-                return obj;
+                return new DataByteArray(obj.toString());
             case DataType.CHARARRAY:
                 return obj.toString();
             case DataType.TUPLE:
                 ResourceSchema s = field.getSchema();
                 ResourceFieldSchema[] fs = s.getFields();
                 Tuple t = tupleFactory.newTuple(fs.length);
-                
-                BasicDBObject val = (BasicDBObject)obj;
-                
-                for(int j = 0; j < fs.length; j++) {
-                    t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
-                }
-                
-                return t;
-                
-            case DataType.BAG:
-                s = field.getSchema();
-                fs = s.getFields();
-                
-                s = fs[0].getSchema();
-                fs = s.getFields();
-                
-                DataBag bag = bagFactory.newDefaultBag();
-                
-                BasicDBList vals = (BasicDBList)obj;
-                            
-                for(int j = 0; j < vals.size(); j++) {
-                    t = tupleFactory.newTuple(fs.length);
-                    for(int k = 0; k < fs.length; k++) {
-                        t.set(k, readField(((BasicDBObject)vals.get(j)).get(fs[k].getName()), fs[k]));
+
+                if (obj instanceof BasicDBObject) {
+                    BasicDBObject val = (BasicDBObject)obj;
+                    for(int j = 0; j < fs.length; j++) {
+                        t.set(j, readField(val.get(fs[j].getName()) ,fs[j]));
                     }
-                    bag.add(t);
+                } else if (obj instanceof BasicDBList) {
+                    //This happens when a user wants to turn a list into a tuple.
+                    BasicDBList vals = (BasicDBList) obj;
+                    for (int j = 0; j < fs.length; j++) {
+                        t.set(j, readField(vals.get(j), fs[j]));
+                    }
                 }
-                
+                return t;
+
+            case DataType.BAG:
+                //We already know the bag has tuples, so skip that schema and get the schema of the tuple.
+                s = field.getSchema();
+                ResourceFieldSchema[] tuplefs = s.getFields();
+                s = tuplefs[0].getSchema();
+
+                DataBag bag = bagFactory.newDefaultBag();
+                BasicDBList vals = (BasicDBList)obj;
+
+                if (s == null) {
+                    //Handle lack of schema - We'll create a separate tuple for each item in this bag.
+                    for(int j = 0; j < vals.size(); j++) {
+                        t = tupleFactory.newTuple(1);
+                        t.set(0, readField(vals.get(j), null));
+                        bag.add(t);
+                    }
+                } else {
+                    fs = s.getFields();
+                    for(int j = 0; j < vals.size(); j++) {
+                        t = tupleFactory.newTuple(fs.length);
+                        Object embeddedField = vals.get(j);
+
+                        if (embeddedField instanceof BasicDBObject) {
+                            for(int k = 0; k < fs.length; k++) {
+                                String fieldName = fs[k].getName();
+                                t.set(k, readField(((BasicDBObject) embeddedField).get(fieldName), fs[k]));
+                            }
+                        } else {
+                            //This happens when a user declares an array as a tuple in the schema.  
+                            //We try to make that work to provide a way of retrieving an ordered list.
+                            t = (Tuple) readField(embeddedField, tuplefs[0]);
+                        }
+                        bag.add(t);
+                    }
+                }
+
                 return bag;
 
             case DataType.MAP:
                 s = field.getSchema();
+                
+                //If no internal schema for the map was specified - use null and let readField infer the schema
+                //by looking at the object
+                ResourceFieldSchema innerFieldSchema = null;
                 if (s != null) {
                     fs = s.getFields();
-                } else {
-                    //If no internal schema for the map was specified - treat everything as a bytearray.
-                    fs = new ResourceSchema(Utils.getSchemaFromString("b:bytearray")).getFields();
+                    innerFieldSchema = fs[0];
                 }
 
                 BasicDBObject inputMap = (BasicDBObject) obj;
                 
                 Map outputMap = new HashMap();
                 for (String key : inputMap.keySet()) {
-                    outputMap.put(key, readField(inputMap.get(key), fs[0]));
+                    outputMap.put(key, readField(inputMap.get(key), innerFieldSchema));
                 }
                 return outputMap;
 
@@ -168,6 +227,33 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             String type = DataType.genTypeToNameMap().get(field.getType());
             log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
             return null;
+        }
+    }
+    
+    protected ResourceFieldSchema inferFieldSchema(Object o) throws ParserException {
+        if (o instanceof BasicDBList) {
+            return getResourceFieldSchemaFromString("b:bag{t:tuple()}");
+        } else if (o instanceof BasicDBObject) {
+            return getResourceFieldSchemaFromString("m:map[]");
+        } else if (o instanceof Integer) {
+            return getResourceFieldSchemaFromString("i:int");
+        } else if (o instanceof Long) {
+            return getResourceFieldSchemaFromString("l:long");
+        } else if (o instanceof Float) {
+            return getResourceFieldSchemaFromString("f:float");
+        } else if (o instanceof Double) {
+            return getResourceFieldSchemaFromString("d:double");
+        } else {
+            return getResourceFieldSchemaFromString("c:chararray");
+        }
+    }
+
+    private ResourceFieldSchema getResourceFieldSchemaFromString(String schemaString) throws ParserException {
+        try {
+            return new ResourceSchema(Utils.getSchemaFromString(schemaString)).getFields()[0];
+        } catch (ParserException e) {
+            log.error("Parser exception: ", e);
+            throw e;
         }
     }
     
@@ -188,7 +274,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             t = tupleFactory.newTuple(fields.length);
             
             for(int i = 0; i < fields.length; i++) {
-                t.set(i, readField(val.get(fields[i].getName()), fields[i]));
+                String pigFieldName = fields[i].getName();
+                String replacementMongoFieldName = PIG_TO_MONGO_NAME_REPLACEMENTS.get(pigFieldName);
+                String fieldName = replacementMongoFieldName != null ? replacementMongoFieldName : pigFieldName;
+                t.set(i, readField(val.get(fieldName), fields[i]));
             }
         } else {
             t = tupleFactory.newTuple(1);
