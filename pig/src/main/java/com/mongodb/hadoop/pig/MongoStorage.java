@@ -85,106 +85,175 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     public void putNext( Tuple tuple ) throws IOException{
         final Configuration config = _recordWriter.getContext().getConfiguration();
         final List<String> schema = Arrays.asList( config.get( PIG_OUTPUT_SCHEMA ).split( "," ) );
-        final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
 
+        BasicDBObject record = new BasicDBObject();
         ResourceFieldSchema[] fields = this.schema.getFields();
+
         for (int i = 0; i < fields.length; i++) {
-            writeField(builder, fields[i], tuple.get(i));
+            writeField(record, fields[i], tuple.get(i));
         }
-        _recordWriter.write( null, builder.get() );
+        
+        _recordWriter.write( null, record );
     }
 
-    protected void writeField(BasicDBObjectBuilder builder,
-                            ResourceSchema.ResourceFieldSchema field,
-                            Object d) throws IOException {
+    protected void writeField(BasicDBObject obj,
+                              ResourceSchema.ResourceFieldSchema field,
+                              Object d) throws IOException {
 
         // If the field is missing or the value is null, write a null
         if (d == null) {
-            builder.add( field.getName(), d );
+            obj.append( field.getName(), d );
             return;
         }
 
         ResourceSchema s = field.getSchema();
+        ResourceFieldSchema[] fs = (s == null? null : s.getFields());
+        BasicDBObject nestedObj;
 
         // Based on the field's type, write it out
         switch (field.getType()) {
             case DataType.INTEGER:
-                builder.add( field.getName(), (Integer)d );
+                obj.append( field.getName(), (Integer) d );
                 return;
 
             case DataType.LONG:
-                builder.add( field.getName(), (Long)d );
+                obj.append( field.getName(), (Long) d );
                 return;
 
             case DataType.FLOAT:
-                builder.add( field.getName(), (Float)d );
+                obj.append( field.getName(), (Float) d );
                 return;
 
             case DataType.DOUBLE:
-                builder.add( field.getName(), (Double)d );
+                obj.append( field.getName(), (Double) d );
                 return;
 
             case DataType.BYTEARRAY:
-                builder.add( field.getName(), d.toString() );
+                obj.append( field.getName(), d.toString() );
                 return;
 
             case DataType.CHARARRAY:
-                builder.add( field.getName(), (String)d );
+                obj.append( field.getName(), (String) d );
                 return;
 
-            // Given a TUPLE, create a Map so BSONEncoder will eat it
-            case DataType.TUPLE:
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                ResourceSchema.ResourceFieldSchema[] fs = s.getFields();
-                LinkedHashMap m = new java.util.LinkedHashMap();
-                for (int j = 0; j < fs.length; j++) {
-                    m.put(fs[j].getName(), ((Tuple) d).get(j));
-                }
-                builder.add( field.getName(), (Map)m );
-                return;
-
-            // Given a BAG, create an Array so BSONEnconder will eat it.
-            case DataType.BAG:
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                fs = s.getFields();
-                if (fs.length != 1 || fs[0].getType() != DataType.TUPLE) {
-                    throw new IOException("Found a bag without a tuple "
-                            + "inside!");
-                }
-                // Drill down the next level to the tuple's schema.
-                s = fs[0].getSchema();
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                fs = s.getFields();
-
-                ArrayList a = new ArrayList<Map>();
-                for (Tuple t : (DataBag)d) {
-                    LinkedHashMap ma = new java.util.LinkedHashMap();
-                    for (int j = 0; j < fs.length; j++) {
-                        ma.put(fs[j].getName(), ((Tuple) t).get(j));
-                    }
-                    a.add(ma);
-                }
-
-                builder.add( field.getName(), a);
-                return;
             case DataType.MAP:
                 Map map = (Map) d;
-                for(Object key : map.keySet()) {
-                    builder.add(key.toString(), map.get(key));
+                nestedObj = new BasicDBObject();
+
+                if (fs != null && fs.length == 1) {
+                    ResourceFieldSchema nestedField = fs[0];
+                    for(Object key : map.keySet()) {
+                        nestedField.setName(key.toString());
+                        writeField(nestedObj, nestedField, map.get(key));
+                    }
+                } else {
+                    // infer schema
+                    for (Object key : map.keySet()) {
+                        Object nestedData = map.get(key);
+                        ResourceFieldSchema nestedField = new ResourceFieldSchema();
+                        
+                        nestedField.setName(key.toString());
+                        nestedField.setType(inferType(nestedData, key.toString(), field.getName()));
+                        
+                        writeField(nestedObj, nestedField, nestedData);
+                    }
                 }
+
+                obj.append ( field.getName(), nestedObj );
                 return;
+
+            case DataType.TUPLE:
+                Tuple tData = (Tuple) d;
+                nestedObj = new BasicDBObject();
+
+                if (fs != null) {
+                    for (int j = 0; j < fs.length; j++) {
+                        writeField(nestedObj, fs[j], tData.get(j));
+                    }
+                } else {
+                    for (int j = 0; j < tData.size(); j++) {
+                        Object nestedData = tData.get(j);
+                        ResourceFieldSchema nestedField = new ResourceFieldSchema();
+                        
+                        String key = (new Integer(j)).toString();
+                        nestedField.setName(key);
+                        nestedField.setType(inferType(nestedData, key, field.getName()));
+                        
+                        writeField(nestedObj, nestedField, tData.get(j));
+                    }
+                }
+                
+                obj.append( field.getName(), nestedObj );
+                return;
+
+            case DataType.BAG:
+                boolean hasSchema = false;
+                try {
+                    // Drill down the next level to the tuple's schema.
+                    s = fs[0].getSchema();
+                    fs = s.getFields();
+                    hasSchema = true;
+                } catch (Exception e) {}
+
+                DataBag bag = (DataBag) d;
+                BasicDBList arr = new BasicDBList();
+
+                int i = 0;
+                for (Tuple t : bag) {
+                    nestedObj = new BasicDBObject();
+                    
+                    if (hasSchema) {
+                        for (int j = 0; j < fs.length; j++) {
+                            writeField(nestedObj, fs[j], t.get(j));
+                        }
+                    } else {
+                        for (int j = 0; j < t.size(); j++) {
+                            Object nestedData = t.get(j);
+                            ResourceFieldSchema nestedField = new ResourceFieldSchema();
+                            
+                            String key = (new Integer(j)).toString();
+                            nestedField.setName(key);
+                            nestedField.setType(inferType(nestedData, key, field.getName()));
+                            
+                            writeField(nestedObj, nestedField, t.get(j));
+                        }
+                    }
+                    
+                    arr.put(i, nestedObj);
+                    i++;
+                }
+
+                obj.append( field.getName(), arr );
+                return;
+        }
+    }
+    
+    private byte inferType(Object o, String key, String fieldName)
+                 throws IOException {
+        
+        if (o instanceof Integer) {
+           return DataType.INTEGER;
+        } else if (o instanceof Long) {
+            return DataType.LONG;
+        } else if (o instanceof Float) {
+            return DataType.FLOAT;
+        } else if (o instanceof Double) {
+            return DataType.DOUBLE;
+        } else if (o instanceof String) {
+            return DataType.CHARARRAY;
+        } else if (o instanceof DataByteArray) {
+            return DataType.BYTEARRAY;
+        } else if (o instanceof Map) {
+            return DataType.MAP;
+        } else if (o instanceof Tuple) {
+            return DataType.TUPLE;
+        } else if (o instanceof DataBag) {
+           return DataType.BAG;
+        } else {
+            throw new IOException(
+                "Failed to infer type of value for key \"" + key + "\" " +
+                "in schema-less map field " + fieldName + "."
+            );
         }
     }
 
