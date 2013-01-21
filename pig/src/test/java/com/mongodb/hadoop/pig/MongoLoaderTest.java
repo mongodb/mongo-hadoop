@@ -11,13 +11,48 @@ import java.util.Map;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.Tuple;
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
 import org.junit.Test;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 
 
 public class MongoLoaderTest {
+    @Test
+    public void testGetPigAcceptableUserSchema__simpleSchema() {
+        String userSchema = "d:chararray";
+        String result = new MongoLoader().getPigAcceptableUserSchema(userSchema);
+        String expectedResult = userSchema;
+        assertEquals(expectedResult, result);
+    }
+    
+    @Test
+    public void testGetPigAcceptableUserSchema__simpleSchemaWithUnacceptableParam() {
+        String userSchema = "_id:chararray";
+        String result = new MongoLoader().getPigAcceptableUserSchema(userSchema);
+        String expectedResult = "underscore_id:chararray";
+        assertEquals(expectedResult, result);
+    }
+    
+    @Test
+    public void testGetPigAcceptableUserSchema__simpleSchemaWithUnacceptableParamNotFirst() {
+        String userSchema = "user_id:chararray,_id:chararray";
+        String result = new MongoLoader().getPigAcceptableUserSchema(userSchema);
+        String expectedResult = "user_id:chararray,underscore_id:chararray";
+        assertEquals(expectedResult, result);
+    }
+    
+    @Test
+    public void testGetPigAcceptableUserSchema__simpleSchemaWithUnacceptableParamNotFirstSpaces() {
+        String userSchema = "user_id:chararray,\n _id:chararray";
+        String result = new MongoLoader().getPigAcceptableUserSchema(userSchema);
+        String expectedResult = "user_id:chararray,underscore_id:chararray";
+        assertEquals(expectedResult, result);
+    }
+    
     @Test
     public void testReadField_simpleChararray() throws IOException {
         String userSchema = "d:chararray";
