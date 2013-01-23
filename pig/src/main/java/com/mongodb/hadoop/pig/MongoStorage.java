@@ -175,11 +175,11 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                         Object nestedData = tData.get(j);
                         ResourceFieldSchema nestedField = new ResourceFieldSchema();
                         
-                        String key = (new Integer(j)).toString();
+                        String key = "" + j;
                         nestedField.setName(key);
                         nestedField.setType(inferType(nestedData, key, field.getName()));
                         
-                        writeField(nestedObj, nestedField, tData.get(j));
+                        writeField(nestedObj, nestedField, nestedData);
                     }
                 }
                 
@@ -193,7 +193,10 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                     s = fs[0].getSchema();
                     fs = s.getFields();
                     hasSchema = true;
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                    // we don't throw an exception since this is just to test if a schema is specified
+                    // unspecified schemas are handled below (this is so that bag values in map[] schemas work correctly)
+                }
 
                 DataBag bag = (DataBag) d;
                 BasicDBList arr = new BasicDBList();
@@ -211,7 +214,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                             Object nestedData = t.get(j);
                             ResourceFieldSchema nestedField = new ResourceFieldSchema();
                             
-                            String key = (new Integer(j)).toString();
+                            String key = "" + j;
                             nestedField.setName(key);
                             nestedField.setType(inferType(nestedData, key, field.getName()));
                             
