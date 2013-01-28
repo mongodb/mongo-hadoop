@@ -113,19 +113,51 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         // Based on the field's type, write it out
         switch (field.getType()) {
             case DataType.INTEGER:
-                obj.append( field.getName(), (Integer) d );
+                if (d instanceof Integer)
+                    obj.append( field.getName(), (Integer) d );
+                else if (d instanceof DataByteArray)
+                    obj.append( field.getName(), Integer.parseInt(d.toString()));
+                else {
+                    throw new IOException(
+                        "Schema lists field " + field.getName() + 
+                        "as an int, but value was not an int or bytearray.");
+                }
                 return;
 
             case DataType.LONG:
-                obj.append( field.getName(), (Long) d );
+                if (d instanceof Long)
+                    obj.append( field.getName(), (Long) d );
+                else if (d instanceof DataByteArray)
+                    obj.append( field.getName(), Long.parseLong(d.toString()));
+                else {
+                    throw new IOException(
+                        "Schema lists field " + field.getName() + 
+                        "as a long, but value was not a long or bytearray.");
+                }
                 return;
 
             case DataType.FLOAT:
-                obj.append( field.getName(), (Float) d );
+                if (d instanceof Float)
+                    obj.append( field.getName(), (Float) d );
+                else if (d instanceof DataByteArray)
+                    obj.append( field.getName(), Float.parseFloat(d.toString()));
+                else {
+                    throw new IOException(
+                        "Schema lists field " + field.getName() + 
+                        "as a float, but value was not a float or bytearray.");
+                }
                 return;
 
             case DataType.DOUBLE:
-                obj.append( field.getName(), (Double) d );
+                if (d instanceof Double)
+                    obj.append( field.getName(), (Double) d );
+                else if (d instanceof DataByteArray)
+                    obj.append( field.getName(), Double.parseDouble(d.toString()));
+                else {
+                    throw new IOException(
+                        "Schema lists field " + field.getName() + 
+                        "as a double, but value was not a double or bytearray.");
+                }
                 return;
 
             case DataType.BYTEARRAY:
