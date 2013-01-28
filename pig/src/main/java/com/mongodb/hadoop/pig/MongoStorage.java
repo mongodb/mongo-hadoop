@@ -127,12 +127,14 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             case DataType.LONG:
                 if (d instanceof Long)
                     obj.append( field.getName(), (Long) d );
+                else if (d instanceof Integer)
+                    obj.append( field.getName(), new Long(((Integer) d)).longValue());
                 else if (d instanceof DataByteArray)
                     obj.append( field.getName(), Long.parseLong(d.toString()));
                 else {
                     throw new IOException(
                         "Schema lists field " + field.getName() + 
-                        "as a long, but value was not a long or bytearray.");
+                        "as a long, but value was not a long, int, or bytearray.");
                 }
                 return;
 
@@ -151,12 +153,14 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             case DataType.DOUBLE:
                 if (d instanceof Double)
                     obj.append( field.getName(), (Double) d );
+                else if (d instanceof Float)
+                    obj.append( field.getName(), new Double(((Float) d).doubleValue()));
                 else if (d instanceof DataByteArray)
                     obj.append( field.getName(), Double.parseDouble(d.toString()));
                 else {
                     throw new IOException(
                         "Schema lists field " + field.getName() + 
-                        "as a double, but value was not a double or bytearray.");
+                        "as a double, but value was not a double, float, or bytearray.");
                 }
                 return;
 
@@ -225,7 +229,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                     s = fs[0].getSchema();
                     fs = s.getFields();
                     hasSchema = true;
-                } catch (Exception e) {
+                } catch (NullPointerException npe) {
                     // we don't throw an exception since this is just to test if a schema is specified
                     // unspecified schemas are handled below (this is so that bag values in map[] schemas work correctly)
                 }
