@@ -224,14 +224,10 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
             case DataType.BAG:
                 boolean hasSchema = false;
-                try {
-                    // Drill down the next level to the tuple's schema.
+                if (fs != null && fs.length > 0) {
                     s = fs[0].getSchema();
                     fs = s.getFields();
                     hasSchema = true;
-                } catch (NullPointerException npe) {
-                    // we don't throw an exception since this is just to test if a schema is specified
-                    // unspecified schemas are handled below (this is so that bag values in map[] schemas work correctly)
                 }
 
                 DataBag bag = (DataBag) d;
