@@ -83,7 +83,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
      * @return
      */
     protected String getPigAcceptableUserSchema(String userSchema) {
-        userSchema = userSchema.replaceAll("\\s","");
+        userSchema = userSchema.replaceAll("\\s|\\\\n","");
         for (Entry<String, String> e : MONGO_TO_PIG_NAME_REPLACEMENTS.entrySet()) {
             if (userSchema.startsWith(e.getKey())) {
                 userSchema = userSchema.replaceFirst(e.getKey(), e.getValue());
