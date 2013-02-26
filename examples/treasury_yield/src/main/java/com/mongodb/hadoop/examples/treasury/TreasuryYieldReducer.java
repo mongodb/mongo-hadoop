@@ -45,14 +45,15 @@ public class TreasuryYieldReducer
         int count = 0;
         double sum = 0;
         for ( final DoubleWritable value : pValues ){
-            LOG.debug( "Key: " + pKey + " Value: " + value );
             sum += value.get();
             count++;
+            LOG.info( "Key: " + pKey + " Value: " + value );
+            LOG.info("sum: " + sum + " count: " + count);
         }
 
         final double avg = sum / count;
 
-        LOG.debug( "Average 10 Year Treasury for " + pKey.get() + " was " + avg );
+        LOG.info( "Average 10 Year Treasury for " + pKey.get() + " was " + avg );
 
         pContext.write( pKey, new DoubleWritable( avg ) );
     }

@@ -44,6 +44,7 @@ public class TreasuryYieldMapper
                      final Context pContext )
             throws IOException, InterruptedException{
 
+        LOG.info("mapping: " + pValue.get("_id"));
         final int year = pKey.getYear() + 1900;
         double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
 
