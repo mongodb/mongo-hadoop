@@ -47,8 +47,7 @@ public class TreasuryYieldReducer
         for ( final DoubleWritable value : pValues ){
             sum += value.get();
             count++;
-            LOG.info( "Key: " + pKey + " Value: " + value );
-            LOG.info("sum: " + sum + " count: " + count);
+            LOG.info( "Key: " + pKey + " Value: " + value + " count: " + count + " sum: " + sum );
         }
 
         final double avg = sum / count;
