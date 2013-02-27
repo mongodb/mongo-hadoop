@@ -39,6 +39,7 @@ def compare_results(collection):
         print "count is not same", len(output), len(check_results)
         return False
     for i, doc in enumerate(output):
+        #round to account for slight changes due to precision in case ops are run in different order.
         if doc['_id'] != check_results[i]['_id'] or round(doc['value'], 7) != round(check_results[i]['value'], 7): 
             print "docs do not match", doc, check_results[i]
     return True
@@ -93,10 +94,9 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
 
     subprocess.call(' '.join(cmd), shell=True)
 
-
-class TestBasic(unittest.TestCase):
-    
-    def setUp(self):
+class Standalone(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
         self.server = mongo_manager.StandaloneManager(home="/tmp/standalone1")  
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
@@ -111,16 +111,24 @@ class TestBasic(unittest.TestCase):
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         print "killing it!"
-        #self.server.kill_all_members()
+        self.server.kill_all_members()
 
+class TestBasic(Standalone):
+
+    def test_treasury(self):
+        runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
 
 
 
 class BaseShardedTest(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         self.shard1 = mongo_manager.ReplicaSetManager(home="/tmp/rs0",
                 with_arbiter=True,
                 num_members=3)
@@ -177,7 +185,8 @@ class BaseShardedTest(unittest.TestCase):
         time.sleep(5)
 
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         print "killing servers!"
         #self.mongos.kill_all_members()
         #self.shard1.kill_all_members()
