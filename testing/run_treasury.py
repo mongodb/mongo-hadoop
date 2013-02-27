@@ -106,10 +106,12 @@ class Standalone(unittest.TestCase):
                                    JSONFILE_PATH)
         print "server is ready."
 
-    def test_treasury(self):
-        runjob(self.server_hostname, DEFAULT_PARAMETERS)
-        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
+    def setUp(self):
+        self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
+
+    def tearDown(self):
+        pass
+
 
     @classmethod
     def tearDownClass(self):
@@ -122,7 +124,6 @@ class TestBasic(Standalone):
         runjob(self.server_hostname, DEFAULT_PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
-
 
 
 class BaseShardedTest(unittest.TestCase):
@@ -184,14 +185,19 @@ class BaseShardedTest(unittest.TestCase):
 
         time.sleep(5)
 
+    def setUp(self):
+        self.mongos_connection['mongo_hadoop']['yield_historical.out'].drop()
+
+    def tearDown(self):
+        pass
 
     @classmethod
     def tearDownClass(self):
         print "killing servers!"
-        #self.mongos.kill_all_members()
-        #self.shard1.kill_all_members()
-        #self.shard2.kill_all_members()
-        #self.configdb.kill_all_members()
+        self.mongos.kill_all_members()
+        self.shard1.kill_all_members()
+        self.shard2.kill_all_members()
+        self.configdb.kill_all_members()
 
 
 class TestSharded(BaseShardedTest):
@@ -202,6 +208,29 @@ class TestSharded(BaseShardedTest):
 
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
+
+class TestShardedGTE_LT(BaseShardedTest):
+
+    def test_gte_lt(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.input.split.use_range_queries'] = 'true'
+
+        shard1db = pymongo.Connection(self.shard1.get_primary()[0])['mongo_hadoop']
+        shard2db = pymongo.Connection(self.shard2.get_primary()[0])['mongo_hadoop']
+        shard1db.set_profiling_level(2)
+        shard2db.set_profiling_level(2)
+        runjob(self.mongos_hostname, PARAMETERS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+        print "showing profiler results"
+        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
+            print line
+
+        for line in list(shard2db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
+            print line
+
+
+
 
 
 class TestShardedNoMongos(BaseShardedTest):
