@@ -229,6 +229,14 @@ class TestShardedGTE_LT(BaseShardedTest):
         for line in list(shard2db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
             print line
 
+        PARAMETERS['mongo.input.query'] = '{"_id":{"\$gt":{"\$date":1182470400000}}}'
+        out_col.drop()
+        runjob(self.mongos_hostname, PARAMETERS)
+        #Make sure that this fails when rangequery is used with a query that conflicts
+        self.assertEqual(out_col.count(), 0)
+
+        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
+            print line
 
 
 
