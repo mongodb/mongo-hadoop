@@ -342,14 +342,14 @@ public class MongoSplitter {
                     Map.Entry<String, Object> maxKey = max.size() == 1 ?
                         max.entrySet().iterator().next() : null;
                     if(minKey == null && maxKey == null ){
-                        log.error("Range query is enabled but one or more split boundaries contains a compound key:\n" +
+                        throw new IllegalArgumentException("Range query is enabled but one or more split boundaries contains a compound key:\n" +
                                   "minKey:  " + min.toString() +  "\n" +
                                   "maxKey:  " + max.toString());
                     }
 
                     if( (minKey != null && originalQuery.containsKey(minKey.getKey())) ||
                         (maxKey != null && originalQuery.containsKey(maxKey.getKey())) ){
-                        log.error("Range query is enabled but split key conflicts with query filter:\n" +
+                        throw new IllegalArgumentException("Range query is enabled but split key conflicts with query filter:\n" +
                                   "minKey:  " + min.toString() +  "\n" +
                                   "maxKey:  " + max.toString() +  "\n" + 
                                   "query:  " + originalQuery.toString());
