@@ -5,11 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.Tuple;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import com.mongodb.BasicDBList;
@@ -33,6 +36,20 @@ public class MongoLoaderTest {
 
         Object result = ml.readField(1.1F, ml.fields[0]);
         assertEquals(1.1F, result);
+    }
+    
+    @Test
+    public void testReadField_simpleDate() throws IOException {
+        String userSchema = "d:datetime";
+        MongoLoader ml = new MongoLoader(userSchema);
+        
+        Calendar calendar = Calendar.getInstance();
+        // the Mongo Java driver returns a java.util.Date for ISODate objects
+        // therefore this should be safe
+        Date in = calendar.getTime();
+        DateTime out = new DateTime(in);
+        Object result = ml.readField(in, ml.fields[0]);
+        assertEquals(out, result);
     }
     
     @Test

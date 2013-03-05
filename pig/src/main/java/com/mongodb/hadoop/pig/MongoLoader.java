@@ -23,14 +23,15 @@ import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.Utils;
-//import org.apache.pig.parser.ParserException;
 import org.bson.BSONObject;
+import org.joda.time.DateTime;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.input.MongoRecordReader;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+//import org.apache.pig.parser.ParserException;
 
 public class MongoLoader extends LoadFunc implements LoadMetadata {
 	private static final Log log = LogFactory.getLog( MongoStorage.class );
@@ -108,6 +109,8 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     			return obj;
     		case DataType.CHARARRAY:
     			return obj.toString();
+    		case DataType.DATETIME:
+    		    return new DateTime(obj);
     		case DataType.TUPLE:
     			ResourceSchema s = field.getSchema();
     			ResourceFieldSchema[] fs = s.getFields();
