@@ -300,6 +300,7 @@ public class MongoSplitter {
         try {
             int numChunks = 0;
             final int numExpectedChunks = cur.size();
+            MongoURI inputURI = conf.getInputURI();
 
             final List<InputSplit> splits = new ArrayList<InputSplit>( numExpectedChunks );
             while ( cur.hasNext() ){
@@ -327,8 +328,6 @@ public class MongoSplitter {
                 if ( log.isDebugEnabled() ){
                     log.debug( "[" + numChunks + "/" + numExpectedChunks + "] new query is: " + shardKeyQuery );
                 }
-
-                MongoURI inputURI = conf.getInputURI();
 
                 if ( useShards ){
                     final String shardname = row.getString( "shard" );

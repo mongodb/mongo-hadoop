@@ -49,9 +49,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _limit = limit;
         _skip = skip;
         _notimeout = noTimeout;
-        getCursor();
-        getBSONDecoder();
-        getBSONEncoder();
     }
 
 
