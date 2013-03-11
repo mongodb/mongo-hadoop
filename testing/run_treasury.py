@@ -1,4 +1,5 @@
 #!/bin/env python
+
 import unittest
 import pymongo
 import mongo_manager
@@ -11,28 +12,29 @@ HADOOP_HOME=os.environ['HADOOP_HOME']
 #cd ..
 
 # result set for sanity check#{{{
-check_results = [ { "_id": 1990, "value": 8.552400000000002 },
-                  { "_id": 1991, "value": 7.8623600000000025 },
-                  { "_id": 1992, "value": 7.008844621513946 },
-                  { "_id": 1993, "value": 5.866279999999999 },
-                  { "_id": 1994, "value": 7.085180722891565 },
-                  { "_id": 1995, "value": 6.573920000000002 },
-                  { "_id": 1996, "value": 6.443531746031742 },
-                  { "_id": 1997, "value": 6.353959999999992 },
-                  { "_id": 1998, "value": 5.262879999999994 },
-                  { "_id": 1999, "value": 5.646135458167332 },
-                  { "_id": 2000, "value": 6.030278884462145 },
-                  { "_id": 2001, "value": 5.02068548387097 },
-                  { "_id": 2002, "value": 4.61308 },
-                  { "_id": 2003, "value": 4.013879999999999 },
-                  { "_id": 2004, "value": 4.271320000000004 },
-                  { "_id": 2005, "value": 4.288880000000001 },
-                  { "_id": 2006, "value": 4.7949999999999955 },
-                  { "_id": 2007, "value": 4.634661354581674 },
-                  { "_id": 2008, "value": 3.6642629482071714 },
-                  { "_id": 2009, "value": 3.2641200000000037 },
-                  { "_id": 2010, "value": 3.3255026455026435 }]#}}}
-
+check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
+                  { "_id": 1991, "count": 250, "avg": 7.8623600000000025, "sum": 1965.5900000000006 },
+                  { "_id": 1992, "count": 251, "avg": 7.008844621513946, "sum": 1759.2200000000005 },
+                  { "_id": 1993, "count": 250, "avg": 5.866279999999999, "sum": 1466.5699999999997 },
+                  { "_id": 1994, "count": 249, "avg": 7.085180722891565, "sum": 1764.2099999999996 },
+                  { "_id": 1995, "count": 250, "avg": 6.573920000000002, "sum": 1643.4800000000005 },
+                  { "_id": 1996, "count": 252, "avg": 6.443531746031742, "sum": 1623.769999999999 },
+                  { "_id": 1997, "count": 250, "avg": 6.353959999999992, "sum": 1588.489999999998 },
+                  { "_id": 1998, "count": 250, "avg": 5.262879999999994, "sum": 1315.7199999999984 },
+                  { "_id": 1999, "count": 251, "avg": 5.646135458167332, "sum": 1417.1800000000003 },
+                  { "_id": 2000, "count": 251, "avg": 6.030278884462145, "sum": 1513.5999999999985 },
+                  { "_id": 2001, "count": 248, "avg": 5.02068548387097, "sum": 1245.1300000000006 },
+                  { "_id": 2002, "count": 250, "avg": 4.61308, "sum": 1153.27 },
+                  { "_id": 2003, "count": 250, "avg": 4.013879999999999, "sum": 1003.4699999999997 },
+                  { "_id": 2004, "count": 250, "avg": 4.271320000000004, "sum": 1067.8300000000008 },
+                  { "_id": 2005, "count": 250, "avg": 4.288880000000001, "sum": 1072.2200000000003 },
+                  { "_id": 2006, "count": 250, "avg": 4.7949999999999955, "sum": 1198.7499999999989 },
+                  { "_id": 2007, "count": 251, "avg": 4.634661354581674, "sum": 1163.3000000000002 },
+                  { "_id": 2008, "count": 251, "avg": 3.6642629482071714, "sum": 919.73 },
+                  { "_id": 2009, "count": 250, "avg": 3.2641200000000037, "sum": 816.0300000000009 },
+                  { "_id": 2010, "count": 189, "avg": 3.3255026455026435, "sum": 628.5199999999996 } ]#}}}
+                             
+                             
 def compare_results(collection):
     output = list(collection.find().sort("_id"))
     if len(output) != len(check_results):
@@ -40,8 +42,11 @@ def compare_results(collection):
         return False
     for i, doc in enumerate(output):
         #round to account for slight changes due to precision in case ops are run in different order.
-        if doc['_id'] != check_results[i]['_id'] or round(doc['value'], 7) != round(check_results[i]['value'], 7): 
+        if doc['_id'] != check_results[i]['_id'] or \
+                doc['count'] != check_results[i]['count'] or \
+                round(doc['avg'], 7) != round(check_results[i]['avg'], 7): 
             print "docs do not match", doc, check_results[i]
+            return False
     return True
 
 
@@ -71,7 +76,7 @@ DEFAULT_PARAMETERS = {
   "mongo.job.output.key":"org.apache.hadoop.io.IntWritable",
   "mongo.job.output.value":"org.apache.hadoop.io.DoubleWritable",
   "mongo.job.mapper.output.key":"org.apache.hadoop.io.IntWritable",
-  "mongo.job.mapper.output.value":"org.apache.hadoop.io.DoubleWritable",
+  "mongo.job.mapper.output.value":"com.mongodb.hadoop.io.BSONWritable",
   #"mongo.job.combiner":"com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
   "mongo.job.partitioner":"",
   "mongo.job.sort_comparator":"",
@@ -92,6 +97,7 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
     cmd.append("-D")
     cmd.append("mongo.output.uri=mongodb://%s/%s" % (hostname, output_collection))
 
+    print cmd
     subprocess.call(' '.join(cmd), shell=True)
 
 class Standalone(unittest.TestCase):
@@ -109,13 +115,10 @@ class Standalone(unittest.TestCase):
     def setUp(self):
         self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
 
-    def tearDown(self):
-        pass
-
 
     @classmethod
     def tearDownClass(self):
-        print "killing it!"
+        print "standalone clas: killing mongod"
         self.server.kill_all_members()
 
 class TestBasic(Standalone):
@@ -193,7 +196,7 @@ class BaseShardedTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        print "killing servers!"
+        print "killing sharded servers!"
         self.mongos.kill_all_members()
         self.shard1.kill_all_members()
         self.shard2.kill_all_members()
@@ -238,15 +241,12 @@ class TestShardedGTE_LT(BaseShardedTest):
         for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
             print line
 
-
-
-
 class TestShardedNoMongos(BaseShardedTest):
     #run a simple job against a sharded cluster, going directly to shards (bypass mongos)
 
     def test_treasury(self):
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
+        #PARAMETERS = DEFAULT_PARAMETERS.copy()
+        #PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
         #print "running job against shards directly"
         #runjob(self.mongos_hostname, PARAMETERS)
         #out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
@@ -257,21 +257,35 @@ class TestShardedNoMongos(BaseShardedTest):
         #HADOOP61 - simulate a failed migration by having some docs from one chunk
         #also exist on another shard who does not own that chunk (duplicates)
         ms_config = self.mongos_connection['config']
-        chunk_to_duplicate = ms_config.chunks.find_one({"shard":"replset0"})
+
+        print list(ms_config.shards.find())
+        print list(ms_config.chunks.find())
+        chunk_to_duplicate = ms_config.chunks.find_one({"shard":self.shard1.name})
         print "duplicating chunk", chunk_to_duplicate
         chunk_query = {"_id":{"$gte":chunk_to_duplicate['min']['_id'], "$lt": chunk_to_duplicate['max']['_id']}}
-        data_to_duplicate = self.mongos_connection['mongo_hadoop']['yield_historical.in'].find(chunk_query)
+        data_to_duplicate = list(self.mongos_connection['mongo_hadoop']['yield_historical.in'].find(chunk_query))
         destination = pymongo.Connection(self.shard2.get_primary()[0])
         for doc in data_to_duplicate:
+            #print doc['_id'], "was on shard ", self.shard1.name, "now on ", self.shard2.name
             #print "inserting", doc
             destination['mongo_hadoop']['yield_historical.in'].insert(doc, safe=True)
         
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
+        PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
+        PARAMETERS['mongo.input.split.read_shard_chunks'] = 'false'
         runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
 
         out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col2))
+        self.assertFalse(compare_results(out_col2))
+        self.mongos_connection['mongo_hadoop']['yield_historical.out'].drop()
 
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
+        PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
+        PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
+        self.assertTrue(compare_results(out_col2))
 
 def testtreasury():
     runjob('localhost:4007')
