@@ -143,7 +143,19 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // them.
         // todo - support limit/skip
         if ( _cursor == null ){
-            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
+            if (_querySpec.containsKey("$query")) {
+                _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( null, _fieldSpec );
+                for (String key : _querySpec.keySet()) {
+                    _cursor.addSpecial( key, _querySpec.get( key ) );
+                }
+            } else {
+                _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec );
+            }
+            _cursor = _cursor.sort( _sortSpec );
+
+            if (_skip > 0) {
+                _cursor.skip(_skip);
+            }
             if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             if (_specialMin != null) _cursor.addSpecial("$min", _specialMin);
             if (_specialMax != null) _cursor.addSpecial("$max", _specialMax);
