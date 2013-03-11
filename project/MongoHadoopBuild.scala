@@ -313,7 +313,7 @@ object Resolvers {
 }
 
 object Dependencies {
-  val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.9.3"
+  val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.10.1"
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
   val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.9.0"
