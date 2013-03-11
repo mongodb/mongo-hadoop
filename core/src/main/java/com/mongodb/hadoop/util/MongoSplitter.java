@@ -135,24 +135,18 @@ public class MongoSplitter {
 
     private static MongoInputSplit _split( MongoConfig conf, DBObject q, DBObject min, DBObject max ) {
         BasicDBObjectBuilder b = BasicDBObjectBuilder.start( "$query", q );
-        if (min != null) // min ceiling
-           b.add( "$min", min );
-        
-        if (max != null) // max ceiling
-            b.add( "$max", max );
-
         final DBObject query = b.get();
         log.trace( "Assembled Query: " + query );
 
         return new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), query, conf.getFields(), 
-                                    conf.getSort(), conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
+                                    conf.getSort(), min, max, conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
     }
     
     private static List<InputSplit> calculateSingleSplit( MongoConfig conf ){
         final List<InputSplit> splits = new ArrayList<InputSplit>( 1 );
         // no splits, no sharding
         splits.add( new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), conf.getQuery(), 
-                                         conf.getFields(), conf.getSort(), conf.getLimit(), conf.getSkip(),
+                                         conf.getFields(), conf.getSort(), null, null, conf.getLimit(), conf.getSkip(),
                                          conf.isNoTimeout() ) );
 
 
@@ -230,7 +224,7 @@ public class MongoSplitter {
         for ( String host : shardSet ){
             MongoURI thisUri = getNewURI( uri, host, slaveOk );
             splits.add( new MongoInputSplit( thisUri, conf.getInputKey(), conf.getQuery(), conf.getFields(),
-                                             conf.getSort(), conf.getLimit(), conf.getSkip(), 
+                                             conf.getSort(), null, null, conf.getLimit(), conf.getSkip(), 
                                              conf.isNoTimeout() ) ); // TODO - Should the input Key be the shard key?
         }
         return splits;
@@ -383,19 +377,31 @@ public class MongoSplitter {
 
                     inputURI = getNewURI( inputURI, host, slaveOk );
                 }
-                MongoInputSplit split = new MongoInputSplit( inputURI,
-                        conf.getInputKey(),
-                        splitQuery,
-                        conf.getFields(),
-                        conf.getSort(),  // TODO - should inputKey be the shard key?
-                        conf.getLimit(),
-                        conf.getSkip(), 
-                        conf.isNoTimeout());
                 if(useMinMax){
-                    split.setSpecialMin(min);
-                    split.setSpecialMax(max);
+                    MongoInputSplit split = new MongoInputSplit( inputURI,
+                            conf.getInputKey(),
+                            splitQuery,
+                            conf.getFields(),
+                            conf.getSort(),  // TODO - should inputKey be the shard key?
+                            min,
+                            max,
+                            conf.getLimit(),
+                            conf.getSkip(), 
+                            conf.isNoTimeout());
+                    splits.add(split);
+                }else{
+                    MongoInputSplit split = new MongoInputSplit( inputURI,
+                            conf.getInputKey(),
+                            splitQuery,
+                            conf.getFields(),
+                            conf.getSort(),  // TODO - should inputKey be the shard key?
+                            null,
+                            null,
+                            conf.getLimit(),
+                            conf.getSkip(), 
+                            conf.isNoTimeout());
+                    splits.add(split);
                 }
-                splits.add(split);
             }
 
             if ( log.isDebugEnabled() ){
