@@ -34,6 +34,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
                             DBObject query,
                             DBObject fields,
                             DBObject sort,
+                            Object specialMin,
+                            Object specialMax,
                             int limit,
                             int skip,
                             boolean noTimeout ){
@@ -49,6 +51,8 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _limit = limit;
         _skip = skip;
         _notimeout = noTimeout;
+        _specialMin = specialMin;
+        _specialMax = specialMax;
         getCursor();
         getBSONDecoder();
         getBSONEncoder();
@@ -143,25 +147,16 @@ public class MongoInputSplit extends InputSplit implements Writable {
         // them.
         // todo - support limit/skip
         if ( _cursor == null ){
+            log.debug("reading data from " + _mongoURI);
             _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
             if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
-            if (_specialMin != null) _cursor.addSpecial("$min", _specialMin);
-            if (_specialMax != null) _cursor.addSpecial("$max", _specialMax);
-            log.info("cursor: " + _cursor.toString());
+            if (_specialMin != null) _cursor.addSpecial("$min", this._specialMin);
+            if (_specialMax != null) _cursor.addSpecial("$max", this._specialMax);
             _cursor.slaveOk();
         }
 
         return _cursor;
     }
-
-    public void setSpecialMin(Object o){
-        this._specialMin = o;
-    }
-
-    public void setSpecialMax(Object o){
-        this._specialMax = o;
-    }
-
 
     BSONEncoder getBSONEncoder(){
         if (_bsonEncoder == null) 
@@ -177,7 +172,10 @@ public class MongoInputSplit extends InputSplit implements Writable {
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField + ", query=" + _querySpec + ", sort=" + _sortSpec + ", fields=" + _fieldSpec + '}';
+        return "MongoInputSplit{URI=" + _mongoURI + ", keyField=" + _keyField
+             + ", min=" + _specialMin + ", max=" + _specialMax 
+             + ", query=" + _querySpec + ", sort=" + _sortSpec
+             + ", fields=" + _fieldSpec + '}';
     }
 
     public MongoInputSplit(){ }
