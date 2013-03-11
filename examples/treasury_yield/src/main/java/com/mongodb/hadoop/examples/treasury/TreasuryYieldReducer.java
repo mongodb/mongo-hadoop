@@ -19,6 +19,7 @@ package com.mongodb.hadoop.examples.treasury;
 
 import org.bson.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.io.BSONWritable;
 
 // Commons
 import org.apache.commons.logging.*;
@@ -36,7 +37,7 @@ import java.util.*;
  * The treasury yield reducer.
  */
 public class TreasuryYieldReducer
-        extends Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable> {
+        extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
     @Override
     public void reduce( final IntWritable pKey,
                         final Iterable<DoubleWritable> pValues,
@@ -47,14 +48,18 @@ public class TreasuryYieldReducer
         for ( final DoubleWritable value : pValues ){
             sum += value.get();
             count++;
-            LOG.info( "Key: " + pKey + " Value: " + value + " count: " + count + " sum: " + sum );
+            //LOG.info( "Key: " + pKey + " Value: " + value + " count: " + count + " sum: " + sum );
         }
 
         final double avg = sum / count;
 
-        LOG.info( "Average 10 Year Treasury for " + pKey.get() + " was " + avg );
+        LOG.debug( "Average 10 Year Treasury for " + pKey.get() + " was " + avg );
 
-        pContext.write( pKey, new DoubleWritable( avg ) );
+        BasicBSONObject output = new BasicBSONObject();
+        output.put("count", count);
+        output.put("avg", avg);
+        output.put("sum", sum);
+        pContext.write( pKey, new BSONWritable( output ) );
     }
 
     private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );

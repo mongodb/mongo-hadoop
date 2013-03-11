@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
+import com.mongodb.hadoop.io.BSONWritable;
 // Java
 import java.io.*;
 import java.util.*;
@@ -44,7 +45,7 @@ public class TreasuryYieldMapper
                      final Context pContext )
             throws IOException, InterruptedException{
 
-        LOG.info("mapping: " + pValue.get("_id"));
+        LOG.debug("mapping: " + pValue.get("_id"));
         final int year = pKey.getYear() + 1900;
         double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
 
