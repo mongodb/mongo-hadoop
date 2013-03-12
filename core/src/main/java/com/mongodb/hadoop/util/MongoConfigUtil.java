@@ -61,6 +61,7 @@ public class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String OUTPUT_URI = "mongo.output.uri";
 
+
     /**
      * The MongoDB field to read from for the Mapper Input.
      *
@@ -75,6 +76,18 @@ public class MongoConfigUtil {
     public static final String INPUT_SORT = "mongo.input.sort";
     public static final String INPUT_LIMIT = "mongo.input.limit";
     public static final String INPUT_SKIP = "mongo.input.skip";
+
+    /**
+     * A username and password to use.
+     *
+     * This is necessary when running jobs with a sharded cluster, as 
+     * access to the config database is needed to get 
+     *
+     */
+    public static final String AUTH_DB = "mongo.auth.db";
+    public static final String AUTH_USER = "mongo.auth.user";
+    public static final String AUTH_PW = "mongo.auth.pw";
+
 
     /**
      * When *not* using 'read_from_shards' or 'read_shard_chunks'
@@ -353,6 +366,30 @@ public class MongoConfigUtil {
         catch ( final Exception e ) {
             throw new IllegalArgumentException( "Invalid Mongo URI '" + value + "' for Input URI", e );
         }
+    }
+
+    public static void setAuthDatabase( Configuration conf, String database ){
+        conf.set( AUTH_DB, database );
+    }
+
+    public static String getAuthDatabase( Configuration conf ){
+        return conf.get( AUTH_DB, "admin" );
+    }
+
+    public static void setAuthUser( Configuration conf, String username ){
+        conf.set( AUTH_USER, username );
+    }
+
+    public static String getAuthUser( Configuration conf ){
+        return conf.get( AUTH_USER );
+    }
+
+    public static void setAuthPassword( Configuration conf, String password ){
+        conf.set( AUTH_PW, password );
+    }
+
+    public static String getAuthPassword( Configuration conf ){
+        return conf.get( AUTH_PW );
     }
 
     public static void setInputURI( Configuration conf, String uri ){

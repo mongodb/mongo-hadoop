@@ -189,6 +189,30 @@ public class MongoConfig {
         MongoConfigUtil.setInputURI( _conf, uri );
     }
 
+    public void setAuthDatabase( String database ) {
+        MongoConfigUtil.setAuthDatabase( _conf, database );
+    }
+
+    public String getAuthDatabase() {
+        return MongoConfigUtil.getAuthDatabase( _conf );
+    }
+
+    public void setAuthUser( String username ) {
+        MongoConfigUtil.setAuthUser( _conf, username );
+    }
+
+    public String getAuthUser() {
+        return MongoConfigUtil.getAuthUser( _conf );
+    }
+
+    public void setAuthPassword( String password ) {
+        MongoConfigUtil.setAuthPassword( _conf, password );
+    }
+
+    public String getAuthPassword() {
+        return MongoConfigUtil.getAuthPassword( _conf );
+    }
+
     public MongoURI getOutputURI(){
         return MongoConfigUtil.getOutputURI( _conf );
     }

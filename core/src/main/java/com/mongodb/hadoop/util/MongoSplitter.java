@@ -45,6 +45,14 @@ public class MongoSplitter {
         DBCollection coll = MongoConfigUtil.getCollection(uri);
         DB db = coll.getDB(); 
         Mongo mongo = db.getMongo();
+
+        if( conf.getAuthUser() != null &&
+            conf.getAuthPassword() != null ){
+            DB authTargetDB = mongo.getDB(conf.getAuthDatabase());
+            authTargetDB.authenticate(
+                    conf.getAuthUser(),
+                    conf.getAuthPassword().toCharArray());
+        }
         
         final CommandResult stats = coll.getStats();
         
@@ -87,7 +95,7 @@ public class MongoSplitter {
         final int splitSize = conf.getSplitSize(); // in MB
         final String ns = coll.getFullName();
         final DBObject q = conf.getQuery();
-        
+
         log.info( "Calculating unsharded input splits on namespace '" + ns + "' with Split Key '" + splitKey.toString() + "' and a split size of '" + splitSize + "'mb per" );
 
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
