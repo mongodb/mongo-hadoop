@@ -258,8 +258,6 @@ class TestShardedNoMongos(BaseShardedTest):
         #also exist on another shard who does not own that chunk (duplicates)
         ms_config = self.mongos_connection['config']
 
-        print list(ms_config.shards.find())
-        print list(ms_config.chunks.find())
         chunk_to_duplicate = ms_config.chunks.find_one({"shard":self.shard1.name})
         print "duplicating chunk", chunk_to_duplicate
         chunk_query = {"_id":{"$gte":chunk_to_duplicate['min']['_id'], "$lt": chunk_to_duplicate['max']['_id']}}
@@ -286,6 +284,55 @@ class TestShardedNoMongos(BaseShardedTest):
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
         runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
         self.assertTrue(compare_results(out_col2))
+
+class TestShardedAuth(BaseShardedTest):
+
+    def test_treasury(self):
+        self.mongos_connection['admin'].add_user("test_user","test_pw")
+
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
+        PARAMETERS['mongo.auth.db'] = 'admin'
+        PARAMETERS['mongo.auth.user'] = 'test_user'
+        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
+        admindb = self.mongos_connection['admin']
+        admindb.authenticate("test_user", "test_pw")
+        out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        #now with credentials, it should work
+        self.assertTrue(compare_results(out_col2))
+
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
+        PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
+        PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
+        PARAMETERS['mongo.auth.db'] = 'admin'
+        PARAMETERS['mongo.auth.user'] = 'test_user'
+        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
+        admindb = self.mongos_connection['admin']
+        admindb.authenticate("test_user", "test_pw")
+        out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        #now with credentials, it should work
+        self.assertTrue(compare_results(out_col2))
+
+class TestStandaloneAuth(TestBasic):
+
+    def test_treasury(self):
+        self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
+
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.auth.db'] = 'admin'
+        PARAMETERS['mongo.auth.user'] = 'test_user'
+        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        runjob('test_user:test_pw@' + self.server_hostname, PARAMETERS)
+
+        server_connection = self.server.connection()
+        server_connection['admin'].authenticate("test_user","test_pw")
+        out_col2 = server_connection['mongo_hadoop']['yield_historical.out']
+        #now with credentials, it should work
+        self.assertTrue(compare_results(out_col2))
+
 
 def testtreasury():
     runjob('localhost:4007')

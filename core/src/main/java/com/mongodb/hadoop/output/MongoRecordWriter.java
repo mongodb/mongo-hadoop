@@ -43,6 +43,15 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         _context = ctx;
         this.updateKeys = updateKeys;
         this.multiUpdate = false;
+
+        //authenticate if necessary - but don't auth twice on same DB
+        MongoConfig config = new MongoConfig(ctx.getConfiguration());
+        if(config.getAuthUser() != null && config.getAuthPassword() != null &&
+           config.getAuthDatabase() != _collection.getDB().getName()){
+            DB targetAuthDB = _collection.getDB().getSisterDB(config.getAuthDatabase());
+            targetAuthDB.authenticate(config.getAuthUser(), config.getAuthPassword().toCharArray());
+        }
+
     }
 
     public void close( TaskAttemptContext context ){
