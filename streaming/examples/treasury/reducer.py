@@ -11,6 +11,7 @@ def reducer(key, values):
     for v in values:
         _count += 1
         _sum += v['bc10Year']
-    return {'_id': key, 'average': _sum / _count}
+    return {'_id': key, 'avg': _sum / _count,
+            'count': _count, 'sum': _sum }
 
 BSONReducer(reducer)

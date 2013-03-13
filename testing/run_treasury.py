@@ -64,6 +64,22 @@ JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
     'resources',
     'yield_historical_in.json')
 
+STREAMING_JARPATH=os.path.join(MONGO_HADOOP_ROOT,
+    "streaming",
+    "target",
+    "mongo-hadoop-streaming*.jar")
+STREAMING_MAPPERPATH=os.path.join(MONGO_HADOOP_ROOT,
+    "streaming",
+    "examples",
+    "treasury",
+    "mapper.py")
+
+STREAMING_REDUCERPATH=os.path.join(MONGO_HADOOP_ROOT,
+    "streaming",
+    "examples",
+    "treasury",
+    "reducer.py")
+
 DEFAULT_PARAMETERS = {
   "mongo.job.verbose":"true",
   "mongo.job.background":"false",
@@ -99,6 +115,25 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
 
     print cmd
     subprocess.call(' '.join(cmd), shell=True)
+
+def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
+           output_collection='mongo_hadoop.yield_historical.out', readpref="primary"):
+    cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
+    cmd.append("jar")
+    cmd.append(STREAMING_JARPATH)
+
+    for key, val in params.items():
+        cmd.append("-" + key)
+        cmd.append(val)
+
+    cmd.append("-inputURI")
+    cmd.append("mongodb://%s/%s?readPreference=%s" % (hostname, input_collection, readpref))
+    cmd.append("-outputURI")
+    cmd.append("mongodb://%s/%s" % (hostname, output_collection))
+
+    print cmd
+    subprocess.call(' '.join(cmd), shell=True)
+
 
 class Standalone(unittest.TestCase):
     @classmethod
@@ -286,6 +321,14 @@ class TestShardedNoMongos(BaseShardedTest):
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
         runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
         self.assertTrue(compare_results(out_col2))
+
+class TestStreaming(Standalone):
+
+    def test_treasury(self):
+        runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+        #runjob(self.server_hostname, DEFAULT_PARAMETERS)
 
 def testtreasury():
     runjob('localhost:4007')
