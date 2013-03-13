@@ -33,6 +33,8 @@ class MongoInputSplitSpec extends Specification {
                                     new BasicDBObject("x", 5),
                                     new BasicDBObject("username", 1),
                                     new BasicDBObject("creation_date", 1),
+                                    new BasicDBObject("_id", 10), //min
+                                    new BasicDBObject("_id", 20), //max
                                     10000,
                                     0,
                                     false)
