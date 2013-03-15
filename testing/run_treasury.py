@@ -243,10 +243,10 @@ class BaseShardedTest(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         print "killing sharded servers!"
-        #self.mongos.kill_all_members()
-        #self.shard1.kill_all_members()
-        #self.shard2.kill_all_members()
-        #self.configdb.kill_all_members()
+        self.mongos.kill_all_members()
+        self.shard1.kill_all_members()
+        self.shard2.kill_all_members()
+        self.configdb.kill_all_members()
 
 
 class TestSharded(BaseShardedTest):
