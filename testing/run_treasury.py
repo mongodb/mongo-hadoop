@@ -39,6 +39,7 @@ def compare_results(collection):
     output = list(collection.find().sort("_id"))
     if len(output) != len(check_results):
         print "count is not same", len(output), len(check_results)
+        print output
         return False
     for i, doc in enumerate(output):
         #round to account for slight changes due to precision in case ops are run in different order.
@@ -83,7 +84,7 @@ DEFAULT_PARAMETERS = {
 }
 
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', readpref="primary"):
+           output_collection='mongo_hadoop.yield_historical.out', output_hostnames=[], readpref="primary"):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
@@ -95,7 +96,11 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
     cmd.append("-D")
     cmd.append("mongo.input.uri=mongodb://%s/%s?readPreference=%s" % (hostname, input_collection, readpref))
     cmd.append("-D")
-    cmd.append("mongo.output.uri=mongodb://%s/%s" % (hostname, output_collection))
+    if not output_hostnames:# just use same as input host name
+        cmd.append("mongo.output.uri=mongodb://%s/%s" % (hostname, output_collection))
+    else:
+        output_uris = ['mongodb://%s/%s' % (host, output_collection) for host in output_hostnames]
+        cmd.append("mongo.output.uri=\"" + ' '.join(output_uris) + "\"")
 
     print cmd
     subprocess.call(' '.join(cmd), shell=True)
@@ -149,7 +154,13 @@ class BaseShardedTest(unittest.TestCase):
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=False, fresh=True, addShards=True)
 
+        self.mongos2 = mongo_manager.MongosManager(home="/tmp/mongos2")
+        self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
+                [h.get_shard_string() for h in (self.shard1,self.shard2)],
+                noauth=False, fresh=True, addShards=False)
+
         self.mongos_connection = self.mongos.connection()
+        self.mongos2_connection = self.mongos2.connection()
         self.mongos_connection.drop_database('mongo_hadoop')
         mongo_manager.mongo_import(self.mongos_hostname,
                                    "mongo_hadoop",
@@ -197,10 +208,10 @@ class BaseShardedTest(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         print "killing sharded servers!"
-        self.mongos.kill_all_members()
-        self.shard1.kill_all_members()
-        self.shard2.kill_all_members()
-        self.configdb.kill_all_members()
+        #self.mongos.kill_all_members()
+        #self.shard1.kill_all_members()
+        #self.shard2.kill_all_members()
+        #self.configdb.kill_all_members()
 
 
 class TestSharded(BaseShardedTest):
@@ -208,8 +219,18 @@ class TestSharded(BaseShardedTest):
 
     def test_treasury(self):
         runjob(self.mongos_hostname, DEFAULT_PARAMETERS)
-
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
+    def test_treasury_multi_mongos(self):
+        print "before"
+        print self.mongos_connection['admin'].command("serverStatus")['opcounters']
+        print self.mongos2_connection['admin'].command("serverStatus")['opcounters']
+        runjob(self.mongos_hostname, DEFAULT_PARAMETERS, output_hostnames=[self.mongos_hostname, self.mongos2_hostname])
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        print "after"
+        print self.mongos_connection['admin'].command("serverStatus")['opcounters']
+        print self.mongos2_connection['admin'].command("serverStatus")['opcounters']
         self.assertTrue(compare_results(out_col))
 
 class TestShardedGTE_LT(BaseShardedTest):
