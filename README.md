@@ -10,8 +10,8 @@ This release primarly supports Hadoop 1.0 or Cloudera CDH3 Update 3
 (Which ships 0.20.2).  If you wish to use Hadoop Streaming with
 MongoDB, please see the notes on Streaming Hadoop versions below.
 
-This product only supports MongoDB 2.0+; although it should
-(mostly) work with 1.8.x. We cannot provide support for legacy MongoDB
+This product only supports MongoDB 2.2+; although it should
+work with 2.0.x. We cannot provide support for legacy MongoDB
 builds.
 
 **Note**: If you have questions please email the
