@@ -18,10 +18,10 @@
 package com.mongodb.hadoop.mapred.output;
 
 import java.io.*;
+import java.util.List;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.*;
-import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
@@ -30,13 +30,16 @@ import com.mongodb.hadoop.*;
 
 public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
-    public MongoRecordWriter(DBCollection c, JobConf conf) {
-        _collection = c;
+    public MongoRecordWriter(List<DBCollection> c, JobConf conf) {
+        _collections = c;
         _conf = conf;
+        _numberOfHosts = c.size();
     }
 
     public void close(Reporter reporter) {
-        _collection.getDB().getLastError();
+        for (DBCollection collection : _collections) {
+            collection.getDB().getLastError();
+        }
     }
 
 
@@ -66,18 +69,26 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
         }
 
         try {
-            _collection.save(o);
+            DBCollection collection = getDbCollectionByRoundRobin();
+            collection.save(o);
         }
         catch (final MongoException e) {
             throw new IOException("can't write to mongo", e);
         }
     }
 
+    private synchronized DBCollection getDbCollectionByRoundRobin() {
+        int hostIndex = (_roundRobinCounter++ & 0x7FFFFFFF) % _numberOfHosts;
+        return _collections.get(hostIndex);
+    }
+
     public JobConf getConf() {
         return _conf;
     }
 
-    final DBCollection _collection;
+    int _roundRobinCounter = 0;
+    final int _numberOfHosts;
+    final List<DBCollection> _collections;
     final JobConf _conf;
 
     private static final Log log = LogFactory.getLog(MongoRecordWriter.class);

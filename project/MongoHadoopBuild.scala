@@ -79,6 +79,7 @@ object MongoHadoopBuild extends Build {
     resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo, Resolvers.sonatypeRels),
 
     libraryDependencies += ("com.novocode" % "junit-interface" % "0.8" % "test"),
+    libraryDependencies += ("commons-lang" % "commons-lang" % "2.3"),
     libraryDependencies <<= (libraryDependencies) { deps =>
       
       val scala: ModuleID = deps.find { x => x.name == "scala-library" }.map ( y => 
