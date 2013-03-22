@@ -91,8 +91,8 @@ public class BSONSplitter extends Configured implements Tool {
 			}
 			fsDataStream.seek(fsDataStream.getPos() + bsonDocSize - 4);
             BSONObject splitInfo = bsonDec.readObject(data);
-            long start = (Long)splitInfo.get("start");
-            long splitLen = (Long)splitInfo.get("length");
+            long start = (Long)splitInfo.get("s");
+            long splitLen = (Long)splitInfo.get("l");
             BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
             FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
@@ -186,8 +186,8 @@ public class BSONSplitter extends Configured implements Tool {
                 fsDataOut = pathFileSystem.create(outputPath, false);
                 for(FileSplit inputSplit : value){
                     BSONObject splitObj = BasicDBObjectBuilder.start()
-                                            .add( "start" , inputSplit.getStart())
-                                            .add( "length" , inputSplit.getLength()).get();
+                                            .add( "s" , inputSplit.getStart())
+                                            .add( "l" , inputSplit.getLength()).get();
                     byte[] encodedObj = this.bsonEnc.encode(splitObj);
                     try{
                         fsDataOut.write(encodedObj, 0, encodedObj.length);

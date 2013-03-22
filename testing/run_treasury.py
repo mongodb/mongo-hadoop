@@ -7,6 +7,7 @@ import mongo_manager
 import subprocess
 import os
 import shutil
+from bson_splitter import split_bson
 from datetime import timedelta
 import time
 HADOOP_HOME=os.environ['HADOOP_HOME']
@@ -396,11 +397,22 @@ class TestStaticBSON(Standalone):
     def test_treasury(self):
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        PARAMETERS["mapred.max.split.size"] = '200000'
         print PARAMETERS
         runbsonjob(os.path.join(self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"), PARAMETERS, self.server_hostname)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
         #runjob(self.server_hostname, DEFAULT_PARAMETERS)
+
+    def test_prebuilt_splits(self):
+        #make sure we can do the right thing when the splits are
+        #provided by some other tool (e.g. python script)
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        split_bson(os.path.join(self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"))
+        runbsonjob(os.path.join(self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"), PARAMETERS, self.server_hostname)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
 
 def testtreasury():
     runjob('localhost:4007')

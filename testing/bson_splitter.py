@@ -7,7 +7,10 @@ import os
 SPLIT_SIZE = 200000
 
 def main(argv):
-    bsonfile_path = os.path.abspath(argv[0])
+    split_bson(argv[0])
+
+def split_bson(path):
+    bsonfile_path = os.path.abspath(path)
     splitsfile_out = os.path.join(os.path.dirname(bsonfile_path),  "." + os.path.basename(bsonfile_path) + ".splits")
     bsonfile = open(bsonfile_path,'r')
     splitsfile = open(splitsfile_out,'w')
@@ -20,13 +23,13 @@ def main(argv):
         if len(size_bits) < 4:
             if cur_split_size > 0:
                 #print {"start":cur_split_start, "length": bsonfile.tell() - cur_split_start}
-                splitsfile.write(BSON.encode({"start":cur_split_start, "length": bsonfile.tell() - cur_split_start}))
+                splitsfile.write(BSON.encode({"s":long(cur_split_start), "l": long(bsonfile.tell() - cur_split_start)}))
             break
         size = struct.unpack("<i", size_bits)[0] - 4 # BSON size byte includes itself 
         file_position += 4
         if cur_split_size + 4 + size > SPLIT_SIZE:
             #print {"start":cur_split_start, "length": bsonfile.tell() - 4 - cur_split_start}
-            splitsfile.write(BSON.encode({"start":cur_split_start, "length": bsonfile.tell() - 4 - cur_split_start}))
+            splitsfile.write(BSON.encode({"s":long(cur_split_start), "l": long(bsonfile.tell() - 4 - cur_split_start)}))
             cur_split_start = bsonfile.tell() - 4
             cur_split_size = 0
         else:
