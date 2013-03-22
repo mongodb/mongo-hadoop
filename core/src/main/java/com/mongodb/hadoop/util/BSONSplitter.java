@@ -149,7 +149,7 @@ public class BSONSplitter extends Configured implements Tool {
                             blkLocations[blockIndex].getHosts());
                     splits.add(split);
                     curSplitLen = 0;
-                    curSplitStart = fsDataStream.getPos() + bsonDocSize;
+                    curSplitStart = fsDataStream.getPos();
                     log.info("Creating new split (" + splits.size() + ") " + split.toString());
                 }
                 curSplitLen += bsonDocSize;
