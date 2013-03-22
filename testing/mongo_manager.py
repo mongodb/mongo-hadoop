@@ -21,8 +21,18 @@ mongos_count = 0
 mongod = os.environ.get('MONGOD', 'mongod')
 mongos = os.environ.get('MONGOS', 'mongos')
 mongoimport = os.environ.get('MONGOIMPORT', 'mongoimport')
+mongodump = os.environ.get('MONGODUMP', 'mongodump')
 print "> MongoDB Path: %s " % mongod
 replsets = 0
+
+def mongo_dump(host, db, collection, outputdir):
+    cmd = [mongodump, 
+           '--host', str( host ), 
+           '-d', db,
+           '-c', collection,
+           '-o', outputdir]
+    subprocess.call(cmd)
+
 
 def mongo_import(host, db, collection, filename):
     cmd = [mongoimport, 
