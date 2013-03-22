@@ -68,8 +68,8 @@ public class BSONFileInputFormat extends FileInputFormat {
 
 		for (FileStatus file : statuses) {
 			Path path = file.getPath();
-            Path splitFilePath =  new Path(path.getParent() + 
-                                           "." +path.getName()
+            Path splitFilePath =  new Path(path.getParent(),  
+                                           "." + path.getName()
                                            + ".splits");
             FileSystem fs = path.getFileSystem(hadoopConfiguration);
             FileStatus splitFileStatus = null;
@@ -80,7 +80,7 @@ public class BSONFileInputFormat extends FileInputFormat {
                 //split file not found
             }
             if(splitFileStatus == null || splitFileStatus.isDir()){
-                log.error("no pre-built splits found for " + path);
+                log.error("no pre-built splits found for " + path + " at " + splitFilePath);
                 BSONSplitter bsonSplitter = new BSONSplitter();
                 bsonSplitter.setConf(hadoopConfiguration);
                 bsonSplitter.setInputPath(path);
