@@ -1,10 +1,12 @@
 #!/bin/env python
 
+import tempfile
 import unittest
 import pymongo
 import mongo_manager
 import subprocess
 import os
+import shutil
 from datetime import timedelta
 import time
 HADOOP_HOME=os.environ['HADOOP_HOME']
@@ -121,6 +123,30 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
     print cmd
     subprocess.call(' '.join(cmd), shell=True)
 
+def runbsonjob(input_path, params, hostname,
+               output_collection='mongo_hadoop.yield_historical.out',
+               output_hostnames=[]):
+    cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
+    cmd.append("jar")
+    cmd.append(JOBJAR_PATH)
+
+    for key, val in params.items():
+        cmd.append("-D")
+        cmd.append(key + "=" + val)
+
+    cmd.append("-D")
+    cmd.append("mapred.input.dir=file://%s" % (input_path))
+    cmd.append("-D")
+    if not output_hostnames:# just use same as input host name
+        cmd.append("mongo.output.uri=mongodb://%s/%s" % (hostname, output_collection))
+    else:
+        output_uris = ['mongodb://%s/%s' % (host, output_collection) for host in output_hostnames]
+        cmd.append("mongo.output.uri=\"" + ' '.join(output_uris) + "\"")
+
+    print cmd
+    subprocess.call(' '.join(cmd), shell=True)
+    
+
 def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
            output_collection='mongo_hadoop.yield_historical.out', readpref="primary"):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
@@ -154,6 +180,9 @@ class Standalone(unittest.TestCase):
 
     def setUp(self):
         self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
+
+    def tearDown(self):
+        pass
 
 
     @classmethod
@@ -347,6 +376,28 @@ class TestStreaming(Standalone):
 
     def test_treasury(self):
         runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+        #runjob(self.server_hostname, DEFAULT_PARAMETERS)
+
+class TestStaticBSON(Standalone):
+
+    def setUp(self):
+        super(TestStaticBSON, self).setUp();
+        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_')
+        mongo_manager.mongo_dump(self.server_hostname, "mongo_hadoop",
+                                   "yield_historical.in", self.temp_outdir)
+        
+
+    def tearDown(self):
+        super(TestStaticBSON, self).tearDown();
+        shutil.rmtree(self.temp_outdir)
+
+    def test_treasury(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        print PARAMETERS
+        runbsonjob(os.path.join(self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"), PARAMETERS, self.server_hostname)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
         #runjob(self.server_hostname, DEFAULT_PARAMETERS)
