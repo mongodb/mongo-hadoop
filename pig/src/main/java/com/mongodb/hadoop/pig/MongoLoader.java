@@ -5,6 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.mongodb.util.JSON;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,12 +41,15 @@ import com.mongodb.hadoop.input.MongoRecordReader;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 
 public class MongoLoader extends LoadFunc implements LoadMetadata {
-    private static final Log log = LogFactory.getLog( MongoStorage.class );
+    private static final Log log = LogFactory.getLog(MongoStorage.class);
     private TupleFactory tupleFactory = TupleFactory.getInstance();
     private BagFactory bagFactory = BagFactory.getInstance();
     // Pig specific settings
     static final String PIG_INPUT_SCHEMA = "mongo.pig.input.schema";
     static final String PIG_INPUT_SCHEMA_UDF_CONTEXT = "mongo.pig.input.schema.udf_context";
+    private final static CommandLineParser parser = new GnuParser();
+    private final Options validOptions = new Options();
+    boolean loadAsChararray = false;
     
     static Map<String, String> MONGO_TO_PIG_NAME_REPLACEMENTS = new HashMap<String, String>();
     static {
@@ -56,7 +65,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     
     ResourceFieldSchema[] fields;
     
-    public MongoLoader () {
+    public MongoLoader() {
         try {
             //If no schema is passed in we'll load the whole document as a map.
             schema = new ResourceSchema(Utils.getSchemaFromString("document:map[]"));
@@ -66,13 +75,29 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         }
     }
     
-    public MongoLoader (String userSchema) {
+    public MongoLoader(String userSchema) {
         try {
             userSchema = getPigAcceptableUserSchema(userSchema);
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
             fields = schema.getFields();
         } catch (ParserException e) {
             throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage(), e);
+        }
+    }
+
+    public MongoLoader(String userSchema, String options) {
+        String[] optsArr = options.split(" ");
+        populateValidOptions();
+        try {
+            CommandLine configuredOptions = parser.parse(validOptions, optsArr);
+            loadAsChararray = configuredOptions.hasOption("loadaschararray");
+            userSchema = getPigAcceptableUserSchema(userSchema);
+            schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
+            fields = schema.getFields();
+        } catch (ParserException e) {
+            throw new IllegalArgumentException("Invalid Schema Format: " + e.getMessage(), e);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Invalid Options " + e.getMessage(), e);
         }
     }
     
@@ -270,6 +295,14 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         }
         
         Tuple t;
+        if (loadAsChararray) {
+            if (fields != null && (fields.length != 1 || fields[0].getType() != DataType.CHARARRAY)) {
+                throw new IllegalArgumentException("Invalid schema.  If -loadaschararray option is used, schema must be one chararray field.") ;
+            }
+            t = tupleFactory.newTuple(1);
+            t.set(0, JSON.serialize(val));
+            return t;
+        }
         if (fields != null) {
             t = tupleFactory.newTuple(fields.length);
             
@@ -293,6 +326,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         log.info( "Converting path: " + location + "(curDir: " + curDir + ")" );
         return location;
     }
+
+    private void populateValidOptions() {
+        validOptions.addOption("loadaschararray", false, "Loads the entire record as a chararray");
+        }
     
     @Override
     public void setUDFContextSignature( String signature ){
