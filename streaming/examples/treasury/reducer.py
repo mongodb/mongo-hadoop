@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 
 import sys
+import os
 sys.path.append(".")
 
-from pymongo_hadoop import BSONReducer
+try:
+    from pymongo_hadoop import BSONReducer
+    import pymongo_hadoop
+except:
+    here = os.path.abspath(__file__)
+    module_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(here))),
+                    'language_support',
+                    'python')
+    sys.path.append(module_dir)
+    from pymongo_hadoop import BSONReducer
 
 def reducer(key, values):
     print >> sys.stderr, "Processing Key: %s" % key
