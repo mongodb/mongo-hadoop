@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import shutil
 import unittest
 import pymongo
 import mongo_manager
@@ -8,6 +9,12 @@ import os
 from datetime import timedelta
 import time
 HADOOP_HOME=os.environ['HADOOP_HOME']
+TEMPDIR=os.environ.get('TEMPDIR','/tmp')
+
+if not os.path.isdir(TEMPDIR):
+    os.makedirs(TEMPDIR)
+
+
 #declare -a job_args
 #cd ..
 
@@ -143,7 +150,7 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 class Standalone(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.server = mongo_manager.StandaloneManager(home="/tmp/standalone1")  
+        self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,"standalone1"))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
         mongo_manager.mongo_import(self.server_hostname,
@@ -160,6 +167,7 @@ class Standalone(unittest.TestCase):
     def tearDownClass(self):
         print "standalone clas: killing mongod"
         self.server.kill_all_members()
+        shutil.rmtree(os.path.join(TEMPDIR,"standalone1"))
 
 class TestBasic(Standalone):
 
@@ -173,23 +181,23 @@ class BaseShardedTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.shard1 = mongo_manager.ReplicaSetManager(home="/tmp/rs0",
+        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0"),
                 with_arbiter=True,
                 num_members=3)
         self.shard1.start_set(fresh=True)
-        self.shard2 = mongo_manager.ReplicaSetManager(home="/tmp/rs1",
+        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1"),
                 with_arbiter=True,
                 num_members=3)
         self.shard2.start_set(fresh=True)
-        self.configdb = mongo_manager.StandaloneManager(home="/tmp/config_db")  
+        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db'))
         self.confighost = self.configdb.start_server(fresh=True)
 
-        self.mongos = mongo_manager.MongosManager(home="/tmp/mongos")
+        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos'))
         self.mongos_hostname = self.mongos.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=False, fresh=True, addShards=True)
 
-        self.mongos2 = mongo_manager.MongosManager(home="/tmp/mongos2")
+        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2'))
         self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=False, fresh=True, addShards=False)
@@ -247,6 +255,11 @@ class BaseShardedTest(unittest.TestCase):
         self.shard1.kill_all_members()
         self.shard2.kill_all_members()
         self.configdb.kill_all_members()
+        shutil.rmtree(os.path.join(TEMPDIR,"mongos"))
+        shutil.rmtree(os.path.join(TEMPDIR,"mongos2"))
+        shutil.rmtree(os.path.join(TEMPDIR,"config_db"))
+        shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
+        shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
 
 
 class TestSharded(BaseShardedTest):
