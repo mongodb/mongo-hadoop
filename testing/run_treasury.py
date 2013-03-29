@@ -9,6 +9,7 @@ import os
 from datetime import timedelta
 import time
 HADOOP_HOME=os.environ['HADOOP_HOME']
+HADOOP_RELEASE=os.environ['HADOOP_RELEASE']
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
 
 if not os.path.isdir(TEMPDIR):
