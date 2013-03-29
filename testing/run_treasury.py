@@ -359,7 +359,8 @@ class TestShardedNoMongos(BaseShardedTest):
 
 class TestStreaming(Standalone):
 
-    @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'))
+    @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
+                     'streaming not supported')
     def test_treasury(self):
         runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
