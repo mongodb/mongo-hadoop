@@ -364,7 +364,5 @@ class TestStreaming(Standalone):
         self.assertTrue(compare_results(out_col))
         #runjob(self.server_hostname, DEFAULT_PARAMETERS)
 
-def testtreasury():
-    runjob('localhost:4007')
-
-if __name__ == '__main__': testtreasury()
+if __name__ == '__main__':
+    testtreasury()
