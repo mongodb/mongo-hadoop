@@ -8,8 +8,9 @@ import subprocess
 import os
 from datetime import timedelta
 import time
+
 HADOOP_HOME=os.environ['HADOOP_HOME']
-HADOOP_RELEASE=os.environ['HADOOP_RELEASE']
+HADOOP_RELEASE=os.environ.get('HADOOP_RELEASE',None)
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
 
 if not os.path.isdir(TEMPDIR):
@@ -18,6 +19,27 @@ if not os.path.isdir(TEMPDIR):
 
 #declare -a job_args
 #cd ..
+VERSION_SUFFIX = "1.1.0-SNAPSHOT"
+
+version_buildtarget =\
+    {"0.22" : "0.22.0",
+    "1.0" : "1.0.3",
+    "cdh4" : "cdh4b1",
+    "0.20" : "0.20.205.0",
+    "0.23" : "0.23.1",
+    "cdh3" :"cdh3u3"}
+
+treasury_jar_name = None
+if HADOOP_RELEASE:
+    for k, v in version_buildtarget.iteritems():
+        if HADOOP_RELEASE.startswith(k):
+            treasury_jar_name = "treasury-example_" + v + "-" + VERSION_SUFFIX + ".jar"
+            break
+else:
+    print os.environ
+if not treasury_jar_name:
+    treasury_jar_name = "treasury-example*.jar"
+
 
 # result set for sanity check#{{{
 check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
@@ -42,7 +64,6 @@ check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 
                   { "_id": 2009, "count": 250, "avg": 3.2641200000000037, "sum": 816.0300000000009 },
                   { "_id": 2010, "count": 189, "avg": 3.3255026455026435, "sum": 628.5199999999996 } ]#}}}
                              
-                             
 def compare_results(collection):
     output = list(collection.find().sort("_id"))
     if len(output) != len(check_results):
@@ -64,7 +85,8 @@ JOBJAR_PATH=os.path.join(MONGO_HADOOP_ROOT,
     "examples",
     "treasury_yield",
     "target",
-    "treasury-example_*.jar")
+    treasury_jar_name)
+print JOBJAR_PATH
 JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
     'examples',
     'treasury_yield',
