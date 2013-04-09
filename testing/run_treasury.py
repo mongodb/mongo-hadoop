@@ -422,7 +422,6 @@ class TestStandaloneAuth(TestBasic):
 
     def test_treasury(self):
         self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
-
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.auth.db'] = 'admin'
         PARAMETERS['mongo.auth.user'] = 'test_user'
@@ -434,3 +433,5 @@ class TestStandaloneAuth(TestBasic):
         out_col2 = server_connection['mongo_hadoop']['yield_historical.out']
         #now with credentials, it should work
         self.assertTrue(compare_results(out_col2))
+
+
