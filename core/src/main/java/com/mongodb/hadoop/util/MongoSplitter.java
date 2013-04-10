@@ -46,12 +46,16 @@ public class MongoSplitter {
         DB db = coll.getDB(); 
         Mongo mongo = db.getMongo();
 
-        if( conf.getAuthUser() != null &&
-            conf.getAuthPassword() != null ){
-            DB authTargetDB = mongo.getDB(conf.getAuthDatabase());
-            authTargetDB.authenticate(
-                    conf.getAuthUser(),
-                    conf.getAuthPassword().toCharArray());
+        if( conf.getAuthURI() != null ){
+            MongoURI authURI = conf.getAuthURI();
+            if(authURI.getUsername() != null &&
+               authURI.getPassword() != null &&
+               !authURI.getDatabase().equals(db.getName()))
+            {
+                DB authTargetDB = mongo.getDB(authURI.getDatabase());
+                authTargetDB.authenticate(authURI.getUsername(),
+                                          authURI.getPassword());
+            }
         }
         
         final CommandResult stats = coll.getStats();

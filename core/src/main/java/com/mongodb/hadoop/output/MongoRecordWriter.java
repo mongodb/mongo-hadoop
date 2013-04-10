@@ -63,15 +63,22 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         this.updateKeys = updateKeys;
         this.multiUpdate = false;
         this.numberOfHosts = c.size();
-
+         
         //authenticate if necessary - but don't auth twice on same DB
         MongoConfig config = new MongoConfig(ctx.getConfiguration());
-        if(config.getAuthUser() != null && config.getAuthPassword() != null &&
-           config.getAuthDatabase() != _collection.getDB().getName()){
-            DB targetAuthDB = _collection.getDB().getSisterDB(config.getAuthDatabase());
-            targetAuthDB.authenticate(config.getAuthUser(), config.getAuthPassword().toCharArray());
+        if(config.getAuthURI() != null){
+            MongoURI authURI = config.getAuthURI();
+            if(authURI.getUsername() != null &&
+                authURI.getPassword() != null ){
+                // need to verify that it is not already one of the collections we are writing to.
+                
+                boolean proceedAuth = true;
+                for(DBCollection _collection : _collections){
+                    DB targetAuthDB = _collection.getDB().getSisterDB(authURI.getDatabase());
+                    targetAuthDB.authenticate(authURI.getUsername(), authURI.getPassword());
+                }
+            }
         }
-
     }
 
     public void close( TaskAttemptContext context ){
@@ -124,6 +131,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             }
         }
         catch ( final MongoException e ) {
+            e.printStackTrace();
             throw new IOException( "can't write to mongo", e );
         }
     }

@@ -275,6 +275,7 @@ class BaseShardedTest(unittest.TestCase):
     def tearDownClass(self):
         print "killing sharded servers!"
         self.mongos.kill_all_members()
+        self.mongos2.kill_all_members()
         self.shard1.kill_all_members()
         self.shard2.kill_all_members()
         self.configdb.kill_all_members()
@@ -390,13 +391,13 @@ class TestStreaming(Standalone):
 class TestShardedAuth(BaseShardedTest):
 
     def test_treasury(self):
-        self.mongos_connection['admin'].add_user("test_user","test_pw")
+        self.mongos_connection['config'].add_user("test_user","test_pw")
+        self.mongos_connection['mongo_hadoop'].add_user("test_user","test_pw")
 
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
-        PARAMETERS['mongo.auth.db'] = 'admin'
-        PARAMETERS['mongo.auth.user'] = 'test_user'
-        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        authuri = "mongodb://%s:%s@%s/%s" % ('test_user', 'test_pw', self.mongos_hostname, 'mongo_hadoop')
+        PARAMETERS['mongo.auth.uri'] = authuri
         runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
         admindb = self.mongos_connection['admin']
         admindb.authenticate("test_user", "test_pw")
@@ -405,13 +406,12 @@ class TestShardedAuth(BaseShardedTest):
         self.assertTrue(compare_results(out_col2))
 
         PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
+        #PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
-        PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
-        PARAMETERS['mongo.auth.db'] = 'admin'
-        PARAMETERS['mongo.auth.user'] = 'test_user'
-        PARAMETERS['mongo.auth.pw'] = 'test_pw'
-        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
+        #PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
+        PARAMETERS['mongo.auth.uri'] = authuri
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary",
+            output_hostnames=[self.mongos_hostname, self.mongos_hostname])
         admindb = self.mongos_connection['admin']
         admindb.authenticate("test_user", "test_pw")
         out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']

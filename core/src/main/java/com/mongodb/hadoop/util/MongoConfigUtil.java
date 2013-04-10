@@ -84,9 +84,7 @@ public class MongoConfigUtil {
      * access to the config database is needed to get 
      *
      */
-    public static final String AUTH_DB = "mongo.auth.db";
-    public static final String AUTH_USER = "mongo.auth.user";
-    public static final String AUTH_PW = "mongo.auth.pw";
+    public static final String AUTH_URI = "mongo.auth.uri";
 
 
     /**
@@ -291,6 +289,10 @@ public class MongoConfigUtil {
         return getMongoURI( conf, INPUT_URI );
     }
 
+    public static MongoURI getAuthURI( Configuration conf ){
+        return getMongoURI( conf, AUTH_URI );
+    }
+
     public static List<DBCollection> getCollections( List<MongoURI> uris ){
         List<DBCollection> dbCollections = new LinkedList<DBCollection>();
         for (MongoURI uri : uris) {
@@ -368,28 +370,8 @@ public class MongoConfigUtil {
         }
     }
 
-    public static void setAuthDatabase( Configuration conf, String database ){
-        conf.set( AUTH_DB, database );
-    }
-
-    public static String getAuthDatabase( Configuration conf ){
-        return conf.get( AUTH_DB, "admin" );
-    }
-
-    public static void setAuthUser( Configuration conf, String username ){
-        conf.set( AUTH_USER, username );
-    }
-
-    public static String getAuthUser( Configuration conf ){
-        return conf.get( AUTH_USER );
-    }
-
-    public static void setAuthPassword( Configuration conf, String password ){
-        conf.set( AUTH_PW, password );
-    }
-
-    public static String getAuthPassword( Configuration conf ){
-        return conf.get( AUTH_PW );
+    public static void setAuthURI( Configuration conf, String uri ){
+        setMongoURIString( conf, AUTH_URI, uri );
     }
 
     public static void setInputURI( Configuration conf, String uri ){
