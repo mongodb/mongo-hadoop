@@ -1,4 +1,4 @@
-o*.pyc
+*.pyc
 *.class
 .classpath
 .project
