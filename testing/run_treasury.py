@@ -439,3 +439,27 @@ class TestStandaloneAuth(TestBasic):
         self.assertTrue(compare_results(out_col2))
 
 
+class TestStandaloneWithQuery(Standalone):
+
+    def test_treasury(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
+        runjob(self.server_hostname, PARAMETERS)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
+
+class TestShardedWithQuery(BaseShardedTest):
+
+    def test_treasury(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        #Only use a subset of dates
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
+        runjob(self.mongos_hostname, PARAMETERS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
+if __name__ == '__main__':
+    testtreasury()
