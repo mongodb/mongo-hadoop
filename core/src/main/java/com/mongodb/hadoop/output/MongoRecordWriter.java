@@ -71,10 +71,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             if(authURI.getUsername() != null &&
                 authURI.getPassword() != null ){
                 // need to verify that it is not already one of the collections we are writing to.
-                
-                boolean proceedAuth = true;
-                for(DBCollection _collection : _collections){
-                    DB targetAuthDB = _collection.getDB().getSisterDB(authURI.getDatabase());
+                DBCollection _collection = _collections.get(0);
+                DB targetAuthDB = _collection.getDB().getSisterDB(authURI.getDatabase());
+                if(!(targetAuthDB.getName().equals(_collection.getDB().getName()))){
                     targetAuthDB.authenticate(authURI.getUsername(), authURI.getPassword());
                 }
             }
