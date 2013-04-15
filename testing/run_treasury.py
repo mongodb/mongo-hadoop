@@ -130,7 +130,8 @@ DEFAULT_PARAMETERS = {
 }
 
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', output_hostnames=[], readpref="primary"):
+           output_collection='mongo_hadoop.yield_historical.out', output_hostnames=[], readpref="primary",
+           input_auth=None, output_auth=None):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
@@ -140,12 +141,13 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
         cmd.append(key + "=" + val)
 
     cmd.append("-D")
-    cmd.append("mongo.input.uri=mongodb://%s/%s?readPreference=%s" % (hostname, input_collection, readpref))
+    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+    cmd.append("mongo.input.uri=%s" % input_uri)
     cmd.append("-D")
     if not output_hostnames:# just use same as input host name
-        cmd.append("mongo.output.uri=mongodb://%s/%s" % (hostname, output_collection))
+        cmd.append("mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection))
     else:
-        output_uris = ['mongodb://%s/%s' % (host, output_collection) for host in output_hostnames]
+        output_uris = ['mongodb://%s%s/%s' % (output_auth + "@" if output_auth else '', host, output_collection) for host in output_hostnames]
         cmd.append("mongo.output.uri=\"" + ' '.join(output_uris) + "\"")
 
     print cmd
@@ -393,12 +395,14 @@ class TestShardedAuth(BaseShardedTest):
     def test_treasury(self):
         self.mongos_connection['config'].add_user("test_user","test_pw")
         self.mongos_connection['mongo_hadoop'].add_user("test_user","test_pw")
+        self.mongos_connection['admin'].add_user("test_user","test_pw")
 
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
-        authuri = "mongodb://%s:%s@%s/%s" % ('test_user', 'test_pw', self.mongos_hostname, 'mongo_hadoop')
+        authuri = "mongodb://%s:%s@%s/%s" % ('test_user', 'test_pw', self.mongos_hostname, 'config')
         PARAMETERS['mongo.auth.uri'] = authuri
-        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary")
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary", input_auth="test_user:test_pw",
+            output_auth="test_user:test_pw")
         admindb = self.mongos_connection['admin']
         admindb.authenticate("test_user", "test_pw")
         out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']
@@ -410,8 +414,8 @@ class TestShardedAuth(BaseShardedTest):
         PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
         #PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
         PARAMETERS['mongo.auth.uri'] = authuri
-        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary",
-            output_hostnames=[self.mongos_hostname, self.mongos_hostname])
+        runjob(self.mongos_hostname, PARAMETERS, readpref="secondary",input_auth="test_user:test_pw",
+            output_hostnames=[self.mongos_hostname, self.mongos_hostname], output_auth="test_user:test_pw")
         admindb = self.mongos_connection['admin']
         admindb.authenticate("test_user", "test_pw")
         out_col2 = self.mongos_connection['mongo_hadoop']['yield_historical.out']
