@@ -10,6 +10,8 @@ cd ..
 ./sbt package
 ./sbt treasury-example/package
 rm $HADOOP_HOME/lib/mongo-hadoop*.jar
+rm $HADOOP_HOME/share/hadoop/mapreduce/mongo-hadoop*.jar 
+rm $HADOOP_HOME/share/hadoop/lib/mongo-hadoop*.jar 
 cp core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/lib/
 cp target/mongo-hadoop_*.jar $HADOOP_HOME/lib/
 
