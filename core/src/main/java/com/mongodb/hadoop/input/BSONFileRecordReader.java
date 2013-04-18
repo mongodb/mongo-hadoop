@@ -60,13 +60,14 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         this.conf = context.getConfiguration();
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-		in = fs.open(file);
+		in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
         log.info(System.identityHashCode(this) + " ok - Creating record reader with input split: " + inputSplit.toString());
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
+        log.info("getting next key value " + numDocsRead);
 		try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
                 //TODO clean up/close data streams
@@ -74,34 +75,21 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
                 return false;
             }
 
-			int bytesRead = in.read(in.getPos(), headerBuf, 0, 4);
-			if(bytesRead != 4){
-				throw new Exception("couldn't read a complete BSON header.");
-			}
-			//TODO just parse the integer so we don't init a bytebuf every time
-
-			int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
-            byte[] data = new byte[bsonDocSize + 4];
-            System.arraycopy( headerBuf, 0, data, 0, 4 );
-			in.seek(in.getPos() + 4);
-            bytesRead = in.read(in.getPos(), data, 4, bsonDocSize - 4);
-			if(bytesRead!=bsonDocSize-4){
-				throw new Exception("couldn't read a complete BSON doc.");
-			}
-			in.seek(in.getPos() + bsonDocSize - 4);
-            decoder.decode( data, callback );
-            BSONObject obj =  (BSONObject)callback.get();
-			value = new BSONWritable(obj);
+            callback.reset();
+            int bytesRead = decoder.decode(in, callback);
+            BSONObject bo = (BSONObject)callback.get();
+			value = new BSONWritable(bo);
             numDocsRead++;
             if(numDocsRead % 1000 == 0){
                 log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
-			return true;
+            return true;
 		}catch(Exception e){
+            e.printStackTrace();
             log.info(e.getMessage());
             log.info("finished reading input split, docs read: " + numDocsRead);
             return false;
-		}
+        }
     }
 
     @Override
