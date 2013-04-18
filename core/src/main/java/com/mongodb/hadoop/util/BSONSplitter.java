@@ -76,28 +76,47 @@ public class BSONSplitter extends Configured implements Tool {
         FSDataInputStream fsDataStream = fs.open(file.getPath());
         long length = file.getLen();
         while(fsDataStream.getPos() < length){
+
+            //Read the 4 byte bson header.
             byte[] headerBuf = new byte[4];
 			int bytesRead = fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
 			if(bytesRead != 4){
 				throw new IOException("couldn't read a complete BSON header.");
 			}
 			int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
+            log.info("doc size " + bsonDocSize);
             byte[] data = new byte[bsonDocSize + 4];
             System.arraycopy( headerBuf, 0, data, 0, 4 );
+            log.info("seeking to " + Long.toString(fsDataStream.getPos() + 4) + " length is " + length);
+            //Advance the stream by 4 bytes
 			fsDataStream.seek(fsDataStream.getPos() + 4);
+            //Read the rest of the BSON document.
+            log.info("Reading the rest of the bson document from: " + fsDataStream.getPos());
             bytesRead = fsDataStream.read(fsDataStream.getPos(), data, 4, bsonDocSize - 4);
 			if(bytesRead!=bsonDocSize-4){
 				throw new IOException("couldn't read a complete BSON doc.");
 			}
-			fsDataStream.seek(fsDataStream.getPos() + bsonDocSize - 4);
+
             BSONObject splitInfo = bsonDec.readObject(data);
+            log.info("got a split " + splitInfo);
             long start = (Long)splitInfo.get("s");
             long splitLen = (Long)splitInfo.get("l");
+            
             BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
             FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
                             blkLocations[blockIndex].getHosts());
             splits.add(split);
+
+            // If this isn't the last record, jump ahead to next record.
+            if(fsDataStream.getPos() + bsonDocSize - 4 < length){
+                log.info("seeking to " + Long.toString(fsDataStream.getPos() + bsonDocSize - 4) + " length is " + length);
+                fsDataStream.seek(fsDataStream.getPos() + bsonDocSize - 4);
+                log.info("file is now at " + fsDataStream.getPos());
+            }else{
+                break;
+            }
+
         }
         this.splitsMap.put(sourceFile.getPath(), splits);
     }
