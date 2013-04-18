@@ -30,6 +30,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 import org.bson.BSONObject;
+import org.bson.BasicBSONCallback;
 import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONDecoder;
 
@@ -39,8 +40,9 @@ public class BSONSplitter extends Configured implements Tool {
 
     private Map<Path, List<FileSplit>> splitsMap;
     private Path inputPath;
-    private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
+    private BasicBSONCallback callback = new BasicBSONCallback();
     private BasicBSONDecoder bsonDec = new BasicBSONDecoder();
+    private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
 
 
     private static final PathFilter hiddenFileFilter = new PathFilter(){
@@ -77,46 +79,24 @@ public class BSONSplitter extends Configured implements Tool {
         long length = file.getLen();
         while(fsDataStream.getPos() < length){
 
-            //Read the 4 byte bson header.
-            byte[] headerBuf = new byte[4];
-			int bytesRead = fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
-			if(bytesRead != 4){
-				throw new IOException("couldn't read a complete BSON header.");
-			}
-			int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
-            log.info("doc size " + bsonDocSize);
-            byte[] data = new byte[bsonDocSize + 4];
-            System.arraycopy( headerBuf, 0, data, 0, 4 );
-            log.info("seeking to " + Long.toString(fsDataStream.getPos() + 4) + " length is " + length);
-            //Advance the stream by 4 bytes
-			fsDataStream.seek(fsDataStream.getPos() + 4);
-            //Read the rest of the BSON document.
-            log.info("Reading the rest of the bson document from: " + fsDataStream.getPos());
-            bytesRead = fsDataStream.read(fsDataStream.getPos(), data, 4, bsonDocSize - 4);
-			if(bytesRead!=bsonDocSize-4){
-				throw new IOException("couldn't read a complete BSON doc.");
-			}
+            try{
+                callback.reset();
+                int bytesRead = bsonDec.decode(fsDataStream, callback);
+                BSONObject splitInfo = (BSONObject)callback.get();
 
-            BSONObject splitInfo = bsonDec.readObject(data);
-            log.info("got a split " + splitInfo);
-            long start = (Long)splitInfo.get("s");
-            long splitLen = (Long)splitInfo.get("l");
-            
-            BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
-            int blockIndex = getLargestBlockIndex(blkLocations);
-            FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
-                            blkLocations[blockIndex].getHosts());
-            splits.add(split);
-
-            // If this isn't the last record, jump ahead to next record.
-            if(fsDataStream.getPos() + bsonDocSize - 4 < length){
-                log.info("seeking to " + Long.toString(fsDataStream.getPos() + bsonDocSize - 4) + " length is " + length);
-                fsDataStream.seek(fsDataStream.getPos() + bsonDocSize - 4);
-                log.info("file is now at " + fsDataStream.getPos());
-            }else{
+                log.info("got a split " + splitInfo);
+                long start = (Long)splitInfo.get("s");
+                long splitLen = (Long)splitInfo.get("l");
+                
+                BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
+                int blockIndex = getLargestBlockIndex(blkLocations);
+                FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
+                                blkLocations[blockIndex].getHosts());
+                splits.add(split);
+            }catch(Exception e){
+                e.printStackTrace();
                 break;
             }
-
         }
         this.splitsMap.put(sourceFile.getPath(), splits);
     }
@@ -173,7 +153,8 @@ public class BSONSplitter extends Configured implements Tool {
                 }
                 curSplitLen += bsonDocSize;
 
-                fsDataStream.seek(fsDataStream.getPos() + bsonDocSize);
+                fsDataStream.skip(bsonDocSize);
+                //fsDataStream.seek(fsDataStream.getPos() + bsonDocSize);
                 numDocs++;
                 if(numDocs % 10000 == 0){
                     log.info("read " + numDocs + " docs, " + fsDataStream.getPos() + " bytes read.");
@@ -274,7 +255,8 @@ public class BSONSplitter extends Configured implements Tool {
         while(fsDataStream.getPos() < length){
             byte[] headerBuf = new byte[4];
             fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
-            fsDataStream.seek(fsDataStream.getPos() + 1000);
+            fsDataStream.skip(1000);
+            //fsDataStream.seek(fsDataStream.getPos() + 1000);
         }
     }
 
