@@ -165,6 +165,10 @@ public class MongoConfig {
         return MongoConfigUtil.getInputURI( _conf );
     }
 
+    public MongoURI getAuthURI(){
+        return MongoConfigUtil.getAuthURI( _conf );
+    }
+
     public DBCollection getOutputCollection(){
         return MongoConfigUtil.getOutputCollection( _conf );
     }
@@ -187,6 +191,10 @@ public class MongoConfig {
 
     public void setInputURI( MongoURI uri ){
         MongoConfigUtil.setInputURI( _conf, uri );
+    }
+
+    public void setAuthUri( String uri ) {
+        MongoConfigUtil.setAuthURI( _conf, uri );
     }
 
     public MongoURI getOutputURI(){

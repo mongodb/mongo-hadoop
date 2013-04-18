@@ -11,8 +11,18 @@ cd ..
 ./sbt treasury-example/package
 ./sbt enron-example/package
 rm $HADOOP_HOME/lib/mongo-hadoop*.jar
+rm $HADOOP_HOME/share/hadoop/mapreduce/mongo-hadoop*.jar 
+rm $HADOOP_HOME/share/hadoop/lib/mongo-hadoop*.jar 
 cp core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/lib/
 cp target/mongo-hadoop_*.jar $HADOOP_HOME/lib/
+
+# 0.20 
+cp core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/share/hadoop/lib/
+cp target/mongo-hadoop_*.jar $HADOOP_HOME/share/hadoop/lib/
+
+# 0.20 
+cp core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/share/hadoop/mapreduce/
+cp target/mongo-hadoop_*.jar $HADOOP_HOME/share/hadoop/mapreduce/
 
 
 

@@ -63,6 +63,21 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         this.updateKeys = updateKeys;
         this.multiUpdate = false;
         this.numberOfHosts = c.size();
+         
+        //authenticate if necessary - but don't auth twice on same DB
+        MongoConfig config = new MongoConfig(ctx.getConfiguration());
+        if(config.getAuthURI() != null){
+            MongoURI authURI = config.getAuthURI();
+            if(authURI.getUsername() != null &&
+                authURI.getPassword() != null ){
+                // need to verify that it is not already one of the collections we are writing to.
+                DBCollection _collection = _collections.get(0);
+                DB targetAuthDB = _collection.getDB().getSisterDB(authURI.getDatabase());
+                if(!(targetAuthDB.getName().equals(_collection.getDB().getName()))){
+                    targetAuthDB.authenticate(authURI.getUsername(), authURI.getPassword());
+                }
+            }
+        }
     }
 
     public void close( TaskAttemptContext context ){
@@ -115,6 +130,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             }
         }
         catch ( final MongoException e ) {
+            e.printStackTrace();
             throw new IOException( "can't write to mongo", e );
         }
     }
