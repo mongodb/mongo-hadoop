@@ -14,6 +14,8 @@ import time
 
 HADOOP_HOME=os.environ['HADOOP_HOME']
 HADOOP_RELEASE=os.environ.get('HADOOP_RELEASE',None)
+AWS_SECRET=os.environ.get('AWS_SECRET',None) 
+AWS_ACCESSKEY=os.environ.get('AWS_ACCESSKEY',None) 
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
 
 if not os.path.isdir(TEMPDIR):
@@ -422,17 +424,20 @@ class TestStreaming(Standalone):
 
 class TestS3BSON(Standalone):
 
+
+    @unittest.skipIf(not AWS_ACCESSKEY or not AWS_SECRET, 'AWS credentials not provided')
     def test_treasury(self):
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
-        PARAMETERS["fs.s3.awsAccessKeyId"] = 'AKIAIEM3AHGAP3CC6U5A'
-        PARAMETERS["fs.s3.awsSecretAccessKey"] = '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'
+        PARAMETERS["fs.s3.awsAccessKeyId"] = AWS_ACCESSKEY
+        PARAMETERS["fs.s3.awsSecretAccessKey"] = AWS_SECRET
 
         #fs.s3.awsAccessKeyId or fs.s3.awsSecretAccessKey properties (respectively).
-        #runbsonjob("http://s3.amazonaws.com/mongo-test-data/yield_historical.in.bson", PARAMETERS, self.server_hostname)
-        runbsonjob("s3n://AKIAIEM3AHGAP3CC6U5A:SyeGn4ruUh4dUrE9KtTj6UwRWgHHFwHVNblFfC1Y@mongo-test-data/yield_historical.in.bson", PARAMETERS, self.server_hostname)
-
+        s3URL = "s3n://%s:%s@mongo-test-data/yield_historical.in.bson" % (AWS_ACCESSKEY, AWS_SECRET)
+        runbsonjob(s3URL, PARAMETERS, self.server_hostname)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
 
 class TestStaticBSON(Standalone):
 
