@@ -142,38 +142,16 @@ public class MongoUpdateWritable implements Writable {
 
     @Override
     public int hashCode(){
-        return ( this._doc != null ? this._doc.hashCode() : 0 );
+        int hashCode = this.query.hashCode();
+        hashCode ^= this.modifiers.hashCode();
+        hashCode ^= (this.upsert ? 1 : 0) << 1;
+        hashCode ^= (this.multiUpdate ? 1 : 0) << 2;
+        return hashCode;
     }
 
     protected BSONObject _doc;
 
 
-    private static final Log log = LogFactory.getLog( BSONWritable.class );
-
-    public static Object toBSON(Object x) {
-        if (x == null) return null;
-        if (x instanceof Text || x instanceof UTF8) return x.toString();
-        if (x instanceof Writable) {
-            if (x instanceof AbstractMapWritable)
-                throw new IllegalArgumentException("ERROR: MapWritables are not presently supported for MongoDB Serialization.");
-            if (x instanceof ArrayWritable) { // TODO - test me
-                Writable[] o = ((ArrayWritable) x).get();
-                Object[] a = new Object[o.length];
-                for (int i = 0; i < o.length; i++)
-                    a[i] = (Writable) toBSON(o[i]);
-            }
-            if (x instanceof BooleanWritable) return ((BooleanWritable) x).get();
-            if (x instanceof BytesWritable) return ((BytesWritable) x).getBytes();
-            if (x instanceof ByteWritable) return ((ByteWritable) x).get();
-            if (x instanceof DoubleWritable) return ((DoubleWritable) x).get();
-            if (x instanceof FloatWritable) return ((FloatWritable) x).get();
-            if (x instanceof LongWritable) return ((LongWritable) x).get();
-            if (x instanceof IntWritable) return ((IntWritable) x).get();
-
-            // TODO - Support counters
-
-        }
-        throw new RuntimeException("can't convert: " + x.getClass().getName() + " to BSON");
-    }
+    private static final Log log = LogFactory.getLog( MongoUpdateWritable.class );
 
 }
