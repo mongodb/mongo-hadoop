@@ -470,7 +470,11 @@ class TestUpdateWritable(Standalone):
         #run it again.
         runjob(self.server_hostname, PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        print list(out_col.find())
+        results = list(out_col.find({}).sort("_id"))
+        for r in results:
+            print "verifying update for", r.get("_id", None)
+            self.assertEqual(len(r.get('calculatedAt', [])), 2)
+            self.assertEqual(r.get('numCalculations', 0), 2)
 
 if __name__ == '__main__':
     testtreasury()
