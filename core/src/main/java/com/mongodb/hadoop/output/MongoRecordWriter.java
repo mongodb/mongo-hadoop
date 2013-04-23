@@ -89,20 +89,11 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     public void write( K key, V value ) throws IOException{
         final DBObject o = new BasicDBObject();
-        System.out.println("HERE");
-        log.info("writing a key and value");
-        //log.info("key:"  + key.toString());
-        log.info("value:"  + value.toString());
 
         if( value instanceof MongoUpdateWritable ){
-            log.info("update writable - saving");
             //ignore the key - just use the update directly.
             MongoUpdateWritable muw = (MongoUpdateWritable)value;
             try{
-                log.info("query is:");
-                log.info(muw.getQuery().toString());
-                log.info("modifiers is:");
-                log.info(muw.getModifiers().toString());
                 DBCollection dbCollection = getDbCollectionByRoundRobin();
                 dbCollection.update(new BasicDBObject(muw.getQuery()),
                                     new BasicDBObject(muw.getModifiers()),
