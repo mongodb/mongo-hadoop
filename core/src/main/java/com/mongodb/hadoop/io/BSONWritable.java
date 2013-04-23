@@ -32,7 +32,7 @@ import java.util.*;
  */
 
 @SuppressWarnings( "deprecation" )
-public class BSONWritable implements BSONObject, WritableComparable {
+public class BSONWritable implements WritableComparable {
 
     /**
      * Constructs a new instance.
@@ -102,6 +102,10 @@ public class BSONWritable implements BSONObject, WritableComparable {
      */
     public Object get( String key ){
         return _doc.get( key );
+    }
+
+    public BSONObject getDoc(){
+        return this._doc;
     }
 
     /**
@@ -295,6 +299,7 @@ public class BSONWritable implements BSONObject, WritableComparable {
                 for (int i = 0; i < o.length; i++)
                     a[i] = (Writable) toBSON(o[i]);
             }
+            if (x instanceof NullWritable) return null;
             if (x instanceof BooleanWritable) return ((BooleanWritable) x).get();
             if (x instanceof BytesWritable) return ((BytesWritable) x).getBytes();
             if (x instanceof ByteWritable) return ((ByteWritable) x).get();

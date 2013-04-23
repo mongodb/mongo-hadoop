@@ -461,5 +461,16 @@ class TestShardedWithQuery(BaseShardedTest):
         results = list(out_col.find({},{'_id':1}).sort("_id"))
         self.assertTrue(len(results) == 14)
 
+class TestUpdateWritable(Standalone):
+
+    def test_treasury(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldUpdateReducer"
+        runjob(self.server_hostname, PARAMETERS)
+        #run it again.
+        runjob(self.server_hostname, PARAMETERS)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        print list(out_col.find())
+
 if __name__ == '__main__':
     testtreasury()

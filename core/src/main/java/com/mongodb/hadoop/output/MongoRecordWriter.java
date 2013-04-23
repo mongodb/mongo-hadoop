@@ -19,6 +19,7 @@ package com.mongodb.hadoop.output;
 import com.mongodb.*;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.io.MongoUpdateWritable;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
@@ -88,9 +89,34 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     public void write( K key, V value ) throws IOException{
         final DBObject o = new BasicDBObject();
+        System.out.println("HERE");
+        log.info("writing a key and value");
+        //log.info("key:"  + key.toString());
+        log.info("value:"  + value.toString());
 
-        if ( key instanceof MongoOutput ){
-            ( (MongoOutput) key ).appendAsKey( o );
+        if( value instanceof MongoUpdateWritable ){
+            log.info("update writable - saving");
+            //ignore the key - just use the update directly.
+            MongoUpdateWritable muw = (MongoUpdateWritable)value;
+            try{
+                log.info("query is:");
+                log.info(muw.getQuery().toString());
+                log.info("modifiers is:");
+                log.info(muw.getModifiers().toString());
+                DBCollection dbCollection = getDbCollectionByRoundRobin();
+                dbCollection.update(new BasicDBObject(muw.getQuery()),
+                                    new BasicDBObject(muw.getModifiers()),
+                                    muw.isUpsert(),
+                                    muw.isMultiUpdate());
+                return;
+            } catch ( final MongoException e ) {
+                e.printStackTrace();
+                throw new IOException( "can't write to mongo", e );
+            }
+        }
+
+        if ( key instanceof BSONWritable ){
+            o.put("_id", ((BSONWritable)key).getDoc());
         }
         else if ( key instanceof BSONObject ){
             o.put( "_id", key );
