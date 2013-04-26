@@ -19,6 +19,7 @@ package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.io.*;
+import com.mongodb.hadoop.input.MongoInputSplit;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
 import org.bson.*;
@@ -29,6 +30,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
 
     public MongoRecordReader( MongoInputSplit split ){
         _cursor = split.getCursor();
+        _keyField = split.getKeyField();
     }
 
     public void close(){
@@ -45,11 +47,11 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         return new BSONWritable();
     }
 
-    public BSONObject getCurrentKey(){
-        return new BasicDBObject( "_id", _current.get( "_id" ) );
+    public BSONWritable getCurrentKey(){
+        return new BSONWritable(new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") ));
     }
 
-    public BSONObject getCurrentValue(){
+    public BSONWritable getCurrentValue(){
         return _current;
     }
 
@@ -80,7 +82,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
             if ( !_cursor.hasNext() )
                 return false;
 
-            _current = _cursor.next();
+            _current = new BSONWritable(_cursor.next());
             _seen++;
 
             return true;
@@ -95,7 +97,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
             log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
             value.clear();
-            value.putAll( getCurrentValue() );
+            value.putAll( (BSONObject)getCurrentValue() );
             return true;
         }
         else{
@@ -105,9 +107,10 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     }
 
     private final DBCursor _cursor;
-    private BSONObject _current;
+    private BSONWritable _current;
     private float _seen = 0;
     private float _total;
+    private String _keyField;
 
     private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 }

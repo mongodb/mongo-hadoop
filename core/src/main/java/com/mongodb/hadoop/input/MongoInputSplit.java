@@ -27,7 +27,7 @@ import org.bson.*;
 import java.io.*;
 import java.util.*;
 
-public class MongoInputSplit extends InputSplit implements Writable {
+public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
 
     public MongoInputSplit( MongoURI inputURI,
                             String keyField,
@@ -134,7 +134,6 @@ public class MongoInputSplit extends InputSplit implements Writable {
         _skip = (Integer) spec.get( "skip" );
         _notimeout = (Boolean) spec.get( "notimeout" );
         getCursor();
-
         log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
                    + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
                    + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
@@ -142,7 +141,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
                    + ", specialMax = " + _specialMax + "}" );
     }
 
-    DBCursor getCursor(){
+    public DBCursor getCursor(){
         // Return the cursor with the split's query, etc. already slotted in for
         // them.
         // todo - support limit/skip
@@ -242,7 +241,7 @@ public class MongoInputSplit extends InputSplit implements Writable {
     }
 
     private MongoURI _mongoURI;
-    private String _keyField;
+    private String _keyField = "_id";
     private Object _specialMin = null;
     private Object _specialMax = null;
     private DBObject _querySpec;

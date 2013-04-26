@@ -19,7 +19,7 @@ package com.mongodb.hadoop.mapred;
 
 import java.util.*;
 
-import com.mongodb.hadoop.mapred.input.MongoInputSplit;
+import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
@@ -31,6 +31,8 @@ import org.apache.hadoop.mapred.RecordReader;
 
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.io.*;
+import com.mongodb.BasicDBObject;
+
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
 
@@ -50,12 +52,7 @@ public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable>
         final MongoConfig conf = new MongoConfig(job);
         // TODO - Support allowing specification of numSplits to affect our ops?
         final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
-        // TODO - Make me less egregiously inefficient.
-        InputSplit[] classicSplits = new InputSplit[splits.size()];
-        for ( int i = 0; i < splits.size(); i++ ) {
-            classicSplits[i] = new MongoInputSplit( (com.mongodb.hadoop.input.MongoInputSplit) splits.get( i ) );
-        }
-        return classicSplits;
+        return splits.toArray(new InputSplit[0]);
     }
 
     public boolean verifyConfiguration(Configuration conf) {

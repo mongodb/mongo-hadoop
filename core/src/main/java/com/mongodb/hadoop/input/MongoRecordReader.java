@@ -18,7 +18,8 @@ package com.mongodb.hadoop.input;
 
 // Mongo
 
-import com.mongodb.*;
+import com.mongodb.DBCursor;
+import com.mongodb.MongoException;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;

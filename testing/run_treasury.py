@@ -34,17 +34,16 @@ version_buildtarget =\
     "0.23" : "0.23.1",
     "cdh3" :"cdh3u3"}
 
-treasury_jar_name = None
-if HADOOP_RELEASE:
-    for k, v in version_buildtarget.iteritems():
-        if HADOOP_RELEASE.startswith(k):
-            treasury_jar_name = "treasury-example_" + v + "-" + VERSION_SUFFIX + ".jar"
-            break
-else:
-    print os.environ
-if not treasury_jar_name:
-    treasury_jar_name = "treasury-example*.jar"
+def generate_jar_name(prefix, version_suffix):
+    if HADOOP_RELEASE:
+        for k, v in version_buildtarget.iteritems():
+            if HADOOP_RELEASE.startswith(k):
+                return prefix + "_" + v + "-" + version_suffix + ".jar"
+    else:
+        return prefix + "*.jar"
 
+treasury_jar_name = generate_jar_name("treasury-example", VERSION_SUFFIX);
+streaming_jar_name = generate_jar_name("mongo-hadoop-streaming", VERSION_SUFFIX);
 
 # result set for sanity check#{{{
 check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
@@ -91,7 +90,7 @@ JOBJAR_PATH=os.path.join(MONGO_HADOOP_ROOT,
     "treasury_yield",
     "target",
     treasury_jar_name)
-print JOBJAR_PATH
+
 JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
     'examples',
     'treasury_yield',
@@ -103,7 +102,7 @@ JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
 STREAMING_JARPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "target",
-    "mongo-hadoop-streaming*.jar")
+    streaming_jar_name)
 STREAMING_MAPPERPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "examples",
@@ -134,12 +133,24 @@ DEFAULT_PARAMETERS = {
   "mongo.job.sort_comparator":"",
 }
 
+DEFAULT_OLD_PARAMETERS = DEFAULT_PARAMETERS.copy()
+DEFAULT_OLD_PARAMETERS.update(
+        { "mongo.job.mapper": "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2",
+          "mongo.job.reducer": "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2",
+          "mongo.job.input.format": "com.mongodb.hadoop.mapred.MongoInputFormat",
+          "mongo.job.output.format": "com.mongodb.hadoop.mapred.MongoOutputFormat"})
+
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', output_hostnames=[], readpref="primary",
-           input_auth=None, output_auth=None):
+           output_collection='mongo_hadoop.yield_historical.out',
+           output_hostnames=[],
+           readpref="primary",
+           input_auth=None,
+           output_auth=None,
+           className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig"):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
+    cmd.append(className);
 
     for key, val in params.items():
         cmd.append("-D")
@@ -183,21 +194,33 @@ def runbsonjob(input_path, params, hostname,
     
 
 def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', readpref="primary"):
+           output_collection='mongo_hadoop.yield_historical.out',
+           readpref="primary",
+           input_auth=None,
+           output_auth=None):
+
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
-    cmd.append(STREAMING_JARPATH)
+    cmd.append('$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*')
+    cmd += ["-libjars", STREAMING_JARPATH]
+    cmd += ["-input", '/tmp/in']
+    cmd += ["-output", '/tmp/out']
+    cmd += ["-inputformat", 'com.mongodb.hadoop.mapred.MongoInputFormat']
+    cmd += ["-outputformat", 'com.mongodb.hadoop.mapred.MongoOutputFormat']
+    cmd += ["-io", 'mongodb']
+    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+    cmd += ['-jobconf', "mongo.input.uri=%s" % input_uri]
+    output_uri = "mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection) 
+    cmd += ['-jobconf', output_uri]
+    cmd += ['-jobconf', 'stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver']
+
+    cmd += ['-mapper', STREAMING_MAPPERPATH]
+    cmd += ['-reducer', STREAMING_REDUCERPATH]
 
     for key, val in params.items():
-        cmd.append("-" + key)
-        cmd.append(val)
+        cmd.append("-jobconf")
+        cmd.append(key + "=" + val)
 
-    cmd.append("-inputURI")
-    cmd.append("mongodb://%s/%s?readPreference=%s" % (hostname, input_collection, readpref))
-    cmd.append("-outputURI")
-    cmd.append("mongodb://%s/%s" % (hostname, output_collection))
-
-    print cmd
     subprocess.call(' '.join(cmd), shell=True)
 
 
@@ -207,6 +230,7 @@ class Standalone(unittest.TestCase):
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,"standalone1"))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
+        self.server.connection()['mongo_hadoop'].set_profiling_level(2)
         mongo_manager.mongo_import(self.server_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
@@ -417,10 +441,12 @@ class TestStreaming(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_treasury(self):
-        runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
+        PARAMETERS = {}
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
+        runstreamingjob(self.server_hostname, params=PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
-        #runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
 
 class TestS3BSON(Standalone):
 
@@ -542,6 +568,22 @@ class TestShardedWithQuery(BaseShardedTest):
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         results = list(out_col.find({},{'_id':1}).sort("_id"))
         self.assertTrue(len(results) == 14)
+
+class TestOldMRApi(Standalone):
+
+    def test_treasury(self):
+        runjob(self.server_hostname, DEFAULT_OLD_PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
+    def test_treasury_query(self):
+        PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
+        runjob(self.server_hostname, PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
 
 if __name__ == '__main__':
     testtreasury()
