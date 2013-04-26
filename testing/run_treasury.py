@@ -461,5 +461,17 @@ class TestShardedWithQuery(BaseShardedTest):
         results = list(out_col.find({},{'_id':1}).sort("_id"))
         self.assertTrue(len(results) == 14)
 
+class TestOldMRApi(Standalone):
+
+    def test_treasury(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.mapper"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2",
+        PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2",
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.mapred.MongoInputFormat",
+        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.mapred.MongoOutputFormat",
+        runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
 if __name__ == '__main__':
     testtreasury()
