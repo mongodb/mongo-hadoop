@@ -140,12 +140,12 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
            output_hostnames=[],
            readpref="primary",
            input_auth=None,
-           output_auth=None, className=None):
+           output_auth=None,
+           className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig"):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
-    if className is not None:
-        cmd.append(className);
+    cmd.append(className);
 
     for key, val in params.items():
         cmd.append("-D")
