@@ -165,7 +165,10 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
     subprocess.call(' '.join(cmd), shell=True)
 
 def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', readpref="primary", input_auth=None, output_auth=None):
+           output_collection='mongo_hadoop.yield_historical.out',
+           readpref="primary",
+           input_auth=None,
+           output_auth=None):
 
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
@@ -181,10 +184,14 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
     output_uri = "mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection) 
     cmd += ['-jobconf', output_uri]
     cmd += ['-jobconf', 'stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver']
-    cmd += ['-mapper', params['mapper']]
-    cmd += ['-reducer', params['reducer']]
 
-    print cmd
+    cmd += ['-mapper', STREAMING_MAPPERPATH]
+    cmd += ['-reducer', STREAMING_REDUCERPATH]
+
+    for key, val in params.items():
+        cmd.append("-jobconf")
+        cmd.append(key + "=" + val)
+
     subprocess.call(' '.join(cmd), shell=True)
 
 
@@ -194,6 +201,7 @@ class Standalone(unittest.TestCase):
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,"standalone1"))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
+        self.server.connection()['mongo_hadoop'].set_profiling_level(2)
         mongo_manager.mongo_import(self.server_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
@@ -401,11 +409,12 @@ class TestStreaming(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_treasury(self):
-        PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
-        runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
+        PARAMETERS = {}
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
+        runstreamingjob(self.server_hostname, params=PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
-        #runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
 
 class TestShardedAuth(BaseShardedTest):
 
