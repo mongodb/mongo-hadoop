@@ -19,16 +19,18 @@ package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.io.*;
+import com.mongodb.hadoop.input.MongoInputSplit;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
 
 @SuppressWarnings( "deprecation" )
-public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
+public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObject> {
 
     public MongoRecordReader( MongoInputSplit split ){
         _cursor = split.getCursor();
+        _keyField = split.getKeyField();
     }
 
     public void close(){
@@ -36,20 +38,20 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
             _cursor.close();
     }
 
-    public BSONWritable createKey(){
-        return new BSONWritable();
+    public BasicDBObject createKey(){
+        return new BasicDBObject();
     }
 
 
-    public BSONWritable createValue(){
-        return new BSONWritable();
+    public BasicDBObject createValue(){
+        return new BasicDBObject();
     }
 
-    public BSONObject getCurrentKey(){
-        return new BasicDBObject( "_id", _current.get( "_id" ) );
+    public BasicDBObject getCurrentKey(){
+        return new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") );
     }
 
-    public BSONObject getCurrentValue(){
+    public BasicDBObject getCurrentValue(){
         return _current;
     }
 
@@ -80,7 +82,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
             if ( !_cursor.hasNext() )
                 return false;
 
-            _current = _cursor.next();
+            _current = (BasicDBObject)_cursor.next();
             _seen++;
 
             return true;
@@ -90,12 +92,12 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         }
     }
 
-    public boolean next( BSONWritable key, BSONWritable value ){
+    public boolean next( BasicDBObject key, BasicDBObject value ){
         if ( nextKeyValue() ){
             log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
             value.clear();
-            value.putAll( getCurrentValue() );
+            value.putAll( (BSONObject)getCurrentValue() );
             return true;
         }
         else{
@@ -105,9 +107,10 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     }
 
     private final DBCursor _cursor;
-    private BSONObject _current;
+    private BasicDBObject _current;
     private float _seen = 0;
     private float _total;
+    private String _keyField;
 
     private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 }

@@ -35,7 +35,7 @@ import java.util.*;
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
     @Override
-    public RecordReader<Object, BSONObject> createRecordReader( InputSplit split, TaskAttemptContext context ){
+    public RecordReader<Object, BSONObject> createRecordReader( InputSplit split, TaskAttemptContext context ) {
         if ( !( split instanceof MongoInputSplit ) )
             throw new IllegalStateException( "Creation of a new RecordReader requires a MongoInputSplit instance." );
 
