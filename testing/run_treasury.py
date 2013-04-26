@@ -129,12 +129,23 @@ DEFAULT_PARAMETERS = {
   "mongo.job.sort_comparator":"",
 }
 
+DEFAULT_OLD_PARAMETERS = DEFAULT_PARAMETERS.copy()
+DEFAULT_OLD_PARAMETERS["mongo.job.mapper"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2"
+DEFAULT_OLD_PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2"
+DEFAULT_OLD_PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.mapred.MongoInputFormat"
+DEFAULT_OLD_PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.mapred.MongoOutputFormat"
+
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', output_hostnames=[], readpref="primary",
-           input_auth=None, output_auth=None):
+           output_collection='mongo_hadoop.yield_historical.out',
+           output_hostnames=[],
+           readpref="primary",
+           input_auth=None,
+           output_auth=None, className=None):
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
+    if className is not None:
+        cmd.append(className);
 
     for key, val in params.items():
         cmd.append("-D")
@@ -464,14 +475,18 @@ class TestShardedWithQuery(BaseShardedTest):
 class TestOldMRApi(Standalone):
 
     def test_treasury(self):
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS["mongo.job.mapper"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2",
-        PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2",
-        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.mapred.MongoInputFormat",
-        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.mapred.MongoOutputFormat",
-        runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        runjob(self.server_hostname, DEFAULT_OLD_PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
+
+    def test_treasury_query(self):
+        PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
+        runjob(self.server_hostname, PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
 
 if __name__ == '__main__':
     testtreasury()
