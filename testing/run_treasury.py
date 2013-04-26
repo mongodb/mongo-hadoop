@@ -29,17 +29,16 @@ version_buildtarget =\
     "0.23" : "0.23.1",
     "cdh3" :"cdh3u3"}
 
-treasury_jar_name = None
-if HADOOP_RELEASE:
-    for k, v in version_buildtarget.iteritems():
-        if HADOOP_RELEASE.startswith(k):
-            treasury_jar_name = "treasury-example_" + v + "-" + VERSION_SUFFIX + ".jar"
-            break
-else:
-    print os.environ
-if not treasury_jar_name:
-    treasury_jar_name = "treasury-example*.jar"
+def generate_jar_name(prefix, version_suffix):
+    if HADOOP_RELEASE:
+        for k, v in version_buildtarget.iteritems():
+            if HADOOP_RELEASE.startswith(k):
+                return prefix + "_" + v + "-" + version_suffix + ".jar"
+    else:
+        return prefix + "*.jar"
 
+treasury_jar_name = generate_jar_name("treasury-example", VERSION_SUFFIX);
+streaming_jar_name = generate_jar_name("mongo-hadoop-streaming", VERSION_SUFFIX);
 
 # result set for sanity check#{{{
 check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
@@ -86,7 +85,7 @@ JOBJAR_PATH=os.path.join(MONGO_HADOOP_ROOT,
     "treasury_yield",
     "target",
     treasury_jar_name)
-print JOBJAR_PATH
+
 JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
     'examples',
     'treasury_yield',
@@ -98,7 +97,7 @@ JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
 STREAMING_JARPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "target",
-    "mongo-hadoop-streaming_cdh4b1-1.1.0-SNAPSHOT.jar")
+    streaming_jar_name)
 STREAMING_MAPPERPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "examples",
@@ -171,7 +170,7 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
     cmd.append('$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*')
-    cmd += ["-libjars", '$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-2.0.0-cdh4.2.0.jar,'+STREAMING_JARPATH]
+    cmd += ["-libjars", STREAMING_JARPATH]
     cmd += ["-input", '/tmp/in']
     cmd += ["-output", '/tmp/out']
     cmd += ["-inputformat", 'com.mongodb.hadoop.mapred.MongoInputFormat']
