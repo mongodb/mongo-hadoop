@@ -33,11 +33,11 @@ import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.io.*;
 import com.mongodb.BasicDBObject;
 
-public class MongoInputFormat implements InputFormat<BasicDBObject, BasicDBObject> {
+public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
 
 @SuppressWarnings("deprecation")
-    public RecordReader<BasicDBObject, BasicDBObject> getRecordReader(InputSplit split,
+    public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split,
                                                                     JobConf job,
                                                                     Reporter reporter) {
         if (!(split instanceof MongoInputSplit))

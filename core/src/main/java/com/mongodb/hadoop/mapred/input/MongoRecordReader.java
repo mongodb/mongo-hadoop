@@ -26,7 +26,7 @@ import org.bson.*;
 
 
 @SuppressWarnings( "deprecation" )
-public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObject> {
+public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
     public MongoRecordReader( MongoInputSplit split ){
         _cursor = split.getCursor();
@@ -38,20 +38,20 @@ public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObj
             _cursor.close();
     }
 
-    public BasicDBObject createKey(){
-        return new BasicDBObject();
+    public BSONWritable createKey(){
+        return new BSONWritable();
     }
 
 
-    public BasicDBObject createValue(){
-        return new BasicDBObject();
+    public BSONWritable createValue(){
+        return new BSONWritable();
     }
 
-    public BasicDBObject getCurrentKey(){
-        return new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") );
+    public BSONWritable getCurrentKey(){
+        return new BSONWritable(new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") ));
     }
 
-    public BasicDBObject getCurrentValue(){
+    public BSONWritable getCurrentValue(){
         return _current;
     }
 
@@ -82,7 +82,7 @@ public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObj
             if ( !_cursor.hasNext() )
                 return false;
 
-            _current = (BasicDBObject)_cursor.next();
+            _current = new BSONWritable(_cursor.next());
             _seen++;
 
             return true;
@@ -92,7 +92,7 @@ public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObj
         }
     }
 
-    public boolean next( BasicDBObject key, BasicDBObject value ){
+    public boolean next( BSONWritable key, BSONWritable value ){
         if ( nextKeyValue() ){
             log.debug( "Had another k/v" );
             key.put( "_id", getCurrentKey().get( "_id" ) );
@@ -107,7 +107,7 @@ public class MongoRecordReader implements RecordReader<BasicDBObject, BasicDBObj
     }
 
     private final DBCursor _cursor;
-    private BasicDBObject _current;
+    private BSONWritable _current;
     private float _seen = 0;
     private float _total;
     private String _keyField;

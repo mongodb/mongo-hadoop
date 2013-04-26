@@ -98,7 +98,7 @@ JSONFILE_PATH=os.path.join(MONGO_HADOOP_ROOT,
 STREAMING_JARPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "target",
-    "mongo-hadoop-streaming*.jar")
+    "mongo-hadoop-streaming_cdh4b1-1.1.0-SNAPSHOT.jar")
 STREAMING_MAPPERPATH=os.path.join(MONGO_HADOOP_ROOT,
     "streaming",
     "examples",
@@ -130,10 +130,11 @@ DEFAULT_PARAMETERS = {
 }
 
 DEFAULT_OLD_PARAMETERS = DEFAULT_PARAMETERS.copy()
-DEFAULT_OLD_PARAMETERS["mongo.job.mapper"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2"
-DEFAULT_OLD_PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2"
-DEFAULT_OLD_PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.mapred.MongoInputFormat"
-DEFAULT_OLD_PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.mapred.MongoOutputFormat"
+DEFAULT_OLD_PARAMETERS.update(
+        { "mongo.job.mapper": "com.mongodb.hadoop.examples.treasury.TreasuryYieldMapperV2",
+          "mongo.job.reducer": "com.mongodb.hadoop.examples.treasury.TreasuryYieldReducerV2",
+          "mongo.job.input.format": "com.mongodb.hadoop.mapred.MongoInputFormat",
+          "mongo.job.output.format": "com.mongodb.hadoop.mapred.MongoOutputFormat"})
 
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
            output_collection='mongo_hadoop.yield_historical.out',
@@ -165,19 +166,24 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
     subprocess.call(' '.join(cmd), shell=True)
 
 def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
-           output_collection='mongo_hadoop.yield_historical.out', readpref="primary"):
+           output_collection='mongo_hadoop.yield_historical.out', readpref="primary", input_auth=None, output_auth=None):
+
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     cmd.append("jar")
-    cmd.append(STREAMING_JARPATH)
-
-    for key, val in params.items():
-        cmd.append("-" + key)
-        cmd.append(val)
-
-    cmd.append("-inputURI")
-    cmd.append("mongodb://%s/%s?readPreference=%s" % (hostname, input_collection, readpref))
-    cmd.append("-outputURI")
-    cmd.append("mongodb://%s/%s" % (hostname, output_collection))
+    cmd.append('$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*')
+    cmd += ["-libjars", '$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-2.0.0-cdh4.2.0.jar,'+STREAMING_JARPATH]
+    cmd += ["-input", '/tmp/in']
+    cmd += ["-output", '/tmp/out']
+    cmd += ["-inputformat", 'com.mongodb.hadoop.mapred.MongoInputFormat']
+    cmd += ["-outputformat", 'com.mongodb.hadoop.mapred.MongoOutputFormat']
+    cmd += ["-io", 'mongodb']
+    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+    cmd += ['-jobconf', "mongo.input.uri=%s" % input_uri]
+    output_uri = "mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection) 
+    cmd += ['-jobconf', output_uri]
+    cmd += ['-jobconf', 'stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver']
+    cmd += ['-mapper', params['mapper']]
+    cmd += ['-reducer', params['reducer']]
 
     print cmd
     subprocess.call(' '.join(cmd), shell=True)
@@ -396,6 +402,7 @@ class TestStreaming(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_treasury(self):
+        PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
         runstreamingjob(self.server_hostname, {'mapper': STREAMING_MAPPERPATH, 'reducer':STREAMING_REDUCERPATH})
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
