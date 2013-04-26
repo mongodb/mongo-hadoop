@@ -27,6 +27,7 @@ cp $PROJECTROOT/target/mongo-hadoop_*.jar $HADOOP_HOME/share/hadoop/lib/
 cp $PROJECTROOT/core/target/mongo-hadoop-core_*.jar $HADOOP_HOME/share/hadoop/mapreduce/
 cp $PROJECTROOT/target/mongo-hadoop_*.jar $HADOOP_HOME/share/hadoop/mapreduce/
 
+cp $PROJECTROOT/streaming/target/mongo-hadoop-streaming*.jar $HADOOP_HOME/share/hadoop/mapreduce/
 
 
 
