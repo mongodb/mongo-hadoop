@@ -67,11 +67,8 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        log.info("getting next key value " + numDocsRead);
 		try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
-                //TODO clean up/close data streams
-                log.info("reached end of file split:");
                 return false;
             }
 
@@ -85,9 +82,6 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             }
             return true;
 		}catch(Exception e){
-            e.printStackTrace();
-            log.info(e.getMessage());
-            log.info("finished reading input split, docs read: " + numDocsRead);
             return false;
         }
     }
@@ -104,13 +98,18 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 
     @Override
     public float getProgress() throws IOException, InterruptedException {
-		return 1.0f;
-        //return rdr.hasNext() ? 1.0f : 0.0f;
+        if(in != null){
+            return new Float(in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
+        }else{
+            return 0f;
+        }
     }
 
     @Override
     public void close() throws IOException {
-        // do nothing
+        if(this.in != null){
+            in.close();
+        }
     }
 
 }
