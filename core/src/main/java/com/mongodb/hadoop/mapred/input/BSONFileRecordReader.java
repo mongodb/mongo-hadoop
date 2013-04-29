@@ -1,6 +1,7 @@
 package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.BSONLoader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -8,11 +9,16 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.TaskAttemptContext;
+import org.apache.hadoop.mapred.FileSplit;
 import org.bson.*;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -36,128 +42,97 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private FileSplit fileSplit;
-    private BSONReader rdr;
+    private Configuration conf;
+    private BSONLoader rdr;
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
     private BSONWritable value;
-    private Configuration conf;
+	byte[] headerBuf = new byte[4];
+	private FSDataInputStream in;
+    private int numDocsRead = 0;
+    private boolean finished = false;
 
-    public BSONFileRecordReader(Configuration conf, FileSplit fileSplit) throws IOException {
-        this.fileSplit = fileSplit;
+	BasicBSONCallback callback = new BasicBSONCallback();
+	BasicBSONDecoder decoder = new BasicBSONDecoder();
+
+    public BSONFileRecordReader(){ }
+
+    public void initialize(InputSplit inputSplit, Configuration conf) throws IOException, InterruptedException {
+        this.fileSplit = (FileSplit) inputSplit;
         this.conf = conf;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-        FSDataInputStream in = fs.open(file);
-        rdr = new BSONReader(in);
+		in = fs.open(file, 16*1024*1024);
+        in.seek(fileSplit.getStart());
     }
 
-    protected boolean nextKeyValue() throws IOException {
-        if (rdr.hasNext()) {
-            value = new BSONWritable( rdr.next() );
+    @Override
+    public boolean next(NullWritable key, BSONWritable value) throws IOException {
+		try{
+            if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
+                try{
+                    this.close();
+                }catch(Exception e){
+                }finally{
+                    return false;
+                }
+            }
+
+            callback.reset();
+            int bytesRead = decoder.decode(in, callback);
+            BSONObject bo = (BSONObject)callback.get();
+            value.clear();
+            value.putAll(bo);
+
+            numDocsRead++;
+            if(numDocsRead % 1000 == 0){
+                log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+            }
             return true;
-        } else {
-            return false;
+		}catch(Exception e){
+            log.warn("Error reading key/value from bson file: " + e.getMessage());
+            try{
+                this.close();
+            }catch(Exception e2){
+            }finally{
+                return false;
+            }
         }
     }
 
     public float getProgress() throws IOException {
-        return rdr.hasNext() ? 1.0f : 0.0f;
+        if(this.finished)
+            return 1f;
+        if(in != null)
+            return new Float(in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
+        return 0f;
     }
 
-
-    public boolean next(NullWritable key, BSONWritable value) throws IOException {
-        if ( nextKeyValue() ){
-            log.trace( "Had another k/v" );
-            value.clear();
-            value.putAll( this.value );
-            return true;
-        }
-        else{
-            log.info( "Cursor exhausted." );
-            value = null;
-            return false;
-        }
+    public long getPos() throws IOException {
+        if(this.finished)
+            return this.fileSplit.getStart() + this.fileSplit.getLength();
+        if(in != null )
+            return in.getPos();
+        return this.fileSplit.getStart();
     }
 
-    public NullWritable createKey() {
+    @Override
+    public NullWritable createKey(){
         return NullWritable.get();
     }
 
+    @Override
     public BSONWritable createValue() {
         return new BSONWritable();
     }
 
-    public long getPos() throws IOException {
-        return 0;
-    }
-
+    @Override
     public void close() throws IOException {
-        // do nothing
+        log.info("closing bson file split.");
+        this.finished = true;
+        if(this.in != null){
+            in.close();
+        }
     }
 
-    private class BSONReader implements Iterable<BSONObject>, Iterator<BSONObject> {
-
-        public BSONReader(final InputStream input) {
-            _input = new DataInputStream( input );
-        }
-
-        public Iterator<BSONObject> iterator(){
-            return this;
-        }
-
-        public boolean hasNext(){
-            checkHeader();
-            return hasMore.get();
-        }
-
-        private synchronized void checkHeader(){
-            // Read the BSON length from the start of the record
-            byte[] l = new byte[4];
-            try {
-                _input.readFully( l );
-                nextLen = org.bson.io.Bits.readInt( l );
-                nextHdr = l;
-                hasMore.set( true );
-            } catch (Exception e) {
-                log.debug( "Failed to get next header: " + e, e );
-                hasMore.set( false );
-                try {
-                    _input.close();
-                }
-                catch ( IOException e1 ) { }
-            }
-        }
-
-        public BSONObject next(){
-            try {
-                byte[] data = new byte[nextLen + 4];
-                System.arraycopy( nextHdr, 0, data, 0, 4 );
-                _input.readFully( data, 4, nextLen - 4 );
-                decoder.decode( data, callback );
-                return (BSONObject) callback.get();
-            }
-            catch ( IOException e ) {
-                /* If we can't read another length it's not an error, just return quietly. */
-                log.info( "No Length Header available." + e );
-                hasMore.set( false );
-                try {
-                    _input.close();
-                }
-                catch ( IOException e1 ) { }
-                throw new NoSuchElementException("Iteration completed.");
-            }
-        }
-
-        public void remove(){
-            throw new UnsupportedOperationException();
-        }
-
-        private final BSONDecoder decoder = new BasicBSONDecoder();
-        private final BSONCallback callback = new BasicBSONCallback();
-
-        private volatile byte[] nextHdr;
-        private volatile int nextLen;
-        private AtomicBoolean hasMore = new AtomicBoolean( true );
-        private final DataInputStream _input;
-    }
 }

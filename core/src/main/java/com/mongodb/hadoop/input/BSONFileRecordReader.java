@@ -50,6 +50,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 	byte[] headerBuf = new byte[4];
 	private FSDataInputStream in;
     private int numDocsRead = 0;
+    private boolean finished = false;
 
 	BasicBSONCallback callback = new BasicBSONCallback();
 	BasicBSONDecoder decoder = new BasicBSONDecoder();
@@ -69,7 +70,12 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
     public boolean nextKeyValue() throws IOException, InterruptedException {
 		try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
-                return false;
+                try{
+                    this.close();
+                }catch(Exception e){
+                }finally{
+                    return false;
+                }
             }
 
             callback.reset();
@@ -82,7 +88,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             }
             return true;
 		}catch(Exception e){
-            return false;
+            log.warn("Error reading key/value from bson file: " + e.getMessage());
+            try{
+                this.close();
+            }catch(Exception e2){
+            }finally{
+                return false;
+            }
         }
     }
 
@@ -98,15 +110,17 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 
     @Override
     public float getProgress() throws IOException, InterruptedException {
-        if(in != null){
+        if(this.finished)
+            return 1f;
+        if(in != null)
             return new Float(in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
-        }else{
-            return 0f;
-        }
+        return 0f;
     }
 
     @Override
     public void close() throws IOException {
+        log.info("closing bson file split.");
+        this.finished = true;
         if(this.in != null){
             in.close();
         }

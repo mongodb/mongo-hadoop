@@ -41,9 +41,11 @@ public class BSONSplitter extends Configured implements Tool {
     private Map<Path, List<FileSplit>> splitsMap;
     private Path inputPath;
     private BasicBSONCallback callback = new BasicBSONCallback();
+    private LazyBSONDecoder lazyDec = new LazyBSONDecoder();
     private BasicBSONDecoder bsonDec = new BasicBSONDecoder();
     private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
 
+    static class NoSplitFileException extends Exception{}
 
     private static final PathFilter hiddenFileFilter = new PathFilter(){
         public boolean accept(Path p){
@@ -64,6 +66,7 @@ public class BSONSplitter extends Configured implements Tool {
     }
 
 
+
     public BSONSplitter(){
         this.splitsMap = new HashMap<Path, List<FileSplit>>();
     }
@@ -72,49 +75,32 @@ public class BSONSplitter extends Configured implements Tool {
         this.inputPath = p;
     }
 
-    public void loadSplits(FileStatus file, FileStatus sourceFile) throws IOException{
+    public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, Path inputFile){//{{{
+        long start = (Long)splitInfo.get("s");
+        long splitLen = (Long)splitInfo.get("l");
+        BlockLocation[] blkLocations = fs.getFileBlockLocations(inputFile, start, splitLen);
+        int blockIndex = getLargestBlockIndex(blkLocations);
+        FileSplit split = new FileSplit(inputFile, start, splitLen, blkLocations[blockIndex].getHosts());
+    }//}}}
+
+    public void loadSplitsFromSplitFile(FileStatus inputFile, Path splitFile) throws NoSplitFileException, IOException{//{{{
         List<FileSplit> splits = new ArrayList<FileSplit>();
-        FileSystem fs = sourceFile.getPath().getFileSystem(getConf());
-        FSDataInputStream fsDataStream = fs.open(file.getPath());
-        long length = file.getLen();
-        while(fsDataStream.getPos() < length){
-
-            try{
-                callback.reset();
-                int bytesRead = bsonDec.decode(fsDataStream, callback);
-                BSONObject splitInfo = (BSONObject)callback.get();
-
-                log.info("got a split " + splitInfo);
-                long start = (Long)splitInfo.get("s");
-                long splitLen = (Long)splitInfo.get("l");
-                
-                BlockLocation[] blkLocations = fs.getFileBlockLocations(sourceFile, start, splitLen);
-                int blockIndex = getLargestBlockIndex(blkLocations);
-                FileSplit split = new FileSplit(sourceFile.getPath(), start, splitLen,
-                                blkLocations[blockIndex].getHosts());
-                splits.add(split);
-            }catch(Exception e){
-                e.printStackTrace();
-                break;
-            }
+        FileSystem fs = splitFile.getFileSystem(getConf());
+        FileStatus splitFileStatus = null;
+        try{
+            splitFileStatus = fs.getFileStatus(splitFile);
+        }catch(Exception e){
+            throw new NoSplitFileException();
+        }
+        FSDataInputStream fsDataStream = fs.open(splitFile.getPath());
+        while(fsDataStream.getPos() < splitFileStatus.getLen()){
+            callback.reset();
+            bsonDec.decode(fsDataStream, callback);
+            BSONObject splitInfo = (BSONObject)callback.get();
+            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
         }
         this.splitsMap.put(sourceFile.getPath(), splits);
-    }
-
-    public static int getLargestBlockIndex(BlockLocation[] blockLocations){
-        int retVal = -1;
-        if( blockLocations == null ){
-            return retVal;
-        }
-        long max = 0;
-        for(int i=0;i<blockLocations.length;i++){
-            BlockLocation blk = blockLocations[i];
-            if(blk.getLength() > max){
-                retVal = i;
-            }
-        }
-        return retVal;
-    }
+    }//}}}
 
     public void readSplitsForFile(FileStatus file) throws IOException{
         long minSize = Math.max(1L, getConf().getLong("mapred.min.split.size", 1L));
@@ -128,14 +114,29 @@ public class BSONSplitter extends Configured implements Tool {
             long blockSize = file.getBlockSize();
             long splitSize = Math.max(minSize, Math.min(maxSize, blockSize));
             long bytesRemaining = length;
-            byte[] headerBuf = new byte[4];
             int numDocs = 0;
             FSDataInputStream fsDataStream = fs.open(path);
             long curSplitLen = 0;
             long curSplitStart = 0;
             long curSplitEnd = 0;
             log.info("Split size: " + splitSize + " bytes.");
-            while(fsDataStream.getPos() + 1 < length){
+            try{
+                while(fsDataStream.getPos() + 1 < length){
+                    callback.reset();
+                    int bytesRead = decoder.decode(in, callback);
+                    BSONObject bo = (BSONObject)callback.get();
+                    value = new BSONWritable(bo);
+                    numDocsRead++;
+                    if(numDocsRead % 1000 == 0){
+                        log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+                    }
+                }
+            }catch(IOException e){
+            }finally{
+                fsDataStream.close();
+            }
+        }
+
                 fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
                 //TODO check that 4 bytes were actually read successfully, otherwise error
                 //TODO just parse the integer so we don't init a bytebuf every time
@@ -235,9 +236,10 @@ public class BSONSplitter extends Configured implements Tool {
         } else {
             for (FileStatus globStat: matches) {
                 if (globStat.isDir()) {
-                    for(FileStatus stat: fs.listStatus(globStat.getPath(), hiddenFileFilter)) {
-                        result.add(stat);
-                    }          
+                    // skip directories.
+                    //for(FileStatus stat: fs.listStatus(globStat.getPath(), hiddenFileFilter)) {
+                        //result.add(stat);
+                    //}          
                 } else {
                     result.add(globStat);
                 }
@@ -262,11 +264,25 @@ public class BSONSplitter extends Configured implements Tool {
 
     public int run( String[] args ) throws Exception{
         this.setInputPath(new Path(getConf().get("mapred.input.dir", "")));
-        //testReadFile();
         readSplits();
         writeSplits();
         return 0;
     }
+
+    public static int getLargestBlockIndex(BlockLocation[] blockLocations){//{{{
+        int retVal = -1;
+        if( blockLocations == null ){
+            return retVal;
+        }
+        long max = 0;
+        for(int i=0;i<blockLocations.length;i++){
+            BlockLocation blk = blockLocations[i];
+            if(blk.getLength() > max){
+                retVal = i;
+            }
+        }
+        return retVal;
+    }//}}}
 
     public static void main(String args[]) throws Exception{
         System.exit( ToolRunner.run( new BSONSplitter(), args ) );

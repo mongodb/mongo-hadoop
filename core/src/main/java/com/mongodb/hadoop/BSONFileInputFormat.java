@@ -52,10 +52,29 @@ public class BSONFileInputFormat extends FileInputFormat {
         return reader;
     }
 
+    public List<InputSplit> getSplits(JobContext context) throws IOException{
+        Configuration config = context.getConfiguration();
+        BSONSplitter splitter = new BSONSplitter(config);
+        Path[] inputPaths = splitter.getInputPaths();
+        List<FileStatus> filesToProcess = new ArrayList<FileStatus>();
+        for(Path inputPath : inputPaths){
+            filesToProcess.addAll(splitter.getFilesInPath(inputPath));
+        }
+        for(FileStatus inputFile : filesToProcess){
+			Path path = file.getPath();
+            Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
+            FileSystem fs = path.getFileSystem(config);
+            splitter.loadSplits(path, splitFilePath);
+
+
+        }
+
+    }
+
     @Override
     public List<InputSplit> getSplits( JobContext context ) throws IOException{
         final Configuration hadoopConfiguration = context.getConfiguration();
-		long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(context));
+		long minSize = Math.max(getFormatMinSplitSize), getMinSplitSize(context));
 		long maxSize = getMaxSplitSize(context);
 		List<InputSplit> splits = new ArrayList<InputSplit>();
 
@@ -117,8 +136,6 @@ public class BSONFileInputFormat extends FileInputFormat {
         }
 
         return splits;
-		//return new ArrayList<InputSplit>();
-
     }
 
 }

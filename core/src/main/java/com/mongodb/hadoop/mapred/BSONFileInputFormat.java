@@ -1,9 +1,12 @@
 package com.mongodb.hadoop.mapred;
 
+import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.*;
 
+
+import java.util.List;
 import java.io.IOException;
 
 /**
@@ -24,14 +27,22 @@ import java.io.IOException;
 
 public class BSONFileInputFormat extends FileInputFormat {
 
-    /** initial simple implementation, no split support */
     protected boolean isSplitable(JobContext context, Path filename) {
-        return false;
+        return true;
+    }
+
+    @Override
+    public InputSplit[] getSplits(JobConf job, int numSplits) {
+        final MongoConfig conf = new MongoConfig(job);
+        // TODO - Support allowing specification of numSplits to affect our ops?
+        final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
+        return splits.toArray(new InputSplit[0]);
     }
 
     @Override
     public RecordReader getRecordReader(InputSplit split, JobConf job, Reporter reporter) throws IOException {
-        BSONFileRecordReader reader = new BSONFileRecordReader(job, (FileSplit) split);
+        BSONFileRecordReader reader = new BSONFileRecordReader();
+        reader.initialize(split, job);
         return reader;
     }
 }
