@@ -7,7 +7,7 @@ import org.apache.hadoop.streaming.io.InputWriter;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class MongoInputWriter extends InputWriter<BSONWritable, BSONWritable> {
+public class MongoInputWriter extends InputWriter<Object, BSONWritable> {
 
     @Override
     public void initialize( PipeMapRed pipeMapRed ) throws IOException{
@@ -16,7 +16,7 @@ public class MongoInputWriter extends InputWriter<BSONWritable, BSONWritable> {
     }
 
     @Override
-    public void writeKey( BSONWritable key ) throws IOException{
+    public void writeKey( Object key ) throws IOException{
         // We skip the key COMPLETELY as it's just a copy of _id
         // and readable by the BSON implementation
     }
