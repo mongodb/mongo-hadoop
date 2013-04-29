@@ -33,6 +33,9 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONCallback;
 import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONDecoder;
+import org.bson.LazyBSONObject;
+import org.bson.LazyBSONCallback;
+import org.bson.LazyBSONDecoder;
 
 public class BSONSplitter extends Configured implements Tool {
 
@@ -41,11 +44,12 @@ public class BSONSplitter extends Configured implements Tool {
     private Map<Path, List<FileSplit>> splitsMap;
     private Path inputPath;
     private BasicBSONCallback callback = new BasicBSONCallback();
+    private LazyBSONCallback lazyCallback = new LazyBSONCallback();
     private LazyBSONDecoder lazyDec = new LazyBSONDecoder();
     private BasicBSONDecoder bsonDec = new BasicBSONDecoder();
     private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
 
-    static class NoSplitFileException extends Exception{}
+    public static class NoSplitFileException extends Exception{}
 
     private static final PathFilter hiddenFileFilter = new PathFilter(){
         public boolean accept(Path p){
@@ -75,31 +79,59 @@ public class BSONSplitter extends Configured implements Tool {
         this.inputPath = p;
     }
 
-    public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, Path inputFile){//{{{
-        long start = (Long)splitInfo.get("s");
-        long splitLen = (Long)splitInfo.get("l");
-        BlockLocation[] blkLocations = fs.getFileBlockLocations(inputFile, start, splitLen);
-        int blockIndex = getLargestBlockIndex(blkLocations);
-        FileSplit split = new FileSplit(inputFile, start, splitLen, blkLocations[blockIndex].getHosts());
+    public ArrayList<FileSplit> getAllSplits(){
+        if(splitsMap == null) return new ArrayList<FileSplit>(0);
+        ArrayList<FileSplit> collectedSplits = new ArrayList<FileSplit>();
+        for(List<FileSplit> fileSplits : splitsMap.values()){
+            collectedSplits.addAll(fileSplits);
+        }
+        return collectedSplits;
+    }
+
+    public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, Path inputFile) throws IOException{//{{{
+        log.info("object: "  + obj);
+        long start = (Long)obj.get("s");
+        long splitLen = (Long)obj.get("l");
+        try{
+            BlockLocation[] blkLocations = fs.getFileBlockLocations(inputFile, start, splitLen);
+            int blockIndex = getLargestBlockIndex(blkLocations);
+            return new FileSplit(inputFile, start, splitLen, blkLocations[blockIndex].getHosts());
+        }catch(IOException e){
+            log.warn("Couldn't find block locations when constructing input split from BSON. Using non-block-aware input split; " + e.getMessage());
+            return new FileSplit(inputFile, start, splitLen, null);
+        }
+    }//}}}
+
+    public FileSplit createFileSplit(Path path, FileSystem fs, long splitStart, long splitLen){//{{{
+        try{
+            BlockLocation[] blkLocations = fs.getFileBlockLocations(path, splitStart, splitLen);
+            int blockIndex = getLargestBlockIndex(blkLocations);
+            return new FileSplit(path, splitStart, splitLen, blkLocations[blockIndex].getHosts());
+        }catch(IOException e){
+            log.warn("Couldn't find block locations when constructing input split from byte offset. Using non-block-aware input split; " + e.getMessage());
+            return new FileSplit(path, splitStart, splitLen, null);
+        }
     }//}}}
 
     public void loadSplitsFromSplitFile(FileStatus inputFile, Path splitFile) throws NoSplitFileException, IOException{//{{{
         List<FileSplit> splits = new ArrayList<FileSplit>();
-        FileSystem fs = splitFile.getFileSystem(getConf());
+        FileSystem fs = splitFile.getFileSystem(getConf()); // throws IOException
         FileStatus splitFileStatus = null;
         try{
             splitFileStatus = fs.getFileStatus(splitFile);
+            log.info(splitFileStatus.toString());
+            log.info(splitFileStatus.getLen());
         }catch(Exception e){
             throw new NoSplitFileException();
         }
-        FSDataInputStream fsDataStream = fs.open(splitFile.getPath());
+        FSDataInputStream fsDataStream = fs.open(splitFile); // throws IOException
         while(fsDataStream.getPos() < splitFileStatus.getLen()){
             callback.reset();
             bsonDec.decode(fsDataStream, callback);
             BSONObject splitInfo = (BSONObject)callback.get();
-            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
+            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile.getPath()));
         }
-        this.splitsMap.put(sourceFile.getPath(), splits);
+        this.splitsMap.put(inputFile.getPath(), splits);
     }//}}}
 
     public void readSplitsForFile(FileStatus file) throws IOException{
@@ -107,72 +139,53 @@ public class BSONSplitter extends Configured implements Tool {
         long maxSize = getConf().getLong("mapred.max.split.size", Long.MAX_VALUE);
         Path path = file.getPath();
         List<FileSplit> splits = new ArrayList<FileSplit>();
-        log.info("generating splits for " + path);
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
         if (length != 0) { 
+            int numDocsRead = 0;
             long blockSize = file.getBlockSize();
             long splitSize = Math.max(minSize, Math.min(maxSize, blockSize));
+            log.info("Generating splits for " + path + " of up to " + splitSize + " bytes.");
             long bytesRemaining = length;
             int numDocs = 0;
             FSDataInputStream fsDataStream = fs.open(path);
             long curSplitLen = 0;
             long curSplitStart = 0;
             long curSplitEnd = 0;
-            log.info("Split size: " + splitSize + " bytes.");
             try{
                 while(fsDataStream.getPos() + 1 < length){
-                    callback.reset();
-                    int bytesRead = decoder.decode(in, callback);
-                    BSONObject bo = (BSONObject)callback.get();
-                    value = new BSONWritable(bo);
+                    lazyCallback.reset();
+                    int bytesRead = lazyDec.decode(fsDataStream, lazyCallback);
+                    LazyBSONObject bo = (LazyBSONObject)lazyCallback.get();
+                    int bsonDocSize = bo.getBSONSize();
+                    if(curSplitLen + bsonDocSize >= splitSize){
+                        FileSplit split = createFileSplit(file.getPath(), fs, curSplitStart, curSplitLen);
+                        splits.add(split);
+                        log.info("Creating new split (" + splits.size() + ") " + split.toString());
+                        curSplitStart = fsDataStream.getPos() - bsonDocSize;
+                        curSplitLen = 0;
+                    }
+                    curSplitLen += bsonDocSize;
                     numDocsRead++;
                     if(numDocsRead % 1000 == 0){
-                        log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+                        float splitProgress = 100f * (fsDataStream.getPos() / length);
+                        log.info("Read " + numDocsRead + " docs calculating splits for " + file.toString() + "; " + splitProgress + "% complete.");
                     }
                 }
+                if(curSplitLen > 0){
+                    FileSplit split = createFileSplit(file.getPath(), fs, curSplitStart, curSplitLen);
+                    splits.add(split);
+                    log.info("Final split (" + splits.size() + ") " + split.toString());
+                }
+                this.splitsMap.put(path, splits);
+                log.info("Completed splits calculation for " + file.toString());
             }catch(IOException e){
             }finally{
                 fsDataStream.close();
             }
+        }else{
+            log.warn("Zero-length file, skipping split calculation.");
         }
-
-                fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
-                //TODO check that 4 bytes were actually read successfully, otherwise error
-                //TODO just parse the integer so we don't init a bytebuf every time
-			    int bsonDocSize = org.bson.io.Bits.readInt(headerBuf);
-                if(curSplitLen + bsonDocSize >= splitSize){
-                    BlockLocation[] blkLocations = fs.getFileBlockLocations(file, curSplitStart, curSplitLen);
-                    int blockIndex = getLargestBlockIndex(blkLocations);
-                    FileSplit split = new FileSplit(path, curSplitStart,
-                            curSplitLen,
-                            blkLocations[blockIndex].getHosts());
-                    splits.add(split);
-                    curSplitLen = 0;
-                    curSplitStart = fsDataStream.getPos();
-                    log.info("Creating new split (" + splits.size() + ") " + split.toString());
-                }
-                curSplitLen += bsonDocSize;
-
-                fsDataStream.skip(bsonDocSize);
-                //fsDataStream.seek(fsDataStream.getPos() + bsonDocSize);
-                numDocs++;
-                if(numDocs % 10000 == 0){
-                    log.info("read " + numDocs + " docs, " + fsDataStream.getPos() + " bytes read.");
-                }
-            }
-            if(curSplitLen > 0){
-                BlockLocation[] blkLocations = fs.getFileBlockLocations(file, curSplitStart, curSplitLen);
-                int blockIndex = getLargestBlockIndex(blkLocations);
-                FileSplit split = new FileSplit(path,
-                        curSplitStart,
-                        curSplitLen,
-                        blkLocations[blockIndex].getHosts());
-                splits.add(split);
-                log.info("Final split (" + splits.size() + ") " + split.toString());
-            }
-            this.splitsMap.put(path, splits);
-        } 
     }
 
     public void writeSplits() throws IOException{

@@ -83,11 +83,10 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             BSONObject bo = (BSONObject)callback.get();
 			value = new BSONWritable(bo);
             numDocsRead++;
-            if(numDocsRead % 1000 == 0){
-                log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
-            }
+            log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             return true;
 		}catch(Exception e){
+            e.printStackTrace();
             log.warn("Error reading key/value from bson file: " + e.getMessage());
             try{
                 this.close();
@@ -119,7 +118,6 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 
     @Override
     public void close() throws IOException {
-        log.info("closing bson file split.");
         this.finished = true;
         if(this.in != null){
             in.close();

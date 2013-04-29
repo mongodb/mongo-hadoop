@@ -1,12 +1,14 @@
 package com.mongodb.hadoop.mapred;
 
+import com.mongodb.hadoop.util.BSONSplitter;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapred.*;
 
-
-import java.util.List;
+import java.util.ArrayList;
 import java.io.IOException;
 
 /**
@@ -32,11 +34,25 @@ public class BSONFileInputFormat extends FileInputFormat {
     }
 
     @Override
-    public InputSplit[] getSplits(JobConf job, int numSplits) {
-        final MongoConfig conf = new MongoConfig(job);
-        // TODO - Support allowing specification of numSplits to affect our ops?
-        final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
-        return splits.toArray(new InputSplit[0]);
+    public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(job);
+        Path[] inputPaths = splitter.getInputPaths();
+        ArrayList<FileStatus> filesToProcess = new ArrayList<FileStatus>();
+        for(Path inputPath : inputPaths){
+            filesToProcess.addAll(splitter.getFilesInPath(inputPath));
+        }
+        for(FileStatus inputFile : filesToProcess){
+			Path path = inputFile.getPath();
+            Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
+            FileSystem fs = path.getFileSystem(job);
+            try{
+                splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
+            }catch(BSONSplitter.NoSplitFileException nsfe){
+                splitter.readSplitsForFile(inputFile);
+            }
+        }
+        return splitter.getAllSplits().toArray(new InputSplit[0]);
     }
 
     @Override

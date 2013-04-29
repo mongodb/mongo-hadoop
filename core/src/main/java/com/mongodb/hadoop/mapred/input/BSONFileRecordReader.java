@@ -57,7 +57,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
 
     public BSONFileRecordReader(){ }
 
-    public void initialize(InputSplit inputSplit, Configuration conf) throws IOException, InterruptedException {
+    public void initialize(InputSplit inputSplit, Configuration conf) throws IOException {
         this.fileSplit = (FileSplit) inputSplit;
         this.conf = conf;
         Path file = fileSplit.getPath();

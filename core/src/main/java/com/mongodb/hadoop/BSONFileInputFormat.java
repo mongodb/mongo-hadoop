@@ -52,90 +52,29 @@ public class BSONFileInputFormat extends FileInputFormat {
         return reader;
     }
 
-    public List<InputSplit> getSplits(JobContext context) throws IOException{
+    public List<FileSplit> getSplits(JobContext context) throws IOException{
         Configuration config = context.getConfiguration();
-        BSONSplitter splitter = new BSONSplitter(config);
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(config);
         Path[] inputPaths = splitter.getInputPaths();
         List<FileStatus> filesToProcess = new ArrayList<FileStatus>();
         for(Path inputPath : inputPaths){
             filesToProcess.addAll(splitter.getFilesInPath(inputPath));
         }
         for(FileStatus inputFile : filesToProcess){
-			Path path = file.getPath();
+			Path path = inputFile.getPath();
             Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
             FileSystem fs = path.getFileSystem(config);
-            splitter.loadSplits(path, splitFilePath);
-
-
-        }
-
-    }
-
-    @Override
-    public List<InputSplit> getSplits( JobContext context ) throws IOException{
-        final Configuration hadoopConfiguration = context.getConfiguration();
-		long minSize = Math.max(getFormatMinSplitSize), getMinSplitSize(context));
-		long maxSize = getMaxSplitSize(context);
-		List<InputSplit> splits = new ArrayList<InputSplit>();
-
-		Path[] bsonInputPaths = getInputPaths(context);
-		List<FileStatus> statuses = listStatus(context);
-        log.info("files to process: ");
-        for(FileStatus s : statuses){
-            log.info(s.getPath().toString());
-        }
-
-		for (FileStatus file : statuses) {
-			Path path = file.getPath();
-            Path splitFilePath =  new Path(path.getParent(),  
-                                           "." + path.getName()
-                                           + ".splits");
-            FileSystem fs = path.getFileSystem(hadoopConfiguration);
-            FileStatus splitFileStatus = null;
             try{
-                splitFileStatus = fs.getFileStatus(splitFilePath);
-            }catch(IOException ioe){
-                log.info("no split file found.");
-                //split file not found
-            }
-            if(splitFileStatus == null || splitFileStatus.isDir()){
-                log.error("no pre-built splits found for " + path + " at " + splitFilePath);
-                BSONSplitter bsonSplitter = new BSONSplitter();
-                bsonSplitter.setConf(hadoopConfiguration);
-                bsonSplitter.setInputPath(path);
-                bsonSplitter.readSplits();
-                try{
-                    bsonSplitter.writeSplits();
-                }catch(IOException ioe){
-                    log.error("couldn't save splits information: " + ioe.getMessage());
-                }
-
-                Map<Path, List<FileSplit>> splitsMap = bsonSplitter.getSplitsMap();
-                for(Map.Entry<Path, List<FileSplit>> entry : splitsMap.entrySet()) {
-                    Path key = entry.getKey();
-                    List<FileSplit> value = entry.getValue();
-                    splits.addAll(value);
-                }
-            }else{
-                log.info("Found splits file at: " + splitFilePath);
-                BSONSplitter bsonSplitter = new BSONSplitter();
-                bsonSplitter.setConf(hadoopConfiguration);
-                bsonSplitter.loadSplits(splitFileStatus, file);
-                Map<Path, List<FileSplit>> splitsMap = bsonSplitter.getSplitsMap();
-                for(Map.Entry<Path, List<FileSplit>> entry : splitsMap.entrySet()) {
-                    Path key = entry.getKey();
-                    List<FileSplit> value = entry.getValue();
-                    splits.addAll(value);
-                }
-                
+                splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
+            }catch(BSONSplitter.NoSplitFileException nsfe){
+                splitter.readSplitsForFile(inputFile);
             }
         }
+        log.warn(splitter.getAllSplits().toString());
 
-        for(InputSplit s : splits){
-            log.info("split at: " + s.toString());
-        }
-
-        return splits;
+        return splitter.getAllSplits();
     }
+
 
 }
