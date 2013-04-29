@@ -6,7 +6,13 @@ import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.JobContext;
+import org.apache.hadoop.mapred.JobConf;
+//import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.RecordReader;
 
 import java.util.ArrayList;
 import java.io.IOException;
@@ -34,7 +40,7 @@ public class BSONFileInputFormat extends FileInputFormat {
     }
 
     @Override
-    public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
+    public org.apache.hadoop.mapred.FileSplit[] getSplits(JobConf job, int numSplits) throws IOException {
         BSONSplitter splitter = new BSONSplitter();
         splitter.setConf(job);
         Path[] inputPaths = splitter.getInputPaths();
@@ -52,7 +58,14 @@ public class BSONFileInputFormat extends FileInputFormat {
                 splitter.readSplitsForFile(inputFile);
             }
         }
-        return splitter.getAllSplits().toArray(new InputSplit[0]);
+
+        ArrayList<org.apache.hadoop.mapreduce.lib.input.FileSplit> newsplits = splitter.getAllSplits();
+        ArrayList<org.apache.hadoop.mapred.FileSplit> results = new ArrayList<org.apache.hadoop.mapred.FileSplit>(newsplits.size());
+        for(org.apache.hadoop.mapreduce.lib.input.FileSplit split : newsplits ){
+            results.add(new org.apache.hadoop.mapred.FileSplit(split) );
+
+        }
+        return results.toArray(new org.apache.hadoop.mapred.FileSplit[0]);
     }
 
     @Override
