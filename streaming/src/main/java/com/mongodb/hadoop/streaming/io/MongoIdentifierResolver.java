@@ -8,7 +8,6 @@ import org.apache.hadoop.streaming.io.IdentifierResolver;
 public class MongoIdentifierResolver extends IdentifierResolver {
     @Override
     public void resolve(String identifier) {
-        log.info("Resolving: " + identifier);
         if (identifier.equalsIgnoreCase(MONGODB_ID) || 
             identifier.equalsIgnoreCase(MONGO_ID) || 
             identifier.equalsIgnoreCase(BSON_ID)) {

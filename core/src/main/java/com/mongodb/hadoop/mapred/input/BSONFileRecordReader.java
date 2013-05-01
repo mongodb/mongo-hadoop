@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.input;
+package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.BSONLoader;
@@ -9,10 +9,10 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.TaskAttemptContext;
+import org.apache.hadoop.mapred.FileSplit;
 import org.bson.*;
 
 import java.io.DataInputStream;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * limitations under the License.
  */
 
-public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritable> {
+public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private FileSplit fileSplit;
     private Configuration conf;
     private BSONLoader rdr;
@@ -55,19 +55,19 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
 	BasicBSONCallback callback = new BasicBSONCallback();
 	BasicBSONDecoder decoder = new BasicBSONDecoder();
 
-    @Override
-    public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
+    public BSONFileRecordReader(){ }
+
+    public void initialize(InputSplit inputSplit, Configuration conf) throws IOException {
         this.fileSplit = (FileSplit) inputSplit;
-        this.conf = context.getConfiguration();
+        this.conf = conf;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
 		in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
-        log.info(System.identityHashCode(this) + " ok - Creating record reader with input split: " + inputSplit.toString());
     }
 
     @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
+    public boolean next(NullWritable key, BSONWritable value) throws IOException {
 		try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
                 try{
@@ -81,12 +81,15 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             callback.reset();
             int bytesRead = decoder.decode(in, callback);
             BSONObject bo = (BSONObject)callback.get();
-			value = new BSONWritable(bo);
+            value.clear();
+            value.putAll(bo);
+
             numDocsRead++;
-            log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+            if(numDocsRead % 1000 == 0){
+                log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+            }
             return true;
 		}catch(Exception e){
-            e.printStackTrace();
             log.warn("Error reading key/value from bson file: " + e.getMessage());
             try{
                 this.close();
@@ -97,18 +100,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         }
     }
 
-    @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-        return NullWritable.get();
-    }
-
-    @Override
-    public BSONWritable getCurrentValue() throws IOException, InterruptedException {
-        return value;
-    }
-
-    @Override
-    public float getProgress() throws IOException, InterruptedException {
+    public float getProgress() throws IOException {
         if(this.finished)
             return 1f;
         if(in != null)
@@ -116,8 +108,27 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
         return 0f;
     }
 
+    public long getPos() throws IOException {
+        if(this.finished)
+            return this.fileSplit.getStart() + this.fileSplit.getLength();
+        if(in != null )
+            return in.getPos();
+        return this.fileSplit.getStart();
+    }
+
+    @Override
+    public NullWritable createKey(){
+        return NullWritable.get();
+    }
+
+    @Override
+    public BSONWritable createValue() {
+        return new BSONWritable();
+    }
+
     @Override
     public void close() throws IOException {
+        log.info("closing bson file split.");
         this.finished = true;
         if(this.in != null){
             in.close();

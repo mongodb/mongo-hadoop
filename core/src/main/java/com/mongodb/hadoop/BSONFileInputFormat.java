@@ -16,15 +16,34 @@ package com.mongodb.hadoop;
  */
 
 import com.mongodb.hadoop.input.BSONFileRecordReader;
+import com.mongodb.hadoop.util.BSONSplitter;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.conf.*;
 import java.io.IOException;
+
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import org.apache.commons.logging.*;
 
 
 public class BSONFileInputFormat extends FileInputFormat {
+
+    private static final Log log = LogFactory.getLog( BSONFileInputFormat.class );
 
     @Override
     public RecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -32,4 +51,30 @@ public class BSONFileInputFormat extends FileInputFormat {
         reader.initialize(split, context);
         return reader;
     }
+
+    public List<FileSplit> getSplits(JobContext context) throws IOException{
+        Configuration config = context.getConfiguration();
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(config);
+        Path[] inputPaths = splitter.getInputPaths();
+        List<FileStatus> filesToProcess = new ArrayList<FileStatus>();
+        for(Path inputPath : inputPaths){
+            filesToProcess.addAll(splitter.getFilesInPath(inputPath));
+        }
+        for(FileStatus inputFile : filesToProcess){
+			Path path = inputFile.getPath();
+            Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
+            FileSystem fs = path.getFileSystem(config);
+            try{
+                splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
+            }catch(BSONSplitter.NoSplitFileException nsfe){
+                splitter.readSplitsForFile(inputFile);
+            }
+        }
+        log.warn(splitter.getAllSplits().toString());
+
+        return splitter.getAllSplits();
+    }
+
+
 }

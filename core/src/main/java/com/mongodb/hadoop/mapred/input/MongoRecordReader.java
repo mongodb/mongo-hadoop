@@ -1,12 +1,13 @@
+// MongoRecordReader.java
 /*
- * Copyright 2011 10gen Inc.
- *
+ * Copyright 2010 10gen Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,39 +15,43 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.input;
+package com.mongodb.hadoop.mapred.input;
 
-// Mongo
-
-import com.mongodb.DBCursor;
-import com.mongodb.MongoException;
+import com.mongodb.*;
+import com.mongodb.hadoop.io.*;
+import com.mongodb.hadoop.input.MongoInputSplit;
 import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapred.*;
 import org.bson.*;
 
-// Hadoop
-// Commons
 
-public class MongoRecordReader extends RecordReader<Object, BSONObject> {
+@SuppressWarnings( "deprecation" )
+public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
     public MongoRecordReader( MongoInputSplit split ){
-        _split = split;
         _cursor = split.getCursor();
+        _keyField = split.getKeyField();
     }
 
-    @Override
     public void close(){
         if ( _cursor != null )
             _cursor.close();
     }
 
-    @Override
-    public Object getCurrentKey(){
-        return _current.get( _split.getKeyField() );
+    public BSONWritable createKey(){
+        return new BSONWritable();
     }
 
-    @Override
-    public BSONObject getCurrentValue(){
+
+    public BSONWritable createValue(){
+        return new BSONWritable();
+    }
+
+    public BSONWritable getCurrentKey(){
+        return new BSONWritable(new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") ));
+    }
+
+    public BSONWritable getCurrentValue(){
         return _current;
     }
 
@@ -64,18 +69,20 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
         }
     }
 
-    @Override
+    public long getPos(){
+        return 0; // no progress to be reported, just working on it
+    }
+
     public void initialize( InputSplit split, TaskAttemptContext context ){
         _total = 1.0f;
     }
 
-    @Override
     public boolean nextKeyValue(){
         try {
             if ( !_cursor.hasNext() )
                 return false;
 
-            _current = _cursor.next();
+            _current = new BSONWritable(_cursor.next());
             _seen++;
 
             return true;
@@ -85,13 +92,25 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
         }
     }
 
+    public boolean next( BSONWritable key, BSONWritable value ){
+        if ( nextKeyValue() ){
+            log.debug( "Had another k/v" );
+            key.put( "_id", getCurrentKey().get( "_id" ) );
+            value.clear();
+            value.putAll( (BSONObject)getCurrentValue() );
+            return true;
+        }
+        else{
+            log.info( "Cursor exhausted." );
+            return false;
+        }
+    }
 
-    private BSONObject _current;
-    private final MongoInputSplit _split;
     private final DBCursor _cursor;
+    private BSONWritable _current;
     private float _seen = 0;
     private float _total;
+    private String _keyField;
 
-    private static final Log LOG = LogFactory.getLog( MongoRecordReader.class );
-
+    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 }

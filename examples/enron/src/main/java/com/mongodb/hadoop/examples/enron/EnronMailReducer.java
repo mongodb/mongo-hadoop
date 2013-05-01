@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mongodb.hadoop.examples.treasury;
+package com.mongodb.hadoop.examples.enron;
 
 // Mongo
 
@@ -28,29 +28,27 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
-import com.mongodb.hadoop.io.BSONWritable;
 // Java
 import java.io.*;
 import java.util.*;
 
-/**
- * The treasury yield mapper.
- */
-public class TreasuryYieldMapper
-        extends Mapper<NullWritable, BSONObject, IntWritable, DoubleWritable> {
+public class EnronMailReducer
+	extends Reducer <BSONObject, IntWritable, BSONObject, IntWritable> {
+
+    private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
 
     @Override
-    public void map( final NullWritable pKey,
-                     final BSONObject pValue,
-                     final Context pContext )
+    public void reduce( final BSONObject pKey,
+                        final Iterable<IntWritable> pValues,
+                        final Context pContext )
             throws IOException, InterruptedException{
-
-        final int year = ((Date)pValue.get("_id")).getYear() + 1900;
-        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
-
-        pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
+        int sum = 0;
+        for ( final IntWritable value : pValues ){
+            sum += value.get();
+        }
+        pContext.write( pKey, new IntWritable(sum) );
     }
 
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldMapper.class );
+
 }
 
