@@ -18,6 +18,7 @@
 package com.mongodb.hadoop.io;
 
 import com.mongodb.*;
+import com.mongodb.hadoop.util.BSONComparator;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.io.*;
 import org.bson.*;
@@ -34,123 +35,25 @@ import java.util.*;
 @SuppressWarnings( "deprecation" )
 public class BSONWritable implements WritableComparable {
 
-    /**
-     * Constructs a new instance.
-     */
     public BSONWritable(){
         _doc = new BasicBSONObject();
     }
 
-    /**
-     * Copy constructor, copies data from an existing BSONWritable
-     *
-     * @param other The BSONWritable to copy from
-     */
-    public BSONWritable( BSONWritable other ){
-        this();
-        copy( other );
-    }
-
-    /**
-     * Constructs a new instance around an existing BSONObject
-     *
-     * @param doc
-     */
     public BSONWritable( BSONObject doc ){
         this();
-        putAll( doc );
-    }
-    
-    /**
-     * Clears the map of existing data, to make this object reusable since Hadoop expects it to be.
-     */
-    public void clear() {
-        ((BasicBSONObject)_doc).clear();
+        setDoc(doc);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#put(String , Object)
-     */
-    public Object put( String key, Object value ){
-        return _doc.put( key, value );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#putAll(BSONObject)
-     */
-    public void putAll( BSONObject otherDoc ){
-        _doc.putAll( otherDoc );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#putAll(Map)
-     */
-    public void putAll( Map otherMap ){
-        _doc.putAll( otherMap );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#get(String)
-     */
-    public Object get( String key ){
-        return _doc.get( key );
+    public void setDoc(BSONObject doc){
+        this._doc = doc;
     }
 
     public BSONObject getDoc(){
         return this._doc;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#toMap()
-     */
     public Map toMap(){
         return _doc.toMap();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#removeField(String)
-     */
-    public Object removeField( String key ){
-        return _doc.removeField( key );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#containsKey(String)
-     */
-    public boolean containsKey( String key ){
-        return _doc.containsKey( key );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#containsField(String)
-     */
-    public boolean containsField( String fieldName ){
-        return _doc.containsField( fieldName );
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @see BSONObject#keySet()
-     */
-    public Set<java.lang.String> keySet(){
-        return _doc.keySet();
     }
 
     /**
@@ -159,7 +62,6 @@ public class BSONWritable implements WritableComparable {
      * @see Writable#write(DataOutput)
      */
     public void write( DataOutput out ) throws IOException{
-
         BSONEncoder enc = new BasicBSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set( buf );
@@ -204,14 +106,7 @@ public class BSONWritable implements WritableComparable {
      */
     @Override
     public String toString(){
-        BSONEncoder enc = new BasicBSONEncoder();
-        BasicOutputBuffer buf = new BasicOutputBuffer();
-        enc.set( buf );
-        enc.putObject( _doc );
-        enc.done();
-        String str = buf.asString();
-        log.debug( "Output As String: '" + str + "'" );
-        return str;
+        return "<BSONWritable:" + this._doc.toString() + ">";
     }
 
     /**
@@ -241,12 +136,12 @@ public class BSONWritable implements WritableComparable {
 
 
     static{ // register this comparator
-        WritableComparator.define( BSONWritable.class, new BSONComparator() );
+        WritableComparator.define( BSONWritable.class, new BSONWritableComparator() );
     }
 
     public int compareTo( Object o ){
         if ( log.isTraceEnabled() ) log.trace( " ************ Compare: '" + this + "' to '" + o + "'" );
-        return new BSONComparator().compare( this, o );
+        return new BSONWritableComparator().compare( this, o );
     }
 
     private static final byte[] HEX_CHAR = new byte[] {
@@ -290,6 +185,9 @@ public class BSONWritable implements WritableComparable {
     public static Object toBSON(Object x) {
         if (x == null) return null;
         if (x instanceof Text || x instanceof UTF8) return x.toString();
+        if (x instanceof BSONWritable ){
+            return ((BSONWritable)x).getDoc();
+        }
         if (x instanceof Writable) {
             if (x instanceof AbstractMapWritable)
                 throw new IllegalArgumentException("ERROR: MapWritables are not presently supported for MongoDB Serialization.");
