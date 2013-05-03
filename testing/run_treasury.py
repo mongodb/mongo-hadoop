@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import logging
 import tempfile
 import shutil
 import unittest
@@ -259,7 +260,7 @@ class Standalone(unittest.TestCase):
 class TestBasic(Standalone):
 
     def test_treasury(self):
-        print "testing basic input source"
+        logging.info("testing basic input source")
         runjob(self.server_hostname, DEFAULT_PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
@@ -316,13 +317,13 @@ class BaseShardedTest(unittest.TestCase):
         shards = list(ms_config.shards.find())
         numchunks = ms_config.chunks.count()
         chunk_source = ms_config.chunks.find_one()['shard']
-        print "chunk source", chunk_source
+        logging.info("chunk source", chunk_source)
         chunk_dest = [s['_id'] for s in shards if s['_id'] != chunk_source][0]
-        print "chunk dest", chunk_dest
+        logging.info("chunk dest", chunk_dest)
         #shuffle chunks around
         for i in xrange(0, numchunks/2):
             chunk_to_move = ms_config.chunks.find_one({"shard":chunk_source})
-            print "moving", chunk_to_move, "from", chunk_source, "to", chunk_dest
+            logging.info("moving", chunk_to_move, "from", chunk_source, "to", chunk_dest)
             try:
                 mongos_admindb.command("moveChunk", "mongo_hadoop.yield_historical.in", find=chunk_to_move['min'], to=chunk_dest);
             except Exception, e:
@@ -338,7 +339,7 @@ class BaseShardedTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        print "killing sharded servers!"
+        logging.info("killing sharded servers!")
         self.mongos.kill_all_members(sig=9)
         self.mongos2.kill_all_members(sig=9)
         self.shard1.kill_all_members(sig=9)
@@ -358,27 +359,27 @@ class TestSharded(BaseShardedTest):
     #run a simple job against a sharded cluster, going against the mongos directly
 
     def test_treasury(self):
-        print "Testing basic mongos"
+        logging.info("Testing basic mongos")
         runjob(self.mongos_hostname, DEFAULT_PARAMETERS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
     def test_treasury_multi_mongos(self):
-        print "Testing sharded cluster input with multiplexed mongos"
-        print "before"
-        print self.mongos_connection['admin'].command("serverStatus")['opcounters']
-        print self.mongos2_connection['admin'].command("serverStatus")['opcounters']
+        logging.info("Testing sharded cluster input with multiplexed mongos")
+        logging.info("before")
+        logging.info(self.mongos_connection['admin'].command("serverStatus")['opcounters'])
+        logging.info(self.mongos2_connection['admin'].command("serverStatus")['opcounters'])
         runjob(self.mongos_hostname, DEFAULT_PARAMETERS, output_hostnames=[self.mongos_hostname, self.mongos2_hostname])
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
-        print "after"
-        print self.mongos_connection['admin'].command("serverStatus")['opcounters']
-        print self.mongos2_connection['admin'].command("serverStatus")['opcounters']
+        logging.info("after")
+        logging.info(self.mongos_connection['admin'].command("serverStatus")['opcounters'])
+        logging.info(self.mongos2_connection['admin'].command("serverStatus")['opcounters'])
         self.assertTrue(compare_results(out_col))
 
 class TestShardedGTE_LT(BaseShardedTest):
 
     def test_gte_lt(self):
-        print "Testing sharded cluster input with gt/lt query formats"
+        logging.info("Testing sharded cluster input with gt/lt query formats")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.use_range_queries'] = 'true'
 
@@ -389,12 +390,12 @@ class TestShardedGTE_LT(BaseShardedTest):
         runjob(self.mongos_hostname, PARAMETERS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
-        print "showing profiler results"
+        logging.info("showing profiler results")
         for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            print line
+            logging.info(line)
 
         for line in list(shard2db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            print line
+            logging.info(line)
 
         PARAMETERS['mongo.input.query'] = '{"_id":{"\$gt":{"\$date":1182470400000}}}'
         out_col.drop()
@@ -403,16 +404,16 @@ class TestShardedGTE_LT(BaseShardedTest):
         self.assertEqual(out_col.count(), 0)
 
         for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            print line
+            logging.info(line)
 
 class TestShardedNoMongos(BaseShardedTest):
     #run a simple job against a sharded cluster, going directly to shards (bypass mongos)
 
     def test_treasury(self):
-        print "Testing sharded cluster input source, targeting shards directly"
+        logging.info("Testing sharded cluster input source, targeting shards directly")
         #PARAMETERS = DEFAULT_PARAMETERS.copy()
         #PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
-        #print "running job against shards directly"
+        #logging.info("running job against shards directly")
         #runjob(self.mongos_hostname, PARAMETERS)
         #out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         #self.assertTrue(compare_results(out_col))
@@ -424,12 +425,12 @@ class TestShardedNoMongos(BaseShardedTest):
         ms_config = self.mongos_connection['config']
 
         chunk_to_duplicate = ms_config.chunks.find_one({"shard":self.shard1.name})
-        print "duplicating chunk", chunk_to_duplicate
+        logging.info("duplicating chunk", chunk_to_duplicate)
         chunk_query = {"_id":{"$gte":chunk_to_duplicate['min']['_id'], "$lt": chunk_to_duplicate['max']['_id']}}
         data_to_duplicate = list(self.mongos_connection['mongo_hadoop']['yield_historical.in'].find(chunk_query))
         destination = pymongo.Connection(self.shard2.get_primary()[0])
         for doc in data_to_duplicate:
-            #print doc['_id'], "was on shard ", self.shard1.name, "now on ", self.shard2.name
+            #logging.info(doc['_id'], "was on shard ", self.shard1.name, "now on ", self.shard2.name)
             #print "inserting", doc
             destination['mongo_hadoop']['yield_historical.in'].insert(doc, safe=True)
         
@@ -455,7 +456,7 @@ class TestStreaming(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_treasury(self):
-        print "Testing basic streaming job"
+        logging.info("Testing basic streaming job")
         PARAMETERS = {}
         PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
         runstreamingjob(self.server_hostname, params=PARAMETERS)
@@ -469,7 +470,7 @@ class TestS3BSON(Standalone):
 
     @unittest.skipIf(not AWS_ACCESSKEY or not AWS_SECRET, 'AWS credentials not provided')
     def test_treasury(self):
-        print "Testing static bson on S3 filesystem"
+        logging.info("Testing static bson on S3 filesystem")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
@@ -499,7 +500,7 @@ class TestStaticBSON(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_streaming_static(self):
-        print "Testing streaming static bson"
+        logging.info("Testing streaming static bson")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mapred.max.split.size"] = '200000'
         inputpath = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson")
@@ -514,7 +515,7 @@ class TestStaticBSON(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_streaming_s3_static(self):
-        print "Testing streaming static bson on s3"
+        logging.info("Testing streaming static bson on s3")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mapred.max.split.size"] = '200000'
         PARAMETERS["fs.s3.awsAccessKeyId"] = AWS_ACCESSKEY
@@ -529,18 +530,18 @@ class TestStaticBSON(Standalone):
 
 
     def test_treasury(self):
-        print "Testing bsoninput with no splits"
+        logging.info("Testing bsoninput with no splits")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
-        print PARAMETERS
+        logging.info(PARAMETERS)
         runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"), PARAMETERS, self.server_hostname)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
         #runjob(self.server_hostname, DEFAULT_PARAMETERS)
 
     def test_prebuilt_splits(self):
-        print "Testing bsoninput with pre-built splits"
+        logging.info("Testing bsoninput with pre-built splits")
         #make sure we can do the right thing when the splits are
         #provided by some other tool (e.g. python script)
         PARAMETERS = DEFAULT_PARAMETERS.copy()
@@ -553,7 +554,7 @@ class TestStaticBSON(Standalone):
 class TestShardedAuth(BaseShardedTest):
 
     def test_treasury(self):
-        print "Testing sharding with authentication on"
+        logging.info("Testing sharding with authentication on")
         self.mongos_connection['config'].add_user("test_user","test_pw")
         self.mongos_connection['mongo_hadoop'].add_user("test_user","test_pw")
         self.mongos_connection['admin'].add_user("test_user","test_pw")
@@ -586,7 +587,7 @@ class TestShardedAuth(BaseShardedTest):
 class TestStandaloneAuth(TestBasic):
 
     def test_treasury(self):
-        print "Testing standalone with authentication on"
+        logging.info("Testing standalone with authentication on")
         self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.auth.db'] = 'admin'
@@ -604,7 +605,7 @@ class TestStandaloneAuth(TestBasic):
 class TestStandaloneWithQuery(Standalone):
 
     def test_treasury(self):
-        print "Testing standalone with query"
+        logging.info("Testing standalone with query")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
         runjob(self.server_hostname, PARAMETERS)
@@ -616,7 +617,7 @@ class TestStandaloneWithQuery(Standalone):
 class TestShardedWithQuery(BaseShardedTest):
 
     def test_treasury(self):
-        print "Testing queried input against sharded cluster"
+        logging.info("Testing queried input against sharded cluster")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         #Only use a subset of dates
         PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
@@ -628,7 +629,7 @@ class TestShardedWithQuery(BaseShardedTest):
 class TestUpdateWritable(Standalone):
 
     def test_treasury(self):
-        print "Testing UpdateWriteable against standalone server"
+        logging.info("Testing UpdateWriteable against standalone server")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldUpdateReducer"
         runjob(self.server_hostname, PARAMETERS)
@@ -637,19 +638,19 @@ class TestUpdateWritable(Standalone):
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         results = list(out_col.find({}).sort("_id"))
         for r in results:
-            print "verifying update for", r.get("_id", None)
+            logging.info("verifying update for", r.get("_id", None))
             self.assertEqual(len(r.get('calculatedAt', [])), 2)
             self.assertEqual(r.get('numCalculations', 0), 2)
 class TestOldMRApi(Standalone):
 
     def test_treasury(self):
-        print "Testing OLD Mapreduce API against standalone server"
+        logging.info("Testing OLD Mapreduce API against standalone server")
         runjob(self.server_hostname, DEFAULT_OLD_PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
     def test_treasury_query(self):
-        print "Testing OLD Mapreduce API against standalone server with query"
+        logging.info("Testing OLD Mapreduce API against standalone server with query")
         PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
         PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
         runjob(self.server_hostname, PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
