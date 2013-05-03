@@ -37,10 +37,10 @@ import java.util.*;
  * The treasury yield mapper.
  */
 public class TreasuryYieldMapper
-        extends Mapper<NullWritable, BSONObject, IntWritable, DoubleWritable> {
+        extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
 
     @Override
-    public void map( final NullWritable pKey,
+    public void map( final Object pKey,
                      final BSONObject pValue,
                      final Context pContext )
             throws IOException, InterruptedException{
