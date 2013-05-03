@@ -350,6 +350,8 @@ class BaseShardedTest(unittest.TestCase):
             shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
             shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
 
+        time.sleep(5)
+
 
 class TestSharded(BaseShardedTest):
     #run a simple job against a sharded cluster, going against the mongos directly
