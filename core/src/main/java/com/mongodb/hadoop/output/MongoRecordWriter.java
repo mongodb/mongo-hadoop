@@ -108,21 +108,19 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
         if ( key instanceof BSONWritable ){
             o.put("_id", ((BSONWritable)key).getDoc());
-        }
-        else if ( key instanceof BSONObject ){
+        } else if ( key instanceof BSONObject ){
             o.put( "_id", key );
-        }
-        else{
+        } else {
             o.put( "_id", BSONWritable.toBSON(key) );
         }
 
-        if ( value instanceof MongoOutput ){
+        if (value instanceof BSONWritable ){
+            o.putAll( ((BSONWritable)value).getDoc() );
+        } else if ( value instanceof MongoOutput ){
             ( (MongoOutput) value ).appendAsValue( o );
-        }
-        else if ( value instanceof BSONObject ){
+        } else if ( value instanceof BSONObject ){
             o.putAll( (BSONObject) value );
-        }
-        else{
+        } else{
             o.put( "value", BSONWritable.toBSON( value ) );
         }
 
