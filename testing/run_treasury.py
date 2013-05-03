@@ -12,6 +12,7 @@ from bson_splitter import split_bson
 from datetime import timedelta
 import time
 
+CLEANUP_TMP=os.environ.get('CLEANUP_TMP', True)
 HADOOP_HOME=os.environ['HADOOP_HOME']
 HADOOP_RELEASE=os.environ.get('HADOOP_RELEASE',None)
 AWS_SECRET=os.environ.get('AWS_SECRET',None) 
@@ -342,11 +343,12 @@ class BaseShardedTest(unittest.TestCase):
         self.shard1.kill_all_members()
         self.shard2.kill_all_members()
         self.configdb.kill_all_members()
-        shutil.rmtree(os.path.join(TEMPDIR,"mongos"))
-        shutil.rmtree(os.path.join(TEMPDIR,"mongos2"))
-        shutil.rmtree(os.path.join(TEMPDIR,"config_db"))
-        shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
-        shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
+        if CLEANUP_TMP != 'false':
+            shutil.rmtree(os.path.join(TEMPDIR,"mongos"))
+            shutil.rmtree(os.path.join(TEMPDIR,"mongos2"))
+            shutil.rmtree(os.path.join(TEMPDIR,"config_db"))
+            shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
+            shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
 
 
 class TestSharded(BaseShardedTest):
