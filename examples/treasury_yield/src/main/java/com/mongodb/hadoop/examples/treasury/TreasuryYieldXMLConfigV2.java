@@ -41,14 +41,13 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
 
     static class TreasuryYieldMapperV2 
         extends MapReduceBase
-        implements Mapper<BSONObject, BSONObject, IntWritable, DoubleWritable> {
+        implements Mapper<BSONWritable, BSONWritable, IntWritable, DoubleWritable> {
 
         @Override
-        public void map(BSONObject key, BSONObject value, OutputCollector<IntWritable, DoubleWritable> output, Reporter reporter) throws IOException {
-            System.out.println(key.toString());
-            final int year = ((Date)value.get("_id")).getYear() + 1900;
+        public void map(BSONWritable key, BSONWritable value, OutputCollector<IntWritable, DoubleWritable> output, Reporter reporter) throws IOException {
+            final int year = ((Date)value.getDoc().get("_id")).getYear() + 1900;
             //final int year = key.getYear() + 1900;
-            double bid10Year = ( (Number) value.get( "bc10Year" ) ).doubleValue();
+            double bid10Year = ( (Number) value.getDoc().get( "bc10Year" ) ).doubleValue();
             output.collect( new IntWritable( year ), new DoubleWritable( bid10Year ) );
         }
 
