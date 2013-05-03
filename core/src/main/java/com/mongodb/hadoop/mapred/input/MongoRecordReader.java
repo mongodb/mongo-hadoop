@@ -17,6 +17,7 @@
 
 package com.mongodb.hadoop.mapred.input;
 
+import java.io.IOException;
 import com.mongodb.*;
 import com.mongodb.hadoop.io.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
@@ -48,23 +49,21 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     }
 
     public BSONWritable getCurrentKey(){
-        return new BSONWritable(new BasicDBObject( "_id", _current.get(_keyField != null ? _keyField : "_id") ));
+        return this.currentKey;
     }
 
     public BSONWritable getCurrentValue(){
-        return _current;
+        return this.currentVal;
     }
 
     public float getProgress(){
         try {
             if ( _cursor.hasNext() ){
                 return 0.0f;
-            }
-            else{
+            }else{
                 return 1.0f;
             }
-        }
-        catch ( MongoException e ) {
+        } catch ( MongoException e ) {
             return 1.0f;
         }
     }
@@ -77,37 +76,37 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
         _total = 1.0f;
     }
 
-    public boolean nextKeyValue(){
+    public boolean nextKeyValue() throws IOException{
         try {
             if ( !_cursor.hasNext() )
                 return false;
 
-            _current = new BSONWritable(_cursor.next());
+            DBObject next = _cursor.next();
+            this.currentVal.setDoc(next);
+            this.currentKey.setDoc(new BasicBSONObject("_id", next.get("_id")));
             _seen++;
 
             return true;
-        }
-        catch ( MongoException e ) {
-            return false;
+        } catch ( MongoException e ) {
+            throw new IOException("Couldn't get next key/value from mongodb: ", e);
         }
     }
 
-    public boolean next( BSONWritable key, BSONWritable value ){
-        if ( nextKeyValue() ){
-            log.debug( "Had another k/v" );
-            key.put( "_id", getCurrentKey().get( "_id" ) );
-            value.clear();
-            value.putAll( (BSONObject)getCurrentValue() );
-            return true;
-        }
-        else{
-            log.info( "Cursor exhausted." );
-            return false;
-        }
-    }
+     public boolean next( BSONWritable key, BSONWritable value ) throws IOException{
+         if ( nextKeyValue() ){
+             key.setDoc(this.currentKey.getDoc());
+             value.setDoc(this.currentVal.getDoc());
+             return true;
+         } else{
+             log.info( "Cursor exhausted." );
+             return false;
+         }
+     }
 
     private final DBCursor _cursor;
-    private BSONWritable _current;
+    private BSONWritable currentVal = new BSONWritable();
+    private BSONWritable currentKey = new BSONWritable();
+    private BasicDBObject _current;
     private float _seen = 0;
     private float _total;
     private String _keyField;

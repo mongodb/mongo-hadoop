@@ -24,22 +24,22 @@ import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.RecordReader;
 
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.io.*;
+import org.bson.BSONObject;
 import com.mongodb.BasicDBObject;
 
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
 
-@SuppressWarnings("deprecation")
-    public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split,
-                                                                    JobConf job,
-                                                                    Reporter reporter) {
+    @SuppressWarnings("deprecation") 
+    public org.apache.hadoop.mapred.RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, JobConf job, Reporter reporter) {
         if (!(split instanceof MongoInputSplit))
             throw new IllegalStateException("Creation of a new RecordReader requires a MongoInputSplit instance.");
 

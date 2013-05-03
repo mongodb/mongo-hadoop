@@ -40,13 +40,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * limitations under the License.
  */
 
-public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritable> {
+public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject> {
     private FileSplit fileSplit;
     private Configuration conf;
     private BSONLoader rdr;
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
-    private BSONWritable value;
+    private BSONObject value;
 	byte[] headerBuf = new byte[4];
 	private FSDataInputStream in;
     private int numDocsRead = 0;
@@ -81,7 +81,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
             callback.reset();
             int bytesRead = decoder.decode(in, callback);
             BSONObject bo = (BSONObject)callback.get();
-			value = new BSONWritable(bo);
+			value = bo;
             numDocsRead++;
             log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             return true;
@@ -103,7 +103,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONWritabl
     }
 
     @Override
-    public BSONWritable getCurrentValue() throws IOException, InterruptedException {
+    public BSONObject getCurrentValue() throws IOException, InterruptedException {
         return value;
     }
 

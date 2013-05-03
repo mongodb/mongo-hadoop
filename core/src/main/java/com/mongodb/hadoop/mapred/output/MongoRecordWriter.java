@@ -45,36 +45,39 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
 
     public void write(K key, V value) throws IOException {
-        final DBObject o = new BasicDBObject();
+         final DBObject o = new BasicDBObject();
 
-        if (log.isTraceEnabled()) log.trace( "Writing out data {k: " + key + ", value:  " + value);
-        if (key instanceof MongoOutput) {
-            ((MongoOutput) key).appendAsKey(o);
+        if ( key instanceof BSONWritable ){
+            o.put("_id", ((BSONWritable)key).getDoc());
         }
-        else if (key instanceof BSONObject) {
-            o.put("_id", key);
+        else if ( key instanceof BSONObject ){
+            o.put( "_id", key );
         }
-        else {
-            o.put("_id", BSONWritable.toBSON(key));
+        else{
+            o.put( "_id", BSONWritable.toBSON(key) );
         }
 
-        if (value instanceof MongoOutput) {
-            ((MongoOutput) value).appendAsValue(o);
+        if (value instanceof BSONWritable ){
+            o.putAll( ((BSONWritable)value).getDoc() );
         }
-        else if (value instanceof BSONObject) {
-            o.putAll((BSONObject) value);
+        else if ( value instanceof MongoOutput ){
+            ( (MongoOutput) value ).appendAsValue( o );
         }
-        else {
-            o.put("value", BSONWritable.toBSON(value));
+        else if ( value instanceof BSONObject ){
+            o.putAll( (BSONObject) value );
+        }
+        else{
+            o.put( "value", BSONWritable.toBSON( value ) );
         }
 
         try {
-            DBCollection collection = getDbCollectionByRoundRobin();
-            collection.save(o);
-        }
-        catch (final MongoException e) {
-            throw new IOException("can't write to mongo", e);
-        }
+            DBCollection dbCollection = getDbCollectionByRoundRobin();
+            dbCollection.save(o);
+        } catch ( final MongoException e ) {
+            e.printStackTrace();
+            throw new IOException( "can't write to mongo", e );
+        } 
+
     }
 
     private synchronized DBCollection getDbCollectionByRoundRobin() {

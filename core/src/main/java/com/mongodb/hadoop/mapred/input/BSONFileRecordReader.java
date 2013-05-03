@@ -81,8 +81,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
             callback.reset();
             int bytesRead = decoder.decode(in, callback);
             BSONObject bo = (BSONObject)callback.get();
-            value.clear();
-            value.putAll(bo);
+            value.setDoc(bo);
 
             numDocsRead++;
             if(numDocsRead % 1000 == 0){
@@ -90,7 +89,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
             }
             return true;
 		}catch(Exception e){
-            log.warn("Error reading key/value from bson file: " + e.getMessage());
+            log.error("Error reading key/value from bson file: " + e.getMessage());
             try{
                 this.close();
             }catch(Exception e2){
