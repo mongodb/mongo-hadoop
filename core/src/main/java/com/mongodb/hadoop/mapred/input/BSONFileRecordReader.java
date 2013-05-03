@@ -84,8 +84,8 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
             value.setDoc(bo);
 
             numDocsRead++;
-            if(numDocsRead % 1000 == 0){
-                log.info("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+            if(numDocsRead % 5000 == 0){
+                log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
             return true;
 		}catch(Exception e){
