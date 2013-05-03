@@ -3,6 +3,7 @@ package com.mongodb.hadoop.streaming.io;
 import com.mongodb.*;
 import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.*;
+import org.bson.BSONObject;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.streaming.PipeMapRed;
 import org.apache.hadoop.streaming.io.OutputReader;
@@ -23,10 +24,11 @@ public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> 
     public boolean readKeyValue() throws IOException {
         // Actually, just read the value as the key is embedded.
         try {
+            //TODO this could be more efficient.
             bson = new BSONWritable();
             bson.readFields( in );
             // If successful we'll have an _id field
-            return bson.containsKey("_id");
+            return bson.getDoc().containsKey("_id");
         } catch ( IndexOutOfBoundsException ioob ) {
             // No more data
             log.info("No more data; no key/value pair read.");
@@ -36,7 +38,7 @@ public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> 
 
     @Override
     public BSONWritable getCurrentKey() throws IOException {
-        return new BSONWritable(new BasicDBObject(  "_id", bson.get("_id")));
+        return new BSONWritable(new BasicDBObject(  "_id", bson.getDoc().get("_id")));
     }
 
     @Override
