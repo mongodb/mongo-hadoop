@@ -259,6 +259,7 @@ class Standalone(unittest.TestCase):
 class TestBasic(Standalone):
 
     def test_treasury(self):
+        print "testing basic input source"
         runjob(self.server_hostname, DEFAULT_PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
@@ -338,11 +339,11 @@ class BaseShardedTest(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         print "killing sharded servers!"
-        self.mongos.kill_all_members()
-        self.mongos2.kill_all_members()
-        self.shard1.kill_all_members()
-        self.shard2.kill_all_members()
-        self.configdb.kill_all_members()
+        self.mongos.kill_all_members(sig=9)
+        self.mongos2.kill_all_members(sig=9)
+        self.shard1.kill_all_members(sig=9)
+        self.shard2.kill_all_members(sig=9)
+        self.configdb.kill_all_members(sig=9)
         if CLEANUP_TMP != 'false':
             shutil.rmtree(os.path.join(TEMPDIR,"mongos"))
             shutil.rmtree(os.path.join(TEMPDIR,"mongos2"))
@@ -357,11 +358,13 @@ class TestSharded(BaseShardedTest):
     #run a simple job against a sharded cluster, going against the mongos directly
 
     def test_treasury(self):
+        print "Testing basic mongos"
         runjob(self.mongos_hostname, DEFAULT_PARAMETERS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
     def test_treasury_multi_mongos(self):
+        print "Testing sharded cluster input with multiplexed mongos"
         print "before"
         print self.mongos_connection['admin'].command("serverStatus")['opcounters']
         print self.mongos2_connection['admin'].command("serverStatus")['opcounters']
@@ -375,6 +378,7 @@ class TestSharded(BaseShardedTest):
 class TestShardedGTE_LT(BaseShardedTest):
 
     def test_gte_lt(self):
+        print "Testing sharded cluster input with gt/lt query formats"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.use_range_queries'] = 'true'
 
@@ -405,6 +409,7 @@ class TestShardedNoMongos(BaseShardedTest):
     #run a simple job against a sharded cluster, going directly to shards (bypass mongos)
 
     def test_treasury(self):
+        print "Testing sharded cluster input source, targeting shards directly"
         #PARAMETERS = DEFAULT_PARAMETERS.copy()
         #PARAMETERS['mongo.input.split.read_shard_chunks'] = 'true'
         #print "running job against shards directly"
@@ -450,6 +455,7 @@ class TestStreaming(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_treasury(self):
+        print "Testing basic streaming job"
         PARAMETERS = {}
         PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
         runstreamingjob(self.server_hostname, params=PARAMETERS)
@@ -463,6 +469,7 @@ class TestS3BSON(Standalone):
 
     @unittest.skipIf(not AWS_ACCESSKEY or not AWS_SECRET, 'AWS credentials not provided')
     def test_treasury(self):
+        print "Testing static bson on S3 filesystem"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
@@ -492,6 +499,7 @@ class TestStaticBSON(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_streaming_static(self):
+        print "Testing streaming static bson"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mapred.max.split.size"] = '200000'
         inputpath = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson")
@@ -506,6 +514,7 @@ class TestStaticBSON(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_streaming_s3_static(self):
+        print "Testing streaming static bson on s3"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mapred.max.split.size"] = '200000'
         PARAMETERS["fs.s3.awsAccessKeyId"] = AWS_ACCESSKEY
@@ -520,6 +529,7 @@ class TestStaticBSON(Standalone):
 
 
     def test_treasury(self):
+        print "Testing bsoninput with no splits"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
@@ -530,6 +540,7 @@ class TestStaticBSON(Standalone):
         #runjob(self.server_hostname, DEFAULT_PARAMETERS)
 
     def test_prebuilt_splits(self):
+        print "Testing bsoninput with pre-built splits"
         #make sure we can do the right thing when the splits are
         #provided by some other tool (e.g. python script)
         PARAMETERS = DEFAULT_PARAMETERS.copy()
@@ -542,6 +553,7 @@ class TestStaticBSON(Standalone):
 class TestShardedAuth(BaseShardedTest):
 
     def test_treasury(self):
+        print "Testing sharding with authentication on"
         self.mongos_connection['config'].add_user("test_user","test_pw")
         self.mongos_connection['mongo_hadoop'].add_user("test_user","test_pw")
         self.mongos_connection['admin'].add_user("test_user","test_pw")
@@ -574,6 +586,7 @@ class TestShardedAuth(BaseShardedTest):
 class TestStandaloneAuth(TestBasic):
 
     def test_treasury(self):
+        print "Testing standalone with authentication on"
         self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.auth.db'] = 'admin'
@@ -591,6 +604,7 @@ class TestStandaloneAuth(TestBasic):
 class TestStandaloneWithQuery(Standalone):
 
     def test_treasury(self):
+        print "Testing standalone with query"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.query'] = '{_id:{\$gt:{\$date:883440000000}}}'
         runjob(self.server_hostname, PARAMETERS)
@@ -602,6 +616,7 @@ class TestStandaloneWithQuery(Standalone):
 class TestShardedWithQuery(BaseShardedTest):
 
     def test_treasury(self):
+        print "Testing queried input against sharded cluster"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         #Only use a subset of dates
         PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
@@ -613,6 +628,7 @@ class TestShardedWithQuery(BaseShardedTest):
 class TestUpdateWritable(Standalone):
 
     def test_treasury(self):
+        print "Testing UpdateWriteable against standalone server"
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.reducer"] = "com.mongodb.hadoop.examples.treasury.TreasuryYieldUpdateReducer"
         runjob(self.server_hostname, PARAMETERS)
@@ -627,11 +643,13 @@ class TestUpdateWritable(Standalone):
 class TestOldMRApi(Standalone):
 
     def test_treasury(self):
+        print "Testing OLD Mapreduce API against standalone server"
         runjob(self.server_hostname, DEFAULT_OLD_PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
     def test_treasury_query(self):
+        print "Testing OLD Mapreduce API against standalone server with query"
         PARAMETERS = DEFAULT_OLD_PARAMETERS.copy()
         PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
         runjob(self.server_hostname, PARAMETERS, className="com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfigV2")
