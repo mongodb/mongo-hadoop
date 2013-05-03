@@ -12,7 +12,7 @@ import java.io.*;
 import java.util.*;
 
 public class EnronMailMapper
-	extends Mapper<NullWritable,BSONObject, BSONObject, IntWritable>{
+	extends Mapper<NullWritable,BSONObject, BSONWritable, IntWritable>{
 
     private static final Log LOG = LogFactory.getLog( EnronMailMapper.class );
 
