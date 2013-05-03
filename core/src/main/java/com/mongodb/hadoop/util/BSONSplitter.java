@@ -88,28 +88,27 @@ public class BSONSplitter extends Configured implements Tool {
         return collectedSplits;
     }
 
-    public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, Path inputFile) throws IOException{//{{{
-        log.info("object: "  + obj);
+    public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, FileStatus inputFile) throws IOException{//{{{
         long start = (Long)obj.get("s");
         long splitLen = (Long)obj.get("l");
         try{
             BlockLocation[] blkLocations = fs.getFileBlockLocations(inputFile, start, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
-            return new FileSplit(inputFile, start, splitLen, blkLocations[blockIndex].getHosts());
+            return new FileSplit(inputFile.getPath(), start, splitLen, blkLocations[blockIndex].getHosts());
         }catch(IOException e){
             log.warn("Couldn't find block locations when constructing input split from BSON. Using non-block-aware input split; " + e.getMessage());
-            return new FileSplit(inputFile, start, splitLen, null);
+            return new FileSplit(inputFile.getPath(), start, splitLen, null);
         }
     }//}}}
 
-    public FileSplit createFileSplit(Path path, FileSystem fs, long splitStart, long splitLen){//{{{
+    public FileSplit createFileSplit(FileStatus inFile, FileSystem fs, long splitStart, long splitLen){//{{{
         try{
-            BlockLocation[] blkLocations = fs.getFileBlockLocations(path, splitStart, splitLen);
+            BlockLocation[] blkLocations = fs.getFileBlockLocations(inFile, splitStart, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
-            return new FileSplit(path, splitStart, splitLen, blkLocations[blockIndex].getHosts());
+            return new FileSplit(inFile.getPath(), splitStart, splitLen, blkLocations[blockIndex].getHosts());
         }catch(IOException e){
             log.warn("Couldn't find block locations when constructing input split from byte offset. Using non-block-aware input split; " + e.getMessage());
-            return new FileSplit(path, splitStart, splitLen, null);
+            return new FileSplit(inFile.getPath(), splitStart, splitLen, null);
         }
     }//}}}
 
@@ -129,7 +128,7 @@ public class BSONSplitter extends Configured implements Tool {
             callback.reset();
             bsonDec.decode(fsDataStream, callback);
             BSONObject splitInfo = (BSONObject)callback.get();
-            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile.getPath()));
+            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
         }
         this.splitsMap.put(inputFile.getPath(), splits);
     }//}}}
@@ -159,7 +158,7 @@ public class BSONSplitter extends Configured implements Tool {
                     LazyBSONObject bo = (LazyBSONObject)lazyCallback.get();
                     int bsonDocSize = bo.getBSONSize();
                     if(curSplitLen + bsonDocSize >= splitSize){
-                        FileSplit split = createFileSplit(file.getPath(), fs, curSplitStart, curSplitLen);
+                        FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
                         splits.add(split);
                         log.info("Creating new split (" + splits.size() + ") " + split.toString());
                         curSplitStart = fsDataStream.getPos() - bsonDocSize;
@@ -173,7 +172,7 @@ public class BSONSplitter extends Configured implements Tool {
                     }
                 }
                 if(curSplitLen > 0){
-                    FileSplit split = createFileSplit(file.getPath(), fs, curSplitStart, curSplitLen);
+                    FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
                     splits.add(split);
                     log.info("Final split (" + splits.size() + ") " + split.toString());
                 }

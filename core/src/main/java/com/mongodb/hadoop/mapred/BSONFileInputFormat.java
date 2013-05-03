@@ -62,8 +62,8 @@ public class BSONFileInputFormat extends FileInputFormat {
         ArrayList<org.apache.hadoop.mapreduce.lib.input.FileSplit> newsplits = splitter.getAllSplits();
         ArrayList<org.apache.hadoop.mapred.FileSplit> results = new ArrayList<org.apache.hadoop.mapred.FileSplit>(newsplits.size());
         for(org.apache.hadoop.mapreduce.lib.input.FileSplit split : newsplits ){
-            results.add(new org.apache.hadoop.mapred.FileSplit(split) );
-
+            org.apache.hadoop.mapred.FileSplit fsplit = new org.apache.hadoop.mapred.FileSplit(split.getPath(), split.getStart(), split.getLength(), split.getLocations());
+            results.add(fsplit);
         }
         return results.toArray(new org.apache.hadoop.mapred.FileSplit[0]);
     }
