@@ -147,7 +147,7 @@ class MongosManager(object):
                 s.close()
             return_code = proc.poll()
 
-        kill_all_members() #TODO
+        self.kill_all_members(sig=9) #TODO
         return False
 
     def kill_all_members(self, sig=2):
@@ -196,7 +196,7 @@ class StandaloneManager(object):
                 s.close()
 
             return_code = proc.poll()
-        kill_all_members() #TODO
+        self.kill_all_members(sig=9) #TODO
         return False
 
     def kill_all_members(self, sig=2):
@@ -337,8 +337,8 @@ class ReplicaSetManager(object):
 
             del self.members_info[member]
 
-    def kill_all_members(self):
-        self.kill_members(self.members_info.keys())
+    def kill_all_members(self, sig=2):
+        self.kill_members(self.members_info.keys(), sig=sig)
 
     def kill_primary(self):
         primary = self.get_primary()
@@ -405,7 +405,7 @@ class ReplicaSetManager(object):
             " members and quitting" % (port, return_code)
         )
 
-        kill_all_members() #TODO
+        self.kill_all_members(sig=0) #TODO
         return False
 
 
