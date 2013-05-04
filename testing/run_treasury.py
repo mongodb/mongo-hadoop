@@ -212,7 +212,11 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
            outputformat='com.mongodb.hadoop.mapred.MongoOutputFormat'):
 
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
-    cmd += ['jar','$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*']
+    if HADOOP_RELEASE.startswith('cdh3'):
+        #Special case for cdh3, as it uses non-default location.
+        cmd += ['jar','$HADOOP_HOME/contrib/streaming/hadoop-streaming*']
+    else:
+        cmd += ['jar','$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*']
     cmd += ["-libjars", STREAMING_JARPATH]
     cmd += ["-input", inputpath]
     cmd += ["-output", outputpath]
