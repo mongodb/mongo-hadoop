@@ -264,6 +264,7 @@ class Standalone(unittest.TestCase):
         print "standalone clas: killing mongod"
         self.server.kill_all_members()
         shutil.rmtree(os.path.join(TEMPDIR,"standalone1"))
+        time.sleep(7.5)
 
 class TestBasic(Standalone):
 
@@ -360,7 +361,7 @@ class BaseShardedTest(unittest.TestCase):
             shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
             shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
 
-        time.sleep(5)
+        time.sleep(7.5)
 
 
 class TestSharded(BaseShardedTest):
