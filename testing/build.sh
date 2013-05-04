@@ -13,7 +13,7 @@ cd $PROJECTROOT
 ./sbt package
 ./sbt treasury-example/package
 ./sbt enron-example/package
-./sbt mongo-hadoop-streaming/package
+./sbt mongo-hadoop-streaming/assembly
 rm $HADOOP_HOME/lib/mongo-hadoop*.jar
 rm $HADOOP_HOME/share/hadoop/mapreduce/mongo-hadoop*.jar 
 rm $HADOOP_HOME/share/hadoop/lib/mongo-hadoop*.jar 

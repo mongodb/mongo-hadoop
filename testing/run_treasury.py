@@ -19,6 +19,7 @@ HADOOP_RELEASE=os.environ.get('HADOOP_RELEASE',None)
 AWS_SECRET=os.environ.get('AWS_SECRET',None) 
 AWS_ACCESSKEY=os.environ.get('AWS_ACCESSKEY',None) 
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
+USE_ASSEMBLY=os.environ.get('USE_ASSEMBLY', True)
 
 if not os.path.isdir(TEMPDIR):
     os.makedirs(TEMPDIR)
@@ -30,11 +31,11 @@ VERSION_SUFFIX = "1.1.0-SNAPSHOT"
 
 version_buildtarget =\
     {"0.22" : "0.22.0",
-    "1.0" : "1.0.3",
-    "cdh4" : "cdh4b1",
-    "0.20" : "0.20.205.0",
-    "0.23" : "0.23.1",
-    "cdh3" :"cdh3u3"}
+     "1.0" : "1.0.3",
+     "cdh4" : "cdh4b1",
+     "0.20" : "0.20.205.0",
+     "0.23" : "0.23.1",
+     "cdh3" :"cdh3u3"}
 
 def generate_jar_name(prefix, version_suffix):
     if HADOOP_RELEASE:
@@ -45,7 +46,10 @@ def generate_jar_name(prefix, version_suffix):
         return prefix + "*.jar"
 
 treasury_jar_name = generate_jar_name("treasury-example", VERSION_SUFFIX);
-streaming_jar_name = generate_jar_name("mongo-hadoop-streaming", VERSION_SUFFIX);
+if USE_ASSEMBLY is True:
+    streaming_jar_name = 'mongo-hadoop-streaming-assembly-' + VERSION_SUFFIX + ".jar"
+else:
+    streaming_jar_name = generate_jar_name("mongo-hadoop-streaming", VERSION_SUFFIX);
 
 # result set for sanity check#{{{
 check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
@@ -487,7 +491,7 @@ class TestStaticBSON(Standalone):
 
     def setUp(self):
         super(TestStaticBSON, self).setUp();
-        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_')
+        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_', dir=TEMPDIR)
         mongo_manager.mongo_dump(self.server_hostname, "mongo_hadoop",
                                    "yield_historical.in", self.temp_outdir)
         
