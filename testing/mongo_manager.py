@@ -22,6 +22,7 @@ mongod = os.environ.get('MONGOD', 'mongod')
 mongos = os.environ.get('MONGOS', 'mongos')
 mongoimport = os.environ.get('MONGOIMPORT', 'mongoimport')
 mongodump = os.environ.get('MONGODUMP', 'mongodump')
+mongorestore = os.environ.get('MONGORESTORE', 'mongorestore')
 print "> MongoDB Path: %s " % mongod
 replsets = 0
 
@@ -33,6 +34,13 @@ def mongo_dump(host, db, collection, outputdir):
            '-o', outputdir]
     subprocess.call(cmd)
 
+def mongo_restore(host, db, collection, filename):
+    cmd = [mongorestore, 
+           '--host', str( host ), 
+           '--db', db,
+           '--collection', collection,
+           filename]
+    subprocess.call(cmd)
 
 def mongo_import(host, db, collection, filename):
     cmd = [mongoimport, 
@@ -157,10 +165,6 @@ class MongosManager(object):
                 os.kill(self.pid, signal.CTRL_C_EVENT)
             else:
                 os.kill(self.pid, sig)
-
-        
-
-
 
 class StandaloneManager(object):
     def __init__(self, port=None, home=None):
