@@ -32,6 +32,7 @@ public class BSONLoader extends LoadFunc {
     private static TupleFactory tf = TupleFactory.getInstance();
     private static final Log log = LogFactory.getLog(BSONLoader.class);
     private String location;
+    private final BSONFileInputFormat inputFormat = new BSONFileInputFormat();
     protected RecordReader in = null;
 
     public BSONLoader(){}
@@ -44,7 +45,7 @@ public class BSONLoader extends LoadFunc {
 
     @Override
     public InputFormat getInputFormat(){
-        return new BSONFileInputFormat();
+        return this.inputFormat;
     }
 
     @Override
