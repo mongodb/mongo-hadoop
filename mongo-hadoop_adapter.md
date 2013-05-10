@@ -1,4 +1,4 @@
-#Mongo-Hadoop Adapter
+t#Mongo-Hadoop Adapter
 
 
 ##Purpose
@@ -118,6 +118,13 @@ Examples:
 ## Usage with Amazon Elastic MapReduce
 
 ## Usage with Pig
+
+Pig 0.9 and earlier have issues with non-named tuples. You may need to unpack and name the tuples explicitly, for example: 
+
+    The tuple `(1,2,3)` can not be stored correctly. But,
+
+    `FLATTEN((1,2,3)) as v1, v2, v3` can successfully be stored as `{'v1': 1, 'v2': 2, 'v3': 3}`
+Pig 0.10 and later handles them correctly.
 
 ## Usage with Hive
 
