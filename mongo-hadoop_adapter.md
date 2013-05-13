@@ -86,10 +86,11 @@ After successfully building, you must copy the jars to the lib directory on each
 
 `mongo.job.mapper`  - sets the class to be used as the implementation for `Mapper`
 
-`mongo.job.reducer`  - sets the class to be used as the implementation for `Mapper`
+`mongo.job.reducer`  - sets the class to be used as the implementation for `Reducer`
 
-`mongo.job.partitioner`  - sets the class to be used as the implementation for `Mapper`
+`mongo.job.combiner`  - sets the class to be used for a combiner. Must implement `Reducer`.
 
+`mongo.job.partitioner`  - sets the class to be used as the implementation for `Partitioner`
 
 `mongo.auth.uri` - specify an auxiliary [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/) to authenticate against when constructing splits. If you are using a sharded cluster and your `config` database requires authentication, and its username/password differs from the collection that you are running Map/Reduce on, then you may need to use this option so that Hadoop can access collection metadata in order to compute splits. An example URI: `mongodb://username:password@cyberdyne:27017/config`
 
@@ -105,11 +106,109 @@ Examples:
 
 ## Streaming
 
+### Overview
+
+For distributions of Hadoop which support streaming, you can also use MongoDB collections as the input or output for these jobs as well. Here is a description of arguments needed to run a Hadoop streaming job including MongoDB support.
+* Launch the job with `$HADOOP/bin/hadoop jar <location of streaming jar> …` 
+* Depending on which hadoop release you use, the jar needed for streaming may be located in a different directory, commonly it is located somewhere like `$HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming*.jar` 
+* Provide dependencies for the job by either placing each jar file in one your hadoop's classpath directories, or explicitly list it on the command line using `-libjars <jar file>`. You will need to do this for the Java MongoDB driver as well as the Mongo-Hadoop core library.
+* When using a mongoDB collection as input, add the arguments `-jobconf mongo.input.uri=<input mongo URI>` and `-inputformat com.mongodb.hadoop.mapred.MongoInputFormat`
+* When using a mongoDB collection as output, add the arguments `-jobconf mongo.output.uri=<input mongo URI>` and `-outputformat com.mongodb.hadoop.mapred.MongoOutputFormat`
+* When using BSON as input, use `-inputformat com.mongodb.hadoop.mapred.BSONFileInputFormat`.
+* Specify locations for the `-input` and `-output` arguments. Even when using mongoDB for input or output, these are required; you can use temporary directories for these in such a case.
+* Always add the arguments `-jobconf stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver` and `-io mongodb` so that decoders/encoders needed by streaming can be resolved at run time.
+* Specify a `-mapper <mapper script>` and `-reducer <reducer script>`.
+* Any other arguments needed, by using `-jobconf`. for example `mongo.input.query` or other options for controlling splitting behavior or filtering.
+
+Here is a full example of a streaming command:
+
+`$HADOOP_HOME/bin/hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming* -libjars /Users/mike/projects/mongo-hadoop/streaming/target/mongo-hadoop-streaming.jar -input /tmp/in -output /tmp/out -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -io mongodb -jobconf mongo.input.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.in?readPreference=primary -jobconf mongo.output.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.out -jobconf stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver -mapper /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/mapper.py -reducer /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/reducer.py -jobconf mongo.input.query={_id:{\\$gt:{\\$date:883440000000}}}`
+
+Also, refer to the TestStreaming class in the test suite for more examples.
+
+**Important note**: if you need to use `print` or any other kind of text output when debugging streaming Map/Reduce scripts, be sure that you are writing the debug statements to `stderr` or some kind of log file. Using `stdin` or `stdout` for any purpose other than communicating with the Hadoop Streaming layer will interfere with the encoding and decoding of data.
+
 ### Python
+
+#####Setup
+
+To use Python for the streaming library, first install the python package `pymongo_hadoop` using pip or easy_install (For best performance, ensure that you are using the C extensions for BSON).
+
+
+#####Mapper
+To implement a mapper, write a function which accepts an iterable sequence of documents and calls `yield` to produce each output document, then call BSONMapper() against that function.
+For example:
+
+    from pymongo_hadoop import BSONMapper
+    def mapper(documents):
+        for doc in documents:
+            yield {'_id': doc['_id'].year, 'bc10Year': doc['bc10Year']}
+
+    BSONMapper(mapper)
+
+#####Reducer
+To implement a reducer, write a function which accepts two arguments: a key and an iterable sequence of documents matching that key. Compute your reduce output and pass it back to Hadoop with `return`. Then call BSONReducer() against this function. For example,
+
+    from pymongo_hadoop import BSONReducer
+
+    def reducer(key, values):
+        _count = _sum = 0
+        for v in values:
+            _count += 1
+            _sum += v['bc10Year']
+        return {'_id': key, 'avg': _sum / _count,
+                'count': _count, 'sum': _sum }
+
+    BSONReducer(reducer)
+
+
 ### Ruby
+
 ### NodeJS
 
+#####Setup
+
+Install the nodejs mongo-hadoop lib with `npm install node_mongo_hadoop`.
+
+#####Mapper
+
+Write a function that accepts two arguments: the input document, and a callback function. Call the callback function with the output of your map function. Then pass that function as an argument to node_mongo_hadoop.MapBSONStream. For example:
+
+    function mapFunc(doc, callback){
+        if(doc.headers && doc.headers.From && doc.headers.To){
+            var from_field = doc['headers']['From']
+            var to_field = doc['headers']['To']
+            var recips = []
+            to_field.split(',').forEach(function(to){
+              callback( {'_id': {'f':from_field, 't':trimString(to)}, 'count': 1} )
+            });
+        }
+    }
+    node_mongo_hadoop.MapBSONStream(mapFunc);
+
+#####Reducer
+
+Write a function that accepts three arguments: the key from the map phase, an array of documents for that key, and a callback.
+Call the callback function with the output result of reduce.
+
+    var node_mongo_hadoop = require('node_mongo_hadoop')
+
+    function reduceFunc(key, values, callback){
+        var count = 0;
+        values.forEach(function(v){
+            count += v.count
+        });
+        callback( {'_id':key, 'count':count } );
+    }
+
+    node_mongo_hadoop.ReduceBSONStream(reduceFunc);
+
+
 ## Using Backup Files (.bson)
+
+Static .bson files (which is the format produced by the [mongodump](http://docs.mongodb.org/manual/reference/program/mongodump/) tool for backups) can also be used as input to Hadoop jobs, or written to as output files.
+In order to 
+
 
 ## Example 1
 
@@ -117,15 +216,93 @@ Examples:
 
 ## Usage with Amazon Elastic MapReduce
 
+Amazon Elastic MapReduce is a managed Hadoop framework that allows you to submit jobs to a cluster of customizable size and configuration, without needing to deal with provisioning nodes and installing software.
+
 ## Usage with Pig
+
+### Reading into Pig
+
+##### From a MongoDB collection
+
+To load records from MongoDB database to use in a Pig script, a class called `MongoLoader` is provided. To use it, first register the dependency jars in your script and then specify the Mongo URI to load with the `MongoLoader` class.
+
+    -- First, register jar dependencies
+    REGISTER ../mongo-2.10.1.jar                    -- mongodb java driver  
+    REGISTER ../core/target/mongo-hadoop-core.jar   -- mongo-hadoop core lib
+    REGISTER ../pig/target/mongo-hadoop-pig.jar     -- mongo-hadoop pig lib
+
+    raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader;
+
+`MongoLoader` can be used in two ways - schemaless mode and schema mode. By creating an instance of the class without specifying any field names in the constructor (as in the previous snippet) each record will appear to pig as a tuple containing a single  `Map` that corresponds to the document from the collection, for example: 
+                  
+                  ([bc2Year#7.87,bc3Year#7.9,bc1Month#,bc5Year#7.87,_id#631238400000,bc10Year#7.94,bc20Year#,bc7Year#7.98,bc6Month#7.89,bc3Month#7.83,dayOfWeek#TUESDAY,bc30Year#8,bc1Year#7.81])
+
+However, by creating a MongoLoader instance with a specific list of field names, you can map fields in the document to fields in a Pig named tuple datatype. When used this way, `MongoLoader` takes two arguments:
+
+`idAlias` - an alias to use for the `_id` field in documents retrieved from the collection. The string "_id" is not a legal pig variable name, so the contents of the field in `_id` will be mapped to a value in Pig accordingly by providing a value here. 
+
+`schema` - a schema (list of fields/datatypes) that will map fields in the document to fields in the Pig records. See section below on Datatype Mapping for details.
+
+Example:
+
+    -- Load two fields from the documents in the collection specified by this URI
+    -- map the "_id" field in the documents to the "id" field in pig
+    > raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader('id', 'id, bc10Year');
+    > raw_limited = LIMIT raw 3;
+    > dump raw_limited; 
+    (631238400000,7.94)
+    (631324800000,7.99)
+    (631411200000,7.98)
+
+##### From a .BSON file
+
+You can load records directly from a BSON file using the `BSONLoader` class, for example:
+
+    raw = LOAD 'file:///tmp/dump/yield_historical.in.bson' using com.mongodb.hadoop.pig.BSONLoader;
+
+As with `MongoLoader` you can also supply an optional `idAlias` argument to map the `_id` field to a named Pig field, along with a `schema` to select fields/types to extract from the documents.
+
+##### Datatype Mapping
+
+In the second optional argument to the `BSONLoader` and `MongoLoader` class constructors, you can explicitly provide a datatype for each element of the schema by using the Pig schema syntax, for example `name:chararray, age:int`. If the types aren't provided, the output type will be inferred based on the values in the documents.
+Data mappings used for these inferred types are as follows:
+
+* Embedded Document/Object -> `Map`
+
+* Array &rarr; Unnamed `Tuple`
+
+* Date/ISODate &rarr; a 64 bit integer containing the UNIX time. This can be manipulated by Pig UDF functions to extract month, day, year, or other information - see http://aws.amazon.com/code/Elastic-MapReduce/2730 for some examples.
+
+Note: older versions of Pig may not be able to generate mappings when tuples are unnamed, due to https://issues.apache.org/jira/browse/PIG-2509. If you get errors, try making sure that all top-level fields in the relation being stored have names assigned to them or try using a newer version of Pig.
+
+### Writing output from Pig
+
+#####Static BSON file output
+  
+To store output from Pig in a .BSON file (which can then be imported into a mongoDB instance using `mongorestore`) use the BSONStorage class. Example:
+
+    STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage;
+
+If you want to supply a custom value for '_id' in the documents written out by `BSONStorage` you can give it an optional `idAlias` field which maps a value in the Pig record to the _id field, for example:
+
+    STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage('id');
+
+The output URI for BSONStorage can be any accessible file system including `hdfs://` and `s3n://`. However, when using S3 for an output file, you will need to set `fs.s3.awsAccessKeyId` and `fs.s3.awsSecretAccessKey` for your AWS account accordingly.
+
+#####Inserting directly into a MongoDB collection
+
+To make each output record be used as an insert into a MongoDB collection, use the `MongoInsertStorage` class supplying the output URI. For example:
+
+    STORE dates_averages INTO 'mongodb://localhost:27017/demo.yield_aggregated' USING com.mongodb.hadoop.pig.MongoInsertStorage('', '' );
+
+The `MongoInsertStorage` class takes two args: an `idAlias` and a `schema` as described above.
+
 
 ## Usage with Hive
 
 ## Notes for Contributors
 
-Please make sure your code passes all unit tests.
-If your code introduces new features, please add tests that cover them if possible.
-
+If your code introduces new features, please add tests that cover them if possible and make sure that the existing test suite  still passes. If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details and we will try to help. 
 
 ### Maintainers
 Mike O'Brien (mikeo@10gen.com)
