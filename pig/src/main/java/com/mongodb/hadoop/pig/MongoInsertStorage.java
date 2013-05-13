@@ -59,104 +59,10 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         this.useUpsert = useUpsert == null ? false : useUpsert.toLowerCase().trim().equals("true");
     }
 
-    public Object getTypeForBSON(Object o, ResourceSchema.ResourceFieldSchema field) throws IOException{
-        byte dataType = field != null ? field.getType() : DataType.UNKNOWN;
-        ResourceSchema s = null;
-        if( field == null ){
-            if(o instanceof Map){
-                dataType = DataType.MAP;
-            }else if(o instanceof List){ 
-                dataType = DataType.BAG;
-            } else {
-                dataType = DataType.UNKNOWN;
-            }
-        }else{
-            s = field.getSchema();
-            if(dataType == DataType.UNKNOWN ){
-                if(o instanceof Map) dataType = DataType.MAP;
-                if(o instanceof List) dataType = DataType.BAG;
-            }
-        }
-
-        if(dataType == DataType.BYTEARRAY && o instanceof Map){
-            dataType = DataType.MAP;
-        }
-
-        switch (dataType) {
-            case DataType.NULL:
-                return null;
-            case DataType.INTEGER:
-            case DataType.LONG:
-            case DataType.FLOAT:
-            case DataType.DOUBLE:
-                return o;
-            case DataType.BYTEARRAY:
-                return o.toString();
-            case DataType.CHARARRAY:
-                return (String)o;
-
-            // Given a TUPLE, create a Map so BSONEncoder will eat it
-            case DataType.TUPLE:
-                log.info("here's my tuple");
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                ResourceSchema.ResourceFieldSchema[] fs = s.getFields();
-                LinkedHashMap m = new java.util.LinkedHashMap();
-                for (int j = 0; j < fs.length; j++) {
-                    m.put(fs[j].getName(), getTypeForBSON(((Tuple) o).get(j), fs[j])); 
-                }
-                return m;
-
-            // Given a BAG, create an Array so BSONEnconder will eat it.
-            case DataType.BAG:
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                fs = s.getFields();
-                if (fs.length != 1 || fs[0].getType() != DataType.TUPLE) {
-                    throw new IOException("Found a bag without a tuple "
-                            + "inside!");
-                }
-                // Drill down the next level to the tuple's schema.
-                s = fs[0].getSchema();
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use "
-                            + "this storage function.  No schema found for field " +
-                            field.getName());
-                }
-                fs = s.getFields();
-
-                ArrayList a = new ArrayList<Map>();
-                for (Tuple t : (DataBag)o) {
-                    LinkedHashMap ma = new java.util.LinkedHashMap();
-                    for (int j = 0; j < fs.length; j++) {
-                        ma.put(fs[j].getName(), ((Tuple) t).get(j));
-                    }
-                    a.add(ma);
-                }
-
-                return a;
-            case DataType.MAP:
-                Map map = (Map) o;
-                Map<String,Object> out = new HashMap<String,Object>(map.size());
-                for(Object key : map.keySet()) {
-                    out.put(key.toString(), getTypeForBSON(map.get(key), null));
-                }
-                return out;
-            default:
-                return o;
-        }
-    }
-
     protected void writeField(BasicDBObjectBuilder builder,
                             ResourceSchema.ResourceFieldSchema field,
                             Object d) throws IOException {
-        Object convertedType = getTypeForBSON(d, field);
+        Object convertedType = BSONStorage.getTypeForBSON(d, field);
         if(field.getName() != null && field.getName().equals(this.idField)){
             builder.add("_id", convertedType);
             return;
