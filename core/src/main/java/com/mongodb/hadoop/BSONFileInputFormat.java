@@ -72,8 +72,7 @@ public class BSONFileInputFormat extends FileInputFormat {
                 splitter.readSplitsForFile(inputFile);
             }
         }
-        log.warn(splitter.getAllSplits().toString());
-
+        log.info("BSONSplitter returned " + splitter.getAllSplits().size() + " splits.");
         return splitter.getAllSplits();
     }
 
