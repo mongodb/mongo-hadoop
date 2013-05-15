@@ -55,8 +55,12 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         this.schema = null;
         this.fields = null;
     }
+
+    public ResourceFieldSchema[] getFields(){
+        return this.fields;
+    }
     
-    public MongoLoader (String idAlias, String userSchema) {
+    public MongoLoader(String userSchema, String idAlias) {
         this.idAlias = idAlias;
     	try {
 			schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
@@ -64,6 +68,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Invalid Schema Format");
 		}
+    }
+
+    public MongoLoader(String userSchema) {
+        this(userSchema, null);
     }
 
 	@Override
