@@ -53,6 +53,7 @@ public class BSONFileInputFormat extends FileInputFormat {
     }
 
     public List<FileSplit> getSplits(JobContext context) throws IOException{
+        log.info(context.getConfiguration());
         Configuration config = context.getConfiguration();
         BSONSplitter splitter = new BSONSplitter();
         splitter.setConf(config);
@@ -71,8 +72,7 @@ public class BSONFileInputFormat extends FileInputFormat {
                 splitter.readSplitsForFile(inputFile);
             }
         }
-        log.warn(splitter.getAllSplits().toString());
-
+        log.info("BSONSplitter returned " + splitter.getAllSplits().size() + " splits.");
         return splitter.getAllSplits();
     }
 

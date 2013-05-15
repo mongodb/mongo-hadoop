@@ -16,13 +16,14 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 
 
+
 public class MongoLoaderTest {
     @Test
     public void testReadField_simpleChararray() throws IOException {
         String userSchema = "d:chararray";
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField("value", ml.fields[0]);
+        Object result = BSONLoader.readField("value", ml.getFields()[0]);
         assertEquals("value", result);
     }
     
@@ -31,7 +32,7 @@ public class MongoLoaderTest {
         String userSchema = "d:float";
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(1.1F, ml.fields[0]);
+        Object result = BSONLoader.readField(1.1F, ml.getFields()[0]);
         assertEquals(1.1F, result);
     }
     
@@ -40,7 +41,7 @@ public class MongoLoaderTest {
         String userSchema = "d:float";
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(1.1D, ml.fields[0]);
+        Object result = BSONLoader.readField(1.1D, ml.getFields()[0]);
         assertEquals(1.1F, result);
     }
     
@@ -52,7 +53,7 @@ public class MongoLoaderTest {
             .append("t2", "t2_value");
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(val, ml.fields[0]);
+        Object result = BSONLoader.readField(val, ml.getFields()[0]);
         
         Tuple t = (Tuple) result;
         assertEquals(2, t.size());
@@ -68,7 +69,7 @@ public class MongoLoaderTest {
             .append("t2", "t2_value");
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(val, ml.fields[0]);
+        Object result = BSONLoader.readField(val, ml.getFields()[0]);
         
         Tuple t = (Tuple) result;
         assertEquals(3, t.size());
@@ -85,7 +86,7 @@ public class MongoLoaderTest {
             .append("t2", "t2_value");
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(val, ml.fields[0]);
+        Object result = BSONLoader.readField(val, ml.getFields()[0]);
         
         Tuple t = (Tuple) result;
         assertEquals(2, t.size());
@@ -105,7 +106,7 @@ public class MongoLoaderTest {
                         .append("t2", "t22_value"));
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(bag, ml.fields[0]);
+        Object result = BSONLoader.readField(bag, ml.getFields()[0]);
         
         DataBag b = (DataBag) result;
         Iterator<Tuple> bit = b.iterator();
@@ -135,7 +136,7 @@ public class MongoLoaderTest {
                         .append("t2", "t22_value"));
         MongoLoader ml = new MongoLoader(userSchema);
 
-        Object result = ml.readField(notABag, ml.fields[0]);
+        Object result = BSONLoader.readField(notABag, ml.getFields()[0]);
         assertNull(result);
     }
     
@@ -158,7 +159,7 @@ public class MongoLoaderTest {
 
         MongoLoader ml = new MongoLoader(userSchema);
 
-        DataBag result = (DataBag) ml.readField(bag, ml.fields[0]);
+        DataBag result = (DataBag) BSONLoader.readField(bag, ml.getFields()[0]);
         assertEquals(1, result.size());
         
         Iterator<Tuple> bit = result.iterator();
@@ -186,7 +187,7 @@ public class MongoLoaderTest {
             .append("k2", 2);
         
         MongoLoader ml = new MongoLoader(userSchema);
-        Map m = (Map) ml.readField(obj, ml.fields[0]);
+        Map m = (Map) BSONLoader.readField(obj, ml.getFields()[0]);
 
         assertEquals(2, m.size());
         assertEquals(1, m.get("k1"));
@@ -210,7 +211,7 @@ public class MongoLoaderTest {
             .append("v2", v2);
         
         MongoLoader ml = new MongoLoader(userSchema);
-        Map m = (Map) ml.readField(obj, ml.fields[0]);
+        Map m = (Map) BSONLoader.readField(obj, ml.getFields()[0]);
 
         assertEquals(2, m.size());
         

@@ -15,8 +15,8 @@ The mongo-hadoop adapter is a library which allows MongoDB to be used as an inpu
 
 ## Download
 
-List the binaries here.
-Maven artifacts?
+* TODO List links to binaries here.
+* TODO List maven artifacts
 
 ## Building
 
@@ -132,8 +132,7 @@ Also, refer to the TestStreaming class in the test suite for more examples.
 
 #####Setup
 
-To use Python for the streaming library, first install the python package `pymongo_hadoop` using pip or easy_install (For best performance, ensure that you are using the C extensions for BSON).
-
+To use Python for streaming first install the python package `pymongo_hadoop` using pip or easy_install (For best performance, ensure that you are using the C extensions for BSON).
 
 #####Mapper
 To implement a mapper, write a function which accepts an iterable sequence of documents and calls `yield` to produce each output document, then call BSONMapper() against that function.
@@ -147,7 +146,7 @@ For example:
     BSONMapper(mapper)
 
 #####Reducer
-To implement a reducer, write a function which accepts two arguments: a key and an iterable sequence of documents matching that key. Compute your reduce output and pass it back to Hadoop with `return`. Then call BSONReducer() against this function. For example,
+To implement a reducer, write a function which accepts two arguments: a key and an iterable sequence of documents matching that key. Compute your reduce output and pass it back to Hadoop with `return`. Then call `BSONReducer()` against this function. For example,
 
     from pymongo_hadoop import BSONReducer
 
@@ -163,6 +162,8 @@ To implement a reducer, write a function which accepts two arguments: a key and 
 
 
 ### Ruby
+
+* TODO
 
 ### NodeJS
 
@@ -207,8 +208,7 @@ Call the callback function with the output result of reduce.
 ## Using Backup Files (.bson)
 
 Static .bson files (which is the format produced by the [mongodump](http://docs.mongodb.org/manual/reference/program/mongodump/) tool for backups) can also be used as input to Hadoop jobs, or written to as output files.
-In order to 
-
+Because BSON contains headers and length information, a .bson file cannot be split arbitrarily for the purposes of parallelization, it must be split along the correct boundaries between documents. To facilitate this the mongo-hadoop adapter uses a secondary metadata file which contains information about the offsets of documents within the file. This file should be created before running a job against a .bson file - to create it, run the script `bson-splitter.py <filename>`. If the file resides on S3 or HDFS, the `.splits` will be calculated and the file will be built and saved automatically. However, for optimal performance, it's faster to build this file locally before uploading to S3 or HDFS if possible. 
 
 ## Example 1
 
@@ -219,6 +219,15 @@ In order to
 Amazon Elastic MapReduce is a managed Hadoop framework that allows you to submit jobs to a cluster of customizable size and configuration, without needing to deal with provisioning nodes and installing software.
 
 ## Usage with Pig
+
+### Reading into Pig
+
+Pig 0.9 and earlier have issues with non-named tuples. You may need to unpack and name the tuples explicitly, for example: 
+
+    The tuple `(1,2,3)` can not be stored correctly. But,
+
+    `FLATTEN((1,2,3)) as v1, v2, v3` can successfully be stored as `{'v1': 1, 'v2': 2, 'v3': 3}`
+Pig 0.10 and later handles them correctly.
 
 ### Reading into Pig
 
@@ -296,7 +305,6 @@ To make each output record be used as an insert into a MongoDB collection, use t
     STORE dates_averages INTO 'mongodb://localhost:27017/demo.yield_aggregated' USING com.mongodb.hadoop.pig.MongoInsertStorage('', '' );
 
 The `MongoInsertStorage` class takes two args: an `idAlias` and a `schema` as described above.
-
 
 ## Usage with Hive
 

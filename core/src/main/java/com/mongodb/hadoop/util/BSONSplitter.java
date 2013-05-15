@@ -118,8 +118,7 @@ public class BSONSplitter extends Configured implements Tool {
         FileStatus splitFileStatus = null;
         try{
             splitFileStatus = fs.getFileStatus(splitFile);
-            log.info(splitFileStatus.toString());
-            log.info(splitFileStatus.getLen());
+            log.info("Found split file at : " + splitFileStatus.toString());
         }catch(Exception e){
             throw new NoSplitFileException();
         }

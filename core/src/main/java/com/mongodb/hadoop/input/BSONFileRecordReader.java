@@ -63,7 +63,6 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
         FileSystem fs = file.getFileSystem(conf);
 		in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
-        log.info(System.identityHashCode(this) + " ok - Creating record reader with input split: " + inputSplit.toString());
     }
 
     @Override
