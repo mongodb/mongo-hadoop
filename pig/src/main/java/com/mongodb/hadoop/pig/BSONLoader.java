@@ -171,7 +171,7 @@ public class BSONLoader extends LoadFunc {
     		case DataType.MAP:
                 s = field.getSchema();
                 fs = s != null ? s.getFields() : null;
-                BasicDBObject inputMap = (BasicDBObject) obj;
+                BasicBSONObject inputMap = (BasicBSONObject) obj;
                 
                 Map outputMap = new HashMap();
                 for (String key : inputMap.keySet()) {
@@ -190,7 +190,7 @@ public class BSONLoader extends LoadFunc {
 		} catch (Exception e) {
 		    String fieldName = field.getName() == null ? "" : field.getName();
 		    String type = DataType.genTypeToNameMap().get(field.getType());
-		    log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.toString() + ".  Returning null.");
+		    log.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.getClass().toString() );
 		    return null;
 		}
 		
