@@ -93,7 +93,6 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
             // Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
-                log.info("here's my tuple");
                 if (s == null) {
                     throw new IOException("Schemas must be fully specified to use "
                             + "this storage function.  No schema found for field " +
@@ -153,11 +152,16 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                             ResourceSchema.ResourceFieldSchema field,
                             Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field);
-        if(field.getName() != null && field.getName().equals(this.idField)){
-            builder.add("_id", convertedType);
-            return;
-        } else {
-            builder.add(field.getName(), convertedType);
+        String fieldName = field != null ? field.getName() : "value";
+
+        if(convertedType instanceof Map){
+            for( Map.Entry<String, Object> mapentry : ((Map<String,Object>)convertedType).entrySet() ){
+                String addKey = mapentry.getKey().equals(this.idField) ? "_id" : mapentry.getKey();
+                builder.add(addKey, mapentry.getValue());
+            }
+        }else{
+            String addKey =  field!=null && fieldName.equals(this.idField) ? "_id" : fieldName;
+            builder.add(fieldName, convertedType);
         }
         
     }
