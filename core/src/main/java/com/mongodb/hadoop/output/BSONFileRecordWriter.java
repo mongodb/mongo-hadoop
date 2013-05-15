@@ -90,7 +90,6 @@ public class BSONFileRecordWriter<K, V> extends RecordWriter<K, V> {
                 toEncode = ((BSONWritable)value).getDoc();
             }
         }else if ( value instanceof BSONObject ){
-            log.info("in here 2");
             if(toEncode != null){
                 ((BasicDBObject)toEncode).putAll((BSONObject)value);
             }else{
