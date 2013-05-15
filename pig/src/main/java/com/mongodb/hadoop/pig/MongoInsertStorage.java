@@ -72,6 +72,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         
     }
     
+    @Override
     public void checkSchema( ResourceSchema schema ) throws IOException{
         this.schema = schema;
         UDFContext udfc = UDFContext.getUDFContext();
@@ -80,15 +81,17 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
+    @Override
     public void storeSchema( ResourceSchema schema, String location, Job job ){
         // not implemented
     }
 
-
+    @Override
     public void storeStatistics( ResourceStatistics stats, String location, Job job ){
         // not implemented
     }
 
+    @Override
     public void putNext( Tuple tuple ) throws IOException{
         try{
             final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
