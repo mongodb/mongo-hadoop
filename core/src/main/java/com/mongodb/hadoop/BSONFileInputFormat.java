@@ -63,7 +63,7 @@ public class BSONFileInputFormat extends FileInputFormat {
             filesToProcess.addAll(splitter.getFilesInPath(inputPath));
         }
         for(FileStatus inputFile : filesToProcess){
-			Path path = inputFile.getPath();
+        Path path = inputFile.getPath();
             Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
             FileSystem fs = path.getFileSystem(config);
             try{
@@ -75,6 +75,5 @@ public class BSONFileInputFormat extends FileInputFormat {
         log.info("BSONSplitter returned " + splitter.getAllSplits().size() + " splits.");
         return splitter.getAllSplits();
     }
-
 
 }

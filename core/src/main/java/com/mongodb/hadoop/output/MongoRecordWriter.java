@@ -32,7 +32,7 @@ import org.apache.commons.logging.*;
 
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
-    
+
     private static final Log log = LogFactory.getLog( MongoRecordWriter.class );
     private final String[] updateKeys;
     private final boolean multiUpdate;
@@ -41,11 +41,11 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx ){
         this(c, ctx, null);
     }
-    
+
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx, String[] updateKeys) {
         this(c, ctx, updateKeys, false);
     }
-    
+
     public MongoRecordWriter( DBCollection c, TaskAttemptContext ctx, String[] updateKeys, boolean multi) {
         this(Arrays.asList(c), ctx, updateKeys, multi);
     }
@@ -64,7 +64,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         this.updateKeys = updateKeys;
         this.multiUpdate = false;
         this.numberOfHosts = c.size();
-         
+
         //authenticate if necessary - but don't auth twice on same DB
         MongoConfig config = new MongoConfig(ctx.getConfiguration());
         if(config.getAuthURI() != null){

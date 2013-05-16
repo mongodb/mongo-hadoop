@@ -47,13 +47,13 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
     private BSONWritable value;
-	byte[] headerBuf = new byte[4];
-	private FSDataInputStream in;
+    byte[] headerBuf = new byte[4];
+    private FSDataInputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
 
-	BasicBSONCallback callback = new BasicBSONCallback();
-	BasicBSONDecoder decoder = new BasicBSONDecoder();
+    BasicBSONCallback callback = new BasicBSONCallback();
+    BasicBSONDecoder decoder = new BasicBSONDecoder();
 
     public BSONFileRecordReader(){ }
 
@@ -62,13 +62,13 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
         this.conf = conf;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-		in = fs.open(file, 16*1024*1024);
+        in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
     }
 
     @Override
     public boolean next(NullWritable key, BSONWritable value) throws IOException {
-		try{
+        try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
                 try{
                     this.close();
@@ -88,7 +88,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
                 log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
             return true;
-		}catch(Exception e){
+        }catch(Exception e){
             log.error("Error reading key/value from bson file: " + e.getMessage());
             try{
                 this.close();

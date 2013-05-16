@@ -47,13 +47,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     private static final Log log = LogFactory.getLog(BSONFileRecordReader.class);
     private Object key;
     private BSONObject value;
-	byte[] headerBuf = new byte[4];
-	private FSDataInputStream in;
+    byte[] headerBuf = new byte[4];
+    private FSDataInputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
 
-	BasicBSONCallback callback = new BasicBSONCallback();
-	BasicBSONDecoder decoder = new BasicBSONDecoder();
+    BasicBSONCallback callback = new BasicBSONCallback();
+    BasicBSONDecoder decoder = new BasicBSONDecoder();
 
     @Override
     public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -61,13 +61,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
         this.conf = context.getConfiguration();
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
-		in = fs.open(file, 16*1024*1024);
+        in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-		try{
+        try{
             if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
                 try{
                     this.close();
@@ -80,13 +80,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
             callback.reset();
             int bytesRead = decoder.decode(in, callback);
             BSONObject bo = (BSONObject)callback.get();
-			value = bo;
+            value = bo;
             numDocsRead++;
             if(numDocsRead % 5000 == 0){
                 log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
             return true;
-		}catch(Exception e){
+        }catch(Exception e){
             e.printStackTrace();
             log.warn("Error reading key/value from bson file: " + e.getMessage());
             try{

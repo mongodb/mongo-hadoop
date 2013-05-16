@@ -49,7 +49,7 @@ public class BSONFileInputFormat extends FileInputFormat {
             filesToProcess.addAll(splitter.getFilesInPath(inputPath));
         }
         for(FileStatus inputFile : filesToProcess){
-			Path path = inputFile.getPath();
+            Path path = inputFile.getPath();
             Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
             FileSystem fs = path.getFileSystem(job);
             try{

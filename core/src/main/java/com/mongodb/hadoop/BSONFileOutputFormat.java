@@ -27,7 +27,7 @@ import org.apache.hadoop.mapreduce.*;
 // Hadoop
 
 public class BSONFileOutputFormat<K, V> extends OutputFormat<K, V> {
-    
+
     public void checkOutputSpecs( final JobContext context ){ }
 
     public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
@@ -43,7 +43,7 @@ public class BSONFileOutputFormat<K, V> extends OutputFormat<K, V> {
 
     public BSONFileOutputFormat(){ 
     }
-    
+
     private static final Log LOG = LogFactory.getLog( BSONFileOutputFormat.class );
 }
 
