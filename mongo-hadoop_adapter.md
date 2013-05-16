@@ -3,13 +3,13 @@
 
 ##Purpose
 
-The mongo-hadoop adapter is a library which allows MongoDB to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility, 
+The mongo-hadoop adapter is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem. 
 
 ## Features
 
-* Generate data splits from standalone, replica set, or sharded configurations
-* Source data can be filtered with query
-* Supports Hadoop Streaming, to allow job code to be written in any language (python, ruby, nodejs supported)
+* Can create data splits to read from standalone, replica set, or sharded configurations
+* Source data can be filtered with queries using the MongoDB query language
+* Supports Hadoop Streaming, to allow job code to be written in any language (python, ruby, nodejs currently supported)
 * Can read data from MongoDB backup files residing on s3, hdfs, or local filesystems
 * Can write data out in .bson format, which can then be imported to any mongo database with `mongorestore`
 
@@ -84,26 +84,51 @@ After successfully building, you must copy the jars to the lib directory on each
 
 ## Configuration
 
-`mongo.job.mapper`  - sets the class to be used as the implementation for `Mapper`
+######`mongo.job.mapper`  
+ sets the class to be used as the implementation for `Mapper`
 
-`mongo.job.reducer`  - sets the class to be used as the implementation for `Reducer`
+######`mongo.job.reducer` 
+ sets the class to be used as the implementation for `Reducer`
 
-`mongo.job.combiner`  - sets the class to be used for a combiner. Must implement `Reducer`.
+######`mongo.job.combiner`  
+ sets the class to be used for a combiner. Must implement `Reducer`.
 
-`mongo.job.partitioner`  - sets the class to be used as the implementation for `Partitioner`
+######`mongo.job.partitioner`  
+ sets the class to be used as the implementation for `Partitioner`
 
-`mongo.auth.uri` - specify an auxiliary [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/) to authenticate against when constructing splits. If you are using a sharded cluster and your `config` database requires authentication, and its username/password differs from the collection that you are running Map/Reduce on, then you may need to use this option so that Hadoop can access collection metadata in order to compute splits. An example URI: `mongodb://username:password@cyberdyne:27017/config`
+######`mongo.auth.uri` 
+ specify an auxiliary [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/) to authenticate against when constructing splits. If you are using a sharded cluster and your `config` database requires authentication, and its username/password differs from the collection that you are running Map/Reduce on, then you may need to use this option so that Hadoop can access collection metadata in order to compute splits. An example URI: `mongodb://username:password@cyberdyne:27017/config`
 
-`mongo.input.uri` - specify an input collection (including auth and readPreference options) to use as the input data source for the Map/Reduce job. This takes the form of a 
+######`mongo.input.uri` 
+specify an input collection (including auth and readPreference options) to use as the input data source for the Map/Reduce job. This takes the form of a 
 [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/), and by specifying options you can control how and where the input is read from.
 
-Examples:
+**Examples**:
 
 `mongodb://joe:12345@weyland-yutani:27017/analytics.users?readPreference=secondary` - Authenticate with "joe"/"12345" and read from only nodes in state SECONDARY from the collection "users" in database "analytics". 
 `mongodb://sue:12345@weyland-yutani:27017/production.customers?readPreferenceTags=dc:tokyo,type:hadoop` - Authenticate with "joe"/"12345" and read the collection "users" in database "analytics" from only nodes tagged with "dc:tokyo" and "type:hadoop" from the collection "users" in database "analytics". 
 
+######`mongo.input.query` 
+ filter the input collection with a query. This query must be represented in JSON format, and use the [MongoDB extended JSON format](http://docs.mongodb.org/manual/reference/mongodb-extended-json/) to represent non-native JSON data types like ObjectIds, Dates, etc.
 
+**Example**
 
+    'mongo.input.query={"_id":{"$gt":{"$date":1182470400000}}}'
+    
+    //this is equivalent to {_id : {$gt : ISODate("2007-06-21T20:00:00-0400")}} in the mongo shell
+
+######`mongo.input.split.use_range_queries`
+
+This setting causes data to be read from mongo by adding `$gte/$lt` clauses to the query for limiting the boundaries of each split, instead of the default behavior of limiting with `$min/$max`. This may be useful in cases when using `mongo.input.query` to filter mapper input, but the index that is used by `$min/$max` is less selective than the query and indexes. Setting this to `'true'` lets the MongoDB server select the best index possible and still.
+
+**Limitations** 
+
+This setting should only be used when:
+
+* The query specified in `mongo.input.query` does not already have filters applied against the split field. Will log an error otherwise.
+* The same data type is used for the split field in all documents, otherwise you may get incomplete results.
+* The split field contains simple scalar values, and is not a compound key (e.g., `"foo"` is acceptable but `{"k":"foo", "v":"bar"}` is not)
+  
 ## Streaming
 
 ### Overview
@@ -120,11 +145,24 @@ For distributions of Hadoop which support streaming, you can also use MongoDB co
 * Specify a `-mapper <mapper script>` and `-reducer <reducer script>`.
 * Any other arguments needed, by using `-jobconf`. for example `mongo.input.query` or other options for controlling splitting behavior or filtering.
 
-Here is a full example of a streaming command:
+Here is a full example of a streaming command broken into separate lines for readability:
 
-`$HADOOP_HOME/bin/hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming* -libjars /Users/mike/projects/mongo-hadoop/streaming/target/mongo-hadoop-streaming.jar -input /tmp/in -output /tmp/out -inputformat com.mongodb.hadoop.mapred.MongoInputFormat -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat -io mongodb -jobconf mongo.input.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.in?readPreference=primary -jobconf mongo.output.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.out -jobconf stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver -mapper /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/mapper.py -reducer /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/reducer.py -jobconf mongo.input.query={_id:{\\$gt:{\\$date:883440000000}}}`
+     $HADOOP_HOME/bin/hadoop jar 
+         $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming* 
+         -libjars /Users/mike/projects/mongo-hadoop/streaming/target/mongo-hadoop-streaming.jar 
+         -input /tmp/in 
+         -output /tmp/out 
+         -inputformat com.mongodb.hadoop.mapred.MongoInputFormat 
+         -outputformat com.mongodb.hadoop.mapred.MongoOutputFormat 
+         -io mongodb 
+         -jobconf mongo.input.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.in?readPreference=primary
+         -jobconf mongo.output.uri=mongodb://127.0.0.1:4000/mongo_hadoop.yield_historical.out 
+         -jobconf stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver 
+         -mapper /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/mapper.py 
+         -reducer /Users/mike/projects/mongo-hadoop/streaming/examples/treasury/reducer.py 
+         -jobconf mongo.input.query={_id:{\\$gt:{\\$date:883440000000}}}
 
-Also, refer to the TestStreaming class in the test suite for more examples.
+Also, refer to the `TestStreaming` class in the test suite for more concrete examples.
 
 **Important note**: if you need to use `print` or any other kind of text output when debugging streaming Map/Reduce scripts, be sure that you are writing the debug statements to `stderr` or some kind of log file. Using `stdin` or `stdout` for any purpose other than communicating with the Hadoop Streaming layer will interfere with the encoding and decoding of data.
 
