@@ -119,7 +119,7 @@ specify an input collection (including auth and readPreference options) to use a
 
 ######`mongo.input.split.use_range_queries`
 
-This setting causes data to be read from mongo by adding `$gte/$lt` clauses to the query for limiting the boundaries of each split, instead of the default behavior of limiting with `$min/$max`. This may be useful in cases when using `mongo.input.query` to filter mapper input, but the index that is used by `$min/$max` is less selective than the query and indexes. Setting this to `'true'` lets the MongoDB server select the best index possible and still.
+This setting causes data to be read from mongo by adding `$gte/$lt` clauses to the query for limiting the boundaries of each split, instead of the default behavior of limiting with `$min/$max`. This may be useful in cases when using `mongo.input.query` is being used to filter mapper input, but the index that would be used by `$min/$max` is less selective than the query and indexes. Setting this to `'true'` lets the MongoDB server select the best index possible and still. This defaults to '`false'` if not set.
 
 **Limitations** 
 
@@ -129,6 +129,27 @@ This setting should only be used when:
 * The same data type is used for the split field in all documents, otherwise you may get incomplete results.
 * The split field contains simple scalar values, and is not a compound key (e.g., `"foo"` is acceptable but `{"k":"foo", "v":"bar"}` is not)
   
+  
+######`mongo.input.split.create_input_splits`
+
+Defaults to `'true'`. When set, attempts to create multiple input splits from the input collection, for parallelism.
+When set to `'false'` the entire collection will be treated as a **single** input split.
+ 
+  
+######`mongo.input.split.allow_read_from_secondaries`  
+**Deprecated.**
+
+Sets `slaveOk` on all outbound connections when reading data from splits. This is deprecated - if you would like to read from secondaries, just specify the appropriate [readPreference](http://docs.mongodb.org/manual/reference/connection-string/#read-preference-options) as part of your `mongo.input.uri` setting.
+
+######`mongo.input.split.read_from_shards`
+
+When reading data for splits, query the shard directly rather than via the `mongos`. This may produce inaccurate results if there are aborted/incomplete chunk migrations in process during execution of the job - to ensure correctness when using this setting, disable the balancer while running the job and also set `mongo.input.split.read_shard_chunks` to `'true'`.
+
+######`mongo.input.split.split_key_pattern`
+
+If you want to customize that split point for efficiency reasons (such as different distribution) on an un-sharded collection, you may set this to any valid field name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other rules outlined in the docs. Only usable when `mongo
+
+ 
 ## Streaming
 
 ### Overview
