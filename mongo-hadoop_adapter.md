@@ -5,6 +5,8 @@
 
 The mongo-hadoop adapter is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem. 
 
+Current release: **1.1**
+
 ## Features
 
 * Can create data splits to read from standalone, replica set, or sharded configurations
@@ -271,7 +273,94 @@ Because BSON contains headers and length information, a .bson file cannot be spl
 
 ## Example 1
 
+####Treasury Yield
+
+Source code is in `examples/treasury_yield`. To prepare the sample data, first run `mongoimport` with the file in `examples/treasury_yield/src/main/resources/yield_historical_in.json` to load it into a local instance of MongoDB.
+
+We end up with a test collection containing documents that look like this:
+
+    { 
+      "_id": ISODate("1990-01-25T19:00:00-0500"), 
+      "dayOfWeek": "FRIDAY", "bc3Year": 8.38,
+      "bc10Year": 8.49,
+      …
+    }
+
+
+
+The goal is to find the average of the bc10Year field, across each year that exists in the dataset. First we define a mapper, which is executed against each document in the collection. We extract the year from the `_id` field and use it as the output key, along with the value we want to use for averaging, `bc10Year`.
+
+	public class TreasuryYieldMapper 
+	    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
+	
+	    @Override
+	    public void map( final Object pKey,
+	                     final BSONObject pValue,
+	                     final Context pContext )
+	            throws IOException, InterruptedException{
+	        final int year = ((Date)pValue.get("_id")).getYear() + 1900;
+	        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
+	        pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
+	    }
+	}
+
+Then we write a reducer, a function which takes the values collected for each key (the year)  and performs some aggregate computation of them to get a result.
+
+	public class TreasuryYieldReducer
+	        extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
+	    @Override
+	    public void reduce( final IntWritable pKey,
+	                        final Iterable<DoubleWritable> pValues,
+	                        final Context pContext )
+	            throws IOException, InterruptedException{
+	        int count = 0;
+	        double sum = 0;
+	        for ( final DoubleWritable value : pValues ){
+	            sum += value.get();
+	            count++;
+	        }
+	
+	        final double avg = sum / count;
+		
+	        BasicBSONObject output = new BasicBSONObject();
+	        output.put("avg", avg);
+	        pContext.write( pKey, new BSONWritable( output ) );
+	    }	
+	}
+
+
+We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
+
+    -- UDFs used for date parsing
+	REGISTER /tmp/piggybank-0.3-amzn.jar
+	-- MongoDB Java driver
+	REGISTER  /tmp/mongo-2.10.1.jar;
+	-- Core Mongo-Hadoop Library
+	REGISTER ../core/target/mongo-hadoop-core_1.0.3-1.1.0-SNAPSHOT.jar
+	-- mongo-hadoop pig support
+	REGISTER ../pig/target/mongo-hadoop-pig_1.0.3-1.1.0-SNAPSHOT.jar
+	
+	raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader; 
+	DEFINE UnixToISO org.apache.pig.piggybank.evaluation.datetime.convert.UnixToISO();
+	DEFINE EXTRACT org.apache.pig.piggybank.evaluation.string.EXTRACT();
+	
+	date_tenyear = foreach raw generate UnixToISO($0#'_id'), $0#'bc10Year';
+	parsed_year = foreach date_tenyear generate 
+	    FLATTEN(EXTRACT($0, '(\\d{4})')) AS year, (double)$1 as bc;
+	
+	by_year = GROUP parsed_year BY (chararray)year;
+	year_10yearavg = FOREACH by_year GENERATE group, AVG(parsed_year.bc) as tenyear_avg;
+	
+	-- Args to MongoInsertStorage are: schema for output doc, field to use as '_id'.
+	STORE year_10yearavg 
+	 INTO 'mongodb://localhost:27017/demo.asfkjabfa' 
+	 USING		
+	 com.mongodb.hadoop.pig.MongoInsertStorage('group:chararray,tenyear_avg:float', 'group');
+
+
 ## Example 2
+
+
 
 ## Usage with Amazon Elastic MapReduce
 
@@ -281,12 +370,6 @@ Amazon Elastic MapReduce is a managed Hadoop framework that allows you to submit
 
 ### Reading into Pig
 
-Pig 0.9 and earlier have issues with non-named tuples. You may need to unpack and name the tuples explicitly, for example: 
-
-    The tuple `(1,2,3)` can not be stored correctly. But,
-
-    `FLATTEN((1,2,3)) as v1, v2, v3` can successfully be stored as `{'v1': 1, 'v2': 2, 'v3': 3}`
-Pig 0.10 and later handles them correctly.
 
 ### Reading into Pig
 
@@ -322,9 +405,16 @@ Example:
     (631324800000,7.99)
     (631411200000,7.98)
 
+**Note**: Pig 0.9 and earlier have issues with non-named tuples. You may need to unpack and name the tuples explicitly, for example: 
+The tuple `(1,2,3)` can not be transformed into a MongoDB document. But,
+`FLATTEN((1,2,3)) as v1, v2, v3` can successfully be stored as `{'v1': 1, 'v2': 2, 'v3': 3}`
+Pig 0.10 and later handles both cases correctly, so avoiding Pig 0.9 or earlier is recommended.
+
+
+
 ##### From a .BSON file
 
-You can load records directly from a BSON file using the `BSONLoader` class, for example:
+You can load records directly into a Pig relation from a BSON file using the `BSONLoader` class, for example:
 
     raw = LOAD 'file:///tmp/dump/yield_historical.in.bson' using com.mongodb.hadoop.pig.BSONLoader;
 
@@ -363,9 +453,8 @@ To make each output record be used as an insert into a MongoDB collection, use t
 
     STORE dates_averages INTO 'mongodb://localhost:27017/demo.yield_aggregated' USING com.mongodb.hadoop.pig.MongoInsertStorage('', '' );
 
-The `MongoInsertStorage` class takes two args: an `idAlias` and a `schema` as described above.
+The `MongoInsertStorage` class also takes two args: an `idAlias` and a `schema` as described above. If `schema` is left blank, it will attempt to infer the output schema from the data using the strategy described above. If `idAlias` is left blank, an `ObjectId` will be generated for the value of the `_id` field in each output document.
 
-## Usage with Hive
 
 ## Notes for Contributors
 
