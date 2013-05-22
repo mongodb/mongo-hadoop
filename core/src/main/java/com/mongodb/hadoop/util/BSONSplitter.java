@@ -177,6 +177,7 @@ public class BSONSplitter extends Configured implements Tool {
                 }
                 this.splitsMap.put(path, splits);
                 log.info("Completed splits calculation for " + file.toString());
+                writeSplits();
             }catch(IOException e){
             }finally{
                 fsDataStream.close();
@@ -187,6 +188,12 @@ public class BSONSplitter extends Configured implements Tool {
     }
 
     public void writeSplits() throws IOException{
+        if(!getConf().getBoolean("bson.split.write_splits", true)){
+            log.info("bson.split.write_splits is set to false - skipping writing splits to disk.");
+            return;
+        }else{
+            log.info("Writing splits to disk.");
+        }
         pathsloop:
         for(Map.Entry<Path, List<FileSplit>> entry : this.splitsMap.entrySet()) {
             Path key = entry.getKey();
