@@ -41,7 +41,7 @@ public class BSONSplitter extends Configured implements Tool {
 
     private static final Log log = LogFactory.getLog( BSONSplitter.class );
 
-    private Map<Path, List<FileSplit>> splitsMap;
+    private ArrayList<FileSplit> splitsList;
     private Path inputPath;
     private BasicBSONCallback callback = new BasicBSONCallback();
     private LazyBSONCallback lazyCallback = new LazyBSONCallback();
@@ -59,20 +59,11 @@ public class BSONSplitter extends Configured implements Tool {
     }; 
 
 
-    public Path[] getInputPaths(){
-        String dirs = getConf().get("mapred.input.dir", "");
-        String [] list = StringUtils.split(dirs);
-        Path[] result = new Path[list.length];
-        for (int i = 0; i < list.length; i++) {
-            result[i] = new Path(StringUtils.unEscapeString(list[i]));
-        }
-        return result;
+    public Path getInputPath(){
+        return this.inputPath;
     }
 
-
-
     public BSONSplitter(){
-        this.splitsMap = new HashMap<Path, List<FileSplit>>();
     }
 
     public void setInputPath(Path p){
@@ -80,12 +71,11 @@ public class BSONSplitter extends Configured implements Tool {
     }
 
     public ArrayList<FileSplit> getAllSplits(){
-        if(splitsMap == null) return new ArrayList<FileSplit>(0);
-        ArrayList<FileSplit> collectedSplits = new ArrayList<FileSplit>();
-        for(List<FileSplit> fileSplits : splitsMap.values()){
-            collectedSplits.addAll(fileSplits);
+        if(splitsList == null){
+            return new ArrayList<FileSplit>(0);
+        }else{
+            return this.splitsList;
         }
-        return collectedSplits;
     }
 
     public FileSplit createFileSplitFromBSON(BSONObject obj, FileSystem fs, FileStatus inputFile) throws IOException{//{{{
@@ -113,7 +103,7 @@ public class BSONSplitter extends Configured implements Tool {
     }//}}}
 
     public void loadSplitsFromSplitFile(FileStatus inputFile, Path splitFile) throws NoSplitFileException, IOException{//{{{
-        List<FileSplit> splits = new ArrayList<FileSplit>();
+        ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = splitFile.getFileSystem(getConf()); // throws IOException
         FileStatus splitFileStatus = null;
         try{
@@ -129,14 +119,15 @@ public class BSONSplitter extends Configured implements Tool {
             BSONObject splitInfo = (BSONObject)callback.get();
             splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
         }
-        this.splitsMap.put(inputFile.getPath(), splits);
+        this.splitsList = splits;
     }//}}}
 
     public void readSplitsForFile(FileStatus file) throws IOException{
+        log.info("Building splits information for " + file);
         long minSize = Math.max(1L, getConf().getLong("mapred.min.split.size", 1L));
         long maxSize = getConf().getLong("mapred.max.split.size", Long.MAX_VALUE);
         Path path = file.getPath();
-        List<FileSplit> splits = new ArrayList<FileSplit>();
+        ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
         if (length != 0) { 
@@ -175,10 +166,11 @@ public class BSONSplitter extends Configured implements Tool {
                     splits.add(split);
                     log.info("Final split (" + splits.size() + ") " + split.toString());
                 }
-                this.splitsMap.put(path, splits);
+                this.splitsList = splits;
                 log.info("Completed splits calculation for " + file.toString());
                 writeSplits();
             }catch(IOException e){
+                log.warn("IOException: " + e.toString());
             }finally{
                 fsDataStream.close();
             }
@@ -194,57 +186,44 @@ public class BSONSplitter extends Configured implements Tool {
         }else{
             log.info("Writing splits to disk.");
         }
-        pathsloop:
-        for(Map.Entry<Path, List<FileSplit>> entry : this.splitsMap.entrySet()) {
-            Path key = entry.getKey();
-            List<FileSplit> value = entry.getValue();
-            Path outputPath = new Path(key.getParent(),  "." + key.getName() + ".splits");
-            FileSystem pathFileSystem = outputPath.getFileSystem(getConf());
-            FSDataOutputStream fsDataOut = null;
-            try{
-                fsDataOut = pathFileSystem.create(outputPath, false);
-                for(FileSplit inputSplit : value){
-                    BSONObject splitObj = BasicDBObjectBuilder.start()
-                                            .add( "s" , inputSplit.getStart())
-                                            .add( "l" , inputSplit.getLength()).get();
-                    byte[] encodedObj = this.bsonEnc.encode(splitObj);
-                    try{
-                        fsDataOut.write(encodedObj, 0, encodedObj.length);
-                    }catch(IOException ioe){
-                        log.error("Failed writing data to splits file:" + ioe.getMessage());
-                        continue pathsloop;
-                    }
 
-                }
-            }catch(IOException e){
-                log.error("Could not create splits file: " + e.getMessage());
-                continue;
-            }finally{
-                if(fsDataOut!=null){
-                    fsDataOut.close();
-                }
+        if(this.splitsList == null ){
+            log.info("No splits found, skipping write of splits file.");
+        }
+
+        Path outputPath = new Path(getInputPath().getParent(),  "." + getInputPath().getName() + ".splits");
+        FileSystem pathFileSystem = outputPath.getFileSystem(getConf());
+        FSDataOutputStream fsDataOut = null;
+        try{
+            fsDataOut = pathFileSystem.create(outputPath, false);
+            for(FileSplit inputSplit : this.splitsList){
+                BSONObject splitObj = BasicDBObjectBuilder.start()
+                                        .add( "s" , inputSplit.getStart())
+                                        .add( "l" , inputSplit.getLength()).get();
+                byte[] encodedObj = this.bsonEnc.encode(splitObj);
+                fsDataOut.write(encodedObj, 0, encodedObj.length);
+            }
+        }catch(IOException e){
+            log.error("Could not create splits file: " + e.getMessage());
+            throw(e);
+        }finally{
+            if(fsDataOut!=null){
+                fsDataOut.close();
             }
         }
     }
     
     public void readSplits() throws IOException{
-        this.splitsMap.clear();
+        this.splitsList = new ArrayList<FileSplit>();
         if(this.inputPath == null){
             throw new IllegalStateException("Input path has not been set.");
         }
-        //for(Path p : getInputPaths()){
         FileSystem fs = this.inputPath.getFileSystem(getConf()); 
         FileStatus file = fs.getFileStatus(this.inputPath);
         readSplitsForFile(file);
     }
 
-    public Map<Path, List<FileSplit>> getSplitsMap(){
-        return this.splitsMap;
-    }
-
-
-    public List<FileStatus> getFilesInPath(Path p) throws IOException{
-        ArrayList<FileStatus> result = new ArrayList<FileStatus>();
+    public FileStatus getFileInPath(Path p) throws IOException{
         FileSystem fs = p.getFileSystem(getConf()); 
         FileStatus[] matches = fs.globStatus(p, hiddenFileFilter);
         if (matches == null) {
@@ -252,18 +231,19 @@ public class BSONSplitter extends Configured implements Tool {
         } else if (matches.length == 0) {
             throw new IOException("Input Pattern " + p + " matches 0 files");
         } else {
+            if(matches.length > 1){
+                throw new IOException("Multiple files matched. Should be a single .BSON file.");
+            }
             for (FileStatus globStat: matches) {
                 if (globStat.isDir()) {
-                    // skip directories.
-                    //for(FileStatus stat: fs.listStatus(globStat.getPath(), hiddenFileFilter)) {
-                        //result.add(stat);
-                    //}          
+                    throw new IOException("Input path is a directory - should be a single file in BSON format.");
                 } else {
-                    result.add(globStat);
+                    return globStat;
                 }
             }
+            //If we reach here, then no split file was found.
+            throw new IOException("No input file found. Set mapred.input.dir to the path of a BSON file.");
         }
-        return result;
     }
 
     public void testReadFile() throws IOException{
@@ -276,7 +256,6 @@ public class BSONSplitter extends Configured implements Tool {
             byte[] headerBuf = new byte[4];
             fsDataStream.read(fsDataStream.getPos(), headerBuf, 0, 4);
             fsDataStream.skip(1000);
-            //fsDataStream.seek(fsDataStream.getPos() + 1000);
         }
     }
 

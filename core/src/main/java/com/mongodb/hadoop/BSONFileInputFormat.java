@@ -53,25 +53,25 @@ public class BSONFileInputFormat extends FileInputFormat {
     }
 
     public List<FileSplit> getSplits(JobContext context) throws IOException{
-        log.info(context.getConfiguration());
         Configuration config = context.getConfiguration();
+
         BSONSplitter splitter = new BSONSplitter();
         splitter.setConf(config);
-        Path[] inputPaths = splitter.getInputPaths();
-        List<FileStatus> filesToProcess = new ArrayList<FileStatus>();
-        for(Path inputPath : inputPaths){
-            filesToProcess.addAll(splitter.getFilesInPath(inputPath));
+        splitter.setInputPath(new Path(config.get("mapred.input.dir", "")));
+
+        Path inputPath = splitter.getInputPath();
+        Path splitFilePath =  new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+        FileSystem fs = inputPath.getFileSystem(config);
+        FileStatus inputFile = null;
+
+        try{
+            inputFile = splitter.getFileInPath(splitter.getInputPath());
+            splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
+        }catch(BSONSplitter.NoSplitFileException nsfe){
+            log.info("No split file for " + inputFile + "; building split file");
+            splitter.readSplitsForFile(inputFile);
         }
-        for(FileStatus inputFile : filesToProcess){
-        Path path = inputFile.getPath();
-            Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
-            FileSystem fs = path.getFileSystem(config);
-            try{
-                splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
-            }catch(BSONSplitter.NoSplitFileException nsfe){
-                splitter.readSplitsForFile(inputFile);
-            }
-        }
+
         log.info("BSONSplitter returned " + splitter.getAllSplits().size() + " splits.");
         return splitter.getAllSplits();
     }

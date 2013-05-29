@@ -16,6 +16,7 @@ import org.apache.hadoop.mapred.RecordReader;
 
 import java.util.ArrayList;
 import java.io.IOException;
+import org.apache.commons.logging.*;
 
 /**
  * Copyright (c) 2008 - 2012 10gen, Inc. <http://10gen.com>
@@ -35,6 +36,8 @@ import java.io.IOException;
 
 public class BSONFileInputFormat extends FileInputFormat {
 
+    private static final Log log = LogFactory.getLog( BSONFileInputFormat.class );
+
     protected boolean isSplitable(JobContext context, Path filename) {
         return true;
     }
@@ -43,20 +46,17 @@ public class BSONFileInputFormat extends FileInputFormat {
     public org.apache.hadoop.mapred.FileSplit[] getSplits(JobConf job, int numSplits) throws IOException {
         BSONSplitter splitter = new BSONSplitter();
         splitter.setConf(job);
-        Path[] inputPaths = splitter.getInputPaths();
-        ArrayList<FileStatus> filesToProcess = new ArrayList<FileStatus>();
-        for(Path inputPath : inputPaths){
-            filesToProcess.addAll(splitter.getFilesInPath(inputPath));
-        }
-        for(FileStatus inputFile : filesToProcess){
-            Path path = inputFile.getPath();
-            Path splitFilePath =  new Path(path.getParent(),  "." + path.getName() + ".splits");
-            FileSystem fs = path.getFileSystem(job);
-            try{
-                splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
-            }catch(BSONSplitter.NoSplitFileException nsfe){
-                splitter.readSplitsForFile(inputFile);
-            }
+        splitter.setInputPath(new Path(job.get("mapred.input.dir", "")));
+        Path inputPath = splitter.getInputPath();
+        FileStatus inputFile = splitter.getFileInPath(inputPath);
+
+        Path splitFilePath =  new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+        FileSystem fs = inputPath.getFileSystem(job);
+        try{
+            splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
+        }catch(BSONSplitter.NoSplitFileException nsfe){
+            log.info("No split file for " + inputFile + "; building split file");
+            splitter.readSplitsForFile(inputFile);
         }
 
         ArrayList<org.apache.hadoop.mapreduce.lib.input.FileSplit> newsplits = splitter.getAllSplits();
