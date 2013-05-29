@@ -76,9 +76,10 @@ After successfully building, you must copy the jars to the lib directory on each
    Build with `"cdh3"`
 
 * ###Cloudera Hadoop Release 4
-   This is the newest release from Cloudera which is based on Apache Hadoop 0.23.
+ 
+   This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1 is still fully compatible.
    
-   Includes support for Streaming and Pig 0.9.2.
+   Includes support for Streaming and Pig 0.11.1.
    
    Build with `"cdh4"`
 
@@ -202,7 +203,7 @@ For example:
     from pymongo_hadoop import BSONMapper
     def mapper(documents):
         for doc in documents:
-            yield {'_id': doc['_id'].year, 'bc10Year': doc['bc10Year']}
+        	yield {'_id': doc['user_id'], 'city': doc['location']['city']}
 
     BSONMapper(mapper)
 
@@ -213,7 +214,7 @@ To implement a reducer, write a function which accepts two arguments: a key and 
 
     def reducer(key, values):
         _count = _sum = 0
-        for v in values:
+        for v in values:8
             _count += 1
             _sum += v['bc10Year']
         return {'_id': key, 'avg': _sum / _count,
@@ -271,9 +272,9 @@ Call the callback function with the output result of reduce.
 Static .bson files (which is the format produced by the [mongodump](http://docs.mongodb.org/manual/reference/program/mongodump/) tool for backups) can also be used as input to Hadoop jobs, or written to as output files.
 Because BSON contains headers and length information, a .bson file cannot be split arbitrarily for the purposes of parallelization, it must be split along the correct boundaries between documents. To facilitate this the mongo-hadoop adapter uses a secondary metadata file which contains information about the offsets of documents within the file. This file should be created before running a job against a .bson file - to create it, run the script `bson-splitter.py <filename>`. If the file resides on S3 or HDFS, the `.splits` will be calculated and the file will be built and saved automatically. However, for optimal performance, it's faster to build this file locally before uploading to S3 or HDFS if possible. 
 
-## Example 1
+## Example 1 - Treasury Yield Calculation
 
-####Treasury Yield
+###Setup
 
 Source code is in `examples/treasury_yield`. To prepare the sample data, first run `mongoimport` with the file in `examples/treasury_yield/src/main/resources/yield_historical_in.json` to load it into a local instance of MongoDB.
 
@@ -286,7 +287,7 @@ We end up with a test collection containing documents that look like this:
       …
     }
 
-
+###Map/Reduce with Java
 
 The goal is to find the average of the bc10Year field, across each year that exists in the dataset. First we define a mapper, which is executed against each document in the collection. We extract the year from the `_id` field and use it as the output key, along with the value we want to use for averaging, `bc10Year`.
 
@@ -327,7 +328,8 @@ Then we write a reducer, a function which takes the values collected for each ke
 	        pContext.write( pKey, new BSONWritable( output ) );
 	    }	
 	}
-
+	
+###Pig
 
 We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
 
@@ -358,8 +360,78 @@ We can also easily accomplish the same task with just a few lines of Pig script.
 	 com.mongodb.hadoop.pig.MongoInsertStorage('group:chararray,tenyear_avg:float', 'group');
 
 
-## Example 2
 
+## Example 2 - Enron E-mails
+
+###Setup
+
+Download a copy of the data set [here](http://mongodb-enron-email.s3-website-us-east-1.amazonaws.com/). Each document in the data set contains a single e-mail, including headers containing sender and recipient information. In this example we will build a list of the unique sender/recipient pairs, counting how many times each pair occurs.
+
+####Map/Reduce with Java
+
+The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from the `To` field, and construct a `BSONObject` containing each pair which will act as the key. Then we emit the value `1` for each key. 
+
+	public class EnronMailMapper
+		extends Mapper<NullWritable,BSONObject, BSONWritable, IntWritable>{
+	
+	    private static final Log LOG = LogFactory.getLog( EnronMailMapper.class );
+	
+	
+		@Override
+		public void map(NullWritable key, BSONObject val, final Context context)
+	        throws IOException, InterruptedException{
+			if(val.containsKey("headers")){
+				BSONObject headers = (BSONObject)val.get("headers");
+				if(headers.containsKey("From") && headers.containsKey("To")){
+					String from = (String)headers.get("From");
+					String to = (String)headers.get("To");
+	                String[] recips = to.split(",");
+	                for(int i=0;i<recips.length;i++){
+	                    String recip = recips[i].trim();
+	                    if(recip.length() > 0){
+	                        BSONObject outKey = BasicDBObjectBuilder.start()
+	                                                .add("f", from)
+	                                                .add("t", recip)
+	                                                .get();
+	                        context.write( new BSONWritable(outKey), new IntWritable(1) );
+	                    }
+	                }
+				}
+			}
+		}
+	
+	}
+
+The reduce class will take the collected values for each key, sum them together, and record the output.
+
+    @Override
+    public void reduce( final BSONWritable pKey,
+                        final Iterable<IntWritable> pValues,
+                        final Context pContext )
+            throws IOException, InterruptedException{
+        int sum = 0;
+        for ( final IntWritable value : pValues ){
+            sum += value.get();
+        }
+        pContext.write( pKey, new IntWritable(sum) );
+    }
+
+####Pig
+
+To accomplish the same with pig, but with much less work:
+
+	REGISTER ../mongo-2.10.1.jar;
+	REGISTER ../core/target/mongo-hadoop-core_cdh4.3.0-1.1.0.jar
+	REGISTER ../pig/target/mongo-hadoop-pig_cdh4.3.0-1.1.0.jar
+	
+	raw = LOAD 'file:///Users/mike/dump/enron_mail/messages.bson' using com.mongodb.hadoop.pig.BSONLoader('','headers:[]') ; 
+	send_recip = FOREACH raw GENERATE $0#'From' as from, $0#'To' as to;
+	send_recip_filtered = FILTER send_recip BY to IS NOT NULL;
+	send_recip_split = FOREACH send_recip_filtered GENERATE from as from, FLATTEN(TOKENIZE(to)) as to;
+	send_recip_split_trimmed = FOREACH send_recip_split GENERATE from as from, TRIM(to) as to;
+	send_recip_grouped = GROUP send_recip_split_trimmed BY (from, to);
+	send_recip_counted = FOREACH send_recip_grouped GENERATE group, COUNT($1) as count;
+	STORE send_recip_counted INTO 'file:///tmp/enron_emailcounts.bson' using com.mongodb.hadoop.pig.BSONStorage;
 
 
 ## Usage with Amazon Elastic MapReduce
@@ -367,9 +439,6 @@ We can also easily accomplish the same task with just a few lines of Pig script.
 Amazon Elastic MapReduce is a managed Hadoop framework that allows you to submit jobs to a cluster of customizable size and configuration, without needing to deal with provisioning nodes and installing software.
 
 ## Usage with Pig
-
-### Reading into Pig
-
 
 ### Reading into Pig
 
@@ -441,11 +510,11 @@ To store output from Pig in a .BSON file (which can then be imported into a mong
 
     STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage;
 
-If you want to supply a custom value for '_id' in the documents written out by `BSONStorage` you can give it an optional `idAlias` field which maps a value in the Pig record to the _id field, for example:
+If you want to supply a custom value for the `'_id'` field in the documents written out by `BSONStorage` you can give it an optional `idAlias` field which maps a value in the Pig record to the `'_id'` field in the output document, for example:
 
     STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage('id');
 
-The output URI for BSONStorage can be any accessible file system including `hdfs://` and `s3n://`. However, when using S3 for an output file, you will need to set `fs.s3.awsAccessKeyId` and `fs.s3.awsSecretAccessKey` for your AWS account accordingly.
+The output URI for BSONStorage can be any accessible file system including `hdfs://` and `s3n://`. However, when using S3 for an output file, you will also need to set `fs.s3.awsAccessKeyId` and `fs.s3.awsSecretAccessKey` for your AWS account accordingly.
 
 #####Inserting directly into a MongoDB collection
 
