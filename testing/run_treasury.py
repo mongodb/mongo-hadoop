@@ -32,7 +32,7 @@ VERSION_SUFFIX = "1.1.0-SNAPSHOT"
 version_buildtarget =\
     {"0.22" : "0.22.0",
      "1.0" : "1.0.3",
-     "cdh4" : "cdh4b1",
+     "cdh4" : "cdh4.3.0",
      "0.20" : "0.20.205.0",
      "0.23" : "0.23.1",
      "cdh3" :"cdh3u3"}
