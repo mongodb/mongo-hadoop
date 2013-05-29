@@ -50,7 +50,15 @@ public class BSONFileInputFormat extends FileInputFormat {
         Path inputPath = splitter.getInputPath();
         FileStatus inputFile = splitter.getFileInPath(inputPath);
 
-        Path splitFilePath =  new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+
+        String splitFileLocation = job.get("bson.split.file","");
+        Path splitFilePath;
+        if(splitFileLocation == null || splitFileLocation.length()==0){
+            splitFilePath = new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+        }else{
+            splitFilePath = new Path(splitFileLocation);
+        }
+
         FileSystem fs = inputPath.getFileSystem(job);
         try{
             splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);

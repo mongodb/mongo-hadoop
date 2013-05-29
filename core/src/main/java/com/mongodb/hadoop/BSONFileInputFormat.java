@@ -60,7 +60,15 @@ public class BSONFileInputFormat extends FileInputFormat {
         splitter.setInputPath(new Path(config.get("mapred.input.dir", "")));
 
         Path inputPath = splitter.getInputPath();
-        Path splitFilePath =  new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+
+        String splitFileLocation = config.get("bson.split.file");
+        Path splitFilePath;
+        if(splitFileLocation == null || splitFileLocation.length()==0){
+            splitFilePath = new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
+        }else{
+            splitFilePath = new Path(splitFileLocation);
+        }
+
         FileSystem fs = inputPath.getFileSystem(config);
         FileStatus inputFile = null;
 
