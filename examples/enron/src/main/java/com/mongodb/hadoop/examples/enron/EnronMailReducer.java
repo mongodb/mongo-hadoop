@@ -19,6 +19,7 @@ package com.mongodb.hadoop.examples.enron;
 
 import org.bson.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.io.*;
 
 // Commons
 import org.apache.commons.logging.*;
@@ -33,12 +34,12 @@ import java.io.*;
 import java.util.*;
 
 public class EnronMailReducer
-	extends Reducer <BSONObject, IntWritable, BSONObject, IntWritable> {
+	extends Reducer <BSONWritable, IntWritable, BSONWritable, IntWritable> {
 
     private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
 
     @Override
-    public void reduce( final BSONObject pKey,
+    public void reduce( final BSONWritable pKey,
                         final Iterable<IntWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
