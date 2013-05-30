@@ -27,7 +27,7 @@ if not os.path.isdir(TEMPDIR):
 
 #declare -a job_args
 #cd ..
-VERSION_SUFFIX = "1.1.0-SNAPSHOT"
+VERSION_SUFFIX = "1.1.0"
 
 version_buildtarget =\
     {"0.22" : "0.22.0",
