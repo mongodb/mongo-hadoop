@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.conf.*;
 import java.io.IOException;
 
@@ -39,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.apache.commons.logging.*;
+import org.apache.hadoop.util.ReflectionUtils;
 
 
 public class BSONFileInputFormat extends FileInputFormat {
@@ -52,36 +54,40 @@ public class BSONFileInputFormat extends FileInputFormat {
         return reader;
     }
 
+    public static PathFilter getInputPathFilter(JobContext context) {
+        Configuration conf = context.getConfiguration();
+        Class<?> filterClass = conf.getClass(PATHFILTER_CLASS, null,
+                PathFilter.class);
+        return (filterClass != null) ?
+            (PathFilter) ReflectionUtils.newInstance(filterClass, conf) : null;
+    }
+
+    @Override
     public List<FileSplit> getSplits(JobContext context) throws IOException{
         Configuration config = context.getConfiguration();
-
-        BSONSplitter splitter = new BSONSplitter();
-        splitter.setConf(config);
-        splitter.setInputPath(new Path(config.get("mapred.input.dir", "")));
-
-        Path inputPath = splitter.getInputPath();
-
-        String splitFileLocation = config.get("bson.split.file");
-        Path splitFilePath;
-        if(splitFileLocation == null || splitFileLocation.length()==0){
-            splitFilePath = new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
-        }else{
-            splitFilePath = new Path(splitFileLocation);
+        PathFilter pf = getInputPathFilter(context);
+        ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
+        List<FileStatus> inputFiles = listStatus(context);
+        for(FileStatus file : inputFiles){
+            if(pf != null && !pf.accept(file.getPath())){
+                log.info("skipping " + file.getPath());
+                continue;
+            }
+            BSONSplitter splitter = new BSONSplitter();
+            splitter.setConf(config);
+            splitter.setInputPath(file.getPath());
+            Path splitFilePath = new Path(file.getPath().getParent(),  "." + file.getPath().getName() + ".splits");
+            try{
+                splitter.loadSplitsFromSplitFile(file, splitFilePath);
+            }catch(BSONSplitter.NoSplitFileException nsfe){
+                log.info("No split file for " + file + "; building split file");
+                splitter.readSplitsForFile(file);
+            }
+            log.info("BSONSplitter found " + splitter.getAllSplits().size() + " splits.");
+            splits.addAll(splitter.getAllSplits());
         }
-
-        FileSystem fs = inputPath.getFileSystem(config);
-        FileStatus inputFile = null;
-
-        try{
-            inputFile = splitter.getFileInPath(splitter.getInputPath());
-            splitter.loadSplitsFromSplitFile(inputFile, splitFilePath);
-        }catch(BSONSplitter.NoSplitFileException nsfe){
-            log.info("No split file for " + inputFile + "; building split file");
-            splitter.readSplitsForFile(inputFile);
-        }
-
-        log.info("BSONSplitter returned " + splitter.getAllSplits().size() + " splits.");
-        return splitter.getAllSplits();
+        log.info("Total of " + splits.size() + " found.");
+        return splits;
     }
 
 }
