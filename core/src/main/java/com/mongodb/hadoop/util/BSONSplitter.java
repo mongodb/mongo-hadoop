@@ -59,10 +59,6 @@ public class BSONSplitter extends Configured implements Tool {
     }; 
 
 
-    public Path getInputPath(){
-        return this.inputPath;
-    }
-
     public BSONSplitter(){
     }
 
@@ -228,29 +224,6 @@ public class BSONSplitter extends Configured implements Tool {
         FileSystem fs = this.inputPath.getFileSystem(getConf()); 
         FileStatus file = fs.getFileStatus(this.inputPath);
         readSplitsForFile(file);
-    }
-
-    public FileStatus getFileInPath(Path p) throws IOException{
-        FileSystem fs = p.getFileSystem(getConf()); 
-        FileStatus[] matches = fs.globStatus(p, hiddenFileFilter);
-        if (matches == null) {
-            throw new IOException("Input path does not exist: " + p);
-        } else if (matches.length == 0) {
-            throw new IOException("Input Pattern " + p + " matches 0 files");
-        } else {
-            if(matches.length > 1){
-                throw new IOException("Multiple files matched. Should be a single .BSON file.");
-            }
-            for (FileStatus globStat: matches) {
-                if (globStat.isDir()) {
-                    throw new IOException("Input path is a directory - should be a single file in BSON format.");
-                } else {
-                    return globStat;
-                }
-            }
-            //If we reach here, then no split file was found.
-            throw new IOException("No input file found. Set mapred.input.dir to the path of a BSON file.");
-        }
     }
 
     public void testReadFile() throws IOException{
