@@ -126,6 +126,13 @@ public class BSONSplitter extends Configured implements Tool {
         ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
+        if(!getConf().getBoolean("bson.split.read_splits", true)){
+            log.info("Reading splits is disabled - constructing single split for " + file);
+            FileSplit onesplit = createFileSplit(file, fs, 0, length);
+            splits.add(onesplit);
+            this.splitsList = splits;
+            return;
+        }
         if (length != 0) { 
             int numDocsRead = 0;
             long blockSize = file.getBlockSize();

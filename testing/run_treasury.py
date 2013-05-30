@@ -552,6 +552,18 @@ class TestStaticBSON(Standalone):
         self.assertTrue(compare_results(out_col))
 
 
+    def test_treasury_onesplit(self):
+        logging.info("Testing bsoninput with one split")
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        PARAMETERS["bson.split.read_splits"] = 'false'
+        logging.info(PARAMETERS)
+        runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson"), PARAMETERS, self.server_hostname)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+        #runjob(self.server_hostname, DEFAULT_PARAMETERS)
+
+
     def test_treasury(self):
         logging.info("Testing bsoninput with no splits")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
