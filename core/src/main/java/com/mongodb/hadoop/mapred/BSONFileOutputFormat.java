@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop;
+package com.mongodb.hadoop.mapred;
 
 // Mongo
 
-import com.mongodb.hadoop.output.*;
-import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.mapred.output.*;
 import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.util.*;
 
 // Commons
 // Hadoop
 
-public class BSONFileOutputFormat<K, V> extends OutputFormat<K, V> {
+public class BSONFileOutputFormat<K, V> implements OutputFormat<K, V> {
 
-    public void checkOutputSpecs( final JobContext context ){ }
+    public void checkOutputSpecs( FileSystem fs, final JobConf job ){ }
 
-    public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
-        return new MongoOutputCommiter();
-    }
-
-    @Override
-    public RecordWriter<K, V> getRecordWriter( final TaskAttemptContext context ){
-        return new BSONFileRecordWriter( context );
-    }
-
-    public BSONFileOutputFormat(){ 
+    public RecordWriter<K, V> getRecordWriter(FileSystem fs, JobConf job, String name, Progressable progress){
+        return new BSONFileRecordWriter(job);
     }
 
     private static final Log LOG = LogFactory.getLog( BSONFileOutputFormat.class );

@@ -283,6 +283,7 @@ class TestBSONOutput(Standalone):
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
         PARAMETERS["mapred.output.file"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
+        print self.temp_outdir
 
         runjob(self.server_hostname, PARAMETERS)
         mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out", os.path.join(self.temp_outdir, "mongo_hadoop","results.bson"))
@@ -533,6 +534,24 @@ class TestStaticBSON(Standalone):
                         params=PARAMETERS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
+
+    @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
+                     'streaming not supported')
+    def test_streaming_staticout(self):
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["bson.split.read_splits"] = 'false'
+        PARAMETERS["bson.output.build_splits"] = 'true'
+        PARAMETERS["mapred.max.split.size"] = '100'
+
+        PARAMETERS["mapred.output.file"]= "file:///tmp/BLAH.bson"
+        inputpath = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson")
+        runstreamingjob(self.server_hostname,
+                        inputformat="com.mongodb.hadoop.mapred.BSONFileInputFormat",
+                        outputformat="com.mongodb.hadoop.mapred.BSONFileOutputFormat",
+                        inputpath=inputpath,
+                        params=PARAMETERS)
+        #out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        #self.assertTrue(compare_results(out_col))
 
     @unittest.skipIf(not AWS_ACCESSKEY or not AWS_SECRET, 'AWS credentials not provided')
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),

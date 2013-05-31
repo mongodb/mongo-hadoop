@@ -20,6 +20,7 @@ import com.mongodb.*;
 import com.mongodb.hadoop.*;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,11 +42,16 @@ public class BSONFileRecordWriter<K, V> extends RecordWriter<K, V> {
     private final Path outputPath;
     private boolean outFileOpened = false;
     private FSDataOutputStream outFile = null;
-    private final TaskAttemptContext _context;
+    private Configuration conf;
+
+
+    public BSONFileRecordWriter(Configuration conf){
+        this.conf = conf;
+        this.outputPath = new Path(this.conf.get("mapred.output.file"));
+    }
 
     public BSONFileRecordWriter( TaskAttemptContext ctx ){
-        this.outputPath = new Path(ctx.getConfiguration().get("mapred.output.file"));
-        this._context = ctx;
+        this(ctx.getConfiguration());
     }
 
     public void close( TaskAttemptContext context ) throws IOException{
@@ -60,7 +66,7 @@ public class BSONFileRecordWriter<K, V> extends RecordWriter<K, V> {
         }else if(this.outFileOpened && this.outFile == null){
             throw new IllegalStateException("Opening of output file failed.");
         }else{
-            FileSystem fs = this.outputPath.getFileSystem(this._context.getConfiguration());
+            FileSystem fs = this.outputPath.getFileSystem(this.conf);
             this.outFile = fs.create(this.outputPath);
             return this.outFile;
         }
