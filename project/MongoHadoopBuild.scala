@@ -38,9 +38,9 @@ object MongoHadoopBuild extends Build {
                                   "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
                                   "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop), nextGen=true),
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
-                                  "1.0" -> hadoopDependencies("1.0.3", false, stockPig),
-                                  "1.0.x" -> hadoopDependencies("1.0.3", false, stockPig),
-                                  "default" -> hadoopDependencies("1.0.3", false, stockPig)
+                                  "1.0" -> hadoopDependencies("1.0.4", false, stockPig),
+                                  "1.0.x" -> hadoopDependencies("1.0.4", false, stockPig),
+                                  "default" -> hadoopDependencies("1.0.4", false, stockPig)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop", 
