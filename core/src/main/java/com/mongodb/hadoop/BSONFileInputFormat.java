@@ -56,7 +56,7 @@ public class BSONFileInputFormat extends FileInputFormat {
 
     public static PathFilter getInputPathFilter(JobContext context) {
         Configuration conf = context.getConfiguration();
-        Class<?> filterClass = conf.getClass(PATHFILTER_CLASS, null,
+        Class<?> filterClass = conf.getClass("mapred.input.pathFilter.class", null,
                 PathFilter.class);
         return (filterClass != null) ?
             (PathFilter) ReflectionUtils.newInstance(filterClass, conf) : null;
