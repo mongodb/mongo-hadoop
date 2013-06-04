@@ -29,7 +29,7 @@ public class EnronMailMapper
                 for(int i=0;i<recips.length;i++){
                     String recip = recips[i].trim();
                     if(recip.length() > 0){
-                        context.write(new MailPair(from, to), new IntWritable(1));
+                        context.write(new MailPair(from, recip), new IntWritable(1));
                     }
                 }
 			}
