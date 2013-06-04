@@ -194,13 +194,7 @@ public class BSONSplitter extends Configured implements Tool {
             log.info("No splits found, skipping write of splits file.");
         }
 
-        String splitFileLocation = getConf().get("bson.split.file","");
-        Path outputPath;
-        if(splitFileLocation == null || splitFileLocation.length()==0){
-            outputPath = new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
-        }else{
-            outputPath = new Path(splitFileLocation);
-        }
+        Path outputPath = new Path(inputPath.getParent(),  "." + inputPath.getName() + ".splits");
 
         FileSystem pathFileSystem = outputPath.getFileSystem(getConf());
         FSDataOutputStream fsDataOut = null;
