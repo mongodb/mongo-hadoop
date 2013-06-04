@@ -14,7 +14,7 @@ public class BSONPathFilter implements PathFilter{
     public boolean accept(Path path){
         String pathName = path.getName().toLowerCase();
         boolean acceptable = pathName.endsWith(".bson") && !pathName.startsWith("."); 
-        log.info("returning " + acceptable);
+        log.info(path.toString() + " returning " + acceptable);
         return acceptable;
     }
 }

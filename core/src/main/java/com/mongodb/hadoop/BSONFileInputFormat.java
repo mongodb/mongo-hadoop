@@ -56,7 +56,7 @@ public class BSONFileInputFormat extends FileInputFormat {
 
     public static PathFilter getInputPathFilter(JobContext context) {
         Configuration conf = context.getConfiguration();
-        Class<?> filterClass = conf.getClass("mapred.input.pathFilter.class", null,
+        Class<?> filterClass = conf.getClass("bson.pathfilter.class", null,
                 PathFilter.class);
         return (filterClass != null) ?
             (PathFilter) ReflectionUtils.newInstance(filterClass, conf) : null;
@@ -70,9 +70,12 @@ public class BSONFileInputFormat extends FileInputFormat {
         List<FileStatus> inputFiles = listStatus(context);
         for(FileStatus file : inputFiles){
             if(pf != null && !pf.accept(file.getPath())){
-                log.info("skipping " + file.getPath());
+                log.info("skipping file " + file.getPath() + " not matched path filter.");
                 continue;
+            }else{
+                log.info("processing file " + file.getPath());
             }
+
             BSONSplitter splitter = new BSONSplitter();
             splitter.setConf(config);
             splitter.setInputPath(file.getPath());

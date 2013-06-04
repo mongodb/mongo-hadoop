@@ -540,8 +540,8 @@ class TestStaticBSON(Standalone):
     def test_streaming_staticout(self):
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["bson.split.read_splits"] = 'false'
-        PARAMETERS["bson.output.build_splits"] = 'true'
-        PARAMETERS["mapred.max.split.size"] = '100'
+        PARAMETERS["bson.output.build_splits"] = 'false'
+        PARAMETERS["mapred.max.split.size"] = '100000'
 
         PARAMETERS["mapred.output.file"]= "file:///tmp/BLAH.bson"
         inputpath = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson")
@@ -576,7 +576,7 @@ class TestStaticBSON(Standalone):
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
-        PARAMETERS["mapreduce.input.pathFilter.class"] = 'com.mongodb.hadoop.BSONPathFilter'
+        PARAMETERS["bson.pathfilter.class"] = 'com.mongodb.hadoop.BSONPathFilter'
         logging.info(PARAMETERS)
         runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop"), PARAMETERS, self.server_hostname)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
@@ -706,6 +706,7 @@ class TestUpdateWritable(Standalone):
             logging.info("verifying update for", r.get("_id", None))
             self.assertEqual(len(r.get('calculatedAt', [])), 2)
             self.assertEqual(r.get('numCalculations', 0), 2)
+
 class TestOldMRApi(Standalone):
 
     def test_treasury(self):
