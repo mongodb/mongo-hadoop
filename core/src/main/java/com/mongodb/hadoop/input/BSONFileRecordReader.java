@@ -59,6 +59,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
         this.fileSplit = (FileSplit) inputSplit;
         this.conf = context.getConfiguration();
+        log.info("reading split " + this.fileSplit.toString());
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
         in = fs.open(file, 16*1024*1024);
@@ -82,7 +83,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
             BSONObject bo = (BSONObject)callback.get();
             value = bo;
             numDocsRead++;
-            if(numDocsRead % 5000 == 0){
+            if(numDocsRead % 10000 == 0){
                 log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
             return true;
