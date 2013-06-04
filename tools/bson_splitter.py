@@ -4,7 +4,7 @@ import pymongo
 from bson import BSON
 import os
 
-SPLIT_SIZE = 200000
+SPLIT_SIZE = 64 * 1024 * 1024
 
 def main(argv):
     split_bson(argv[0])
