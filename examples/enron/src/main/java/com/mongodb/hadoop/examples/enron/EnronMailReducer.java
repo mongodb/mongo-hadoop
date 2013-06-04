@@ -18,6 +18,7 @@ package com.mongodb.hadoop.examples.enron;
 // Mongo
 
 import org.bson.*;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.util.*;
 import com.mongodb.hadoop.io.*;
 
@@ -34,20 +35,24 @@ import java.io.*;
 import java.util.*;
 
 public class EnronMailReducer
-	extends Reducer <BSONWritable, IntWritable, BSONWritable, IntWritable> {
+	extends Reducer <MailPair, IntWritable, BSONWritable, IntWritable> {
 
     private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
 
     @Override
-    public void reduce( final BSONWritable pKey,
+    public void reduce( final MailPair pKey,
                         final Iterable<IntWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
+        LOG.info("reducing " + pKey.toString());
         int sum = 0;
         for ( final IntWritable value : pValues ){
             sum += value.get();
         }
-        pContext.write( pKey, new IntWritable(sum) );
+        BSONObject outDoc = new BasicDBObjectBuilder().start().add( "f" , pKey.from).add( "t" , pKey.to ).get();
+        BSONWritable pkeyOut = new BSONWritable(outDoc);
+
+        pContext.write( pkeyOut, new IntWritable(sum) );
     }
 
 

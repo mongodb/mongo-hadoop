@@ -12,7 +12,7 @@ import java.io.*;
 import java.util.*;
 
 public class EnronMailMapper
-	extends Mapper<NullWritable,BSONObject, BSONWritable, IntWritable>{
+	extends Mapper<NullWritable,BSONObject, MailPair, IntWritable>{
 
     private static final Log LOG = LogFactory.getLog( EnronMailMapper.class );
 
@@ -29,11 +29,7 @@ public class EnronMailMapper
                 for(int i=0;i<recips.length;i++){
                     String recip = recips[i].trim();
                     if(recip.length() > 0){
-                        BSONObject outKey = BasicDBObjectBuilder.start()
-                                                .add("f", from)
-                                                .add("t", recip)
-                                                .get();
-                        context.write( new BSONWritable(outKey), new IntWritable(1) );
+                        context.write(new MailPair(from, to), new IntWritable(1));
                     }
                 }
 			}
