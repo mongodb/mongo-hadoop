@@ -29,11 +29,13 @@ public class BSONWritableComparator extends WritableComparator {
     }
 
     public int compare( byte[] b1, int s1, int l1, byte[] b2, int s2, int l2 ){
+        //return BSONComparator.getInstance().compare(b1, s1, l1, b2, s2, l2);
         return super.compare( b1, s1, l1, b2, s2, l2 );
     }
 
     public int compare( Object a, Object b ){
-        return super.compare( a, b );
+        return BSONComparator.getInstance().compare(((BSONWritable)a).getDoc(), ((BSONWritable)b).getDoc());
+        //return super.compare( a, b );
     }
 
     private static final Log log = LogFactory.getLog( BSONWritableComparator.class );
