@@ -339,7 +339,7 @@ class BaseShardedTest(unittest.TestCase):
                                    JSONFILE_PATH)
         mongos_admindb = self.mongos_connection['admin']
         mongos_admindb.command("enablesharding", "mongo_hadoop")
-        self.homedirs = [x + str(num_runs) for x in ("rs_0", "rs_1", "config_db_", "mongos_", "mongos2_"]
+        self.homedirs = [x + str(num_runs) for x in ("rs_0", "rs_1", "config_db_", "mongos_", "mongos2_")]
         num_runs += 1
 
         #turn off the balancer
