@@ -142,7 +142,7 @@ class MongosManager(object):
     def wait_for(self, proc, port):
         trys = 0
         return_code = proc.poll()
-        while return_code is None: # and trys < 100: # ~25 seconds
+        while return_code is None and trys < 100: # ~25 seconds
             trys += 1
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -187,7 +187,7 @@ class StandaloneManager(object):
         trys = 0
         return_code = proc.poll()
 
-        while return_code is None: # and trys < 100: # ~25 seconds
+        while return_code is None and trys < 100: # ~25 seconds
             trys += 1
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -390,7 +390,7 @@ class ReplicaSetManager(object):
         trys = 0
         return_code = proc.poll()
         if return_code is not None: return True
-        while return_code is None: # and trys < 100: # ~25 seconds
+        while return_code is None and trys < 100: # ~25 seconds
             trys += 1
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
