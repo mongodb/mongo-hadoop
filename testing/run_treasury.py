@@ -259,12 +259,15 @@ class Standalone(unittest.TestCase):
         self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
 
     def tearDown(self):
+        print "Standalone Teardown"
+        logging.info("Standalone Teardown")
         pass
 
 
     @classmethod
     def tearDownClass(self):
-        print "standalone clas: killing mongod"
+        print "Standalone Teardown: killing mongod"
+        logging.info("Standalone Teardown: killing mongod")
         self.server.kill_all_members()
         shutil.rmtree(os.path.join(TEMPDIR,"standalone1"))
         time.sleep(10)
@@ -361,12 +364,10 @@ class BaseShardedTest(unittest.TestCase):
     def setUp(self):
         self.mongos_connection['mongo_hadoop']['yield_historical.out'].drop()
 
-    def tearDown(self):
-        pass
-
     @classmethod
     def tearDownClass(self):
-        logging.info("killing sharded servers!")
+        print "BaseShardedTest: killing sharded servers!"
+        logging.info("BaseShardedTest: killing sharded servers!")
         self.mongos.kill_all_members(sig=9)
         self.mongos2.kill_all_members(sig=9)
         self.shard1.kill_all_members(sig=9)
@@ -494,7 +495,6 @@ class TestStreaming(Standalone):
 
 class TestS3BSON(Standalone):
 
-
     @unittest.skipIf(not AWS_ACCESSKEY or not AWS_SECRET, 'AWS credentials not provided')
     def test_treasury(self):
         logging.info("Testing static bson on S3 filesystem")
@@ -520,6 +520,8 @@ class TestStaticBSON(Standalone):
         
 
     def tearDown(self):
+        logging.info("TestStaticBSON teardown")
+        print "TestStaticBSON teardown"
         super(TestStaticBSON, self).tearDown();
         print "removing static bson test dir"
         shutil.rmtree(self.temp_outdir)
