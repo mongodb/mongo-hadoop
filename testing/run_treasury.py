@@ -184,6 +184,7 @@ def runbsonjob(input_path, params, hostname,
     cmd.append("jar")
     cmd.append(JOBJAR_PATH)
     cmd.append(className)
+    print cmd
 
     for key, val in params.items():
         cmd.append("-D")
@@ -207,12 +208,13 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
            readpref="primary",
            input_auth=None,
            output_auth=None, 
-           inputpath='/tmp/in',
-           outputpath='/tmp/out',
+           inputpath='file://' + os.path.join(TEMPDIR, 'in'),
+           outputpath='file://' + os.path.join(TEMPDIR, 'out'),
            inputformat='com.mongodb.hadoop.mapred.MongoInputFormat',
            outputformat='com.mongodb.hadoop.mapred.MongoOutputFormat'):
 
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
+    print cmd
     if HADOOP_RELEASE.startswith('cdh3'):
         #Special case for cdh3, as it uses non-default location.
         cmd += ['jar','$HADOOP_HOME/contrib/streaming/hadoop-streaming*']
@@ -265,7 +267,7 @@ class Standalone(unittest.TestCase):
         print "standalone clas: killing mongod"
         self.server.kill_all_members()
         shutil.rmtree(os.path.join(TEMPDIR,"standalone1"))
-        time.sleep(7.5)
+        time.sleep(10)
 
 class TestBasic(Standalone):
 
@@ -294,6 +296,7 @@ class BaseShardedTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
+        time.sleep(5)
         self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0"),
                 with_arbiter=True,
                 num_members=3)
@@ -353,7 +356,7 @@ class BaseShardedTest(unittest.TestCase):
             except Exception, e:
                 print e
 
-        time.sleep(5)
+        time.sleep(10)
 
     def setUp(self):
         self.mongos_connection['mongo_hadoop']['yield_historical.out'].drop()
@@ -518,6 +521,7 @@ class TestStaticBSON(Standalone):
 
     def tearDown(self):
         super(TestStaticBSON, self).tearDown();
+        print "removing static bson test dir"
         shutil.rmtree(self.temp_outdir)
 
 
@@ -538,12 +542,13 @@ class TestStaticBSON(Standalone):
     @unittest.skipIf(HADOOP_RELEASE.startswith('1.0') or HADOOP_RELEASE.startswith('0.20'),
                      'streaming not supported')
     def test_streaming_staticout(self):
+        logging.info("testing bson output from streaming job")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["bson.split.read_splits"] = 'false'
         PARAMETERS["bson.output.build_splits"] = 'false'
         PARAMETERS["mapred.max.split.size"] = '100000'
 
-        PARAMETERS["mapred.output.file"]= "file:///tmp/BLAH.bson"
+        PARAMETERS["mapred.output.file"]= "file://" + os.path.join(TEMPDIR,'BLAH.bson')
         inputpath = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","yield_historical.in.bson")
         runstreamingjob(self.server_hostname,
                         inputformat="com.mongodb.hadoop.mapred.BSONFileInputFormat",
@@ -572,7 +577,7 @@ class TestStaticBSON(Standalone):
 
 
     def test_treasury_directory(self):
-        logging.info("Testing bsoninput with no splits")
+        logging.info("Testing bsoninput from directory path")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
         PARAMETERS["mapred.max.split.size"] = '200000'
