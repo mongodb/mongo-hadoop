@@ -107,10 +107,14 @@ After successfully building, you must copy the jars to the lib directory on each
 specify an input collection (including auth and readPreference options) to use as the input data source for the Map/Reduce job. This takes the form of a 
 [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/), and by specifying options you can control how and where the input is read from.
 
+
 **Examples**:
 
 `mongodb://joe:12345@weyland-yutani:27017/analytics.users?readPreference=secondary` - Authenticate with "joe"/"12345" and read from only nodes in state SECONDARY from the collection "users" in database "analytics". 
 `mongodb://sue:12345@weyland-yutani:27017/production.customers?readPreferenceTags=dc:tokyo,type:hadoop` - Authenticate with "joe"/"12345" and read the collection "users" in database "analytics" from only nodes tagged with "dc:tokyo" and "type:hadoop" from the collection "users" in database "analytics". 
+
+######`mongo.output.uri`
+specify an output collection URI to write the output to. If using a sharded cluster, you can specify a space-delimited list of URIs referring to separate  mongos instances and the output records will be written to them in round-robin fashion to improve throughput and avoid overloading a single mongos.
 
 ######`mongo.input.query` 
  filter the input collection with a query. This query must be represented in JSON format, and use the [MongoDB extended JSON format](http://docs.mongodb.org/manual/reference/mongodb-extended-json/) to represent non-native JSON data types like ObjectIds, Dates, etc.
@@ -558,6 +562,8 @@ Data mappings used for these inferred types are as follows:
 Note: older versions of Pig may not be able to generate mappings when tuples are unnamed, due to https://issues.apache.org/jira/browse/PIG-2509. If you get errors, try making sure that all top-level fields in the relation being stored have names assigned to them or try using a newer version of Pig.
 
 ### Writing output from Pig
+
+If writing to a MongoDB instance, it's recommended to set `mapred.map.tasks.speculative.execution=false` and `mapred.reduce.tasks.speculative.execution=false` to prevent the possibility of duplicate records being written. You can do this on the command line with `-D` switches or directly in the Pig script using the `SET` command.
 
 #####Static BSON file output
   
