@@ -9,9 +9,12 @@ import mongo_manager
 import subprocess
 import os
 import shutil
-from bson_splitter import split_bson
 from datetime import timedelta
 import time
+
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools'))
+from bson_splitter import split_bson
 
 CLEANUP_TMP=os.environ.get('CLEANUP_TMP', True)
 HADOOP_HOME=os.environ['HADOOP_HOME']
