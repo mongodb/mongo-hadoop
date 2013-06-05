@@ -23,6 +23,7 @@ AWS_SECRET=os.environ.get('AWS_SECRET',None)
 AWS_ACCESSKEY=os.environ.get('AWS_ACCESSKEY',None) 
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
 USE_ASSEMBLY=os.environ.get('USE_ASSEMBLY', True)
+num_runs = 0
 
 if not os.path.isdir(TEMPDIR):
     os.makedirs(TEMPDIR)
@@ -248,7 +249,9 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 class Standalone(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,"standalone1"))
+        global num_runs
+        self.homedir = "standalone1_" + str(num_runs)
+        self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,homedir))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
         self.server.connection()['mongo_hadoop'].set_profiling_level(2)
@@ -256,6 +259,7 @@ class Standalone(unittest.TestCase):
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
+        num_runs += 1
         print "server is ready."
 
     def setUp(self):
@@ -272,7 +276,7 @@ class Standalone(unittest.TestCase):
         print "Standalone Teardown: killing mongod"
         logging.info("Standalone Teardown: killing mongod")
         self.server.kill_all_members()
-        shutil.rmtree(os.path.join(TEMPDIR,"standalone1"))
+        shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
         time.sleep(10)
 
 class TestBasic(Standalone):
@@ -303,23 +307,25 @@ class BaseShardedTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         time.sleep(5)
-        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0"),
+        global num_runs
+
+        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + str(num_runs)),
                 with_arbiter=True,
                 num_members=3)
         self.shard1.start_set(fresh=True)
-        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1"),
+        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_" + str(num_runs)),
                 with_arbiter=True,
                 num_members=3)
         self.shard2.start_set(fresh=True)
-        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db'))
+        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_' + str(num_runs)))
         self.confighost = self.configdb.start_server(fresh=True)
 
-        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos'))
+        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + str(num_runs)))
         self.mongos_hostname = self.mongos.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=False, fresh=True, addShards=True)
 
-        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2'))
+        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + str(num_runs)))
         self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=False, fresh=True, addShards=False)
@@ -333,6 +339,8 @@ class BaseShardedTest(unittest.TestCase):
                                    JSONFILE_PATH)
         mongos_admindb = self.mongos_connection['admin']
         mongos_admindb.command("enablesharding", "mongo_hadoop")
+        self.homedirs = [x + str(num_runs) for x in ("rs_0", "rs_1", "config_db_", "mongos_", "mongos2_"]
+        num_runs += 1
 
         #turn off the balancer
         self.mongos_connection['config'].settings.update({ "_id": "balancer" }, { '$set' : { 'stopped': True } }, True );
@@ -377,11 +385,8 @@ class BaseShardedTest(unittest.TestCase):
         self.shard2.kill_all_members(sig=9)
         self.configdb.kill_all_members(sig=9)
         if CLEANUP_TMP != 'false':
-            shutil.rmtree(os.path.join(TEMPDIR,"mongos"))
-            shutil.rmtree(os.path.join(TEMPDIR,"mongos2"))
-            shutil.rmtree(os.path.join(TEMPDIR,"config_db"))
-            shutil.rmtree(os.path.join(TEMPDIR,"rs0"))
-            shutil.rmtree(os.path.join(TEMPDIR,"rs1"))
+            for dirname in self.homedirs:
+                shutil.rmtree(os.path.join(TEMPDIR,dirname))
 
         time.sleep(7.5)
 
