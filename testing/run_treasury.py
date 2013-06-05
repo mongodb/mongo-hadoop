@@ -251,7 +251,7 @@ class Standalone(unittest.TestCase):
     def setUpClass(self):
         global num_runs
         self.homedir = "standalone1_" + str(num_runs)
-        self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,homedir))
+        self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,self.homedir))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
         self.server.connection()['mongo_hadoop'].set_profiling_level(2)
