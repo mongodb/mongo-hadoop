@@ -71,25 +71,36 @@ public class MongoSplitter {
 
         final boolean useRangeQuery = conf.isRangeQueryEnabled();
 
-        log.info(" Calculate Splits Code ... Use Shards? " + useShards + ", Use Chunks? " + useChunks + "; Collection Sharded? " + isSharded + "; Use Rang queries? " + useRangeQuery);
+        log.info("MongoSplitter calculating splits");
+        log.info("use shards: " + useShards);
+        log.info("use chunks: " + useChunks);
+        log.info("collection sharded: " + isSharded);
+        log.info("use range queries: " + useRangeQuery);
+
+        List<InputSplit> retVal;
         if (conf.createInputSplits()) {
             log.info( "Creation of Input Splits is enabled." );
-            if (isSharded && (useShards || useChunks)){  // todo I don't think these settings can be run together
-                if (useShards && useChunks)
-                    log.warn( "Combining 'use chunks' and 'read from shards directly' can have unexpected & erratic behavior in a live system due to chunk migrations. " );
+            if (isSharded && (useShards || useChunks)){
                 log.info( "Sharding mode calculation entering." );
-                return calculateShardedSplits( conf, useShards, useChunks, slaveOk, uri, mongo );
+                retVal = calculateShardedSplits( conf, useShards, useChunks, slaveOk, uri, mongo );
             }
-            else { // perfectly ok for sharded setups to run with a normally calculated split. May even be more efficient for some cases
+            else {
+                // perfectly ok for sharded setups to run with a normally calculated split.
+                // May even be more efficient for some cases
                 log.info( "Using Unsharded Split mode (Calculating multiple splits though)" );
-                return calculateUnshardedSplits( conf, slaveOk, uri, coll );
+                retVal = calculateUnshardedSplits( conf, slaveOk, uri, coll );
             }
-            
-        }
-        else {
+        } else {
             log.info( "Creation of Input Splits is disabled; Non-Split mode calculation entering." );
-            return calculateSingleSplit( conf );
+            retVal = calculateSingleSplit( conf );
         }
+        if(retVal == null){
+            log.info("MongoSplitter returning null InputSplits.");
+        }else{
+            log.info("MongoSplitter found " + retVal.size() + " splits.");
+        }
+        return retVal;
+
     }
 
     private static List<InputSplit> calculateUnshardedSplits( MongoConfig conf, boolean slaveOk, 

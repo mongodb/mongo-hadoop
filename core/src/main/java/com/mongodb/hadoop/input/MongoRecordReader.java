@@ -72,8 +72,11 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     @Override
     public boolean nextKeyValue(){
         try {
-            if ( !_cursor.hasNext() )
+            if ( !_cursor.hasNext() ){
+                LOG.info("Read " + _seen + " documents from:");
+                LOG.info(_split.toString());
                 return false;
+            }
 
             _current = _cursor.next();
             _seen++;
@@ -81,6 +84,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
             return true;
         }
         catch ( MongoException e ) {
+            LOG.error("Exception reading next key/val from mongo: " + e.getMessage());
             return false;
         }
     }

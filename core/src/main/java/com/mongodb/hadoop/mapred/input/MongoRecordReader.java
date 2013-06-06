@@ -30,6 +30,7 @@ import org.bson.*;
 public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
     public MongoRecordReader( MongoInputSplit split ){
+        _split = split;
         _cursor = split.getCursor();
         _keyField = split.getKeyField();
     }
@@ -78,8 +79,11 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
 
     public boolean nextKeyValue() throws IOException{
         try {
-            if ( !_cursor.hasNext() )
+            if ( !_cursor.hasNext() ){
+                log.info("Read " + _seen + " documents from:");
+                log.info(_split.toString());
                 return false;
+            }
 
             DBObject next = _cursor.next();
             this.currentVal.setDoc(next);
@@ -110,6 +114,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     private float _seen = 0;
     private float _total;
     private String _keyField;
+    private MongoInputSplit _split;
 
     private static final Log log = LogFactory.getLog( MongoRecordReader.class );
 }
