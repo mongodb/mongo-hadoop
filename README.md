@@ -125,6 +125,10 @@ specify an output collection URI to write the output to. If using a sharded clus
     
     //this is equivalent to {_id : {$gt : ISODate("2007-06-21T20:00:00-0400")}} in the mongo shell
 
+
+######`mongo.input.notimeout` 
+Set notimeout on the cursor when reading each split. This can be necessary if really large splits are being truncated because cursors are killed before all the data has been read.
+
 ######`mongo.input.split.use_range_queries`
 
 This setting causes data to be read from mongo by adding `$gte/$lt` clauses to the query for limiting the boundaries of each split, instead of the default behavior of limiting with `$min/$max`. This may be useful in cases when using `mongo.input.query` is being used to filter mapper input, but the index that would be used by `$min/$max` is less selective than the query and indexes. Setting this to `'true'` lets the MongoDB server select the best index possible and still. This defaults to '`false'` if not set.
