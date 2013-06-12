@@ -68,6 +68,9 @@ object MongoHadoopBuild extends Build {
                             base = file("flume"),
                             settings = flumeSettings )
 
+  lazy val cohort = Project( id = "cohort",
+                            base = file("examples/cohort"),
+                            settings = exampleSettings ) dependsOn( core )
 
   lazy val treasuryExample  = Project( id = "treasury-example",
                                      base = file("examples/treasury_yield"),
@@ -77,7 +80,9 @@ object MongoHadoopBuild extends Build {
                                      base = file("examples/enron"),
                                      settings = exampleSettings ) dependsOn( core )
 
-
+  lazy val sensorsExample  = Project( id = "sensors",
+                                     base = file("examples/sensors"),
+                                     settings = exampleSettings ) dependsOn( core )
 
   lazy val baseSettings = Defaults.defaultSettings ++ buildSettings ++ Seq(
     resolvers ++= Seq(Resolvers.mitSimileRepo, Resolvers.clouderaRepo, Resolvers.mavenOrgRepo, Resolvers.sonatypeRels),
