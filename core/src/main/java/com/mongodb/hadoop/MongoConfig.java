@@ -24,6 +24,8 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.fs.PathFilter;
+
 
 import java.io.*;
 
@@ -431,5 +433,39 @@ public class MongoConfig {
     final Configuration _conf;
 
     private static final Log LOG = LogFactory.getLog( MongoConfig.class );
+
+
+    //BSON-related config options
+    public boolean getBSONReadSplits(){
+        return MongoConfigUtil.getBSONReadSplits(_conf);
+    }
+
+    public void setBSONReadSplits(boolean val){
+        MongoConfigUtil.setBSONReadSplits(_conf, val);
+    }
+
+    public boolean getBSONWriteSplits(){
+        return MongoConfigUtil.getBSONWriteSplits(_conf);
+    }
+
+    public void setBSONWriteSplits(boolean val){
+        MongoConfigUtil.setBSONWriteSplits(_conf, val);
+    }
+
+    public boolean getBSONOutputBuildSplits(){
+        return MongoConfigUtil.getBSONOutputBuildSplits(_conf);
+    }
+
+    public void setBSONOutputBuildSplits(boolean val){
+        MongoConfigUtil.setBSONOutputBuildSplits(_conf, val);
+    }
+
+    public void setBSONPathFilter(Class<? extends PathFilter> val ){
+        MongoConfigUtil.setBSONPathFilter(_conf, val);
+    }
+
+    public Class<?> getBSONPathFilter(){
+        return MongoConfigUtil.getBSONPathFilter(_conf);
+    }
 }
 

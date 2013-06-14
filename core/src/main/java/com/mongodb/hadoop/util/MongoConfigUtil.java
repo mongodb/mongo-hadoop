@@ -24,6 +24,7 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.fs.PathFilter;
 
 import java.util.*;
 
@@ -76,6 +77,14 @@ public class MongoConfigUtil {
     public static final String INPUT_SORT = "mongo.input.sort";
     public static final String INPUT_LIMIT = "mongo.input.limit";
     public static final String INPUT_SKIP = "mongo.input.skip";
+
+
+    //Settings specific to bson reading/writing.
+    public static final String BSON_READ_SPLITS = "bson.split.read_splits";
+    public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
+    public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
+    public static final String BSON_PATHFILTER = "bson.pathfilter.class";
+ 
 
     /**
      * A username and password to use.
@@ -608,4 +617,38 @@ public class MongoConfigUtil {
     public static boolean isNoTimeout( Configuration conf ) {
         return conf.getBoolean( INPUT_NOTIMEOUT, false );
     }
+
+    //BSON-specific config functions.
+    public static boolean getBSONReadSplits( Configuration conf){
+        return conf.getBoolean(BSON_READ_SPLITS, true);
+    }
+
+    public static void setBSONReadSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_READ_SPLITS, val);
+    }
+
+    public static boolean getBSONWriteSplits( Configuration conf){
+        return conf.getBoolean(BSON_WRITE_SPLITS, true);
+    }
+
+    public static void setBSONWriteSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_WRITE_SPLITS, val);
+    }
+
+    public static boolean getBSONOutputBuildSplits( Configuration conf){
+        return conf.getBoolean(BSON_OUTPUT_BUILDSPLITS, false);
+    }
+
+    public static void setBSONOutputBuildSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_OUTPUT_BUILDSPLITS, val);
+    }
+
+    public static void setBSONPathFilter( Configuration conf, Class<? extends PathFilter> val ){
+        conf.setClass( BSON_PATHFILTER, val, PathFilter.class );
+    }
+
+    public static Class<?> getBSONPathFilter( Configuration conf ){
+        return conf.getClass( BSON_PATHFILTER, null );
+    }
+
 }
