@@ -44,7 +44,7 @@ public class MongoTool extends Configured implements Tool {
         log.info( "Created a conf: '" + conf + "' on {" + this.getClass() + "} as job named '" + _jobName + "'" );
 
         for ( final Entry<String, String> entry : conf ){
-            log.trace( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
+            log.info( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
         }
 
         final Job job = new Job( conf, _jobName );
@@ -71,8 +71,16 @@ public class MongoTool extends Configured implements Tool {
         job.setOutputFormatClass( MongoConfigUtil.getOutputFormat( conf ) );
         job.setOutputKeyClass( MongoConfigUtil.getOutputKey( conf ) );
         job.setOutputValueClass( MongoConfigUtil.getOutputValue( conf ) );
-
         job.setInputFormatClass( MongoConfigUtil.getInputFormat( conf ) );
+        Class mapOutputKeyClass = MongoConfigUtil.getMapperOutputKey(conf);
+        Class mapOutputValueClass = MongoConfigUtil.getMapperOutputValue(conf);
+
+        if(mapOutputKeyClass != null){
+            job.setMapOutputValueClass(mapOutputKeyClass);
+        }
+        if(mapOutputValueClass != null){
+            job.setMapOutputValueClass(mapOutputValueClass);
+        }
 
         /**
          * Determines if the job will run verbosely e.g. print debug output
