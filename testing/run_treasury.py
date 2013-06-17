@@ -36,6 +36,7 @@ VERSION_SUFFIX = "1.1.0"
 version_buildtarget =\
     {"0.22" : "0.22.0",
      "1.0" : "1.0.4",
+     "1.1" : "1.1.2",
      "cdh4" : "cdh4.3.0",
      "0.20" : "0.20.205.0",
      "0.23" : "0.23.1",
@@ -135,9 +136,9 @@ DEFAULT_PARAMETERS = {
   "mongo.job.input.format":"com.mongodb.hadoop.MongoInputFormat",
   "mongo.job.output.format":"com.mongodb.hadoop.MongoOutputFormat",
   "mongo.job.output.key":"org.apache.hadoop.io.IntWritable",
-  "mongo.job.output.value":"org.apache.hadoop.io.DoubleWritable",
+  "mongo.job.output.value":"com.mongodb.hadoop.io.BSONWritable",
   "mongo.job.mapper.output.key":"org.apache.hadoop.io.IntWritable",
-  "mongo.job.mapper.output.value":"com.mongodb.hadoop.io.BSONWritable",
+  "mongo.job.mapper.output.value":"org.apache.hadoop.io.DoubleWritable",
   #"mongo.job.combiner":"com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
   "mongo.job.partitioner":"",
   "mongo.job.sort_comparator":"",
@@ -254,7 +255,6 @@ class Standalone(unittest.TestCase):
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,self.homedir))
         self.server_hostname = self.server.start_server(fresh=True)
         self.server.connection().drop_database('mongo_hadoop')
-        self.server.connection()['mongo_hadoop'].set_profiling_level(2)
         mongo_manager.mongo_import(self.server_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
@@ -421,26 +421,15 @@ class TestShardedGTE_LT(BaseShardedTest):
 
         shard1db = pymongo.Connection(self.shard1.get_primary()[0])['mongo_hadoop']
         shard2db = pymongo.Connection(self.shard2.get_primary()[0])['mongo_hadoop']
-        shard1db.set_profiling_level(2)
-        shard2db.set_profiling_level(2)
         runjob(self.mongos_hostname, PARAMETERS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
-        logging.info("showing profiler results")
-        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
-
-        for line in list(shard2db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
 
         PARAMETERS['mongo.input.query'] = '{"_id":{"\$gt":{"\$date":1182470400000}}}'
         out_col.drop()
         runjob(self.mongos_hostname, PARAMETERS)
         #Make sure that this fails when rangequery is used with a query that conflicts
         self.assertEqual(out_col.count(), 0)
-
-        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
 
 class TestShardedNoMongos(BaseShardedTest):
     #run a simple job against a sharded cluster, going directly to shards (bypass mongos)
