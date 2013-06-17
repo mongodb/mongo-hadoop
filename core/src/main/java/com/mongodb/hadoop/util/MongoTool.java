@@ -44,7 +44,7 @@ public class MongoTool extends Configured implements Tool {
         log.info( "Created a conf: '" + conf + "' on {" + this.getClass() + "} as job named '" + _jobName + "'" );
 
         for ( final Entry<String, String> entry : conf ){
-            log.info( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
+            log.trace( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
         }
 
         final Job job = new Job( conf, _jobName );
