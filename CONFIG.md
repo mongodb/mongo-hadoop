@@ -19,6 +19,17 @@
 specify an input collection (including auth and readPreference options) to use as the input data source for the Map/Reduce job. This takes the form of a 
 [mongo URI](http://docs.mongodb.org/manual/reference/connection-string/), and by specifying options you can control how and where the input is read from.
 
+#####`mongo.job.mapper.output.key` 
+sets the output class of the key produced by your `Mapper` function. It may be necessary to set this value if the output types of your `Mapper` and `Reducer` classes are not the same.
+
+#####`mongo.job.mapper.output.value` 
+sets the output class of the value produced by your `Mapper` function. It may be necessary to set this value if the output types of your `Mapper` and `Reducer` classes are not the same.
+
+#####`mongo.job.output.key` 
+sets the output class of the key produced by your `Reducer` function.
+
+#####`mongo.job.output.value` 
+sets the output class of the value produced by your `Reducer` function. It may be necessary to set this value if the output types of your `Mapper` and `Reducer` classes are not the same.
 
 **Examples**:
 
@@ -73,7 +84,7 @@ When reading data for splits, query the shard directly rather than via the `mong
 
 If you want to customize that split point for efficiency reasons (such as different distribution) on an un-sharded collection, you may set this to any valid field name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other rules outlined in the docs.
 
-#####` `bson.split.read_splits` - When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
+#####`bson.split.read_splits` - When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
 ##### `mapred.min.split.size` - Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
 
 ##### `mapred.max.split.size` - Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.

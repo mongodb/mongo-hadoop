@@ -46,6 +46,12 @@ After successfully building, you must copy the jars to the lib directory on each
    Does **not** support Hadoop Streaming.
 
    Build using `"1.0"` or `"1.0.x"`
+   
+* ###Apache Hadoop 1.1
+   Includes support for Hadoop Streaming.
+
+   Build using `"1.1"` or `"1.1.x"`
+
 
 * ###Apache Hadoop 0.20.*
    Does **not** support Hadoop Streaming
