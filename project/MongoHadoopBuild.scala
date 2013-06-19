@@ -201,8 +201,12 @@ object MongoHadoopBuild extends Build {
     resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) =>
 
-      val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
-      hadoopDeps._4()
+      if(hr == "cdh4"){
+        Seq("org.apache.pig" % "pig" % "0.10.0-cdh4.2.0")
+      }else{
+        val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+        hadoopDeps._4()
+      }
     }
   )
 
