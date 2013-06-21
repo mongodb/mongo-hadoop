@@ -70,6 +70,10 @@ object MongoHadoopBuild extends Build {
                             base = file("flume"),
                             settings = flumeSettings )
 
+  lazy val ufo = Project( id = "ufo-example",
+                            base = file("examples/ufo_sightings"),
+                            settings = exampleSettings ) dependsOn( core )
+
   lazy val cohort = Project( id = "cohort",
                             base = file("examples/cohort"),
                             settings = exampleSettings ) dependsOn( core )
