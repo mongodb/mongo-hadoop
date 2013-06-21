@@ -17,8 +17,45 @@ Current release: **1.1**
 
 ## Download
 
-* TODO List links to binaries here.
-* TODO List maven artifacts
+* 0.20.x
+    
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.20.205.0-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.20.205.0-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.20.205.0-1.1.0.jar)
+
+* 0.22.x
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.22.0-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.22.0-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.22.0-1.1.0.jar)
+
+* 0.23.x
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.23.1-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.23.1-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.23.1-1.1.0.jar)
+     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_0.23.1-1.1.0.jar)
+
+* 1.0.x
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_1.0.4-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_1.0.4-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_1.0.4-1.1.0.jar)
+
+* 1.1.x
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_1.1.2-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_1.1.2-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_1.1.2-1.1.0.jar)
+     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_1.1.2-1.1.0.jar)
+
+* cdh3
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_cdh3u3-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_cdh3u3-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_cdh3u3-1.1.0.jar)
+     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_cdh3u3-1.1.0.jar)
+
+* cdh4
+     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_cdh4.3.0-1.1.0.jar)
+     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_cdh4.3.0-1.1.0.jar)
+     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_cdh4.3.0-1.1.0.jar)
+     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_cdh4.3.0-1.1.0.jar)
 
 ## Building
 
