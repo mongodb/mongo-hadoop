@@ -40,8 +40,8 @@ object MongoHadoopBuild extends Build {
                                   "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
                                   "1.0" -> hadoopDependencies("1.0.4", false, stockPig),
                                   "1.0.x" -> hadoopDependencies("1.0.4", false, stockPig),
-                                  "1.1" -> hadoopDependencies("1.1.2", false, stockPig),
-                                  "1.1.x" -> hadoopDependencies("1.1.2", false, stockPig),
+                                  "1.1" -> hadoopDependencies("1.1.2", true, stockPig),
+                                  "1.1.x" -> hadoopDependencies("1.1.2", true, stockPig),
                                   "default" -> hadoopDependencies("1.0.4", false, stockPig)
                                  )
 

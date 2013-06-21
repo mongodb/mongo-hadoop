@@ -220,7 +220,7 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     print cmd
-    if HADOOP_RELEASE.startswith('cdh3'):
+    if HADOOP_RELEASE.startswith('cdh3') or HADOOP_RELEASE.startswith('1.1'):
         #Special case for cdh3, as it uses non-default location.
         cmd += ['jar','$HADOOP_HOME/contrib/streaming/hadoop-streaming*']
     else:
