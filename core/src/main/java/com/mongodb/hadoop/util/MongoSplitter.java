@@ -157,9 +157,11 @@ public class MongoSplitter {
     }
 
     private static MongoInputSplit _split( MongoConfig conf, DBObject q, DBObject min, DBObject max ) {
-        BasicDBObjectBuilder b = BasicDBObjectBuilder.start( "$query", q );
-        final DBObject query = b.get();
-        log.trace( "Assembled Query: " + query );
+        BasicDBObject query = new BasicDBObject();
+        query.putAll(q);
+        //BasicDBObjectBuilder b = BasicDBObjectBuilder.start( "$query", q );
+        //final DBObject query = b.get();
+        //log.trace( "Assembled Query: " + query );
 
         return new MongoInputSplit( conf.getInputURI(), conf.getInputKey(), query, conf.getFields(), 
                                     conf.getSort(), min, max, conf.getLimit(), conf.getSkip(), conf.isNoTimeout() );
