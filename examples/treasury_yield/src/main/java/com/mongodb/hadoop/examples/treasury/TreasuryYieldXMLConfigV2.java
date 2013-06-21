@@ -87,6 +87,8 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
         job.setOutputFormat( com.mongodb.hadoop.mapred.MongoOutputFormat.class );
         job.setOutputKeyClass( MongoConfigUtil.getOutputKey( conf ) );
         job.setOutputValueClass( MongoConfigUtil.getOutputValue( conf ) );
+        job.setMapOutputKeyClass(  MongoConfigUtil.getMapperOutputKey( conf ) );
+        job.setMapOutputValueClass(  MongoConfigUtil.getMapperOutputValue( conf ) );
         job.setInputFormat( com.mongodb.hadoop.mapred.MongoInputFormat.class );
         JobClient.runJob(job);
         return 0;
