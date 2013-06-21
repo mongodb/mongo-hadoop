@@ -175,6 +175,12 @@ Mike O'Brien (mikeo@10gen.com)
 * Rushin Shah rushin10@gmail.com (Test Harness Code)
 * Joseph Shraibman jks@iname.com (Sharded Input Splits)
 * Sumin Xia xiasumin1984@gmail.com (Sharded Input Splits)
+* Jeremy Karn
+* bpfoster
+* Ross Lawley
+* Carsten Hufe
+* Asya Kamsky
+* Thomas Millar
 
 ### Support
 
