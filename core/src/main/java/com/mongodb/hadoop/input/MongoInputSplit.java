@@ -1,265 +1,159 @@
-// MongoInputSplit.java
-/*
- * Copyright 2010 10gen Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-package com.mongodb.hadoop.input;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.util.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import org.bson.*;
 
-import java.io.*;
-import java.util.*;
 
 public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
+    protected MongoURI inputURI;
+    protected BSONObject fields;
+    protected BSONObject query;
+    protected BSONObject sort;
+    protected BSONObject min;
+    protected BSONObject max;
+    protected boolean notimeout = false;
+    protected transient DBCursor cursor;
 
-    public MongoInputSplit( MongoURI inputURI,
-                            String keyField,
-                            DBObject query,
-                            DBObject fields,
-                            DBObject sort,
-                            Object specialMin,
-                            Object specialMax,
-                            int limit,
-                            int skip,
-                            boolean noTimeout ){
-        log.debug( "Creating a new MongoInputSplit for MongoURI '"
-                   + inputURI + "', keyField: " + keyField + ", query: '" + query + "', fieldSpec: '" + fields
-                   + "', sort: '" + sort + "', limit: " + limit + ", skip: " + skip + " noTimeout? " + noTimeout + "." );
+    protected static transient BSONEncoder _bsonEncoder = new BasicBSONEncoder();
+    protected static transient BSONDecoder _bsonDecoder = new BasicBSONDecoder();
 
-        _mongoURI = inputURI;
-        _keyField = keyField;
-        _querySpec = query;
-        _fieldSpec = fields;
-        _sortSpec = sort;
-        _limit = limit;
-        _skip = skip;
-        _notimeout = noTimeout;
-        _specialMin = specialMin;
-        _specialMax = specialMax;
-        getCursor();
-        getBSONDecoder();
-        getBSONEncoder();
+    public class MongoInputSplit(){}
+
+    public void setInputURI(MongoURI inputURI){
+        this.inputURI = inputURI;
     }
 
+    public MongoURI getInputURI(){
+        return this.inputURI;
+    }
 
+    public BSONObject getFields(){//{{{
+        return this.fields;
+    }
 
-    /**
-     * This is supposed to return the size of the split in bytes, but for now, for sanity sake we return the # of docs
-     * in the split instead.
-     *
-     * @return
-     */
+    public void setFields(BSONObject fields){
+        this.fields = fields;
+    }//}}}
+
+    public BSONObject getQuery(){//{{{
+        return this.query;
+    }
+
+    public void setQuery(BSONObject query){
+        this.query = query;
+    }//}}}
+
+    public BSONObject getSort(){//{{{
+        return this.sort;
+    }
+
+    public void setSort(BSONObject sort){
+        this.sort = sort;
+    }//}}}
+
+    public BSONObject getMin(){//{{{
+        return this.min;
+    }
+
+    public void setMin(BSONObject min){
+        this.min = min;
+    }//}}}
+
+    public BSONObject getMax(){//{{{
+        return this.max;
+    }
+
+    public void setMax(BSONObject max){
+        this.max = max;
+    }//}}}
+
+    public boolean getNoTimeout(){//{{{
+        return this.notimeout;
+    }
+
+    public void setNoTimeout(boolean notimeout){
+        this.notimeout = notimeout;
+    }//}}}
+
     @Override
-    public long getLength(){
-        return Long.MAX_VALUE;
-    }
-
-    @Override
-    public String[] getLocations(){
-        return _mongoURI.getHosts().toArray( new String[_mongoURI.getHosts().size()] );
-    }
-
-    /**
-     * Serialize the Split instance
-     */
-    public void write( final DataOutput out ) throws IOException{
-        BSONEncoder enc = getBSONEncoder();
-
+    public void write(final DataOutput out) throws IOException{
         BSONObject spec = BasicDBObjectBuilder.start().
-                                               add( "uri", _mongoURI.toString() ).
-                                               add( "key", _keyField ).
-                                               add( "query", _querySpec ).
-                                               add( "field", _fieldSpec ).                                              
-                                               add( "sort", _sortSpec ).
-                                               add( "limit", _limit ).
-                                               add( "skip", _skip ).
-                                               add( "specialMin", _specialMin).
-                                               add( "specialMax", _specialMax).
-                                               add( "notimeout", _notimeout ).get();
-
-        byte[] buf = enc.encode( spec );
-
-        out.write( buf );
+                           add( "inputURI", getInputURI().toString()).
+                           add( "fields", getFields()).
+                           add( "query", getQuery()).
+                           add( "sort", getSort()).                                              
+                           add( "min", getMin()).
+                           add( "max", getMax()).
+                           add( "notimeout", getNoTimeout()).get();
+        byte[] buf = _bsonEncoder.encode(spec);
+        out.write(buf);
     }
 
-    public void readFields( DataInput in ) throws IOException{
-        BSONDecoder dec = getBSONDecoder();
+    @Override
+    public void readFields(final DataInput in) throws IOException{
         BSONCallback cb = new BasicBSONCallback();
         BSONObject spec;
-        // Read the BSON length from the start of the record
         byte[] l = new byte[4];
-        try {
-            in.readFully( l );
-            int dataLen = org.bson.io.Bits.readInt( l );
-            if ( log.isDebugEnabled() ) log.debug( "*** Expected DataLen: " + dataLen );
-            byte[] data = new byte[dataLen + 4];
-            System.arraycopy( l, 0, data, 0, 4 );
-            in.readFully( data, 4, dataLen - 4 );
-            dec.decode( data, cb );
-            spec = (BSONObject) cb.get();
-            if ( log.isTraceEnabled() ) log.trace( "Decoded a BSON Object: " + spec );
-        }
-        catch ( Exception e ) {
-            /* If we can't read another length it's not an error, just return quietly. */
-            // TODO - Figure out how to gracefully mark this as an empty
-            log.info( "No Length Header available." + e );
-            spec = new BasicDBObject();
-        }         
-        
-        _mongoURI = new MongoURI((String) spec.get( "uri" ));
-        _keyField = (String) spec.get( "key" );
-        _querySpec = new BasicDBObject( ((BSONObject) spec.get( "query" )).toMap() );
-        _fieldSpec = new BasicDBObject( ((BSONObject) spec.get( "field" )).toMap() ) ;
-        _sortSpec = new BasicDBObject( ((BSONObject) spec.get( "sort" )).toMap() );
-        _specialMin = spec.get("specialMin");
-        _specialMax = spec.get("specialMax");
-        _limit = (Integer) spec.get( "limit" );
-        _skip = (Integer) spec.get( "skip" );
-        _notimeout = (Boolean) spec.get( "notimeout" );
-        getCursor();
-        log.info( "Deserialized MongoInputSplit ... { length = " + getLength() + ", locations = "
-                   + Arrays.toString( getLocations() ) + ", keyField = " + _keyField + ", query = " + _querySpec
-                   + ", fields = " + _fieldSpec + ", sort = " + _sortSpec + ", limit = " + _limit + ", skip = "
-                   + _skip + ", noTimeout = " + _notimeout + ", specialMin = " + _specialMin
-                   + ", specialMax = " + _specialMax + "}" );
+        in.readFully( l );
+        int dataLen = org.bson.io.Bits.readInt( l );
+        byte[] data = new byte[dataLen + 4];
+        System.arraycopy( l, 0, data, 0, 4 );
+        in.readFully( data, 4, dataLen - 4 );
+        _bsonDecoder.decode( data, cb );
+        spec = (BSONObject)cb.get();
+        setInputURI(new MongoURI((String)spec.get("inputURI")));
+        setFields(new BasicBSONObject(((BSONObject)spec.get("fields")).toMap()));
+        setQuery(new BasicBSONObject(((BSONObject)spec.get("query")).toMap()));
+        setSort(new BasicBSONObject(((BSONObject)spec.get("sort")).toMap()));
+        setMin(new BasicBSONObject(((BSONObject)spec.get("min")).toMap()));
+        setMax(new BasicBSONObject(((BSONObject)spec.get("max")).toMap()));
+        setNoTimeout((Boolean)spec.get("notimeout"));
     }
 
     public DBCursor getCursor(){
-        // Return the cursor with the split's query, etc. already slotted in for
-        // them.
-        // todo - support limit/skip
-        if ( _cursor == null ){
-            log.debug("reading data from " + _mongoURI);
-            _cursor = MongoConfigUtil.getCollection( _mongoURI ).find( _querySpec, _fieldSpec ).sort( _sortSpec );
-            if (_notimeout) _cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
-            if (_specialMin != null) _cursor.addSpecial("$min", this._specialMin);
-            if (_specialMax != null) _cursor.addSpecial("$max", this._specialMax);
-            _cursor.slaveOk();
+        if(this.cursor == null){
+            this.cursor = MongoConfigUtil.getCollection(this.inputURI).find(this.query, this.fields).sort(this.sort);
+            if (this.notimeout) this.cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
+            if (this.min != null) this.cursor.addSpecial("$min", this.min);
+            if (this.max != null) this.cursor.addSpecial("$max", this.max);
         }
-
-        return _cursor;
-    }
-
-    BSONEncoder getBSONEncoder(){
-        if (_bsonEncoder == null) 
-            _bsonEncoder = new BasicBSONEncoder();
-        return _bsonEncoder;
-    }
-    
-    BSONDecoder getBSONDecoder(){
-        if (_bsonDecoder == null)
-            _bsonDecoder = new BasicBSONDecoder();
-        return _bsonDecoder;
+        return this.cursor;
     }
 
     @Override
     public String toString(){
-        return "MongoInputSplit{URI=" + _mongoURI.toString()
-             + ", keyField=" + _keyField
-             + ", min=" + _specialMin + ", max=" + _specialMax 
-             + ", query=" + _querySpec
-             + ", sort=" + _sortSpec
-             + ", fields=" + _fieldSpec
-             + ", limit=" + _limit
-             + ", skip=" + _skip
-             + ", notimeout=" + _notimeout + '}' ;
+        return "MongoInputSplit{URI=" + this.inputURI.toString()
+             + ", min=" + this.min + ", max=" + this.max 
+             + ", query=" + this.query
+             + ", sort=" + this.sort
+             + ", fields=" + this.fields
+             + ", notimeout=" + this.notimeout + '}' ;
     }
 
-    public MongoInputSplit(){ }
-
-    public MongoURI getMongoURI(){
-        return _mongoURI;
-    }
-
-    public DBObject getQuerySpec(){
-        return _querySpec;
-    }
-
-    public DBObject getFieldSpec(){
-        return _fieldSpec;
-    }
-
-    public DBObject getSortSpec(){
-        return _sortSpec;
-    }
-
-    public int getLimit(){
-        return _limit;
-    }
-
-    public int getSkip(){
-        return _skip;
-    }
-
-    /**
-     * The field to use as the Mapper Key
-     */
-    public String getKeyField(){
-        return _keyField;
-    }
-
-    public boolean equals( Object o ){
-        if ( this == o ) return true;
-        if ( o == null || getClass() != o.getClass() ) return false;
-
-        MongoInputSplit that = (MongoInputSplit) o;
-
-        if ( _limit != that._limit ) return false;
-        if ( _notimeout != that._notimeout ) return false;
-        if ( _skip != that._skip ) return false;
-        if ( _fieldSpec != null ? !_fieldSpec.equals( that._fieldSpec ) : that._fieldSpec != null ) return false;
-        if ( _keyField != null ? !_keyField.equals( that._keyField ) : that._keyField != null ) return false;
-        if ( _mongoURI != null ? !_mongoURI.toString().equals( that._mongoURI.toString() ) : that._mongoURI != null ) return false;
-        if ( _querySpec != null ? !_querySpec.equals( that._querySpec ) : that._querySpec != null ) return false;
-        if ( _sortSpec != null ? !_sortSpec.equals( that._sortSpec ) : that._sortSpec != null ) return false;
-
-        return true;
-    }
-
+    @Override
     public int hashCode(){
-        int result = _mongoURI != null ? _mongoURI.hashCode() : 0;
-        result = 31 * result + ( _keyField != null ? _keyField.hashCode() : 0 );
-        result = 31 * result + ( _querySpec != null ? _querySpec.hashCode() : 0 );
-        result = 31 * result + ( _fieldSpec != null ? _fieldSpec.hashCode() : 0 );
-        result = 31 * result + ( _sortSpec != null ? _sortSpec.hashCode() : 0 );
-        result = 31 * result + ( _notimeout ? 1 : 0 );
-        result = 31 * result + _limit;
-        result = 31 * result + _skip;
+        int result = this.inputURI != null ? this.inputURI.hashCode() : 0;
+        result = 31 * result + ( this.query != null ? this.query.hashCode() : 0 );
+        result = 31 * result + ( this.fields != null ? this.fields.hashCode() : 0 );
+        result = 31 * result + ( this.max != null ? this.max.hashCode() : 0 );
+        result = 31 * result + ( this.min != null ? this.min.hashCode() : 0 );
+        result = 31 * result + ( this.sort != null ? this.sort.hashCode() : 0 );
+        result = 31 * result + ( this.notimeout ? 1 : 0 );
         return result;
     }
 
-    private MongoURI _mongoURI;
-    private String _keyField = "_id";
-    private Object _specialMin = null;
-    private Object _specialMax = null;
-    private DBObject _querySpec;
-    private DBObject _fieldSpec;
-    private DBObject _sortSpec;
-    private boolean _notimeout;
-    private int _limit = 0;
-    private int _skip = 0;
-    private long _length = -1;
-    private transient DBCursor _cursor;
-    private transient BSONEncoder _bsonEncoder;
-    private transient BSONDecoder _bsonDecoder;
+    @Override
+    public boolean equals(Object o){
+        if ( this == o ) return true;
+        if ( o == null || getClass() != o.getClass() ) return false;
+        MongoInputSplit that = (MongoInputSplit) o;
 
-    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
+        if ( getNoTimeout() != that.getNoTimeout() ) return false;
+        if ( getFields() != null ? !getFields().equals( that.getFields() ) : that.getFields() != null ) return false;
+        if ( getInputURI() != null ? !getInputURI().equals( that.getInputURI() ) : that.getInputURI() != null ) return false;
+        if ( getQuery() != null ? !_querySpec.equals( that._querySpec ) : that.getQuery() != null ) return false;
+        if ( getSort() != null ? !getSort().equals( that.getSort() ) : that.getSort() != null ) return false;
+        if ( getMax() != null ? !getMax().equals( that.getMax() ) : that.getMax() != null ) return false;
+        if ( getMin() != null ? !getMin.equals( that.getMin() ) : that.getMin() != null ) return false;
+        return true;
+    }
 
 }
