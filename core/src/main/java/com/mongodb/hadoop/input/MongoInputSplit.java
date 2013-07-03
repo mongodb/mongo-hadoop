@@ -1,6 +1,14 @@
+package com.mongodb.hadoop.input;
+import com.mongodb.*;
+import org.bson.*;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.conf.Configuration;
 
-
-
+import java.util.*;
+import java.io.DataOutput;
+import java.io.DataInput;
+import java.io.IOException;
 
 public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
     protected MongoURI inputURI;
@@ -15,7 +23,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     protected static transient BSONEncoder _bsonEncoder = new BasicBSONEncoder();
     protected static transient BSONDecoder _bsonDecoder = new BasicBSONDecoder();
 
-    public class MongoInputSplit(){}
+    public MongoInputSplit(){}
 
     public void setInputURI(MongoURI inputURI){
         this.inputURI = inputURI;

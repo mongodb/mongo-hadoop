@@ -1,1 +1,1 @@
-public class Sha
+public class ShardMongoSplitter{}

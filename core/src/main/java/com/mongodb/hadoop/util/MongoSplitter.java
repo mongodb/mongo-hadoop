@@ -1,3 +1,7 @@
+package com.mongodb.hadoop.util;
+
+import com.mongodb.*;
+
 public abstract class MongoSplitter{
     
     protected Configuration conf;
@@ -28,6 +32,12 @@ public abstract class MongoSplitter{
     
     public abstract List<InputSplit> calculateSplits();
 
+
+    /**
+     *  Contacts the config server and builds a map of each shard's name
+     *  to its host(s) by examining config.shards.
+     *
+     */
     protected Map<String, String> getShardsMap(){
         DB configDB = this.mongo.getDB("config");
         final HashMap<String, String> shardsMap = new HashMap<String,String>();
@@ -48,6 +58,41 @@ public abstract class MongoSplitter{
                 cur.close();
         }
         return shardsMap;
+    }
+
+    /**
+     *  Takes an existing {@link MongoURI} and returns a new modified URI which
+     *  replaces the original's server host + port with a supplied new 
+     *  server host + port, but maintaining all the same original options.
+     *  This is useful for generating distinct URIs for each mongos instance
+     *  so that large batch reads can all target them separately, distributing the
+     *  load more evenly. It can also be used to force a block of data to be read
+     *  directly from the shard's servers directly, bypassing mongos entirely.
+     *
+     * @param originalUri the URI to rewrite
+     * @param newServerUri the new host(s) to target, e.g. server1:port1[,server2:port2,...]
+     *
+     */
+    protected static MongoURI rewriteURI( MongoURI originalUri, String newServerUri){
+        String originalUriString = originalUri.toString();
+        originalUriString = originalUriString.substring( MongoURI.MONGODB_PREFIX.length() );
+
+        // uris look like: mongodb://fred:foobar@server1[,server2]/path?options
+        //
+
+        //Locate the last character of the original hostname
+        int serverEnd;
+        int idx = originalUriString.lastIndexOf( "/" );
+        serverEnd = idx < 0 ? originalUriString.length() : idx;
+
+        //Locate the first character of the original hostname
+        idx = originalUriString.indexOf( "@" );
+        int serverStart = idx > 0 ? idx + 1 : 0;
+
+        StringBuilder sb = new StringBuilder( originalUriString );
+        sb.replace( serverStart, serverEnd, newServerUri );
+        String ans = MongoURI.MONGODB_PREFIX + sb.toString();
+        return new MongoURI( ans );
     }
 
 }
