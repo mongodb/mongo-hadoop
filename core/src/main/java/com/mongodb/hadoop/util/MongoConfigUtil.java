@@ -422,10 +422,10 @@ public class MongoConfigUtil {
         }
     }
 
-    public static DBObject getDBObject( Configuration conf, String key ){
+    public static BasicDBObject getDBObject( Configuration conf, String key ){
         try {
             final String json = conf.get( key );
-            final DBObject obj = (DBObject) JSON.parse( json );
+            final BasicDBObject obj = (BasicDBObject) JSON.parse( json );
             if ( obj == null )
                 return new BasicDBObject();
             else

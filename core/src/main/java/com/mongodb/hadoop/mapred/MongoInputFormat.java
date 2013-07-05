@@ -34,6 +34,7 @@ import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.io.*;
 import org.bson.BSONObject;
 import com.mongodb.BasicDBObject;
+import java.io.IOException;
 
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
@@ -48,11 +49,15 @@ public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable>
         return new MongoRecordReader(mis);
     }
 
-    public InputSplit[] getSplits(JobConf job, int numSplits) {
-        final MongoConfig conf = new MongoConfig(job);
-        // TODO - Support allowing specification of numSplits to affect our ops?
-        final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
-        return splits.toArray(new InputSplit[0]);
+    public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
+        try{
+            MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(job);
+            log.info("Using " + splitterImpl.toString() + " to calculate splits. (old mapreduce API)");
+            final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
+            return splits.toArray(new InputSplit[0]);
+        }catch(SplitFailedException spfe){
+            throw new IOException(spfe);
+        }
     }
 
     public boolean verifyConfiguration(Configuration conf) {

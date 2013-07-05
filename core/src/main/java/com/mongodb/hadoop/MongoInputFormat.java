@@ -27,6 +27,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
 import java.util.*;
+import java.io.*;
 
 // Commons
 // Hadoop
@@ -45,16 +46,20 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     }
 
     @Override
-    public List<InputSplit> getSplits( JobContext context ){
-        final Configuration hadoopConfiguration = context.getConfiguration();
-        final MongoConfig conf = new MongoConfig( hadoopConfiguration );
-        return MongoSplitter.calculateSplits( conf );
+    public List<InputSplit> getSplits( JobContext context ) throws IOException{
+        final Configuration conf = context.getConfiguration();
+        try{
+            MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
+            log.info("Using " + splitterImpl.toString() + " to calculate splits.");
+            return splitterImpl.calculateSplits();
+        }catch(SplitFailedException spfe){
+            throw new IOException(spfe);
+        }
     }
-
 
     public boolean verifyConfiguration( Configuration conf ){
         return true;
     }
 
-    private static final Log LOG = LogFactory.getLog( MongoInputFormat.class );
+    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
 }

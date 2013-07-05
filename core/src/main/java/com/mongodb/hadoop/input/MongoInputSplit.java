@@ -1,5 +1,6 @@
 package com.mongodb.hadoop.input;
 import com.mongodb.*;
+import com.mongodb.hadoop.util.*;
 import org.bson.*;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.io.Writable;
@@ -12,11 +13,12 @@ import java.io.IOException;
 
 public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
     protected MongoURI inputURI;
-    protected BSONObject fields;
-    protected BSONObject query;
-    protected BSONObject sort;
-    protected BSONObject min;
-    protected BSONObject max;
+    protected String keyField = "_id";
+    protected DBObject fields;
+    protected DBObject query;
+    protected DBObject sort;
+    protected DBObject min;
+    protected DBObject max;
     protected boolean notimeout = false;
     protected transient DBCursor cursor;
 
@@ -33,43 +35,64 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         return this.inputURI;
     }
 
-    public BSONObject getFields(){//{{{
+    @Override
+    public String[] getLocations(){
+        if(this.inputURI == null){
+            return null;
+        }
+        return this.inputURI.getHosts().toArray( new String[inputURI.getHosts().size()] );
+    }
+
+    @Override
+    public long getLength(){
+        return Long.MAX_VALUE;
+    }
+
+    public String getKeyField(){//{{{
+        return this.keyField;
+    }
+
+    public void setKeyField(String keyField){
+        this.keyField = keyField;
+    }//}}}
+
+    public DBObject getFields(){//{{{
         return this.fields;
     }
 
-    public void setFields(BSONObject fields){
+    public void setFields(DBObject fields){
         this.fields = fields;
     }//}}}
 
-    public BSONObject getQuery(){//{{{
+    public DBObject getQuery(){//{{{
         return this.query;
     }
 
-    public void setQuery(BSONObject query){
+    public void setQuery(DBObject query){
         this.query = query;
     }//}}}
 
-    public BSONObject getSort(){//{{{
+    public DBObject getSort(){//{{{
         return this.sort;
     }
 
-    public void setSort(BSONObject sort){
+    public void setSort(DBObject sort){
         this.sort = sort;
     }//}}}
 
-    public BSONObject getMin(){//{{{
+    public DBObject getMin(){//{{{
         return this.min;
     }
 
-    public void setMin(BSONObject min){
+    public void setMin(DBObject min){
         this.min = min;
     }//}}}
 
-    public BSONObject getMax(){//{{{
+    public DBObject getMax(){//{{{
         return this.max;
     }
 
-    public void setMax(BSONObject max){
+    public void setMax(DBObject max){
         this.max = max;
     }//}}}
 
@@ -85,6 +108,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     public void write(final DataOutput out) throws IOException{
         BSONObject spec = BasicDBObjectBuilder.start().
                            add( "inputURI", getInputURI().toString()).
+                           add( "keyField", getKeyField()).
                            add( "fields", getFields()).
                            add( "query", getQuery()).
                            add( "sort", getSort()).                                              
@@ -108,16 +132,29 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         _bsonDecoder.decode( data, cb );
         spec = (BSONObject)cb.get();
         setInputURI(new MongoURI((String)spec.get("inputURI")));
-        setFields(new BasicBSONObject(((BSONObject)spec.get("fields")).toMap()));
-        setQuery(new BasicBSONObject(((BSONObject)spec.get("query")).toMap()));
-        setSort(new BasicBSONObject(((BSONObject)spec.get("sort")).toMap()));
-        setMin(new BasicBSONObject(((BSONObject)spec.get("min")).toMap()));
-        setMax(new BasicBSONObject(((BSONObject)spec.get("max")).toMap()));
+        setKeyField((String)spec.get("keyField"));
+
+        BSONObject temp = (BSONObject)spec.get("fields");
+        setFields(temp != null ? new BasicDBObject(temp.toMap()) : null);
+
+        temp = (BSONObject)spec.get("query");
+        setQuery(temp != null ? new BasicDBObject(temp.toMap()) : null);
+
+        temp = (BSONObject)spec.get("sort");
+        setSort(temp != null ? new BasicDBObject(temp.toMap()) : null);
+
+        temp = (BSONObject)spec.get("min");
+        setMin(temp != null ? new BasicDBObject(temp.toMap()) : null);
+
+        temp = (BSONObject)spec.get("max");
+        setMax(temp != null ? new BasicDBObject(temp.toMap()) : null);
+
         setNoTimeout((Boolean)spec.get("notimeout"));
     }
 
     public DBCursor getCursor(){
         if(this.cursor == null){
+
             this.cursor = MongoConfigUtil.getCollection(this.inputURI).find(this.query, this.fields).sort(this.sort);
             if (this.notimeout) this.cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             if (this.min != null) this.cursor.addSpecial("$min", this.min);
@@ -157,10 +194,10 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         if ( getNoTimeout() != that.getNoTimeout() ) return false;
         if ( getFields() != null ? !getFields().equals( that.getFields() ) : that.getFields() != null ) return false;
         if ( getInputURI() != null ? !getInputURI().equals( that.getInputURI() ) : that.getInputURI() != null ) return false;
-        if ( getQuery() != null ? !_querySpec.equals( that._querySpec ) : that.getQuery() != null ) return false;
+        if ( getQuery() != null ? !getQuery().equals( that.getQuery() ) : that.getQuery() != null ) return false;
         if ( getSort() != null ? !getSort().equals( that.getSort() ) : that.getSort() != null ) return false;
         if ( getMax() != null ? !getMax().equals( that.getMax() ) : that.getMax() != null ) return false;
-        if ( getMin() != null ? !getMin.equals( that.getMin() ) : that.getMin() != null ) return false;
+        if ( getMin() != null ? !getMin().equals( that.getMin() ) : that.getMin() != null ) return false;
         return true;
     }
 
