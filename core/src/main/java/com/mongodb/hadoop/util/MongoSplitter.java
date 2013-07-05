@@ -1,11 +1,25 @@
 package com.mongodb.hadoop.util;
 
+import java.util.*;
 import com.mongodb.*;
+import com.mongodb.hadoop.input.*;
+import org.bson.*;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.commons.logging.*;
 
 public abstract class MongoSplitter{
+
+    private static final Log log = LogFactory.getLog( MongoSplitter.class );
     
+    public static final MinKey MIN_KEY_TYPE = new MinKey();
+    public static final MaxKey MAX_KEY_TYPE = new MaxKey();
     protected Configuration conf;
     protected Mongo mongo;
+    protected MongoURI inputURI;
+    protected DBCollection inputCollection;
 
     public MongoSplitter(Configuration conf){
         this.conf = conf;
@@ -13,25 +27,24 @@ public abstract class MongoSplitter{
 
 
     protected void init(){
-        MongoURI inputURI = MongoConfigUtil.getInputURI(this.conf);
-        DBCollection coll = MongoConfigUtil.getCollection(uri);
-        DB db = coll.getDB(); 
+        this.inputURI = MongoConfigUtil.getInputURI(this.conf);
+        this.inputCollection = MongoConfigUtil.getCollection(inputURI);
+        DB db = this.inputCollection.getDB(); 
         this.mongo = db.getMongo();
         if( MongoConfigUtil.getAuthURI(this.conf) != null ){
             MongoURI authURI = MongoConfigUtil.getAuthURI(conf);
             if(authURI.getUsername() != null &&
                authURI.getPassword() != null &&
-               !authURI.getDatabase().equals(inputDB.getName())) {
-                DB authTargetDB = inputMongo.getDB(authURI.getDatabase());
+               !authURI.getDatabase().equals(db.getName())) {
+                DB authTargetDB = this.mongo.getDB(authURI.getDatabase());
                 authTargetDB.authenticate(authURI.getUsername(),
                                           authURI.getPassword());
             }
         }
-
     }
-    
-    public abstract List<InputSplit> calculateSplits();
 
+
+    public abstract List<InputSplit> calculateSplits() throws SplitFailedException;
 
     /**
      *  Contacts the config server and builds a map of each shard's name
@@ -51,7 +64,7 @@ public abstract class MongoSplitter{
                 int slashIndex = host.indexOf( '/' );
                 if ( slashIndex > 0 )
                     host = host.substring( slashIndex + 1 );
-                shardMap.put( (String) row.get( "_id" ), host );
+                shardsMap.put( (String) row.get( "_id" ), host );
             }
         } finally {
             if ( cur != null )
@@ -93,6 +106,116 @@ public abstract class MongoSplitter{
         sb.replace( serverStart, serverEnd, newServerUri );
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
         return new MongoURI( ans );
+    }
+
+    public MongoInputSplit createSplitFromBounds(BasicDBObject lowerBound, BasicDBObject upperBound) throws SplitFailedException{
+        //Objects to contain upper/lower bounds for each split
+        DBObject splitMin = new BasicDBObject();
+        DBObject splitMax = new BasicDBObject();
+        if(lowerBound != null){
+            for( Map.Entry<String,Object> entry : lowerBound.entrySet() ){
+                String key = entry.getKey();
+                Object val = entry.getValue();
+
+                if(!val.equals(MIN_KEY_TYPE))
+                    splitMin.put(key, val);
+                if(upperBound != null){
+                    Object maxVal = upperBound.get(key);
+                    if(!val.equals(MAX_KEY_TYPE))
+                        splitMax.put(key, maxVal);
+                }
+            }
+        }
+
+
+        BSONObject query = MongoConfigUtil.getQuery(this.conf);
+        MongoInputSplit split = null;
+        //If enabled, attempt to build the split using $gt/$lte
+        if(MongoConfigUtil.isRangeQueryEnabled(this.conf)){
+            try{
+                split = createRangeQuerySplit(lowerBound, upperBound, query);
+            }catch(Exception e){
+                throw new SplitFailedException("Couldn't use range query to create split: " + e.getMessage());
+            }
+        }
+        if(split == null){
+            split = new MongoInputSplit();
+            BasicDBObject splitQuery = new BasicDBObject();
+            splitQuery.putAll(query);
+            split.setQuery(splitQuery);
+            split.setMin(splitMin);
+            split.setMax(splitMax);
+        }
+        split.setInputURI(MongoConfigUtil.getInputURI(this.conf));
+        split.setNoTimeout(MongoConfigUtil.isNoTimeout(this.conf));
+        split.setFields(MongoConfigUtil.getFields(this.conf));
+        split.setSort(MongoConfigUtil.getSort(this.conf));
+        return split;
+    }
+
+    /**
+     *  Creates an instance of {@link MongoInputSplit} whose upper and lower
+     *  bounds are restricted by adding $gt/$lte clauses to the query filter. 
+     *  This requires that the boundaries are not compound keys, and that
+     *  the query does not contain any keys used in the split key.
+     *
+     * @param chunkLowerBound the lower bound of the chunk (min)
+     * @param chunkUpperBound the upper bound of the chunk (max)
+     * @throws IllegalArgumentException if the query conflicts with the chunk
+     * bounds, or the either of the bounds are compound keys.
+     *
+     */
+    public MongoInputSplit createRangeQuerySplit(BasicDBObject chunkLowerBound, BasicDBObject chunkUpperBound, BSONObject query){
+
+        //If the boundaries are actually empty, just return
+        //a split without boundaries.
+        if(chunkLowerBound == null && chunkUpperBound == null){
+            DBObject splitQuery = new BasicDBObject();
+            splitQuery.putAll(query);
+            MongoInputSplit split = new MongoInputSplit();
+            split.setQuery(splitQuery);
+            return split;
+        }
+
+        //The boundaries are not empty, so try to build
+        //a split using $gt/$lte.
+
+        //First check that the split contains no compound keys.
+        // e.g. this is valid: { _id : "foo" }
+        // but this is not {_id : "foo", name : "bar"}
+        Map.Entry<String, Object> minKey = chunkLowerBound != null && chunkLowerBound.keySet().size() == 1 ?
+            chunkLowerBound.entrySet().iterator().next() : null;
+        Map.Entry<String, Object> maxKey = chunkUpperBound != null && chunkUpperBound.keySet().size() == 1 ?
+            chunkUpperBound.entrySet().iterator().next() : null;
+        if(minKey == null && maxKey == null ){
+            throw new IllegalArgumentException("Range query is enabled but one or more split boundaries contains a compound key:\n" +
+                      "min:  " + chunkLowerBound +  "\n" +
+                      "max:  " + chunkUpperBound);
+        }
+
+        //Now, check that the lower and upper bounds don't have any keys
+        //which overlap with the query.
+        if( (minKey != null && query.containsKey(minKey.getKey())) ||
+            (maxKey != null && query.containsKey(maxKey.getKey())) ){
+            throw new IllegalArgumentException("Range query is enabled but split key conflicts with query filter:\n" +
+                      "min:  " + chunkLowerBound +  "\n" +
+                      "max:  " + chunkUpperBound +  "\n" + 
+                      "query:  " + query);
+        }
+
+        BasicDBObject rangeObj = new BasicDBObject();
+        if( minKey!=null )
+            rangeObj.put("$gte", minKey.getValue());
+
+        if( maxKey!=null )
+            rangeObj.put("$lt", maxKey.getValue());
+
+        DBObject splitQuery = new BasicDBObject();
+        splitQuery.putAll(query);
+        splitQuery.put(minKey.getKey(), rangeObj);
+        MongoInputSplit split = new MongoInputSplit();
+        split.setQuery(splitQuery);
+        return split;
     }
 
 }
