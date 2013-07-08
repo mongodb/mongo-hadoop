@@ -118,10 +118,20 @@ public class BSONSplitter extends Configured implements Tool {
         this.splitsList = splits;
     }//}}}
 
+    public static long getSplitSize(Configuration conf, FileStatus file){
+        long minSize = Math.max(1L, conf.getLong("mapred.min.split.size", 1L));
+        long maxSize = conf.getLong("mapred.max.split.size", Long.MAX_VALUE);
+
+        if(file != null){
+            long fileBlockSize = file.getBlockSize();
+            return Math.max(minSize, Math.min(maxSize, fileBlockSize));
+        }else{
+            long blockSize = conf.getLong("dfs.blockSize", 64 * 1024 * 1024);
+            return Math.max(minSize, Math.min(maxSize, blockSize));
+        }
+    }
+
     public void readSplitsForFile(FileStatus file) throws IOException{
-        log.info("Building splits information for " + file);
-        long minSize = Math.max(1L, getConf().getLong("mapred.min.split.size", 1L));
-        long maxSize = getConf().getLong("mapred.max.split.size", Long.MAX_VALUE);
         Path path = file.getPath();
         ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = path.getFileSystem(getConf());
@@ -135,8 +145,7 @@ public class BSONSplitter extends Configured implements Tool {
         }
         if (length != 0) { 
             int numDocsRead = 0;
-            long blockSize = file.getBlockSize();
-            long splitSize = Math.max(minSize, Math.min(maxSize, blockSize));
+            long splitSize = getSplitSize(getConf(), file);
             log.info("Generating splits for " + path + " of up to " + splitSize + " bytes.");
             long bytesRemaining = length;
             int numDocs = 0;

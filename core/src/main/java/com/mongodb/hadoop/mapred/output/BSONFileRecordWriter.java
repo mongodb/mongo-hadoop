@@ -39,8 +39,8 @@ import org.apache.commons.logging.*;
 
 public class BSONFileRecordWriter<K, V> extends com.mongodb.hadoop.output.BSONFileRecordWriter implements RecordWriter<K, V> {
 
-    public BSONFileRecordWriter(Configuration conf){
-        super(conf);
+    public BSONFileRecordWriter(FSDataOutputStream outFile, FSDataOutputStream splitFile, long splitSize){
+        super(outFile, splitFile, splitSize);
     }
 
     public void close( Reporter reporter ) throws IOException{

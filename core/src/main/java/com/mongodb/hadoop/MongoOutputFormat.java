@@ -34,7 +34,7 @@ public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
     public void checkOutputSpecs( final JobContext context ){ }
 
     public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
-        return new MongoOutputCommiter();
+        return new MongoOutputCommitter();
     }
 
     /**
