@@ -140,7 +140,7 @@ After successfully building, you must copy the jars to the lib directory on each
 
 ## Usage with static .bson (mongo backup) files
 
-[BSON Usage](examples/BSON_README.md)
+[BSON Usage](BSON_README.md)
 
 ## Usage with Amazon Elastic MapReduce
 
