@@ -294,7 +294,7 @@ class TestBSONOutput(Standalone):
         logging.info("Testing bson output")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
-        PARAMETERS["mapred.output.file"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
+        PARAMETERS["mapred.output.dir"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
         print self.temp_outdir
 
         runjob(self.server_hostname, PARAMETERS)
