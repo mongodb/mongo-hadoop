@@ -11,12 +11,17 @@ import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 
 
-public class StandaloneMongoSplitter extends MongoSplitter{
+public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( StandaloneMongoSplitter.class );
 
-    public StandaloneMongoSplitter(Configuration conf){
-        super(conf);
+    final DBObject splitKey;
+    final int splitSize;
+
+    public StandaloneMongoSplitter(Configuration conf, MongoURI inputURI, DBObject splitKey, int splitSize){
+        super(conf, inputURI);
+        this.splitKey = splitKey;
+        this.splitSize = splitSize;
     }
 
     // Generate one split per chunk.
@@ -25,14 +30,12 @@ public class StandaloneMongoSplitter extends MongoSplitter{
         this.init();
 
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
-        final DBObject splitKey = MongoConfigUtil.getInputSplitKey(this.conf);
-        final int splitSize = MongoConfigUtil.getSplitSize(this.conf);
         final String ns = this.inputCollection.getFullName();
 
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
-                                          add( "keyPattern", splitKey ).
+                                          add( "keyPattern", this.splitKey ).
                                           add( "force", false ). // force:True is misbehaving it seems
-                                          add( "maxChunkSize", splitSize ).get();
+                                          add( "maxChunkSize", this.splitSize ).get();
         
         CommandResult data = this.inputCollection.getDB().command( cmd );
 

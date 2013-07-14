@@ -9,12 +9,15 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.bson.*;
 
 
-public class ShardChunkMongoSplitter extends MongoSplitter{
+public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( ShardChunkMongoSplitter.class );
+    
+    protected boolean targetShards = false;
 
-    public ShardChunkMongoSplitter(Configuration conf){
-        super(conf);
+    public ShardChunkMongoSplitter(Configuration conf, MongoURI inputURI, boolean targetShards){
+        super(conf, inputURI);
+        this.targetShards = targetShards;
     }
 
     // Generate one split per chunk.
@@ -24,16 +27,14 @@ public class ShardChunkMongoSplitter extends MongoSplitter{
         DB configDB = this.mongo.getDB("config");
         DBCollection chunksCollection = configDB.getCollection( "chunks" );
 
-        MongoURI inputURI = MongoConfigUtil.getInputURI(this.conf);
-        String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
+        String inputNS = this.inputURI.getDatabase() + "." + this.inputURI.getCollection();
 
         DBCursor cur = chunksCollection.find(new BasicDBObject("ns", inputNS));
 
         int numChunks = 0;
 
-        boolean useShards = MongoConfigUtil.canReadSplitsFromShards(this.conf);
         Map<String, String> shardsMap = null;
-        if(useShards){
+        if(this.targetShards){
             shardsMap = this.getShardsMap();
         }
 

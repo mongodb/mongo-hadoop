@@ -62,6 +62,8 @@ public class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String OUTPUT_URI = "mongo.output.uri";
 
+    public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
+
 
     /**
      * The MongoDB field to read from for the Mapper Input.
@@ -650,5 +652,14 @@ public class MongoConfigUtil {
     public static Class<?> getBSONPathFilter( Configuration conf ){
         return conf.getClass( BSON_PATHFILTER, null );
     }
+
+    public static Class<? extends MongoSplitter> getSplitterClass( Configuration conf ){
+        return conf.getClass( MONGO_SPLITTER_CLASS, null, MongoSplitter.class );
+    }
+
+    public static void setSplitterClass( Configuration conf, Class<? extends MongoSplitter> val ){
+        conf.setClass( MONGO_SPLITTER_CLASS, val, MongoSplitter.class );
+    }
+
 
 }
