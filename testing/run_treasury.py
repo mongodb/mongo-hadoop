@@ -653,6 +653,19 @@ class TestShardedAuth(BaseShardedTest):
         #now with credentials, it should work
         self.assertTrue(compare_results(out_col2))
 
+class TestShardedWithQuery(BaseShardedTest):
+
+    def test_treasury(self):
+        logging.info("Testing queried input against sharded cluster")
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        #Only use a subset of dates
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
+        runjob(self.mongos_hostname, PARAMETERS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
+
 class TestStandaloneAuth(TestBasic):
 
     def test_treasury(self):
@@ -682,18 +695,6 @@ class TestStandaloneWithQuery(Standalone):
         results = list(out_col.find({},{'_id':1}).sort("_id"))
         self.assertTrue(len(results) == 14)
 
-
-class TestShardedWithQuery(BaseShardedTest):
-
-    def test_treasury(self):
-        logging.info("Testing queried input against sharded cluster")
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        #Only use a subset of dates
-        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
-        runjob(self.mongos_hostname, PARAMETERS)
-        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
-        results = list(out_col.find({},{'_id':1}).sort("_id"))
-        self.assertTrue(len(results) == 14)
 
 class TestUpdateWritable(Standalone):
 
