@@ -29,23 +29,12 @@ import java.io.IOException;
 
 public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
-    /**
-    * Get the {@link Path} to the output directory for the map-reduce job.
-    * 
-    * @return the {@link Path} to the output directory for the map-reduce job.
-    * @see FileOutputFormat#getWorkOutputPath(TaskInputOutputContext)
-    */
-    public static Path getOutputPath(JobContext job) {
-        String name = job.getConfiguration().get("mapred.output.dir");
-        return name == null ? null: new Path(name);
-    }                                                       
-
-
     public void checkOutputSpecs( final JobContext context ){ }
 
     @Override
     public RecordWriter<K, V> getRecordWriter( final TaskAttemptContext context ) throws IOException{
         // Open data output stream
+        
         Path outPath;
 
         Configuration conf = context.getConfiguration();
@@ -54,6 +43,7 @@ public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
         }else{
             outPath = getDefaultWorkFile(context, ".bson");
         }
+        LOG.info("output going into " + outPath);
 
         FileSystem fs = outPath.getFileSystem(context.getConfiguration());
         FSDataOutputStream outFile = fs.create(outPath);

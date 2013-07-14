@@ -287,21 +287,6 @@ class TestBasic(Standalone):
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
-class TestBSONOutput(Standalone):
-
-    def test_treasury(self):
-        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_', dir=TEMPDIR)
-        logging.info("Testing bson output")
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
-        PARAMETERS["mapred.output.dir"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
-        print self.temp_outdir
-
-        runjob(self.server_hostname, PARAMETERS)
-        mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out", os.path.join(self.temp_outdir, "mongo_hadoop","results.bson"))
-        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
-
 class BaseShardedTest(unittest.TestCase):
 
     @classmethod
