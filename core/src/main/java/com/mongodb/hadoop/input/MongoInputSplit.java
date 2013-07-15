@@ -48,61 +48,61 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         return Long.MAX_VALUE;
     }
 
-    public String getKeyField(){//{{{
+    public String getKeyField(){
         return this.keyField;
     }
 
     public void setKeyField(String keyField){
         this.keyField = keyField;
-    }//}}}
+    }
 
-    public DBObject getFields(){//{{{
+    public DBObject getFields(){
         return this.fields;
     }
 
     public void setFields(DBObject fields){
         this.fields = fields;
-    }//}}}
+    }
 
-    public DBObject getQuery(){//{{{
+    public DBObject getQuery(){
         return this.query;
     }
 
     public void setQuery(DBObject query){
         this.query = query;
-    }//}}}
+    }
 
-    public DBObject getSort(){//{{{
+    public DBObject getSort(){
         return this.sort;
     }
 
     public void setSort(DBObject sort){
         this.sort = sort;
-    }//}}}
+    }
 
-    public DBObject getMin(){//{{{
+    public DBObject getMin(){
         return this.min;
     }
 
     public void setMin(DBObject min){
         this.min = min;
-    }//}}}
+    }
 
-    public DBObject getMax(){//{{{
+    public DBObject getMax(){
         return this.max;
     }
 
     public void setMax(DBObject max){
         this.max = max;
-    }//}}}
+    }
 
-    public boolean getNoTimeout(){//{{{
+    public boolean getNoTimeout(){
         return this.notimeout;
     }
 
     public void setNoTimeout(boolean notimeout){
         this.notimeout = notimeout;
-    }//}}}
+    }
 
     @Override
     public void write(final DataOutput out) throws IOException{
@@ -154,7 +154,6 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     public DBCursor getCursor(){
         if(this.cursor == null){
-
             this.cursor = MongoConfigUtil.getCollection(this.inputURI).find(this.query, this.fields).sort(this.sort);
             if (this.notimeout) this.cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             if (this.min != null) this.cursor.addSpecial("$min", this.min);
