@@ -16,27 +16,47 @@
 
 package com.mongodb.hadoop;
 
-// Mongo
-
 import com.mongodb.hadoop.output.*;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import java.io.IOException;
 
-// Commons
-// Hadoop
-
-public class BSONFileOutputFormat<K, V> extends OutputFormat<K, V> {
+public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
     public void checkOutputSpecs( final JobContext context ){ }
 
-    public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
-        return new MongoOutputCommiter();
-    }
-
     @Override
-    public RecordWriter<K, V> getRecordWriter( final TaskAttemptContext context ){
-        return new BSONFileRecordWriter( context );
+    public RecordWriter<K, V> getRecordWriter( final TaskAttemptContext context ) throws IOException{
+        // Open data output stream
+        
+        Path outPath;
+
+        Configuration conf = context.getConfiguration();
+        if(conf.get("mapred.output.file") != null){
+            outPath = new Path(conf.get("mapred.output.file"));
+        }else{
+            outPath = getDefaultWorkFile(context, ".bson");
+        }
+        LOG.info("output going into " + outPath);
+
+        FileSystem fs = outPath.getFileSystem(context.getConfiguration());
+        FSDataOutputStream outFile = fs.create(outPath);
+
+        FSDataOutputStream splitFile = null;
+        if(MongoConfigUtil.getBSONOutputBuildSplits(context.getConfiguration())){
+            Path splitPath = new Path(outPath.getParent(),  "." + outPath.getName() + ".splits");
+            splitFile = fs.create(splitPath);
+        }
+
+        long splitSize = BSONSplitter.getSplitSize(context.getConfiguration(), null);
+        BSONFileRecordWriter<K,V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
+        return recWriter;
     }
 
     public BSONFileOutputFormat(){ 

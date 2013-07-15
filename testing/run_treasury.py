@@ -287,21 +287,6 @@ class TestBasic(Standalone):
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
-class TestBSONOutput(Standalone):
-
-    def test_treasury(self):
-        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_', dir=TEMPDIR)
-        logging.info("Testing bson output")
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
-        PARAMETERS["mapred.output.file"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
-        print self.temp_outdir
-
-        runjob(self.server_hostname, PARAMETERS)
-        mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out", os.path.join(self.temp_outdir, "mongo_hadoop","results.bson"))
-        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
-
 class BaseShardedTest(unittest.TestCase):
 
     @classmethod
@@ -585,6 +570,28 @@ class TestStaticBSON(Standalone):
         runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop"), PARAMETERS, self.server_hostname)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
+
+    def test_treasury_directory_out(self):
+        logging.info("Testing bsoninput from directory path")
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
+        PARAMETERS["mapred.output.dir"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop_out")
+        PARAMETERS["mapred.max.split.size"] = '200000'
+        PARAMETERS["bson.pathfilter.class"] = 'com.mongodb.hadoop.BSONPathFilter'
+        logging.info(PARAMETERS)
+        runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop"), PARAMETERS, self.server_hostname)
+
+        paths = os.listdir(os.path.join(self.temp_outdir,'mongo_hadoop_out'))
+        for p in paths:
+            fullpath = os.path.join(self.temp_outdir, "mongo_hadoop_out", p)
+            if not fullpath.endswith('.bson'):
+                continue
+            mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out",fullpath)
+
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
 
     def test_treasury_onesplit(self):
         logging.info("Testing bsoninput with one split")

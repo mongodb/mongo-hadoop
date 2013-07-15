@@ -189,7 +189,7 @@ We will solve this by doing two passes of Map/Reduce. The first will operate ove
 
 ####Phase One
 
-The `Mapper` code in phase one just produces the pair **`<owner,_id`>** for each device. The `Reducer` then takes the list of all `_id`s for each owner and creates a new document containing them. 
+The `Mapper` code in phase one just produces the pair `<owner,_id>` for each device. The `Reducer` then takes the list of all `_id`s for each owner and creates a new document containing them. 
 
 	public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
 	
@@ -216,7 +216,7 @@ The `Mapper` code in phase one just produces the pair **`<owner,_id`>** for each
 	        }
 			BasicBSONObject devices_list = new BasicBSONObject("devices", devices);
 	        BasicBSONObject output = new BasicBSONObject("_id", pKey);
-	        pContext.write(null, new BSONWritable(query, update, true, false));
+	        pContext.write(null, new MongoUpdateWritable(query, update, true, false));
 	    }
 	}
 
