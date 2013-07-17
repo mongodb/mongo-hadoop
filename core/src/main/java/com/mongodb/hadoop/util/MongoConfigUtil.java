@@ -424,7 +424,7 @@ public class MongoConfigUtil {
         }
     }
 
-    public static BasicDBObject getDBObject( Configuration conf, String key ){
+    public static DBObject getDBObject( Configuration conf, String key ){
         try {
             final String json = conf.get( key );
             final BasicDBObject obj = (BasicDBObject) JSON.parse( json );
