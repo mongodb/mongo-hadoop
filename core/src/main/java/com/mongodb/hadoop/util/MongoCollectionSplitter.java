@@ -34,7 +34,6 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
     public static final MaxKey MAX_KEY_TYPE = new MaxKey();
     protected Mongo mongo;
     protected DBCollection inputCollection;
-    protected Configuration conf;
 
     protected MongoURI inputURI;
     protected MongoURI authURI;
