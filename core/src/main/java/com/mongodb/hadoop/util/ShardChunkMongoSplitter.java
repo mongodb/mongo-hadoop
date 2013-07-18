@@ -58,18 +58,32 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
 
         Map<String, String> shardsMap = null;
         if(this.targetShards){
-            shardsMap = this.getShardsMap();
+            try{
+                shardsMap = this.getShardsMap();
+            }catch(Exception e){
+                //Something went wrong when trying to
+                //read the shards data from the config server,
+                //so abort the splitting
+                throw new SplitFailedException("Couldn't get shards information from config server", e);
+            }
+        }
+
+        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.conf);
+        if(this.targetShards && mongosHostNames.size() > 0){
+            throw new SplitFailedException("Setting both mongo.input.split.read_from_shards " +
+                                           "and mongo.input.mongos_hosts does not make sense. ");
         }
 
         ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
+        int loopIndex = 0;
         while(cur.hasNext()){
-            numChunks++;
             final BasicDBObject row = (BasicDBObject)cur.next();
             BasicDBObject chunkLowerBound = (BasicDBObject)row.get("min");
             BasicDBObject chunkUpperBound = (BasicDBObject)row.get("max");
             MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
-            if(shardsMap != null){
+            chunkSplit.setInputURI(inputURI);
+            if(this.targetShards){
                 //The job is configured to target shards, so replace the
                 //mongos hostname with the host of the shard's servers
                 String shard = (String)row.get("shard");
@@ -79,10 +93,18 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
 
                 MongoURI newURI = rewriteURI(inputURI, shardHosts);
                 chunkSplit.setInputURI(newURI);
-            }else{
-                chunkSplit.setInputURI(inputURI);
+            }else if(mongosHostNames.size() > 0){
+                //Multiple mongos hosts are specified, so
+                //choose a host name in round-robin fashion
+                //and rewrite the URI using that hostname.
+                //This evenly distributes the load to avoid
+                //pegging a single mongos instance.
+                String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
+                MongoURI newURI = rewriteURI(inputURI, roundRobinHost);
+                chunkSplit.setInputURI(newURI);
             }
             returnVal.add(chunkSplit);
+            numChunks++;
         }
         return returnVal;
     }

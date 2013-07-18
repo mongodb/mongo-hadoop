@@ -60,9 +60,11 @@ public class MongoConfigUtil {
     public static final String JOB_OUTPUT_VALUE = "mongo.job.output.value";
 
     public static final String INPUT_URI = "mongo.input.uri";
+    public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
+
 
 
     /**
@@ -660,6 +662,28 @@ public class MongoConfigUtil {
     public static void setSplitterClass( Configuration conf, Class<? extends MongoSplitter> val ){
         conf.setClass( MONGO_SPLITTER_CLASS, val, MongoSplitter.class );
     }
+
+    public static List<String> getInputMongosHosts(Configuration conf){
+        String raw = conf.get(INPUT_MONGOS_HOSTS, null);
+
+        if(raw == null || raw.length() == 0){
+            return new ArrayList<String>(); // empty list - no mongos specified
+        }
+
+        // List of hostnames delimited by whitespace
+        String[] hostsArray = StringUtils.split(raw);
+        return new ArrayList<String>(Arrays.asList(hostsArray));
+    }
+
+    public static void setInputMongosHosts(Configuration conf, List<String> hostnames){
+        String raw = "";
+        if(hostnames != null){
+            raw = StringUtils.join(hostnames, ' ');
+        }
+
+        conf.set(INPUT_MONGOS_HOSTS, raw);
+    }
+
 
 
 }
