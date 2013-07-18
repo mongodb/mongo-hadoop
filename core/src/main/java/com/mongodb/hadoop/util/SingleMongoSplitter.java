@@ -7,6 +7,10 @@ import com.mongodb.*;
 import org.bson.*;
 import java.util.*;
 
+/* This implementation of MongoSplitter does not actually
+ * do any splitting, it will just create a single input split
+ * which represents the entire data set within a collection.
+ */
 public class SingleMongoSplitter extends MongoCollectionSplitter{
 
     //Create a single split which consists of a single 

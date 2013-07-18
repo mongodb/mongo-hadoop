@@ -11,6 +11,18 @@ import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 
 
+/* This class is an implementation of MongoSplitter which
+ * calculates a list of splits on a single collection
+ * by running the MongoDB internal command "splitVector",
+ * which generates a list of index boundary pairs, each 
+ * containing an approximate amount of data depending on the
+ * max chunk size used, and converting those index boundaries
+ * into splits.
+ *
+ * This splitter is the default implementation used for any
+ * collection which is not sharded.
+ *
+ */
 public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( StandaloneMongoSplitter.class );
@@ -41,7 +53,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
         if ( data.containsField( "$err" ) ){
             throw new SplitFailedException( "Error calculating splits: " + data );
-        } else if ( (Double) data.get( "ok" ) != 1.0 )
+        } else if ( ((Double)data.get("ok")).equals(1.0) )
             throw new SplitFailedException( "Unable to calculate input splits: " + ( (String) data.get( "errmsg" ) ) );
         
         // Comes in a format where "min" and "max" are implicit

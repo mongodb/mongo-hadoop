@@ -120,8 +120,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
                 shardsMap.put( (String) row.get( "_id" ), host );
             }
         } finally {
-            if ( cur != null )
-                cur.close();
+            cur.close();
         }
         return shardsMap;
     }

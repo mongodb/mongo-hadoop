@@ -9,6 +9,12 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.bson.*;
 
 
+/* This implementation of MongoSplitter can be used for 
+ * sharded systems. It treats each shard as a single split, by
+ * reading all of the data on each shard for that split.
+ * This should be used with caution as the input splits could
+ * contain duplicate data from ongoing, or aborted migrations.
+ */
 public class ShardMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( ShardMongoSplitter.class );

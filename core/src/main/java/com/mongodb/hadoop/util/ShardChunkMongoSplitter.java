@@ -8,7 +8,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.bson.*;
 
-
+/*
+ * This class is an implementation of MongoSplitter which
+ * can be used on sharded collections. It gets the chunks
+ * information from the cluster's config server, and produces 
+ * one split for each chunk.
+ *
+ */
 public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( ShardChunkMongoSplitter.class );
