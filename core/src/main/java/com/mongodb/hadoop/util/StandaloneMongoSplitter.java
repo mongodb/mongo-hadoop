@@ -53,7 +53,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
         if ( data.containsField( "$err" ) ){
             throw new SplitFailedException( "Error calculating splits: " + data );
-        } else if ( ((Double)data.get("ok")).equals(1.0) )
+        } else if ( !((Double)data.get("ok")).equals(1.0) )
             throw new SplitFailedException( "Unable to calculate input splits: " + ( (String) data.get( "errmsg" ) ) );
         
         // Comes in a format where "min" and "max" are implicit
