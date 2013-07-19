@@ -387,6 +387,7 @@ class TestSharded(BaseShardedTest):
 
     def test_treasury_multi_mongos_input(self):
         logging.info("Testing sharded cluster input with multiplexed mongos INPUTS")
+        PARAMS = DEFAULT_PARAMETERS.copy()
         PARAMS['mongo.input.mongos_hosts'] = '"' + ' '.join([self.mongos_hostname, self.mongos2_hostname])+ '"'
         runjob(self.mongos_hostname, PARAMS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
