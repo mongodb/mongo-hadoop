@@ -385,8 +385,15 @@ class TestSharded(BaseShardedTest):
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
+    def test_treasury_multi_mongos_input(self):
+        logging.info("Testing sharded cluster input with multiplexed mongos INPUTS")
+        PARAMS['mongo.input.mongos_hosts'] = '"' + ' '.join([self.mongos_hostname, self.mongos2_hostname])+ '"'
+        runjob(self.mongos_hostname, PARAMS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
     def test_treasury_multi_mongos(self):
-        logging.info("Testing sharded cluster input with multiplexed mongos")
+        logging.info("Testing sharded cluster input with multiplexed mongos OUTPUTS")
         logging.info("before")
         logging.info(self.mongos_connection['admin'].command("serverStatus")['opcounters'])
         logging.info(self.mongos2_connection['admin'].command("serverStatus")['opcounters'])

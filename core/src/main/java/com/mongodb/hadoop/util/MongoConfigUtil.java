@@ -667,12 +667,11 @@ public class MongoConfigUtil {
         String raw = conf.get(INPUT_MONGOS_HOSTS, null);
 
         if(raw == null || raw.length() == 0){
-            return new ArrayList<String>(); // empty list - no mongos specified
+            return Collections.emptyList(); // empty list - no mongos specified
         }
 
         // List of hostnames delimited by whitespace
-        String[] hostsArray = StringUtils.split(raw);
-        return new ArrayList<String>(Arrays.asList(hostsArray));
+        return Arrays.asList(StringUtils.split(raw));
     }
 
     public static void setInputMongosHosts(Configuration conf, List<String> hostnames){

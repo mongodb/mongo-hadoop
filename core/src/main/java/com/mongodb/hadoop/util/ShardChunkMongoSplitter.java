@@ -74,9 +74,12 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
                                            "and mongo.input.mongos_hosts does not make sense. ");
         }
 
+        if(mongosHostNames.size() > 0){
+            log.info("Using multiple mongos instances (round robin) for reading input.");
+        }
+
         ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-        int loopIndex = 0;
         while(cur.hasNext()){
             final BasicDBObject row = (BasicDBObject)cur.next();
             BasicDBObject chunkLowerBound = (BasicDBObject)row.get("min");
@@ -101,6 +104,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
                 //pegging a single mongos instance.
                 String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
                 MongoURI newURI = rewriteURI(inputURI, roundRobinHost);
+                log.info("new uri " + newURI);
                 chunkSplit.setInputURI(newURI);
             }
             returnVal.add(chunkSplit);

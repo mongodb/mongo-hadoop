@@ -36,6 +36,8 @@ import org.apache.hadoop.util.ReflectionUtils;
  */
 public class MongoSplitterFactory{
 
+    private static final Log log = LogFactory.getLog( MongoSplitterFactory.class );
+
     public static MongoSplitter getSplitter(Configuration config){
 
         /* If user has specified a class to use for the splitter, use it */
