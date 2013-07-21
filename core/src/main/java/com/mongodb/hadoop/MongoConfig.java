@@ -278,6 +278,14 @@ public class MongoConfig {
         MongoConfigUtil.setSkip( _conf, skip );
     }
 
+    public boolean getLazyBSON(){
+        return MongoConfigUtil.getLazyBSON( _conf );
+    }
+
+    public void setLazyBSON( boolean lazy ){
+        MongoConfigUtil.setLazyBSON( _conf, lazy) ;
+    }
+
     public int getSplitSize(){
         return MongoConfigUtil.getSplitSize( _conf );
     }
