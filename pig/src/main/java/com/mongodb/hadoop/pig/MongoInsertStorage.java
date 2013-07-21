@@ -62,7 +62,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     protected void writeField(BasicDBObjectBuilder builder,
                             ResourceSchema.ResourceFieldSchema field,
                             Object d) throws IOException {
-        Object convertedType = BSONStorage.getTypeForBSON(d, field);
+        Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
         if(field.getName() != null && field.getName().equals(this.idField)){
             builder.add("_id", convertedType);
             return;
