@@ -685,11 +685,9 @@ class TestStandaloneAuth(TestBasic):
 
     def test_treasury(self):
         logging.info("Testing standalone with authentication on")
-        self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
+        x = self.server.connection()['admin'].add_user("test_user","test_pw", roles=["clusterAdmin", "readWriteAnyDatabase"])
         PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS['mongo.auth.db'] = 'admin'
-        PARAMETERS['mongo.auth.user'] = 'test_user'
-        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        PARAMETERS['mongo.auth.uri'] = 'mongodb://%s:%s@%s/admin' % ('test_user', 'test_pw', self.server_hostname) 
         runjob('test_user:test_pw@' + self.server_hostname, PARAMETERS)
 
         server_connection = self.server.connection()
