@@ -28,6 +28,8 @@ flume/target/*/*
 flume/target/*
 pig/target/*/*
 pig/target/*
+hive/target/*/*
+hive/target/*
 mongo-*.jar
 project/target/*
 streaming/target/*
