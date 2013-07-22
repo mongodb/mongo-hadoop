@@ -19,6 +19,7 @@ package com.mongodb.hadoop.util;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import java.util.*;
+import java.net.UnknownHostException;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -59,23 +60,20 @@ public class MongoSplitterFactory{
         if(!MongoConfigUtil.createInputSplits(config)){
             returnVal = new SingleMongoSplitter(config, uri);
         }else{
-            //Get the collection stats
-            DBCollection coll = MongoConfigUtil.getCollection(uri);
-            DB db = coll.getDB(); 
-            Mongo mongo = db.getMongo();
-
-            if( MongoConfigUtil.getAuthURI(config) != null ){
-                MongoURI authURI = MongoConfigUtil.getAuthURI(config);
-                if(authURI.getUsername() != null &&
-                   authURI.getPassword() != null &&
-                   !authURI.getDatabase().equals(db.getName())) {
-                    DB authTargetDB = mongo.getDB(authURI.getDatabase());
-                    authTargetDB.authenticate(authURI.getUsername(),
-                                              authURI.getPassword());
-                }
+            MongoURI statsTargetURI;
+            MongoURI authURI = MongoConfigUtil.getAuthURI(config);
+            MongoURI inputURI = MongoConfigUtil.getInputURI(config);
+            CommandResult stats;
+            DBCollection coll;
+            if(authURI != null){
+                coll = MongoConfigUtil.getCollectionWithAuth(inputURI, authURI);
+                stats = coll.getStats();
+                log.info("Retrieved Collection stats:" + stats);
+            }else{
+                coll = MongoConfigUtil.getCollection(uri);
+                stats = coll.getStats();
             }
 
-            final CommandResult stats = coll.getStats();
             final boolean isSharded = stats.getBoolean( "sharded", false );
             if(!isSharded){
                 final int splitSize = MongoConfigUtil.getSplitSize(config);

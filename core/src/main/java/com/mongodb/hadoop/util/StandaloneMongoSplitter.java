@@ -44,12 +44,18 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
         final String ns = this.inputCollection.getFullName();
 
+        log.info("Running splitvector to check splits against " + this.inputURI);
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
                                           add( "keyPattern", this.splitKey ).
                                           add( "force", false ). // force:True is misbehaving it seems
                                           add( "maxChunkSize", this.splitSize ).get();
         
-        CommandResult data = this.inputCollection.getDB().command( cmd );
+        CommandResult data;
+        if(this.authDB == null){
+            data = this.inputCollection.getDB().getSisterDB("admin").command( cmd );
+        }else{
+            data = this.authDB.command( cmd );
+        }
 
         if ( data.containsField( "$err" ) ){
             throw new SplitFailedException( "Error calculating splits: " + data );

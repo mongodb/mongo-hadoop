@@ -28,7 +28,7 @@ import org.apache.commons.logging.*;
 
 public abstract class MongoCollectionSplitter extends MongoSplitter{
 
-    private static final Log log = LogFactory.getLog( MongoSplitter.class );
+    private static final Log log = LogFactory.getLog( MongoCollectionSplitter.class );
     
     public static final MinKey MIN_KEY_TYPE = new MinKey();
     public static final MaxKey MAX_KEY_TYPE = new MaxKey();
@@ -37,6 +37,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
 
     protected MongoURI inputURI;
     protected MongoURI authURI;
+    protected DB authDB;
     protected DBObject query;
     protected boolean useRangeQuery;
     protected boolean noTimeout;
@@ -103,8 +104,9 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
         if( this.authURI != null ){
             if(this.authURI.getUsername() != null &&
                this.authURI.getPassword() != null &&
-               !this.authURI.getDatabase().equals(db.getName())) {
+               !mongo.getDB(this.authURI.getDatabase()).isAuthenticated()) {
                 DB authTargetDB = this.mongo.getDB(this.authURI.getDatabase());
+                this.authDB = authTargetDB;
                 authTargetDB.authenticate(this.authURI.getUsername(),
                                           this.authURI.getPassword());
             }
@@ -229,6 +231,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
             split.setMax(splitMax);
         }
         split.setInputURI(this.inputURI);
+        split.setAuthURI(this.authURI);
         split.setNoTimeout(this.noTimeout);
         split.setFields(this.fields);
         split.setSort(this.sort);

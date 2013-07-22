@@ -27,8 +27,13 @@ import java.io.DataOutput;
 import java.io.DataInput;
 import java.io.IOException;
 
+import org.apache.commons.logging.*;
+
 public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
+    private static final Log log = LogFactory.getLog( MongoInputSplit.class );
+
     protected MongoURI inputURI;
+    protected MongoURI authURI;
     protected String keyField = "_id";
     protected DBObject fields;
     protected DBObject query;
@@ -49,6 +54,14 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     public MongoURI getInputURI(){
         return this.inputURI;
+    }
+
+    public void setAuthURI(MongoURI authURI){
+        this.authURI = authURI;
+    }
+
+    public MongoURI getAuthURI(){
+        return this.authURI;
     }
 
     @Override
@@ -124,6 +137,8 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     public void write(final DataOutput out) throws IOException{
         BSONObject spec = BasicDBObjectBuilder.start().
                            add( "inputURI", getInputURI().toString()).
+                           add( "authURI", getAuthURI() != null ?
+                                   getAuthURI().toString() : null).
                            add( "keyField", getKeyField()).
                            add( "fields", getFields()).
                            add( "query", getQuery()).
@@ -148,8 +163,14 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         _bsonDecoder.decode( data, cb );
         spec = (BSONObject)cb.get();
         setInputURI(new MongoURI((String)spec.get("inputURI")));
-        setKeyField((String)spec.get("keyField"));
 
+        if(spec.get("authURI") != null){
+            setAuthURI(new MongoURI((String)spec.get("authURI")));
+        }else{
+            setAuthURI(null);
+        }
+        
+        setKeyField((String)spec.get("keyField"));
         BSONObject temp = (BSONObject)spec.get("fields");
         setFields(temp != null ? new BasicDBObject(temp.toMap()) : null);
 
@@ -170,7 +191,14 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     public DBCursor getCursor(){
         if(this.cursor == null){
-            this.cursor = MongoConfigUtil.getCollection(this.inputURI).find(this.query, this.fields).sort(this.sort);
+            DBCollection coll;
+            if(this.authURI != null){
+                coll = MongoConfigUtil.getCollectionWithAuth(this.inputURI, this.authURI);
+            }else{
+                coll = MongoConfigUtil.getCollection(this.inputURI);
+            }
+
+            this.cursor = coll.find(this.query, this.fields).sort(this.sort);
             if (this.notimeout) this.cursor.setOptions( Bytes.QUERYOPTION_NOTIMEOUT );
             if (this.min != null) this.cursor.addSpecial("$min", this.min);
             if (this.max != null) this.cursor.addSpecial("$max", this.max);
@@ -181,6 +209,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     @Override
     public String toString(){
         return "MongoInputSplit{URI=" + this.inputURI.toString()
+             + ", authURI=" + this.authURI
              + ", min=" + this.min + ", max=" + this.max 
              + ", query=" + this.query
              + ", sort=" + this.sort

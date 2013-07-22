@@ -27,6 +27,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.fs.PathFilter;
 
 import java.util.*;
+import java.net.UnknownHostException;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -306,33 +307,56 @@ public class MongoConfigUtil {
         return getMongoURI( conf, AUTH_URI );
     }
 
-    public static List<DBCollection> getCollections( List<MongoURI> uris ){
+    public static List<DBCollection> getCollections( List<MongoURI> uris, MongoURI authURI){
         List<DBCollection> dbCollections = new LinkedList<DBCollection>();
         for (MongoURI uri : uris) {
-            dbCollections.add(getCollection(uri));
+            if(authURI != null){
+                dbCollections.add(getCollectionWithAuth(uri, authURI));
+            }else{
+                dbCollections.add(getCollection(uri));
+            }
         }
         return dbCollections;
     }
 
     public static DBCollection getCollection( MongoURI uri ){
-        try {
-            Mongo mongo = _mongos.connect( uri );
-            DB myDb = mongo.getDB(uri.getDatabase());
-
-            //if there's a username and password
-            if(uri.getUsername() != null && uri.getPassword() != null && !myDb.isAuthenticated()) {
-                boolean auth = myDb.authenticate(uri.getUsername(), uri.getPassword());
-                if(auth) {
-                    log.info("Sucessfully authenticated with collection.");
-                }
-                else {
-                    throw new IllegalArgumentException( "Unable to connect to collection." );
-                }
+        DBCollection coll;
+        try{
+            Mongo mongo = new Mongo(uri);
+            if(!mongo.getDB(uri.getDatabase()).isAuthenticated() && 
+                uri.getUsername() != null && uri.getPassword() != null){
+                mongo.getDB(uri.getDatabase())
+                    .authenticate(uri.getUsername(), uri.getPassword());
             }
-            return uri.connectCollection(mongo);
+            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return coll;
+        }catch(Exception e){
+            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
-        catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to collection." + e.getMessage(), e );
+    }
+
+    public static DBCollection getCollectionWithAuth( MongoURI uri, MongoURI authURI ){
+        //Make sure auth uri is valid and actually has a username/pw to use
+        if(authURI == null || authURI.getUsername() == null || authURI.getPassword() == null){
+            throw new IllegalArgumentException("auth URI is empty or does not contain a valid username/password combination.");
+        }
+
+        DBCollection coll;
+        try{
+            Mongo mongo = new Mongo(authURI);
+            mongo.getDB(authURI.getDatabase())
+                .authenticateCommand(
+                        authURI.getUsername(),
+                        authURI.getPassword());
+            if(!mongo.getDB(uri.getDatabase()).isAuthenticated() && 
+                uri.getUsername() != null && uri.getPassword() != null){
+                mongo.getDB(uri.getDatabase())
+                    .authenticate(uri.getUsername(), uri.getPassword());
+            }
+            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return coll;
+        }catch(Exception e){
+            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
     }
 
@@ -340,8 +364,7 @@ public class MongoConfigUtil {
         try {
             final MongoURI _uri = getOutputURI(conf);
             return getCollection(_uri);
-        }
-        catch ( final Exception e ) {
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
         }
     }
@@ -349,9 +372,9 @@ public class MongoConfigUtil {
     public static List<DBCollection> getOutputCollections( Configuration conf ){
         try {
             final List<MongoURI> _uris = getOutputURIs(conf);
-            return getCollections(_uris);
-        }
-        catch ( final Exception e ) {
+            MongoURI authURI = getAuthURI(conf);
+            return getCollections(_uris, authURI);
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
         }
     }
@@ -360,8 +383,7 @@ public class MongoConfigUtil {
         try {
             final MongoURI _uri = getInputURI(conf);
             return getCollection( _uri );
-        }
-        catch ( final Exception e ) {
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException(
                     "Unable to connect to MongoDB Input Collection at '" + getInputURI( conf ) + "'", e );
         }

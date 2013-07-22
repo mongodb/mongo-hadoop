@@ -262,7 +262,7 @@ class StandaloneManager(object):
         else:
             return self.host;
 
-    def start_server(self,fresh=False):
+    def start_server(self,fresh=False, noauth=False):
         if fresh:
             try:
                 logging.info("Deleting dbpth '%s'" % self.dbpath)
@@ -287,7 +287,7 @@ class StandaloneManager(object):
 
         self.start_time = time.time()
         self.info = {}
-        self.host = self.start_mongod(self.port)
+        self.host = self.start_mongod(self.port, noauth=noauth)
         return self.host
 
 class ReplicaSetManager(object):

@@ -248,19 +248,20 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 
 
 class Standalone(unittest.TestCase):
+    noauth=True
+
     @classmethod
     def setUpClass(self):
         global num_runs
         self.homedir = "standalone1_" + str(num_runs)
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,self.homedir))
-        self.server_hostname = self.server.start_server(fresh=True)
+        self.server_hostname = self.server.start_server(fresh=True,noauth=self.noauth)
         self.server.connection().drop_database('mongo_hadoop')
         mongo_manager.mongo_import(self.server_hostname,
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
         num_runs += 1
-        print "server is ready."
 
     def setUp(self):
         self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
@@ -288,6 +289,7 @@ class TestBasic(Standalone):
         self.assertTrue(compare_results(out_col))
 
 class BaseShardedTest(unittest.TestCase):
+    noauth=True
 
     @classmethod
     def setUpClass(self):
@@ -296,24 +298,24 @@ class BaseShardedTest(unittest.TestCase):
 
         self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + str(num_runs)),
                 with_arbiter=True,
-                num_members=3)
+                num_members=3, noauth=self.noauth)
         self.shard1.start_set(fresh=True)
         self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_" + str(num_runs)),
                 with_arbiter=True,
-                num_members=3)
+                num_members=3, noauth=self.noauth)
         self.shard2.start_set(fresh=True)
         self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_' + str(num_runs)))
-        self.confighost = self.configdb.start_server(fresh=True)
+        self.confighost = self.configdb.start_server(fresh=True,noauth=self.noauth)
 
         self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + str(num_runs)))
         self.mongos_hostname = self.mongos.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
-                noauth=False, fresh=True, addShards=True)
+                noauth=self.noauth, fresh=True, addShards=True)
 
         self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + str(num_runs)))
         self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
-                noauth=False, fresh=True, addShards=False)
+                noauth=self.noauth, fresh=True, addShards=False)
 
         self.mongos_connection = self.mongos.connection()
         self.mongos2_connection = self.mongos2.connection()
@@ -636,6 +638,7 @@ class TestStaticBSON(Standalone):
         self.assertTrue(compare_results(out_col))
 
 class TestShardedAuth(BaseShardedTest):
+    noauth=False
 
     def test_treasury(self):
         logging.info("Testing sharding with authentication on")
@@ -682,6 +685,7 @@ class TestShardedWithQuery(BaseShardedTest):
 
 
 class TestStandaloneAuth(TestBasic):
+    noauth=False
 
     def test_treasury(self):
         logging.info("Testing standalone with authentication on")
