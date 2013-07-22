@@ -14,7 +14,7 @@ import time
 
 import pymongo
 
-hostname = "127.0.0.1"#socket.gethostname()
+hostname = socket.gethostname()
 start_port = int(os.environ.get('DB_PORT', 17000)) 
 standalone_count = 0
 mongos_count = 0
