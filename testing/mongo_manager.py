@@ -516,7 +516,7 @@ class ReplicaSetManager(object):
                 'source_port': source_port,
             }
 
-            configitem = { '_id': _id, 'host': host, 'arbiterOnly': arbiter }
+            configitem = { '_id': _id, 'host': host, 'arbiterOnly': arbiter}
             configitem.update(extras)
             return configitem
 
@@ -569,6 +569,7 @@ class ReplicaSetManager(object):
 
         self.config = {'_id': self.name, 'members': self.members}
         self.primary = self.members[0]['host']
+        self.primary_port = self.members[0]['host'].split(':')[-1]
 
         if self.master_slave:
             # Is there any way to verify the pair is up?
@@ -576,7 +577,9 @@ class ReplicaSetManager(object):
         else:
             # Honestly, what's the hurry? members take a *long* time to start on EC2
             time.sleep(1)
-            c = pymongo.Connection(self.primary)
+            # use localhost bypass here so that if we are using auth,
+            # we don't need to worry about the username/pw
+            c = pymongo.Connection('localhost:' + str(self.primary_port))
 
             logging.info('Initiating replica set....')
             if not restart:
