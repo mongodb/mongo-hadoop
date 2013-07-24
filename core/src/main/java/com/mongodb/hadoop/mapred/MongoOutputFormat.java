@@ -23,6 +23,9 @@ import org.apache.hadoop.util.*;
 
 import com.mongodb.hadoop.mapred.output.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.MongoURI;
+import java.util.List;
+import java.io.IOException;
 
 @SuppressWarnings("deprecation")
 public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
@@ -31,7 +34,12 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
     public MongoOutputFormat() {
     }
 
-    public void checkOutputSpecs(FileSystem ignored, JobConf job) {
+    public void checkOutputSpecs(FileSystem ignored, JobConf job) throws IOException {
+        List<MongoURI> outputUris; 
+        outputUris = MongoConfigUtil.getOutputURIs(job);
+        if(outputUris == null || outputUris.size() == 0){
+            throw new IOException("No output URI is specified. You must set mongo.output.uri.");
+        }
     }
 
     public OutputCommitter getOutputCommitter(TaskAttemptContext context) {
