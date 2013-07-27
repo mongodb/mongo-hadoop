@@ -1,9 +1,11 @@
 package com.mongodb.hadoop.hive;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -14,26 +16,21 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeStats;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
+import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.typeinfo.*;
 import org.apache.hadoop.io.Writable;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
-import org.bson.types.BasicBSONList;
-import org.bson.types.ObjectId;
+import org.bson.types.*;
 
 import com.mongodb.hadoop.io.BSONWritable;
 
-public class BSONSerde extends AbstractSerDe {
+public class BSONSerDe extends AbstractSerDe {
 
-    
-    public boolean DEBUG = true;
-    private static final Log LOG = LogFactory.getLog(BSONSerde.class.getName());
+
+    public boolean DEBUG = false;
+    private static final Log LOG = LogFactory.getLog(BSONSerDe.class.getName());
 
     private StructTypeInfo docTypeInfo;
     private ObjectInspector docOI;
@@ -65,7 +62,7 @@ public class BSONSerde extends AbstractSerDe {
                 (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI = 
                 TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
-        
+
         if (DEBUG) {
             for (int i = 0 ; i < columnTypes.size() ; i++) {
                 /*System.out.println("initilize--" + columnNames.get(i) + ":" 
@@ -73,6 +70,7 @@ public class BSONSerde extends AbstractSerDe {
             }
         }
     }
+
 
     /**
      * Given a Writable object of BSON, turn it into a table
@@ -90,7 +88,7 @@ public class BSONSerde extends AbstractSerDe {
             throw new SerDeException(getClass().toString() + 
                     " requires a BSONWritable object, not" + writ.getClass());
         }
-        
+
         if (DEBUG) {
             System.out.println(doc.toString());
         }
@@ -106,11 +104,12 @@ public class BSONSerde extends AbstractSerDe {
             }
         }
 
+        // For each field, cast it to a HIVE type and add to the current row
         Object value = null;
         for (String fieldName : docTypeInfo.getAllStructFieldNames()) {
             try {
                 TypeInfo fieldTypeInfo = docTypeInfo.getStructFieldTypeInfo(fieldName);
-                value = parseField(lower.get(fieldName), fieldTypeInfo);
+                value = deserializeField(lower.get(fieldName), fieldTypeInfo);
                 if (DEBUG) {
                     System.out.println("deserialize--" + fieldName + ":" + value.toString());
                 }
@@ -122,139 +121,298 @@ public class BSONSerde extends AbstractSerDe {
 
 
         if (DEBUG) {
-            System.out.println("1 writable done");
+            System.out.println("DESERIALIZING done");
         }
         return row;
     }
 
+
     /**
      * For a given Object value and its supposed TypeInfo
      * determine and return its Java object representation
+     * 
+     * Map in here must be of the same type, so instead an embedded doc
+     * becomes a struct instead. ***
      */
-    private Object parseField(Object value, TypeInfo valueTypeInfo) {
+    private Object deserializeField(Object value, TypeInfo valueTypeInfo) {
 
         if (value == null) {
             return null;
         }
-        
-        if (DEBUG) {
-            System.out.println("Field-- " +value.toString() + ":" + valueTypeInfo.getCategory().toString());
-        }
-        switch (valueTypeInfo.getCategory()) {
-            case PRIMITIVE:
-                return parsePrimitive(value, valueTypeInfo);
-            case LIST:
-                return parseList(value, (ListTypeInfo) valueTypeInfo);
-            case MAP:
-                return parseMap(value, (MapTypeInfo) valueTypeInfo);
-            case STRUCT:
-                // Mongo has no struct
-                break;
-            case UNION:
-                // Mongo also has no union
-                return null;
-            default:
-                return parseMongoType(value);
-                // Must be an unknown (a Mongo specific type)
-                
-        }
-        return value;
-    }
-    
-    private Object parsePrimitive(Object value, TypeInfo valueTypeInfo) {
 
-        String typeName = valueTypeInfo.getTypeName();        
         if (DEBUG) {
-            System.out.println("PRIMITIVE-- " + value.getClass().toString() + ":" + typeName);
+            System.out.println("Field-- " +value.toString() + ":" + 
+                    valueTypeInfo.getCategory().toString());
         }
-        if (typeName.equalsIgnoreCase(serdeConstants.DOUBLE_TYPE_NAME)) {
-            return (Double) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.BIGINT_TYPE_NAME)) {
-            return (Long) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
-            if (value instanceof Double) {
-                return ((Double) value).intValue();
-            } else if (value instanceof Float) {
-                return ((Float) value).intValue();
-            }
-            return (Integer) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.TINYINT_TYPE_NAME)) {
-            return (Byte) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.FLOAT_TYPE_NAME)) {
-            return (Float) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.BOOLEAN_TYPE_NAME)) {
-            return (Boolean) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.STRING_TYPE_NAME)) {
-            return (String) value;
-        } else if (typeName.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)
-                || typeName.equalsIgnoreCase(serdeConstants.DATETIME_TYPE_NAME)
-                || typeName.equalsIgnoreCase(serdeConstants.TIMESTAMP_TYPE_NAME)) {
-            return (Date) value;
-        } else {
-            LOG.equals("not a known primitive type");
+
+        switch (valueTypeInfo.getCategory()) {
+        case LIST:
+            return deserializeList(value, (ListTypeInfo) valueTypeInfo);
+        case MAP:
+            return deserializeMap(value, (MapTypeInfo) valueTypeInfo);
+        case PRIMITIVE:
+            return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
+        case STRUCT:
+            // Supports both struct and map, but should use struct 
+            return deserializeStruct(value, (StructTypeInfo) valueTypeInfo);
+        case UNION:
+            // Mongo also has no union
+            return null;
+        default:
+            return deserializeMongoType(value);
+            // Must be an unknown (a Mongo specific type)
         }
-        return value;
     }
-    
-    private Object parseList(Object value, ListTypeInfo valueTypeInfo) {
+
+
+    /**
+     * Deserialize a List with the same listElemTypeInfo for its elements
+     */
+    private Object deserializeList(Object value, ListTypeInfo valueTypeInfo) {
         BasicBSONList list = (BasicBSONList) value;
-        TypeInfo listTypeInfo = valueTypeInfo.getListElementTypeInfo();
+        TypeInfo listElemTypeInfo = valueTypeInfo.getListElementTypeInfo();
         if (DEBUG) {
-            System.out.println("in list: " + listTypeInfo.getTypeName());
+            System.out.println("in list: " + listElemTypeInfo.getTypeName());
         }
-        
+
         for (int i = 0 ; i < list.size() ; i++) {
-            list.set(i, parseField(list.get(i), listTypeInfo));
+            list.set(i, deserializeField(list.get(i), listElemTypeInfo));
         }
         return list.toArray();
     }
-    
-    private Object parseMap(Object value, MapTypeInfo valueTypeInfo) {
+
+
+    /**
+     * 
+     * @param value
+     * @param valueTypeInfo
+     * @return
+     */        
+    @SuppressWarnings("unchecked")
+    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo) {
+
+        Map<Object, Object> map = (Map<Object, Object>) value;
+        ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
+        ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
+
+        List<Object> struct = new ArrayList<Object> (structNames.size());
+        for (int i = 0 ; i < structNames.size() ; i++) {
+            struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
+        }
+        return struct;
+    }
+
+
+    /**
+     * Also deserialize a Map with the same mapElemTypeInfo
+     */
+    private Object deserializeMap(Object value, MapTypeInfo valueTypeInfo) {
         BasicBSONObject b = (BasicBSONObject) value;
-        TypeInfo mapTypeInfo = valueTypeInfo.getMapValueTypeInfo();
+        TypeInfo mapValueTypeInfo = valueTypeInfo.getMapValueTypeInfo();
         if (DEBUG) {
-            System.out.println("in map: " + mapTypeInfo.getTypeName());
+            System.out.println("in map: " + mapValueTypeInfo.getTypeName());
         }
-        
+
         for (Entry<String, Object> entry : b.entrySet()) {
-            b.put(entry.getKey(), parseField(entry.getValue(), mapTypeInfo));
+            b.put(entry.getKey(), deserializeField(entry.getValue(), mapValueTypeInfo));
         }
-        
+
         return b.toMap();
     }
-    
+
+
+    /**
+     * Most primitives are included, but some are specific to Mongo instances
+     */
+    private Object deserializePrimitive(Object value, PrimitiveTypeInfo valueTypeInfo) {
+
+        if (DEBUG) {
+            System.out.println("PRIMITIVE-- " + value.getClass().toString() + ":" + valueTypeInfo.getPrimitiveCategory());
+        }
+        switch (valueTypeInfo.getPrimitiveCategory()) {
+        case BINARY:
+            return (byte[]) value;
+        case BOOLEAN:
+            return (Boolean) value;
+        case DOUBLE:
+            return (Double) value;
+        case FLOAT:
+            return (Float) value;
+        case INT:
+            if (value instanceof Double) {
+                return ((Double) value).intValue(); 
+            }
+            return (Integer) value;
+        case LONG:
+            return (Long) value;
+        case SHORT:
+            return (Short) value;
+        case STRING:
+            return (String) value;
+        case TIMESTAMP:
+            return (Timestamp) value;
+        default:
+            return deserializeMongoType(value);
+        }
+    }
+
+
+
     /**
      * 
      * For Mongo Specific types, return the most appropriate java types
      */
-    private Object parseMongoType(Object value) {
+    private Object deserializeMongoType(Object value) {
+        // TODO:: Add more here
         if (value instanceof ObjectId) {
-            return value.toString();
+            return ((ObjectId) value).toString();
+        } else if (value instanceof Date) {
+            return new Timestamp(((Date) value).getTime());
+        } else if (value instanceof BSONTimestamp) {
+            return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
+        } else if (value instanceof Symbol) {
+            return ((Symbol) value).toString();
+        } else {
+
+            LOG.error("Unable to parse " + value.toString() + " for type " + value.getClass().toString());
+            return null;
         }
-        return null;
     }
+
 
     @Override
     public ObjectInspector getObjectInspector() throws SerDeException {
         return docOI;
     }
 
+
     @Override
     public SerDeStats getSerDeStats() {
-        //TODO:: this needs to be determined what it is.
+        //TODO:: this needs to be determined. what is it?
         return null;
     }
+
 
     @Override
     public Class<? extends Writable> getSerializedClass() {
         return BSONWritable.class;
     }
 
+
     @Override
-    public Writable serialize(Object arg0, ObjectInspector arg1)
+    public Writable serialize(Object obj, ObjectInspector oi)
             throws SerDeException {
-        // TODO Auto-generated method stub
+
+        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, true));
+    }
+
+
+    private Object serializeObject(Object obj, ObjectInspector oi) {
+        switch (oi.getCategory()) {
+        case LIST:
+            return serializeList(obj, (ListObjectInspector) oi);
+        case MAP:
+            return serializeMap(obj, (MapObjectInspector) oi);
+        case PRIMITIVE:
+            return serializePrimitive(obj, (PrimitiveObjectInspector) oi);
+        case STRUCT:
+            return serializeStruct(obj, (StructObjectInspector) oi, false);
+        case UNION:
+        default:
+            LOG.error("Cannot serialize " + obj.toString() + " of type " + obj.toString());
+            break;
+        }
         return null;
     }
 
+
+    private Object serializeList(Object obj, ListObjectInspector oi) {
+        BasicBSONList list = new BasicBSONList();
+        List<?> field = oi.getList(obj);
+        ObjectInspector elemOI = oi.getListElementObjectInspector();
+
+        for (Object elem : field) {
+            list.add(serializeObject(elem, elemOI));
+        }
+
+        return list;
+    }
+
+    /**
+     * Turn struct obj into a BasicBSONObject
+     */
+    private Object serializeStruct(Object obj, 
+                                    StructObjectInspector structOI, 
+                                    boolean isRow) {
+        
+        BasicBSONObject bsonObject = new BasicBSONObject();
+        // fields is the list of all variable names and information within the struct obj
+        List<? extends StructField> fields = structOI.getAllStructFieldRefs();
+
+        for (int i = 0 ; i < fields.size() ; i++) {
+            StructField field = fields.get(i);
+
+            String fieldName = isRow? columnNames.get(i) : field.getFieldName();
+            ObjectInspector fieldOI = field.getFieldObjectInspector();
+            Object fieldObj = structOI.getStructFieldData(obj, field);
+
+            bsonObject.put(fieldName, serializeObject(fieldObj, fieldOI));
+        }
+
+        return bsonObject;
+    }
+
+
+    /**
+     * For a map of <String, Object> convert to an embedded document 
+     */
+    private Object serializeMap(Object obj, MapObjectInspector mapOI) {
+        BasicBSONObject bsonObject = new BasicBSONObject();
+        ObjectInspector mapValOI = mapOI.getMapValueObjectInspector();
+
+        // Each value is guaranteed to be of the same type
+        for (Entry<?, ?> entry : mapOI.getMap(obj).entrySet()) {
+            
+            String field = entry.getKey().toString();
+            Object value = serializeObject(entry.getValue(), mapValOI);
+            bsonObject.put(field, value);
+        }
+        return bsonObject;
+    }
+
+
+    /**
+     * For primitive types, depending on the primitive type, 
+     * cast it to types that Mongo supports
+     */
+    private Object serializePrimitive(Object obj, PrimitiveObjectInspector oi) {
+        switch (oi.getPrimitiveCategory()) {
+        case BOOLEAN:
+            return (Boolean) obj;
+        case BYTE:
+            return (byte[]) obj;
+        case DECIMAL:
+        case DOUBLE:
+        case FLOAT:
+        case LONG:
+        case SHORT:
+            // There's a weird case in which the obj is an INTEGER 
+            // but the primitive finds DOUBLE category
+            if (obj instanceof Integer) {
+                return ((Double) obj).intValue();
+            }
+            return (Double) obj;
+        case INT:
+            return (Integer) obj;
+        case STRING:
+            return (String) obj;
+        case TIMESTAMP:
+            return new BSONTimestamp();
+        case BINARY:
+        case UNKNOWN:
+        case VOID:
+        default:
+            return null;
+        }
+    }
 }
