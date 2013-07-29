@@ -78,7 +78,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
             log.info("Using multiple mongos instances (round robin) for reading input.");
         }
 
-        ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
+        Map<String, LinkedList<InputSplit>> shardToSplits = new HashMap<String, LinkedList<InputSplit>>();
 
         while(cur.hasNext()){
             final BasicDBObject row = (BasicDBObject)cur.next();
@@ -86,10 +86,10 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
             BasicDBObject chunkUpperBound = (BasicDBObject)row.get("max");
             MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
             chunkSplit.setInputURI(inputURI);
+            String shard = (String)row.get("shard");
             if(this.targetShards){
                 //The job is configured to target shards, so replace the
                 //mongos hostname with the host of the shard's servers
-                String shard = (String)row.get("shard");
                 String shardHosts = shardsMap.get(shard);
                 if(shardHosts == null)
                     throw new SplitFailedException("Couldn't find shard ID: " + shard + " in config.shards.");
@@ -104,13 +104,36 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
                 //pegging a single mongos instance.
                 String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
                 MongoURI newURI = rewriteURI(inputURI, roundRobinHost);
-                log.info("new uri " + newURI);
                 chunkSplit.setInputURI(newURI);
             }
-            returnVal.add(chunkSplit);
+            LinkedList<InputSplit> shardList = shardToSplits.get(shard);
+            if(shardList == null){
+                shardList = new LinkedList<InputSplit>();
+                shardToSplits.put(shard, shardList);
+            }
+            shardList.add(chunkSplit);
             numChunks++;
         }
-        return returnVal;
+        
+        final List<InputSplit> splits = new ArrayList<InputSplit>( numChunks );
+        int splitIndex = 0;
+        while(splitIndex < numChunks){
+            Set<String> shardSplitsToRemove = new HashSet<String>();
+            for (Map.Entry<String, LinkedList<InputSplit>> shardSplits: shardToSplits.entrySet()) {
+                LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
+                InputSplit split = shardSplitsList.pop();
+                splits.add(splitIndex, split);
+                splitIndex++;
+                if (shardSplitsList.isEmpty()) {
+                    shardSplitsToRemove.add(shardSplits.getKey());
+                }
+            }
+            for (String shardName : shardSplitsToRemove) {
+                shardToSplits.remove(shardName);
+            }
+        }
+
+        return splits;
     }
 
 }
