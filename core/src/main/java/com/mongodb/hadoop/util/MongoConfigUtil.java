@@ -82,6 +82,7 @@ public class MongoConfigUtil {
     public static final String INPUT_SORT = "mongo.input.sort";
     public static final String INPUT_LIMIT = "mongo.input.limit";
     public static final String INPUT_SKIP = "mongo.input.skip";
+    public static final String INPUT_LAZY_BSON = "mongo.input.lazy_bson";
 
 
     //Settings specific to bson reading/writing.
@@ -529,6 +530,14 @@ public class MongoConfigUtil {
 
     public static void setSkip( Configuration conf, int skip ){
         conf.setInt( INPUT_SKIP, skip );
+    }
+
+    public static boolean getLazyBSON( Configuration conf ){
+        return conf.getBoolean(INPUT_LAZY_BSON, false);
+    }
+
+    public static void setLazyBSON( Configuration conf, boolean lazy ){
+        conf.setBoolean(INPUT_LAZY_BSON, lazy);
     }
 
     public static int getSplitSize( Configuration conf ){
