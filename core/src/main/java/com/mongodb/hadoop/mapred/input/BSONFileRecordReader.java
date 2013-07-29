@@ -18,6 +18,7 @@ package com.mongodb.hadoop.mapred.input;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.BSONLoader;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -52,8 +53,8 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     private int numDocsRead = 0;
     private boolean finished = false;
 
-    BasicBSONCallback callback = new BasicBSONCallback();
-    BasicBSONDecoder decoder = new BasicBSONDecoder();
+    private BSONCallback callback;
+    private BSONDecoder decoder;
 
     public BSONFileRecordReader(){ }
 
@@ -64,6 +65,13 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
         FileSystem fs = file.getFileSystem(conf);
         in = fs.open(file, 16*1024*1024);
         in.seek(fileSplit.getStart());
+        if (MongoConfigUtil.getLazyBSON(conf)) {
+            callback = new LazyBSONCallback();
+            decoder = new LazyBSONDecoder();
+        } else {
+            callback = new BasicBSONCallback();
+            decoder = new BasicBSONDecoder();
+        }
     }
 
     @Override
