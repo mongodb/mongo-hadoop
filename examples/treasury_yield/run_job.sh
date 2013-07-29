@@ -1,23 +1,25 @@
 #!/bin/sh
 
-
-#Set your HADOOP_HOME directory here.
+###########Environment settings#############
+# Modify these to match your setup.
 export HADOOP_HOME="/Users/mike/hadoop/hadoop-1.1.2" 
-
-declare -a job_args
+INPUT_URI="mongodb://localhost:27017/mongo_hadoop.yield_historical.in"
+OUTPUT_URI="mongodb://localhost:27017/demo.yield_historical.out"
+JARNAME="treasury-example_1.1.2-1.1.0.jar"
 
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #Set the filename of the jar to match the jar you built depending
 #on your hadoop version.
-job_args=("jar" "$HERE/target/treasury-example_1.1.2-1.1.0.jar")
+declare -a job_args
+job_args=("jar" "$HERE/target/$JARNAME")
 job_args=(${job_args[@]} "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
 job_args=(${job_args[@]} "-D" "mongo.job.verbose=true")
 
 # INPUT SOURCE -
 # To use a mongo collection as input:
 job_args=(${job_args[@]} "-D" "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat")
-job_args=(${job_args[@]} "-D" "mongo.input.uri=mongodb://localhost:27017/demo.yield_historical.in")
+job_args=(${job_args[@]} "-D" "mongo.input.uri=$INPUT_URI")
 
 #Split settings
 job_args=(${job_args[@]} "-D" "mongo.input.split_size=8")
@@ -39,7 +41,7 @@ job_args=(${job_args[@]} "-D" "mongo.job.mapper.output.value=org.apache.hadoop.i
 
 # OUTPUT
 # To send the output to a mongo collection:
-job_args=(${job_args[@]} "-D" "mongo.output.uri=mongodb://localhost:27017/demo.yield_historical.out")
+job_args=(${job_args[@]} "-D" "mongo.output.uri=$OUTPUT_URI")
 job_args=(${job_args[@]} "-D" "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat")
 
 # Alternatively, to write the output to a .BSON file use these two lines instead:
