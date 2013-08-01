@@ -44,8 +44,14 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
     protected DBObject fields;
     protected DBObject sort;
 
-    public MongoCollectionSplitter(Configuration conf, MongoURI inputURI){
+    public MongoCollectionSplitter(){ }
+
+    public MongoCollectionSplitter(Configuration conf){
         super(conf);
+        this.inputURI = inputURI;
+    }
+
+    public void setInputURI(MongoURI inputURI){
         this.inputURI = inputURI;
     }
 

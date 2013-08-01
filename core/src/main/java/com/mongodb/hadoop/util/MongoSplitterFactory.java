@@ -39,34 +39,37 @@ public class MongoSplitterFactory{
 
     private static final Log log = LogFactory.getLog( MongoSplitterFactory.class );
 
-    public static MongoSplitter getSplitter(Configuration config){
-
+    public static MongoSplitter getSplitterByClass(Configuration conf, String className){
         /* If user has specified a class to use for the splitter, use it */
-        Class<? extends MongoSplitter> splitterClass = MongoConfigUtil.getSplitterClass(config);
+        Class<? extends MongoSplitter> splitterClass =
+            MongoConfigUtil.getClassByName(conf, className, MongoSplitter.class);
         if(splitterClass != null){
-            MongoSplitter splitter = (MongoSplitter)ReflectionUtils.newInstance(splitterClass, config);
+            MongoSplitter splitter = (MongoSplitter)ReflectionUtils.newInstance(splitterClass, conf);
+            splitter.setConfiguration(conf);
             return splitter;
+        }else{
+            return null;
         }
+    }
 
-        /* Otherwise, just look at the collection in mongo.input.uri
+    public static MongoCollectionSplitter getSplitterByStats(MongoURI uri,
+            MongoSplitter.MongoSplitterOptions options, Configuration config){
+        /* Looks at the collection in mongo.input.uri
          * and choose an implementation based on what's in there.  */
 
         MongoCollectionSplitter returnVal;
 
-        MongoURI uri = MongoConfigUtil.getInputURI(config);
-
         // Split calculation is disabled, just make one big split
         // for the whole collection.
-        if(!MongoConfigUtil.createInputSplits(config)){
+        if(!options.splittingEnabled){
             returnVal = new SingleMongoSplitter(config, uri);
         }else{
             MongoURI statsTargetURI;
-            MongoURI authURI = MongoConfigUtil.getAuthURI(config);
-            MongoURI inputURI = MongoConfigUtil.getInputURI(config);
+            MongoURI authURI = options.authURI;
             CommandResult stats;
             DBCollection coll;
             if(authURI != null){
-                coll = MongoConfigUtil.getCollectionWithAuth(inputURI, authURI);
+                coll = MongoConfigUtil.getCollectionWithAuth(uri, authURI);
                 stats = coll.getStats();
                 log.info("Retrieved Collection stats:" + stats);
             }else{
@@ -76,21 +79,18 @@ public class MongoSplitterFactory{
 
             final boolean isSharded = stats.getBoolean( "sharded", false );
             if(!isSharded){
-                final int splitSize = MongoConfigUtil.getSplitSize(config);
-                final DBObject splitKey = MongoConfigUtil.getInputSplitKey(config);
+                final int splitSize = options.splitSize;
+                final DBObject splitKey = options.splitKey;
                 returnVal = new StandaloneMongoSplitter(config,
                                                         uri,
                                                         splitKey,
                                                         splitSize);
             }else{
                 // Collection is sharded
-                if(MongoConfigUtil.isShardChunkedSplittingEnabled(config)){
+                if(options.useChunks){
                     // Creates one split per chunk. 
-                    boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(config);
-                    returnVal = new ShardChunkMongoSplitter(config,
-                                                            uri,
-                                                            targetShards);
-                }else if(MongoConfigUtil.canReadSplitsFromShards(config)){
+                    returnVal = new ShardChunkMongoSplitter(config, uri, options.targetShards);
+                }else if(options.targetShards){
                     // Creates one split per shard, but ignoring chunk information. 
                     // Reads from shards directly (bypassing mongos).
                     // Not usually recommended.
@@ -98,22 +98,33 @@ public class MongoSplitterFactory{
                 }else{
                     //Not configured to use chunks or shards -
                     //so treat this the same as if it was an unsharded collection
-                    final int splitSize = MongoConfigUtil.getSplitSize(config);
-                    final DBObject splitKey = MongoConfigUtil.getInputSplitKey(config);
                     returnVal = new StandaloneMongoSplitter(config,
                                                             uri,
-                                                            splitKey,
-                                                            splitSize);
+                                                            options.splitKey,
+                                                            options.splitSize);
                 }
             }
         }
-        returnVal.setAuthURI(MongoConfigUtil.getAuthURI(config));
-        returnVal.setQuery(MongoConfigUtil.getQuery(config));
-        returnVal.setUseRangeQuery(MongoConfigUtil.isRangeQueryEnabled(config));
-        returnVal.setNoTimeout(MongoConfigUtil.isNoTimeout(config));
-        returnVal.setFields(MongoConfigUtil.getFields(config));
-        returnVal.setSort(MongoConfigUtil.getSort(config));
+        returnVal.setAuthURI(options.authURI);
+        returnVal.setQuery(options.query);
+        returnVal.setUseRangeQuery(options.useRangeQuery);
+        returnVal.setNoTimeout(options.notimeout);
+        returnVal.setFields(options.fields);
+        returnVal.setSort(options.sort);
         return returnVal;
+    }
+
+    public static MongoSplitter getSplitter(Configuration config){
+        String splitterClassName = config.get(MongoConfigUtil.MONGO_SPLITTER_CLASS);
+        MongoSplitter customSplitter = getSplitterByClass(config, splitterClassName);
+        if(customSplitter != null){
+            return customSplitter;
+        } else {
+            MongoURI inputURI = MongoConfigUtil.getInputURI(config);
+            MongoSplitter.MongoSplitterOptions splitOptions = 
+                new MongoSplitter.MongoSplitterOptions(config);
+            return getSplitterByStats(inputURI, splitOptions, config);
+        }
     }
 
 }

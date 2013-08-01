@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import re
 import logging
 import tempfile
 import shutil
@@ -11,6 +12,7 @@ import os
 import shutil
 from datetime import timedelta
 import time
+import json
 
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools'))
@@ -79,18 +81,18 @@ check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 
                   { "_id": 2009, "count": 250, "avg": 3.2641200000000037, "sum": 816.0300000000009 },
                   { "_id": 2010, "count": 189, "avg": 3.3255026455026435, "sum": 628.5199999999996 } ]#}}}
                              
-def compare_results(collection):
+def compare_results(collection, reference=check_results):
     output = list(collection.find().sort("_id"))
-    if len(output) != len(check_results):
-        print "count is not same", len(output), len(check_results)
+    if len(output) != len(reference):
+        print "count is not same", len(output), len(reference)
         print output
         return False
     for i, doc in enumerate(output):
         #round to account for slight changes due to precision in case ops are run in different order.
-        if doc['_id'] != check_results[i]['_id'] or \
-                doc['count'] != check_results[i]['count'] or \
-                round(doc['avg'], 7) != round(check_results[i]['avg'], 7): 
-            print "docs do not match", doc, check_results[i]
+        if doc['_id'] != reference[i]['_id'] or \
+                doc['count'] != reference[i]['count'] or \
+                round(doc['avg'], 7) != round(reference[i]['avg'], 7): 
+            print "docs do not match", doc, reference[i]
             return False
     return True
 
@@ -151,6 +153,7 @@ DEFAULT_OLD_PARAMETERS.update(
           "mongo.job.input.format": "com.mongodb.hadoop.mapred.MongoInputFormat",
           "mongo.job.output.format": "com.mongodb.hadoop.mapred.MongoOutputFormat"})
 
+#TODO - too many keyword args here - refactor/simplify.
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
            output_collection='mongo_hadoop.yield_historical.out',
            output_hostnames=[],
@@ -167,9 +170,18 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
         cmd.append("-D")
         cmd.append(key + "=" + val)
 
-    cmd.append("-D")
-    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
-    cmd.append("mongo.input.uri=%s" % input_uri)
+    
+    #if it's not set, assume that the test is 
+    # probably setting it in some other property (e.g. multi collection)
+    if input_collection:
+        cmd.append("-D")
+        if type(input_collection) == type([]):
+            input_uri = " ".join('mongodb://%s/%s?readPreference=%s' % (hostname, x, readpref) for x in input_collection)
+            input_uri = '"' + input_uri + '"'
+        else:
+            input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+        cmd.append("mongo.input.uri=%s" % input_uri)
+
     cmd.append("-D")
     if not output_hostnames:# just use same as input host name
         cmd.append("mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection))
@@ -278,15 +290,59 @@ class Standalone(unittest.TestCase):
         logging.info("Standalone Teardown: killing mongod")
         self.server.kill_all_members()
         shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
-        time.sleep(10)
+        time.sleep(1)
 
 class TestBasic(Standalone):
 
     def test_treasury(self):
         logging.info("testing basic input source")
-        runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.input.notimeout'] = "true"
+        runjob(self.server_hostname, PARAMS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
+
+class TestBasicMulti(Standalone):
+
+    def test_treasury_json_config(self):
+        mongo_manager.mongo_import(self.server_hostname,
+                                   "mongo_hadoop",
+                                   "yield_historical.in3",
+                                   JSONFILE_PATH)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.util.MultiMongoCollectionSplitter"
+        collection_settings = [{"inputURI":"mongodb://%s/mongo_hadoop.yield_historical.in" % self.server_hostname,
+                                "query":{"dayOfWeek":"FRIDAY"},
+                                "splitterClassName":"com.mongodb.hadoop.util.SingleMongoSplitter",
+                                "useRangeQuery":True,
+                                "notimeout":True},
+                               {"inputURI":"mongodb://%s/mongo_hadoop.yield_historical.in3" % self.server_hostname,
+                                "useRangeQuery":True,
+                                "notimeout":True}]
+        #we need to escape this for the shell
+        PARAMS["mongo.input.multi_uri.json"] = '"' + re.sub('"','\\"', json.dumps(collection_settings) ) + '"'
+        runjob(self.server_hostname, PARAMS, input_collection=None)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        print(list(out_col.find()))
+
+    def test_treasury(self):
+        logging.info("testing multiple collection support.")
+        mongo_manager.mongo_import(self.server_hostname,
+                                   "mongo_hadoop",
+                                   "yield_historical.in2",
+                                   JSONFILE_PATH)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.util.MultiMongoCollectionSplitter"
+        runjob(self.server_hostname, PARAMS,
+                input_collection=['mongo_hadoop.yield_historical.in', \
+                                  'mongo_hadoop.yield_historical.in2'])
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        reference_doubled = [{"_id":x['_id'],
+                              "count":x['count'] * 2,
+                              "avg": (x['sum']*2) / (x['count']*2),
+                              "sum": x['sum']*2} for x in check_results]
+        self.assertTrue(compare_results(out_col, reference_doubled))
+        print list(out_col.find())
 
 class BaseShardedTest(unittest.TestCase):
     noauth=True
