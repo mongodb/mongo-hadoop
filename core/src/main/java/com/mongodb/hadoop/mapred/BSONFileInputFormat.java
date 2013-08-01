@@ -16,7 +16,7 @@
 
 package com.mongodb.hadoop.mapred;
 
-import com.mongodb.hadoop.util.BSONSplitter;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
 import org.apache.hadoop.fs.Path;

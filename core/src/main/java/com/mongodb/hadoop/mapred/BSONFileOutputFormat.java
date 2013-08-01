@@ -20,6 +20,7 @@ package com.mongodb.hadoop.mapred;
 
 import com.mongodb.hadoop.mapred.output.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.fs.*;

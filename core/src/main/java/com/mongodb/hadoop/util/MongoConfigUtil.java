@@ -22,6 +22,7 @@ import com.mongodb.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.fs.PathFilter;
@@ -737,6 +738,29 @@ public class MongoConfigUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+  }
+
+  public static Configuration buildConfiguration(Map<String,Object> data){
+      Configuration newConf = new Configuration();
+      for(Map.Entry<String,Object> entry : data.entrySet()){
+          String key = entry.getKey();
+          Object val = entry.getValue();
+          if(val instanceof String){
+              newConf.set(key, (String)val);
+          }else if(val instanceof Boolean){
+              newConf.setBoolean(key, (Boolean)val);
+          }else if(val instanceof Integer){
+              newConf.setInt(key, (Integer)val);
+          }else if(val instanceof Float){
+              newConf.setFloat(key, (Float)val);
+          }else if(val instanceof DBObject){
+              setDBObject(newConf, key, (DBObject)val );
+          }else{
+              throw new RuntimeException("can't convert "+val.getClass()+
+                                         " into any type for Configuration");
+          }
+      }
+      return newConf;
   }
 
 

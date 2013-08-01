@@ -18,6 +18,7 @@ package com.mongodb.hadoop;
 
 import com.mongodb.hadoop.output.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem;

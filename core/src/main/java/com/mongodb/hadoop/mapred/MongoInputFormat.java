@@ -21,6 +21,7 @@ import java.util.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.JobConf;

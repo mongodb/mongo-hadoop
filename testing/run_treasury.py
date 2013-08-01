@@ -310,15 +310,15 @@ class TestBasicMulti(Standalone):
                                    "yield_historical.in3",
                                    JSONFILE_PATH)
         PARAMS = DEFAULT_PARAMETERS.copy()
-        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.util.MultiMongoCollectionSplitter"
-        collection_settings = [{"inputURI":"mongodb://%s/mongo_hadoop.yield_historical.in" % self.server_hostname,
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter"
+        collection_settings = [{"mongo.input.uri":"mongodb://%s/mongo_hadoop.yield_historical.in" % self.server_hostname,
                                 "query":{"dayOfWeek":"FRIDAY"},
-                                "splitterClassName":"com.mongodb.hadoop.util.SingleMongoSplitter",
-                                "useRangeQuery":True,
-                                "notimeout":True},
-                               {"inputURI":"mongodb://%s/mongo_hadoop.yield_historical.in3" % self.server_hostname,
-                                "useRangeQuery":True,
-                                "notimeout":True}]
+                                "mongo.splitter.class":"com.mongodb.hadoop.splitter.SingleMongoSplitter",
+                                "mongo.input.split.use_range_queries":True,
+                                "mongo.input.notimeout":True},
+                               {"mongo.input.uri":"mongodb://%s/mongo_hadoop.yield_historical.in3" % self.server_hostname,
+                                "mongo.input.split.use_range_queries":True,
+                                "mongo.input.notimeout":True} ]
         #we need to escape this for the shell
         PARAMS["mongo.input.multi_uri.json"] = '"' + re.sub('"','\\"', json.dumps(collection_settings) ) + '"'
         runjob(self.server_hostname, PARAMS, input_collection=None)
@@ -332,7 +332,7 @@ class TestBasicMulti(Standalone):
                                    "yield_historical.in2",
                                    JSONFILE_PATH)
         PARAMS = DEFAULT_PARAMETERS.copy()
-        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.util.MultiMongoCollectionSplitter"
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter"
         runjob(self.server_hostname, PARAMS,
                 input_collection=['mongo_hadoop.yield_historical.in', \
                                   'mongo_hadoop.yield_historical.in2'])
