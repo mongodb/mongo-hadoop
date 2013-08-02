@@ -269,7 +269,7 @@ class Standalone(unittest.TestCase):
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,self.homedir))
         self.server_hostname = self.server.start_server(fresh=True,noauth=self.noauth)
         self.server.connection().drop_database('mongo_hadoop')
-        mongo_manager.mongo_import(self.server_hostname,
+        mongo_manager.mongo_import('localhost:' + str(self.server.port),
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
@@ -288,9 +288,9 @@ class Standalone(unittest.TestCase):
     def tearDownClass(self):
         print "Standalone Teardown: killing mongod"
         logging.info("Standalone Teardown: killing mongod")
-        self.server.kill_all_members()
-        shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
-        time.sleep(1)
+        #self.server.kill_all_members()
+        #shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
+        time.sleep(5)
 
 class TestBasic(Standalone):
 
@@ -376,7 +376,7 @@ class BaseShardedTest(unittest.TestCase):
         self.mongos_connection = self.mongos.connection()
         self.mongos2_connection = self.mongos2.connection()
         self.mongos_connection.drop_database('mongo_hadoop')
-        mongo_manager.mongo_import(self.mongos_hostname,
+        mongo_manager.mongo_import("localhost:" + str(self.mongos.port),
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
