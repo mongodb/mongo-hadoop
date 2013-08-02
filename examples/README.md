@@ -167,27 +167,31 @@ This example will deal with a basic example that does a "join" across two differ
 
 Assume we have a collection called `devices`, each document contains the description of a sensor which records a particular type of data, for example:
 
-	{
-	  "_id": ObjectId("51b792d381c3e67b0a18d0ed"),
-	  "name": "730LsNaN",
-	  "type": "pressure",
-	  "owner": "lswNxts07k",
-	  "model": 18,
-	  "created_at": ISODate("2003-12-02T11:15:09.555-0500")
-	}
+```javascript
+{
+  "_id": ObjectId("51b792d381c3e67b0a18d0ed"),
+  "name": "730LsNaN",
+  "type": "pressure",
+  "owner": "lswNxts07k",
+  "model": 18,
+  "created_at": ISODate("2003-12-02T11:15:09.555-0500")
+}
+```
 
 A second collection called `logs` contains data recorded by these sensors. Each document records the `_id` of the device it came from in the `d_id` field, the value, the timestamp when it was recorded, and the device's location at the time. The `logs` collection will be much larger than the `devices` collection, since each device will record potentially thousands of data points.
 
-	{
-	  "_id": ObjectId("51b792d381c3e67b0a18d678"),
-	  "d_id": ObjectId("51b792d381c3e67b0a18d4a1"),
-	  "v": 3328.5895416489802,
-	  "timestamp": ISODate("2013-05-18T13:11:38.709-0400"),
-	  "loc": [
-	    -175.13,
-	    51.658
-	  ]
-	}
+```javascript
+{
+  "_id": ObjectId("51b792d381c3e67b0a18d678"),
+  "d_id": ObjectId("51b792d381c3e67b0a18d4a1"),
+  "v": 3328.5895416489802,
+  "timestamp": ISODate("2013-05-18T13:11:38.709-0400"),
+  "loc": [
+    -175.13,
+    51.658
+  ]
+}
+```
 
 As an example, let's solve an aggregation problem involving *both* of these collections - calculate the number of log entries for each owner, for each type of sensor (heat, pressure, etc).
 
@@ -230,15 +234,17 @@ The `Mapper` code in phase one just produces the pair `<owner,_id>` for each dev
 
 After phase one, the output collection documents each look like this:
 
-	{
-	  "_id": "1UoTcvnCTz temp",
-	  "devices": [
-	    ObjectId("51b792d381c3e67b0a18d475"),
-	    ObjectId("51b792d381c3e67b0a18d16d"),
-	    ObjectId("51b792d381c3e67b0a18d2bf"),
-	    …
-	  ]
-	}
+```javascript
+{
+  "_id": "1UoTcvnCTz temp",
+  "devices": [
+    ObjectId("51b792d381c3e67b0a18d475"),
+    ObjectId("51b792d381c3e67b0a18d16d"),
+    ObjectId("51b792d381c3e67b0a18d2bf"),
+    …
+  ]
+}
+```
  
 ####Phase Two
 
@@ -276,14 +282,15 @@ In phase two, we map over the large collection `logs` and compute the totals for
 
 After phase two is finished, the result documents look like this (the `logs_count` field is now populated with the result):
 
-	{
-	  "_id": "1UoTcvnCTz temp",
-	  "devices": [
-	    ObjectId("51b792d381c3e67b0a18d475"),
-	    ObjectId("51b792d381c3e67b0a18d16d"),
-	    ObjectId("51b792d381c3e67b0a18d2bf"),
-	    …
-	  ],
-	  "logs_count": 1050616
-	}
-
+```javascript
+{
+  "_id": "1UoTcvnCTz temp",
+  "devices": [
+    ObjectId("51b792d381c3e67b0a18d475"),
+    ObjectId("51b792d381c3e67b0a18d16d"),
+    ObjectId("51b792d381c3e67b0a18d2bf"),
+    …
+  ],
+  "logs_count": 1050616
+}
+```
