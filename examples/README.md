@@ -1,4 +1,3 @@
-
 ## Example 1 - Treasury Yield Calculation
 
 ###Setup
@@ -18,44 +17,48 @@ We end up with a test collection containing documents that look like this:
 
 The goal is to find the average of the bc10Year field, across each year that exists in the dataset. First we define a mapper, which is executed against each document in the collection. We extract the year from the `_id` field and use it as the output key, along with the value we want to use for averaging, `bc10Year`.
 
-	public class TreasuryYieldMapper 
-	    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
-	
-	    @Override
-	    public void map( final Object pKey,
-	                     final BSONObject pValue,
-	                     final Context pContext )
-	            throws IOException, InterruptedException{
-	        final int year = ((Date)pValue.get("_id")).getYear() + 1900;
-	        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
-	        pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
-	    }
-	}
+```java
+public class TreasuryYieldMapper 
+    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
+
+    @Override
+    public void map( final Object pKey,
+                     final BSONObject pValue,
+                     final Context pContext )
+            throws IOException, InterruptedException{
+        final int year = ((Date)pValue.get("_id")).getYear() + 1900;
+        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
+        pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
+    }
+}
+```
 
 Then we write a reducer, a function which takes the values collected for each key (the year)  and performs some aggregate computation of them to get a result.
 
-	public class TreasuryYieldReducer
-	        extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
-	    @Overrideyouyour
-	    public void reduce( final IntWritable pKey,
-	                        final Iterable<DoubleWritable> pValues,
-	                        final Context pContext )
-	            throws IOException, InterruptedException{
-	        int count = 0;
-	        double sum = 0;
-	        for ( final DoubleWritable value : pValues ){
-	            sum += value.get();
-	            count++;
-	        }
+```java
+public class TreasuryYieldReducer
+        extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
+    @Override
+    public void reduce( final IntWritable pKey,
+                        final Iterable<DoubleWritable> pValues,
+                        final Context pContext )
+            throws IOException, InterruptedException{
+        int count = 0;
+        double sum = 0;
+        for ( final DoubleWritable value : pValues ){
+            sum += value.get();
+            count++;
+        }
+
+        final double avg = sum / count;
 	
-	        final double avg = sum / count;
-		
-	        BasicBSONObject output = new BasicBSONObject();
-	        output.put("avg", avg);
-	        pContext.write( pKey, new BSONWritable( output ) );
-	    }	
-	}
-	
+        BasicBSONObject output = new BasicBSONObject();
+        output.put("avg", avg);
+        pContext.write( pKey, new BSONWritable( output ) );
+    }	
+}
+```
+
 ###Pig
 
 We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
@@ -99,29 +102,31 @@ Abbreviated code snippets shown below - to see the full source for this example,
 ####Map/Reduce with Java
 
 The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from the `To` field, and construct a `MailPair` object containing each pair which will act as the key. Then we emit the value `1` for each key. `MailPair` is just a simple "POJO" that contains Strings for the `from` and `to` values, and implements `WritableComparable` so that it can be serialized across Hadoop nodes and sorted. 	
-	
-	@Override
-	public void map(NullWritable key, BSONObject val, final Context context)
-        throws IOException, InterruptedException{
-		if(val.containsKey("headers")){
-			BSONObject headers = (BSONObject)val.get("headers");
-			if(headers.containsKey("From") && headers.containsKey("To")){
-				String from = (String)headers.get("From");
-				String to = (String)headers.get("To");
-                String[] recips = to.split(",");
-                for(int i=0;i<recips.length;i++){
-                    String recip = recips[i].trim();
-                    if(recip.length() > 0){
-                        context.write(new MailPair(from, recip), new IntWritable(1));
-                    }
-                }
-			}
+
+```java
+@Override
+public void map(NullWritable key, BSONObject val, final Context context)
+throws IOException, InterruptedException{
+	if(val.containsKey("headers")){
+		BSONObject headers = (BSONObject)val.get("headers");
+		if(headers.containsKey("From") && headers.containsKey("To")){
+			String from = (String)headers.get("From");
+			String to = (String)headers.get("To");
+        String[] recips = to.split(",");
+        for(int i=0;i<recips.length;i++){
+            String recip = recips[i].trim();
+            if(recip.length() > 0){
+                context.write(new MailPair(from, recip), new IntWritable(1));
+            }
+        }
 		}
 	}
-
+}
+```
 
 The reduce class will take the collected values for each key, sum them together, and record the output.
 
+```java
     @Override
     public void reduce( final MailPair pKey,
                         final Iterable<IntWritable> pValues,
@@ -135,6 +140,7 @@ The reduce class will take the collected values for each key, sum them together,
         BSONWritable pkeyOut = new BSONWritable(outDoc);
         pContext.write( pkeyOut, new IntWritable(sum) );
     }
+```
 
 ####Pig
 
