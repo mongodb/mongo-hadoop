@@ -288,8 +288,8 @@ class Standalone(unittest.TestCase):
     def tearDownClass(self):
         print "Standalone Teardown: killing mongod"
         logging.info("Standalone Teardown: killing mongod")
-        #self.server.kill_all_members()
-        #shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
+        self.server.kill_all_members()
+        shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
         time.sleep(5)
 
 class TestBasic(Standalone):
