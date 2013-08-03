@@ -16,7 +16,6 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeStats;
-import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.typeinfo.*;
 import org.apache.hadoop.io.Writable;
@@ -34,8 +33,8 @@ public class BSONSerDe extends AbstractSerDe {
 
     private StructTypeInfo docTypeInfo;
     private ObjectInspector docOI;
-    private List<String> columnNames;
-    private List<TypeInfo> columnTypes;
+    protected List<String> columnNames;
+    protected List<TypeInfo> columnTypes;
 
     private List<Object> row = new ArrayList<Object>();
 
@@ -65,8 +64,8 @@ public class BSONSerDe extends AbstractSerDe {
 
         if (DEBUG) {
             for (int i = 0 ; i < columnTypes.size() ; i++) {
-                /*System.out.println("initilize--" + columnNames.get(i) + ":" 
-            + columnTypes.get(i).getTypeName());*/
+                System.out.println("initilize--" + columnNames.get(i) + ":" 
+                        + columnTypes.get(i).getTypeName());
             }
         }
     }
@@ -134,7 +133,7 @@ public class BSONSerDe extends AbstractSerDe {
      * Map in here must be of the same type, so instead an embedded doc
      * becomes a struct instead. ***
      */
-    private Object deserializeField(Object value, TypeInfo valueTypeInfo) {
+    protected Object deserializeField(Object value, TypeInfo valueTypeInfo) {
 
         if (value == null) {
             return null;
@@ -248,9 +247,18 @@ public class BSONSerDe extends AbstractSerDe {
         case SHORT:
             return (Short) value;
         case STRING:
+            if (value instanceof ObjectId) {
+                return ((ObjectId) value).toString();
+            }
             return (String) value;
         case TIMESTAMP:
-            return (Timestamp) value;
+            if (value instanceof Date) {
+                return new Timestamp(((Date) value).getTime());
+            } else if (value instanceof BSONTimestamp) {
+                return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
+            } else {
+                return (Timestamp) value;
+            }
         default:
             return deserializeMongoType(value);
         }
@@ -263,13 +271,9 @@ public class BSONSerDe extends AbstractSerDe {
      * For Mongo Specific types, return the most appropriate java types
      */
     private Object deserializeMongoType(Object value) {
-        // TODO:: Add more here
+        // TODO:: Add more types here
         if (value instanceof ObjectId) {
             return ((ObjectId) value).toString();
-        } else if (value instanceof Date) {
-            return new Timestamp(((Date) value).getTime());
-        } else if (value instanceof BSONTimestamp) {
-            return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
         } else if (value instanceof Symbol) {
             return ((Symbol) value).toString();
         } else {
@@ -297,7 +301,6 @@ public class BSONSerDe extends AbstractSerDe {
     public Class<? extends Writable> getSerializedClass() {
         return BSONWritable.class;
     }
-
 
     @Override
     public Writable serialize(Object obj, ObjectInspector oi)
@@ -342,9 +345,9 @@ public class BSONSerDe extends AbstractSerDe {
      * Turn struct obj into a BasicBSONObject
      */
     private Object serializeStruct(Object obj, 
-                                    StructObjectInspector structOI, 
-                                    boolean isRow) {
-        
+            StructObjectInspector structOI, 
+            boolean isRow) {
+
         BasicBSONObject bsonObject = new BasicBSONObject();
         // fields is the list of all variable names and information within the struct obj
         List<? extends StructField> fields = structOI.getAllStructFieldRefs();
@@ -372,7 +375,7 @@ public class BSONSerDe extends AbstractSerDe {
 
         // Each value is guaranteed to be of the same type
         for (Entry<?, ?> entry : mapOI.getMap(obj).entrySet()) {
-            
+
             String field = entry.getKey().toString();
             Object value = serializeObject(entry.getValue(), mapValOI);
             bsonObject.put(field, value);
@@ -390,7 +393,7 @@ public class BSONSerDe extends AbstractSerDe {
         case BOOLEAN:
             return (Boolean) obj;
         case BYTE:
-            return (byte[]) obj;
+            return (Byte) obj;
         case DECIMAL:
         case DOUBLE:
         case FLOAT:
@@ -407,8 +410,9 @@ public class BSONSerDe extends AbstractSerDe {
         case STRING:
             return (String) obj;
         case TIMESTAMP:
-            return new BSONTimestamp();
+            return new BSONTimestamp(((Long) (((Timestamp) obj).getTime() / 1000L)).intValue(), 1);
         case BINARY:
+            return (byte[]) obj;
         case UNKNOWN:
         case VOID:
         default:
