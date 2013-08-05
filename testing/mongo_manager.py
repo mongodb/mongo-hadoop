@@ -169,7 +169,7 @@ class MongosManager(object):
 class StandaloneManager(object):
     def __init__(self, port=None, home=None):
         global start_port, replsets, standalone_count
-		self.pid = None
+        self.pid = None
         self.home = home
         if not port:
             self.port = start_port
