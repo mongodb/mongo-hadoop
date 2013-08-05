@@ -20,6 +20,7 @@ public class EnronMailMapper
 	@Override
 	public void map(Object key, BSONObject val, final Context context)
         throws IOException, InterruptedException{
+
 		if(val.containsKey("headers")){
 			BSONObject headers = (BSONObject)val.get("headers");
 			if(headers.containsKey("From") && headers.containsKey("To")){

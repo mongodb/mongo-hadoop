@@ -38,17 +38,20 @@ import java.util.*;
  */
 public class TreasuryYieldReducer
         extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
+
+    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
+
     @Override
     public void reduce( final IntWritable pKey,
                         final Iterable<DoubleWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
+
         int count = 0;
         double sum = 0;
         for ( final DoubleWritable value : pValues ){
             sum += value.get();
             count++;
-            //LOG.info( "Key: " + pKey + " Value: " + value + " count: " + count + " sum: " + sum );
         }
 
         final double avg = sum / count;
@@ -62,7 +65,6 @@ public class TreasuryYieldReducer
         pContext.write( pKey, new BSONWritable( output ) );
     }
 
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
 
 }
 

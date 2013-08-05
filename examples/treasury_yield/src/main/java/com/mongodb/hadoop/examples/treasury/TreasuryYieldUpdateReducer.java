@@ -40,17 +40,21 @@ import java.util.*;
  */
 public class TreasuryYieldUpdateReducer
         extends Reducer<IntWritable, DoubleWritable, NullWritable, MongoUpdateWritable> {
+
+
     @Override
     public void reduce( final IntWritable pKey,
                         final Iterable<DoubleWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
+
+    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
+
         int count = 0;
         double sum = 0;
         for ( final DoubleWritable value : pValues ){
             sum += value.get();
             count++;
-            //LOG.info( "Key: " + pKey + " Value: " + value + " count: " + count + " sum: " + sum );
         }
 
         final double avg = sum / count;
@@ -73,7 +77,6 @@ public class TreasuryYieldUpdateReducer
         pContext.write( null, new MongoUpdateWritable(query, modifiers, true, false) );
     }
 
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
 
 }
 
