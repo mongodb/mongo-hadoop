@@ -13,7 +13,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hadoop.hive.serde2.AbstractSerDe;
+import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeStats;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
@@ -25,10 +25,11 @@ import org.bson.types.*;
 
 import com.mongodb.hadoop.io.BSONWritable;
 
-public class BSONSerDe extends AbstractSerDe {
-
+public class BSONSerDe implements SerDe {
 
     public boolean DEBUG = false;
+    public static int BSON_TYPE = 8;
+    public static String OID = "oid";
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class.getName());
 
     private StructTypeInfo docTypeInfo;
@@ -190,15 +191,19 @@ public class BSONSerDe extends AbstractSerDe {
     @SuppressWarnings("unchecked")
     private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo) {
 
-        Map<Object, Object> map = (Map<Object, Object>) value;
-        ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
-        ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
+        if (value instanceof ObjectId) {
+            return deserializeObjectId(value, valueTypeInfo);
+        } else {
+            Map<Object, Object> map = (Map<Object, Object>) value;
+            ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
+            ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
 
-        List<Object> struct = new ArrayList<Object> (structNames.size());
-        for (int i = 0 ; i < structNames.size() ; i++) {
-            struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
+            List<Object> struct = new ArrayList<Object> (structNames.size());
+            for (int i = 0 ; i < structNames.size() ; i++) {
+                struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
+            }
+            return struct;
         }
-        return struct;
     }
 
 
@@ -271,16 +276,39 @@ public class BSONSerDe extends AbstractSerDe {
      * For Mongo Specific types, return the most appropriate java types
      */
     private Object deserializeMongoType(Object value) {
-        // TODO:: Add more types here
         if (value instanceof ObjectId) {
+            // In the case that the objectId struct declaration
+            // isn't instantiated properly
             return ((ObjectId) value).toString();
         } else if (value instanceof Symbol) {
             return ((Symbol) value).toString();
         } else {
 
-            LOG.error("Unable to parse " + value.toString() + " for type " + value.getClass().toString());
+            LOG.error("Unable to parse " + value.toString() + " for type " + 
+                    value.getClass().toString());
             return null;
         }
+    }
+
+    /**
+     * Serialize a MongoDB ObjectId 
+     * @return
+     */
+    private Object deserializeObjectId(Object value, StructTypeInfo valueTypeInfo) {
+
+        ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
+
+        List<Object> struct = new ArrayList<Object> (structNames.size());
+        for (int i = 0 ; i < structNames.size() ; i++) {
+            if (structNames.get(i).equals(OID)) {
+                struct.add(((ObjectId) value).toString());
+            } else if (structNames.get(i).equals("bsonType")) {         
+                // The bson type is an int order type
+                // http://docs.mongodb.org/manual/faq/developers/
+                struct.add(BSON_TYPE);                
+            }
+        }
+        return struct;
     }
 
 
@@ -347,24 +375,54 @@ public class BSONSerDe extends AbstractSerDe {
     private Object serializeStruct(Object obj, 
             StructObjectInspector structOI, 
             boolean isRow) {
+        if (!isRow && isObjectIdStruct(structOI)) {
 
-        BasicBSONObject bsonObject = new BasicBSONObject();
-        // fields is the list of all variable names and information within the struct obj
-        List<? extends StructField> fields = structOI.getAllStructFieldRefs();
-
-        for (int i = 0 ; i < fields.size() ; i++) {
-            StructField field = fields.get(i);
-
-            String fieldName = isRow? columnNames.get(i) : field.getFieldName();
-            ObjectInspector fieldOI = field.getFieldObjectInspector();
-            Object fieldObj = structOI.getStructFieldData(obj, field);
-
-            bsonObject.put(fieldName, serializeObject(fieldObj, fieldOI));
+            String objectIdString = "";
+            for (StructField s : structOI.getAllStructFieldRefs()) {
+                if (s.getFieldName().equals(OID)) {
+                    objectIdString = structOI.getStructFieldData(obj, s).toString();
+                    break;
+                }
+            }
+            return new ObjectId(objectIdString);
+            
+        } else {
+            BasicBSONObject bsonObject = new BasicBSONObject();
+            // fields is the list of all variable names and information within the struct obj
+            List<? extends StructField> fields = structOI.getAllStructFieldRefs();
+    
+            for (int i = 0 ; i < fields.size() ; i++) {
+                StructField field = fields.get(i);
+    
+                String fieldName = isRow? columnNames.get(i) : field.getFieldName();
+                ObjectInspector fieldOI = field.getFieldObjectInspector();
+                Object fieldObj = structOI.getStructFieldData(obj, field);
+    
+                bsonObject.put(fieldName, serializeObject(fieldObj, fieldOI));
+            }
+    
+            return bsonObject;
         }
-
-        return bsonObject;
     }
 
+    /**
+     * Given a struct, look to see if it contains the fields that a ObjectId
+     * struct should contain
+     */
+    private boolean isObjectIdStruct(StructObjectInspector structOI) {
+        List<? extends StructField> fields = structOI.getAllStructFieldRefs();
+        
+        // If the structs are of incorrect size, then there's no need to create
+        // a list of names
+        if (fields.size() != 2) {
+            return false;
+        }
+        ArrayList<String> fieldNames = new ArrayList<String>();
+        for (StructField s : fields) {
+            fieldNames.add(s.getFieldName());
+        }
+        return (fieldNames.contains(OID)) && (fieldNames.contains(BSON_TYPE));
+    }
 
     /**
      * For a map of <String, Object> convert to an embedded document 
@@ -394,7 +452,6 @@ public class BSONSerDe extends AbstractSerDe {
             return (Boolean) obj;
         case BYTE:
             return (Byte) obj;
-        case DECIMAL:
         case DOUBLE:
         case FLOAT:
         case LONG:
