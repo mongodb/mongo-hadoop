@@ -1,0 +1,106 @@
+package com.mongodb.hadoop.hive;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.io.HiveInputFormat;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.InputSplit;
+
+import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.mapred.input.MongoRecordReader;
+import com.mongodb.hadoop.splitter.*;
+
+/*
+ * Defines a HiveInputFormat for use in reading data from MongoDB into a hive table
+ * 
+ */
+public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWritable> {
+    
+    @Override
+    public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, 
+								    JobConf conf,
+								    Reporter reporter)
+	throws IOException {
+	// split is of type 'MongoHiveInputSplit'
+	MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
+	
+	// return MongoRecordReader. Delegate is of type 'MongoInputSplit'
+	return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
+    }
+    @Override
+    public FileSplit[] getSplits(JobConf conf, int numSplits)
+	throws IOException {
+	try {
+	    MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
+	    final List<InputSplit> splits = Arrays.asList(splitterImpl.calculateSplits().toArray(new InputSplit[0]));
+	    
+	    // wrap InputSplits in FileSplits so that 'getPath' doesn't produce an error (Hive bug)
+	    FileSplit[] wrappers = new FileSplit[splits.size()];
+	    Path path = new Path(conf.get(MongoStorageHandler.TABLE_LOCATION));
+	    for (int i = 0; i < wrappers.length; i++) {
+		wrappers[i] = new MongoHiveInputSplit(splits.get(i), path);
+	    }
+	    
+	    return wrappers;
+	} catch (Exception spfe) {
+	    throw new IOException("No data found. Might be because you dropped the corresponding collection.");
+	}
+    }
+    
+    /*
+     * MongoHiveInputSplit ->
+     *  Used to wrap MongoInputSplits (as a delegate) to by-pass the Hive bug where
+     *  'HiveInputSplit.getPath' is always called.
+     */
+    private static class MongoHiveInputSplit extends FileSplit {
+        private InputSplit delegate;
+        private Path path;
+        
+        MongoHiveInputSplit(InputSplit delegate, Path path) {
+            super(path, 0, 0, (String[]) null);
+            this.delegate = delegate;
+            this.path = path;
+        }
+	
+        public InputSplit getDelegate() {
+	    return delegate;
+        }
+        
+        @Override
+	public long getLength() {
+            return 1L;
+        }
+	
+        @Override
+	public void write(DataOutput out) throws IOException {
+            Text.writeString(out, path.toString());
+            delegate.write(out);
+        }
+	
+        @Override
+	public void readFields(DataInput in) throws IOException {
+            path = new Path(Text.readString(in));
+            delegate.readFields(in);
+        }
+	
+        @Override
+	public String toString() {
+            return delegate.toString();
+        }
+	
+        @Override
+	public Path getPath() {
+            return path;
+        }
+    }
+}
