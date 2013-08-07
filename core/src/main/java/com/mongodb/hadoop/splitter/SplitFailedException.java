@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 
 public class SplitFailedException extends Exception{
 

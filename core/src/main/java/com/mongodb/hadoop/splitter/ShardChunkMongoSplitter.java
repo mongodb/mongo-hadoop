@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.util.*;
 import java.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.Configuration;
@@ -36,28 +37,27 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( ShardChunkMongoSplitter.class );
     
-    protected boolean targetShards = false;
-
-    public ShardChunkMongoSplitter(Configuration conf, MongoURI inputURI, boolean targetShards){
-        super(conf, inputURI);
-        this.targetShards = targetShards;
+    public ShardChunkMongoSplitter(Configuration conf){
+        super(conf);
     }
 
     // Generate one split per chunk.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException{
         this.init();
+        boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(conf);
         DB configDB = this.mongo.getDB("config");
         DBCollection chunksCollection = configDB.getCollection( "chunks" );
 
-        String inputNS = this.inputURI.getDatabase() + "." + this.inputURI.getCollection();
+        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
 
         DBCursor cur = chunksCollection.find(new BasicDBObject("ns", inputNS));
 
         int numChunks = 0;
 
         Map<String, String> shardsMap = null;
-        if(this.targetShards){
+        if(targetShards){
             try{
                 shardsMap = this.getShardsMap();
             }catch(Exception e){
@@ -69,7 +69,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
         }
 
         List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.conf);
-        if(this.targetShards && mongosHostNames.size() > 0){
+        if(targetShards && mongosHostNames.size() > 0){
             throw new SplitFailedException("Setting both mongo.input.split.read_from_shards " +
                                            "and mongo.input.mongos_hosts does not make sense. ");
         }
@@ -87,7 +87,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter{
             MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
             chunkSplit.setInputURI(inputURI);
             String shard = (String)row.get("shard");
-            if(this.targetShards){
+            if(targetShards){
                 //The job is configured to target shards, so replace the
                 //mongos hostname with the host of the shard's servers
                 String shardHosts = shardsMap.get(shard);

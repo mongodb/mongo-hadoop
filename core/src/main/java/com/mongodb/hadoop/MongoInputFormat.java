@@ -21,6 +21,7 @@ package com.mongodb.hadoop;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;

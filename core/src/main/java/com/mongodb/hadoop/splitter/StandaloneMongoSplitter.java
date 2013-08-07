@@ -1,7 +1,24 @@
-package com.mongodb.hadoop.util;
+/*
+ * Copyright 2010-2013 10gen Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.mongodb.hadoop.splitter;
 
 import com.mongodb.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.util.*;
 import java.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.Configuration;
@@ -27,28 +44,27 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
     private static final Log log = LogFactory.getLog( StandaloneMongoSplitter.class );
 
-    final DBObject splitKey;
-    final int splitSize;
-
-    public StandaloneMongoSplitter(Configuration conf, MongoURI inputURI, DBObject splitKey, int splitSize){
-        super(conf, inputURI);
-        this.splitKey = splitKey;
-        this.splitSize = splitSize;
+    public StandaloneMongoSplitter(Configuration conf){
+        super(conf);
     }
 
     // Generate one split per chunk.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException{
         this.init();
+        final DBObject splitKey = MongoConfigUtil.getInputSplitKey(conf);
+        final int splitSize = MongoConfigUtil.getSplitSize(conf);
 
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
         final String ns = this.inputCollection.getFullName();
 
-        log.info("Running splitvector to check splits against " + this.inputURI);
+        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+
+        log.info("Running splitvector to check splits against " + inputURI);
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
-                                          add( "keyPattern", this.splitKey ).
+                                          add( "keyPattern", splitKey ).
                                           add( "force", false ). // force:True is misbehaving it seems
-                                          add( "maxChunkSize", this.splitSize ).get();
+                                          add( "maxChunkSize", splitSize ).get();
         
         CommandResult data;
         if(this.authDB == null){

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.input.BSONFileRecordReader;
+import com.mongodb.hadoop.util.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

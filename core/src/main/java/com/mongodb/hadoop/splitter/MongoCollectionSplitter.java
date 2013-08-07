@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 
 import java.util.*;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
+import com.mongodb.hadoop.util.*;
 import org.bson.*;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
@@ -35,80 +36,91 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
     protected Mongo mongo;
     protected DBCollection inputCollection;
 
+    //A reference to the database that we authenticated against, if there was
+    //some authURI provided in the config.
+    protected DB authDB;
+
+    /*
     protected MongoURI inputURI;
     protected MongoURI authURI;
-    protected DB authDB;
     protected DBObject query;
     protected boolean useRangeQuery;
     protected boolean noTimeout;
     protected DBObject fields;
-    protected DBObject sort;
+    protected DBObject sort;*/
 
-    public MongoCollectionSplitter(Configuration conf, MongoURI inputURI){
+    public MongoCollectionSplitter(){ }
+
+    public MongoCollectionSplitter(Configuration conf){
         super(conf);
-        this.inputURI = inputURI;
     }
-
-    public void setQuery(DBObject query){
-        this.query = query;
-    }
-
-    public BSONObject getQuery(){
-        return this.query;
-    }
-
-    public boolean getUseRangeQuery(){
-        return this.useRangeQuery;
-    }
-
-    public void setUseRangeQuery(boolean useRangeQuery){
-        this.useRangeQuery = useRangeQuery;
-    }
-
-    public void setAuthURI(MongoURI authURI){
-        this.authURI = authURI;
-    }
-
-    public boolean getNoTimeout(){
-        return this.noTimeout;
-    }
-
-    public void setNoTimeout(boolean noTimeout){
-        this.noTimeout = noTimeout;
-    }
-
-    public MongoURI getAuthURI(){
-        return this.authURI;
-    }
-
-    public DBObject getFields(){
-        return this.fields;
-    }
-
-    public void setFields(DBObject fields){
-        this.fields = fields;
-    }
-
-    public DBObject getSort(){
-        return this.sort;
-    }
-
-    public void setSort(DBObject sort){
-        this.sort = sort;
-    }
+// 
+//     public void setInputURI(MongoURI inputURI){
+//         this.inputURI = inputURI;
+//     }
+// 
+//     public void setQuery(DBObject query){
+//         this.query = query;
+//     }
+// 
+//     public BSONObject getQuery(){
+//         return this.query;
+//     }
+// 
+//     public boolean getUseRangeQuery(){
+//         return this.useRangeQuery;
+//     }
+// 
+//     public void setUseRangeQuery(boolean useRangeQuery){
+//         this.useRangeQuery = useRangeQuery;
+//     }
+// 
+//     public void setAuthURI(MongoURI authURI){
+//         this.authURI = authURI;
+//     }
+// 
+//     public boolean getNoTimeout(){
+//         return this.noTimeout;
+//     }
+// 
+//     public void setNoTimeout(boolean noTimeout){
+//         this.noTimeout = noTimeout;
+//     }
+// 
+//     public MongoURI getAuthURI(){
+//         return this.authURI;
+//     }
+// 
+//     public DBObject getFields(){
+//         return this.fields;
+//     }
+// 
+//     public void setFields(DBObject fields){
+//         this.fields = fields;
+//     }
+// 
+//     public DBObject getSort(){
+//         return this.sort;
+//     }
+// 
+//     public void setSort(DBObject sort){
+//         this.sort = sort;
+//     }
 
     protected void init(){
-        this.inputCollection = MongoConfigUtil.getCollection(this.inputURI);
+        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        this.inputCollection = MongoConfigUtil.getCollection(inputURI);
         DB db = this.inputCollection.getDB(); 
         this.mongo = db.getMongo();
-        if( this.authURI != null ){
-            if(this.authURI.getUsername() != null &&
-               this.authURI.getPassword() != null &&
-               !mongo.getDB(this.authURI.getDatabase()).isAuthenticated()) {
-                DB authTargetDB = this.mongo.getDB(this.authURI.getDatabase());
-                this.authDB = authTargetDB;
-                authTargetDB.authenticate(this.authURI.getUsername(),
-                                          this.authURI.getPassword());
+        MongoURI authURI = MongoConfigUtil.getAuthURI(conf);
+        if( authURI != null ){
+            if(authURI.getUsername() != null &&
+               authURI.getPassword() != null &&
+               !mongo.getDB(authURI.getDatabase()).isAuthenticated()) {
+                DB authTargetDB = mongo.getDB(authURI.getDatabase());
+                authDB = authTargetDB;
+                authTargetDB.authenticate(authURI.getUsername(),
+                                          authURI.getPassword());
             }
         }
     }
@@ -209,13 +221,14 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
             }
         }
 
-
         MongoInputSplit split = null;
 
         //If enabled, attempt to build the split using $gt/$lte
-        if(this.useRangeQuery){
+        DBObject query = MongoConfigUtil.getQuery(conf);
+        if(MongoConfigUtil.isRangeQueryEnabled(conf)){
             try{
-                split = createRangeQuerySplit(lowerBound, upperBound, this.query);
+                query = MongoConfigUtil.getQuery(conf);
+                split = createRangeQuerySplit(lowerBound, upperBound, query);
             }catch(Exception e){
                 throw new SplitFailedException("Couldn't use range query to create split: " + e.getMessage());
             }
@@ -223,18 +236,18 @@ public abstract class MongoCollectionSplitter extends MongoSplitter{
         if(split == null){
             split = new MongoInputSplit();
             BasicDBObject splitQuery = new BasicDBObject();
-            if(this.query != null){
-                splitQuery.putAll(this.query);
+            if(query != null){
+                splitQuery.putAll(query);
             }
             split.setQuery(splitQuery);
             split.setMin(splitMin);
             split.setMax(splitMax);
         }
-        split.setInputURI(this.inputURI);
-        split.setAuthURI(this.authURI);
-        split.setNoTimeout(this.noTimeout);
-        split.setFields(this.fields);
-        split.setSort(this.sort);
+        split.setInputURI(MongoConfigUtil.getInputURI(conf));
+        split.setAuthURI(MongoConfigUtil.getAuthURI(conf));
+        split.setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
+        split.setFields(MongoConfigUtil.getFields(conf));
+        split.setSort(MongoConfigUtil.getSort(conf));
         return split;
     }
 

@@ -16,7 +16,7 @@
 package com.mongodb.hadoop;
 
 import com.mongodb.hadoop.input.BSONFileRecordReader;
-import com.mongodb.hadoop.util.BSONSplitter;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;

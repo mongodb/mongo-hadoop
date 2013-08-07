@@ -169,6 +169,7 @@ class MongosManager(object):
 class StandaloneManager(object):
     def __init__(self, port=None, home=None):
         global start_port, replsets, standalone_count
+        self.pid = None
         self.home = home
         if not port:
             self.port = start_port
@@ -187,7 +188,7 @@ class StandaloneManager(object):
         trys = 0
         return_code = proc.poll()
 
-        while return_code is None and trys < 100: # ~25 seconds
+        while return_code is None and trys < 200: # ~50 seconds
             trys += 1
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -256,7 +257,7 @@ class StandaloneManager(object):
             stderr=subprocess.STDOUT)
         res = self.wait_for(proc, port)
         self.pid = proc.pid
-        print "pid is", self.pid
+        print "standalone - pid is", self.pid
         if not res:
             raise Exception("Couldn't execute %s" % ' '.join(cmd))
         else:

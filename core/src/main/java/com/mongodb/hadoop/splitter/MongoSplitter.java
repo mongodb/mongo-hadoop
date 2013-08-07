@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 
 import java.util.*;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
+import com.mongodb.hadoop.util.*;
 import org.bson.*;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
@@ -30,10 +31,17 @@ public abstract class MongoSplitter {
 
     protected Configuration conf;
 
+    public MongoSplitter(){ }
+
     public MongoSplitter(Configuration conf){
         this.conf = conf;
     }
 
-    public abstract List<InputSplit> calculateSplits() throws SplitFailedException;
+    public void setConfiguration(Configuration conf){
+        this.conf = conf;
+    }
+
+    public abstract List<InputSplit> calculateSplits()
+        throws SplitFailedException;
 
 }

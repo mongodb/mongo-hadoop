@@ -22,6 +22,7 @@ import com.mongodb.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.fs.PathFilter;
@@ -287,9 +288,9 @@ public class MongoConfigUtil {
                 result.add(new MongoURI(mongoURI));
             }
             return result;
-        }
-        else
+        } else {
             return Collections.emptyList();
+        }
     }
 
     public static MongoURI getMongoURI( Configuration conf, String key ){
@@ -452,7 +453,7 @@ public class MongoConfigUtil {
     public static DBObject getDBObject( Configuration conf, String key ){
         try {
             final String json = conf.get( key );
-            final BasicDBObject obj = (BasicDBObject) JSON.parse( json );
+            final DBObject obj = (DBObject) JSON.parse( json );
             if ( obj == null )
                 return new BasicDBObject();
             else
@@ -713,6 +714,54 @@ public class MongoConfigUtil {
 
         conf.set(INPUT_MONGOS_HOSTS, raw);
     }
+
+    /**
+     * Fetch a class by its actual class name, rather than by a key name in the
+     * configuration properties. We still need to pass in a Configuration
+     * object here, since the Configuration class maintains an internal cache
+     * of class names for performance on some hadoop versions. 
+     * It also ensures that the same classloader is used across all keys.
+     */
+    public static <U> Class<? extends U> getClassByName(Configuration conf,
+                                                        String className, 
+                                                        Class<U> xface){
+
+        if(className == null) return null;
+        try {
+            Class<?> theClass  = conf.getClassByName(className);
+            if (theClass != null && !xface.isAssignableFrom(theClass))
+                throw new RuntimeException(theClass+" not "+xface.getName());
+            else if (theClass != null)
+                return theClass.asSubclass(xface);
+            else
+                return null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+  }
+
+  public static Configuration buildConfiguration(Map<String,Object> data){
+      Configuration newConf = new Configuration();
+      for(Map.Entry<String,Object> entry : data.entrySet()){
+          String key = entry.getKey();
+          Object val = entry.getValue();
+          if(val instanceof String){
+              newConf.set(key, (String)val);
+          }else if(val instanceof Boolean){
+              newConf.setBoolean(key, (Boolean)val);
+          }else if(val instanceof Integer){
+              newConf.setInt(key, (Integer)val);
+          }else if(val instanceof Float){
+              newConf.setFloat(key, (Float)val);
+          }else if(val instanceof DBObject){
+              setDBObject(newConf, key, (DBObject)val );
+          }else{
+              throw new RuntimeException("can't convert "+val.getClass()+
+                                         " into any type for Configuration");
+          }
+      }
+      return newConf;
+  }
 
 
 
