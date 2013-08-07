@@ -5,7 +5,6 @@ import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,10 +14,11 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Progressable;
 
-import com.mongodb.hadoop.mapred.BSONFileOutputFormat;
-import com.mongodb.hadoop.util.BSONSplitter;
-import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.hive.output.HiveBSONFileRecordWriter;
+
+import com.mongodb.hadoop.mapred.BSONFileOutputFormat;
+import com.mongodb.hadoop.splitter.BSONSplitter;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
 /**
  * 
