@@ -37,7 +37,7 @@ public class BSONSerDeTest {
         serde.initialize(new Configuration(), tblProperties);
         
         return serde.deserializeField(value, serde.columnTypes.get(0));
-    }
+    } 
     
     /**
      * Given the column names and the object inspector, returns the 
@@ -61,7 +61,7 @@ public class BSONSerDeTest {
      */
     private Object helpSerialize(String columnNames, ObjectInspector inner, 
             BasicBSONObject bObject, Object value, BSONSerDe serde) 
-            throws SerDeException {        
+            throws SerDeException {
         StructObjectInspector oi = createObjectInspector(columnNames, inner);
         bObject.put(columnNames, value);
         // Structs in Hive are actually arrays/lists of objects
@@ -85,10 +85,9 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-        
     
     @Test
-    public void testDouble() throws SerDeException {        
+    public void testDouble() throws SerDeException {
         String columnNames = "doub";
         String columnTypes = "double";
         Double value = 1.1D;
@@ -101,7 +100,7 @@ public class BSONSerDeTest {
         BasicBSONObject bObject = new BasicBSONObject();
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
-    }
+    }    
     
     @Test
     public void testInt() throws SerDeException {        
@@ -117,7 +116,7 @@ public class BSONSerDeTest {
         BasicBSONObject bObject = new BasicBSONObject();
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
-    }            
+    }
     
     @Test
     public void testBinary() throws SerDeException {        
@@ -135,7 +134,7 @@ public class BSONSerDeTest {
         BasicBSONObject bObject = new BasicBSONObject();
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
-    }    
+    }
     
     @Test
     public void testBoolean() throws SerDeException {        
@@ -154,7 +153,7 @@ public class BSONSerDeTest {
     }
     
     @Test
-    public void testDates() throws SerDeException {        
+    public void testDates() throws SerDeException {
         String columnNames = "d";
         String columnTypes = "timestamp";   
         Date d = new Date();
@@ -181,7 +180,7 @@ public class BSONSerDeTest {
         bsonWithTimestamp.put(columnNames, bts);
         assertThat(new BSONWritable(bsonWithTimestamp), equalTo(serialized));
     }
-    
+        
     @Test
     public void testObjectID() throws SerDeException {        
         String columnNames = "o";
@@ -199,7 +198,7 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value.toString(), serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-        
+    
     @Test 
     public void testList() throws SerDeException {
         String columnNames = "a";
@@ -222,7 +221,7 @@ public class BSONSerDeTest {
         BasicBSONObject bObject = new BasicBSONObject();
         Object serialized = helpSerialize(columnNames, listInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
-    }            
+    }
     
     @Test
     public void testMap() throws SerDeException {
