@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import string
 import re
 import logging
 import tempfile
@@ -34,6 +35,10 @@ if not os.path.isdir(TEMPDIR):
 #declare -a job_args
 #cd ..
 VERSION_SUFFIX = "1.1.0"
+
+
+def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
 
 version_buildtarget =\
     {"0.22" : "0.22.0",
@@ -352,23 +357,25 @@ class BaseShardedTest(unittest.TestCase):
         time.sleep(5)
         global num_runs
 
-        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + str(num_runs)),
+        randstr = generate_id(size=6)
+
+        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + randstr + "_" + str(num_runs)),
                 with_arbiter=True,
                 num_members=3, noauth=self.noauth)
         self.shard1.start_set(fresh=True)
-        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_" + str(num_runs)),
+        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_"  + randstr + "_" + str(num_runs)),
                 with_arbiter=True,
                 num_members=3, noauth=self.noauth)
         self.shard2.start_set(fresh=True)
-        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_' + str(num_runs)))
+        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_'  + randstr + "_" + str(num_runs)))
         self.confighost = self.configdb.start_server(fresh=True,noauth=self.noauth)
 
-        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + str(num_runs)))
+        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + randstr + "_"  + str(num_runs)))
         self.mongos_hostname = self.mongos.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=self.noauth, fresh=True, addShards=True)
 
-        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + str(num_runs)))
+        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + randstr + "_"  + str(num_runs)))
         self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
                 noauth=self.noauth, fresh=True, addShards=False)
@@ -382,7 +389,7 @@ class BaseShardedTest(unittest.TestCase):
                                    JSONFILE_PATH)
         mongos_admindb = self.mongos_connection['admin']
         mongos_admindb.command("enablesharding", "mongo_hadoop")
-        self.homedirs = [x + str(num_runs) for x in ("rs0_", "rs1_", "config_db_", "mongos_", "mongos2_")]
+        self.homedirs = [x + randstr + "_" + str(num_runs) for x in ("rs0_", "rs1_", "config_db_", "mongos_", "mongos2_")]
         num_runs += 1
 
         #turn off the balancer

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.util;
+package com.mongodb.hadoop.splitter;
 
 import com.mongodb.*;
 import com.mongodb.util.*;
+import com.mongodb.hadoop.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
@@ -41,7 +42,8 @@ public class MultiCollectionSplitBuilder{
                                            DBObject fields,
                                            DBObject sort,
                                            DBObject query,
-                                           boolean useRangeQuery){
+                                           boolean useRangeQuery, 
+                                           Class<? extends MongoSplitter> splitClass){
         CollectionSplitterConf conf = new CollectionSplitterConf();
         conf.inputURI = inputURI;
         conf.authURI = authURI;
@@ -50,6 +52,7 @@ public class MultiCollectionSplitBuilder{
         conf.sort = sort;
         conf.query = query;
         conf.useRangeQuery = useRangeQuery;
+        conf.splitClass = splitClass;
         return addConf(conf);
     }
 
@@ -69,6 +72,7 @@ public class MultiCollectionSplitBuilder{
         DBObject sort = null;
         DBObject query = null;
         boolean useRangeQuery = false;
+        Class<? extends MongoSplitter> splitClass;
 
         public Map<String,String> toConfigMap(){
             HashMap<String,String> outMap = new HashMap<String,String>();
@@ -91,6 +95,11 @@ public class MultiCollectionSplitBuilder{
                 outMap.put(MongoConfigUtil.INPUT_QUERY, JSON.serialize(query));
 
             outMap.put(MongoConfigUtil.SPLITS_USE_RANGEQUERY, useRangeQuery ? "true" : "false");
+
+            if(splitClass != null){
+                outMap.put(MongoConfigUtil.MONGO_SPLITTER_CLASS, splitClass.getCanonicalName());
+            }
+
             return outMap;
         }
     }
