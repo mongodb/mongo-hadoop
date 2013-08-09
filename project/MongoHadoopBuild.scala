@@ -238,7 +238,7 @@ object MongoHadoopBuild extends Build {
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) =>
 
       if(hr == "cdh4"){
-        Seq("org.apache.hive" % "hive" % "0.10.0-cdh4.2.0")
+        Seq("org.apache.hive" % "hive-serde" % "0.10.0-cdh4.2.0")
       }else{
         val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
         hadoopDeps._4()
@@ -324,7 +324,10 @@ object MongoHadoopBuild extends Build {
     () => {
       println("*** Adding Hive Dependency for Version '%s'".format(hiveVersion))
 
-      Seq("org.apache.hive" % "hive" % hiveVersion)
+      Seq(
+        "org.apache.hive" % "hive-serde" % hiveVersion, 
+        "org.apache.hive" % "hive-exec" % hiveVersion
+      )
     }
   }
 
@@ -356,7 +359,7 @@ object Resolvers {
 object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.10.1"
   val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.10.0"
-  val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0"
+  val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0" 
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
   val casbah = "org.mongodb" %% "casbah" % "2.3.0"
