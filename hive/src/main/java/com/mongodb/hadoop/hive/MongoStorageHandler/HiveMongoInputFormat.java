@@ -37,23 +37,28 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
 	// return MongoRecordReader. Delegate is of type 'MongoInputSplit'
 	return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
     }
+
     @Override
     public FileSplit[] getSplits(JobConf conf, int numSplits)
 	throws IOException {
 	try {
 	    MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
-	    final List<InputSplit> splits = Arrays.asList(splitterImpl.calculateSplits().toArray(new InputSplit[0]));
+	    final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
+	    InputSplit[] splitIns = splits.toArray(new InputSplit[0]);
 	    
 	    // wrap InputSplits in FileSplits so that 'getPath' doesn't produce an error (Hive bug)
-	    FileSplit[] wrappers = new FileSplit[splits.size()];
+	    FileSplit[] wrappers = new FileSplit[splitIns.length];
 	    Path path = new Path(conf.get(MongoStorageHandler.TABLE_LOCATION));
 	    for (int i = 0; i < wrappers.length; i++) {
-		wrappers[i] = new MongoHiveInputSplit(splits.get(i), path);
+		wrappers[i] = new MongoHiveInputSplit(splitIns[i], path);
 	    }
 	    
 	    return wrappers;
-	} catch (Exception spfe) {
-	    throw new IOException("No data found. Might be because you dropped the corresponding collection.");
+	} catch (SplitFailedException spfe) {
+	    // split failed because no namespace found (so the corresponding collection doesn't exist)
+	    return new MongoHiveInputSplit[0];
+	} catch (Exception e) {
+	    throw new IOException(e);
 	}
     }
     
