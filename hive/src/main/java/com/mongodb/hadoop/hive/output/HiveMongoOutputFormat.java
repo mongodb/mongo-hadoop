@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.hive;
+package com.mongodb.hadoop.hive.output;
 
 import java.io.IOException;
 import java.util.List;

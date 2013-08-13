@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.hive;
+package com.mongodb.hadoop.hive.output;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -12,24 +12,24 @@ import org.apache.hadoop.hive.ql.exec.FileSinkOperator.RecordWriter;
 import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TaskAttemptContext;
 import org.apache.hadoop.util.Progressable;
 
-import com.mongodb.hadoop.hive.output.HiveBSONFileRecordWriter;
-
+import com.mongodb.hadoop.mapred.output.BSONFileRecordWriter;
 import com.mongodb.hadoop.mapred.BSONFileOutputFormat;
 import com.mongodb.hadoop.splitter.BSONSplitter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.io.BSONWritable;
 
 /**
  * 
- * @author Sweetie
  * An OutputFormat that writes BSON files
  * 
  */
 @SuppressWarnings("deprecation")
 public class HiveBSONFileOutputFormat<K, V> 
     extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
-
+    
     private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
     
 
@@ -46,7 +46,7 @@ public class HiveBSONFileOutputFormat<K, V>
      */
     @Override
     public RecordWriter getHiveRecordWriter(JobConf jc, 
-            Path fileOutputPath,
+	    Path fileOutputPath,
             Class<? extends Writable> valueClass, 
             boolean isCompressed, 
             Properties tableProperties,
@@ -65,5 +65,26 @@ public class HiveBSONFileOutputFormat<K, V>
         
         return new HiveBSONFileRecordWriter(outFile, splitFile, splitSize);
     }
-
+    
+    @SuppressWarnings("deprecation")
+    public class HiveBSONFileRecordWriter<K, V> 
+	extends BSONFileRecordWriter<K, V> 
+	implements RecordWriter {
+	
+	public HiveBSONFileRecordWriter(FSDataOutputStream outFile,
+					FSDataOutputStream splitFile, long splitSize) {
+	    super(outFile, splitFile, splitSize);
+	}
+	
+	@Override
+	public void close(boolean toClose) throws IOException {
+	    super.close(toClose ? (TaskAttemptContext) new Object() : (TaskAttemptContext) null);
+	}
+	
+	@Override
+	@SuppressWarnings("unchecked")
+	public void write(Writable value) throws IOException {
+	    super.write(null, (BSONWritable) value);
+	}
+    }
 }

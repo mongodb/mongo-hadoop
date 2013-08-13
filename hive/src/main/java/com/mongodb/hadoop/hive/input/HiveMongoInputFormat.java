@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.hive;
+package com.mongodb.hadoop.hive.input;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -15,6 +15,7 @@ import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.InputSplit;
 
+import com.mongodb.hadoop.hive.MongoStorageHandler;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;

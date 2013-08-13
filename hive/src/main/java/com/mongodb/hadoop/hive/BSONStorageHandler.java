@@ -12,6 +12,8 @@ import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
 
+import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
+
 public class BSONStorageHandler extends DefaultStorageHandler {
 
     public BSONStorageHandler() {}
