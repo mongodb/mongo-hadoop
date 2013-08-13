@@ -44,7 +44,7 @@ testMongoTblName = os.environ.get("MONGO_TEST_TABLE", "mongo_test")
 testMongoPName = os.environ.get("MSH_PACKAGE_NAME", 
                                 "com.mongodb.hadoop.hive.MongoStorageHandler")
 serdeProperties = os.environ.get("SERDE_PROPERTIES", "''=''")
-verbose = bool(os.environ.get("VERBOSE_TESTS", False))
+verbose = bool(int(os.environ.get("VERBOSE_TESTS", 0)))
 
 try:
     testDataFile = os.environ.get("TEST_DATA_FILE")
@@ -194,7 +194,8 @@ class Helpers:
                 data.append(line.split(testHiveFieldsDelim))
         except Thrift.TException, tx:
             pass
-        return (schema, data)
+        # return sorted(data) to make "select" have deterministic ordering 
+        return (schema, sorted(data))
 
     @staticmethod
     def getOneFromCollection(coll):
@@ -328,6 +329,7 @@ class TestBasicMongoTable(unittest.TestCase):
 
         self.assertEqual(hiveSchema, mongoSchema)
         self.assertEqual(len(hiveData), len(mongoData))
+
         for i in range(len(hiveData)):
             self.assertEqual(hiveData[i], mongoData[i])
 
@@ -409,8 +411,7 @@ class TestOptionsMongoTable(unittest.TestCase):
         propsSplitLen = len(propsSplit)
         for i in range(propsSplitLen):
             entry = propsSplit[i]
-            if entry.lower() == "'mongo.columns.mapping'":
-                if i-1 < propsSplitLen:
+            if entry.lower() == "'mongo.columns.mapping'" and i-1 < propsSplitLen:
                     colsMap = propsSplit[i+1]
                     break
         

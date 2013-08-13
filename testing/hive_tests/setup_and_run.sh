@@ -24,8 +24,8 @@ export MONGO_TEST_URI="mongodb://localhost:27017/test.mongo_hive_test"
 # serde properties =>
 #   specify a comma-delimited serde properties mapping for test data file
 export SERDE_PROPERTIES="'mongo.columns.mapping'='_id, name, age'"
-# run tests in "verbose" mode
-export VERBOSE_TESTS=true
+# run tests in "verbose" mode; 0 -> False, 1 -> True
+export VERBOSE_TESTS=0
 
 # path of "mongod" executable
 export MONGOD="mongod"
