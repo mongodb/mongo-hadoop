@@ -70,6 +70,14 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
     private static class MongoHiveInputSplit extends FileSplit {
         private InputSplit delegate;
         private Path path;
+
+	MongoHiveInputSplit() {
+	    this(new MongoInputSplit());
+	}
+	
+	MongoHiveInputSplit(InputSplit delegate) {
+	    this(delegate, null);
+	}
         
         MongoHiveInputSplit(InputSplit delegate, Path path) {
             super(path, 0, 0, (String[]) null);
