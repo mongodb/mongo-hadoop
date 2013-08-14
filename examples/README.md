@@ -51,11 +51,11 @@ public class TreasuryYieldReducer
         }
 
         final double avg = sum / count;
-	
+    
         BasicBSONObject output = new BasicBSONObject();
         output.put("avg", avg);
         pContext.write( pKey, new BSONWritable( output ) );
-    }	
+    }   
 }
 ```
 
@@ -64,30 +64,30 @@ public class TreasuryYieldReducer
 We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
 
     -- UDFs used for date parsing
-	REGISTER /tmp/piggybank-0.3-amzn.jar
-	-- MongoDB Java driver
-	REGISTER  /tmp/mongo-2.10.1.jar;
-	-- Core Mongo-Hadoop Library
-	REGISTER ../core/target/mongo-hadoop-core_1.0.3-1.1.0-SNAPSHOT.jar
-	-- mongo-hadoop pig support
-	REGISTER ../pig/target/mongo-hadoop-pig_1.0.3-1.1.0-SNAPSHOT.jar
-	
-	raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader; 
-	DEFINE UnixToISO org.apache.pig.piggybank.evaluation.datetime.convert.UnixToISO();
-	DEFINE EXTRACT org.apache.pig.piggybank.evaluation.string.EXTRACT();
-	
-	date_tenyear = foreach raw generate UnixToISO($0#'_id'), $0#'bc10Year';
-	parsed_year = foreach date_tenyear generate 
-	    FLATTEN(EXTRACT($0, '(\\d{4})')) AS year, (double)$1 as bc;
-	
-	by_year = GROUP parsed_year BY (chararray)year;
-	year_10yearavg = FOREACH by_year GENERATE group, AVG(parsed_year.bc) as tenyear_avg;
-	
-	-- Args to MongoInsertStorage are: schema for output doc, field to use as '_id'.
-	STORE year_10yearavg 
-	 INTO 'mongodb://localhost:27017/demo.asfkjabfa' 
-	 USING		
-	 com.mongodb.hadoop.pig.MongoInsertStorage('group:chararray,tenyear_avg:float', 'group');
+    REGISTER /tmp/piggybank-0.3-amzn.jar
+    -- MongoDB Java driver
+    REGISTER  /tmp/mongo-2.10.1.jar;
+    -- Core Mongo-Hadoop Library
+    REGISTER ../core/target/mongo-hadoop-core_1.0.3-1.1.0-SNAPSHOT.jar
+    -- mongo-hadoop pig support
+    REGISTER ../pig/target/mongo-hadoop-pig_1.0.3-1.1.0-SNAPSHOT.jar
+    
+    raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader; 
+    DEFINE UnixToISO org.apache.pig.piggybank.evaluation.datetime.convert.UnixToISO();
+    DEFINE EXTRACT org.apache.pig.piggybank.evaluation.string.EXTRACT();
+    
+    date_tenyear = foreach raw generate UnixToISO($0#'_id'), $0#'bc10Year';
+    parsed_year = foreach date_tenyear generate 
+        FLATTEN(EXTRACT($0, '(\\d{4})')) AS year, (double)$1 as bc;
+    
+    by_year = GROUP parsed_year BY (chararray)year;
+    year_10yearavg = FOREACH by_year GENERATE group, AVG(parsed_year.bc) as tenyear_avg;
+    
+    -- Args to MongoInsertStorage are: schema for output doc, field to use as '_id'.
+    STORE year_10yearavg 
+     INTO 'mongodb://localhost:27017/demo.asfkjabfa' 
+     USING      
+     com.mongodb.hadoop.pig.MongoInsertStorage('group:chararray,tenyear_avg:float', 'group');
 
 
 
@@ -101,26 +101,26 @@ Abbreviated code snippets shown below - to see the full source for this example,
 
 ####Map/Reduce with Java
 
-The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from the `To` field, and construct a `MailPair` object containing each pair which will act as the key. Then we emit the value `1` for each key. `MailPair` is just a simple "POJO" that contains Strings for the `from` and `to` values, and implements `WritableComparable` so that it can be serialized across Hadoop nodes and sorted. 	
+The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from the `To` field, and construct a `MailPair` object containing each pair which will act as the key. Then we emit the value `1` for each key. `MailPair` is just a simple "POJO" that contains Strings for the `from` and `to` values, and implements `WritableComparable` so that it can be serialized across Hadoop nodes and sorted.   
 
 ```java
 @Override
 public void map(NullWritable key, BSONObject val, final Context context)
-throws IOException, InterruptedException{
-	if(val.containsKey("headers")){
-		BSONObject headers = (BSONObject)val.get("headers");
-		if(headers.containsKey("From") && headers.containsKey("To")){
-			String from = (String)headers.get("From");
-			String to = (String)headers.get("To");
-        String[] recips = to.split(",");
-        for(int i=0;i<recips.length;i++){
-            String recip = recips[i].trim();
-            if(recip.length() > 0){
-                context.write(new MailPair(from, recip), new IntWritable(1));
-            }
+        throws IOException, InterruptedException{
+        if (val.containsKey("headers")) {
+           BSONObject headers = (BSONObject)val.get("headers");
+           if (headers.containsKey("From") && headers.containsKey("To")){
+              String from = (String)headers.get("From");
+              String to = (String)headers.get("To");
+              String[] recips = to.split(",");
+              for(int i=0;i<recips.length;i++){
+                  String recip = recips[i].trim();
+                  if (recip.length() > 0) {
+                     context.write(new MailPair(from, recip), new IntWritable(1));
+                  }
+              }
+           }
         }
-		}
-	}
 }
 ```
 
@@ -146,18 +146,18 @@ The reduce class will take the collected values for each key, sum them together,
 
 To accomplish the same with pig, but with much less work:
 
-	REGISTER ../mongo-2.10.1.jar;
-	REGISTER ../core/target/mongo-hadoop-core_cdh4.3.0-1.1.0.jar
-	REGISTER ../pig/target/mongo-hadoop-pig_cdh4.3.0-1.1.0.jar
-	
-	raw = LOAD 'file:///Users/mike/dump/enron_mail/messages.bson' using com.mongodb.hadoop.pig.BSONLoader('','headers:[]') ; 
-	send_recip = FOREACH raw GENERATE $0#'From' as from, $0#'To' as to;
-	send_recip_filtered = FILTER send_recip BY to IS NOT NULL;
-	send_recip_split = FOREACH send_recip_filtered GENERATE from as from, FLATTEN(TOKENIZE(to)) as to;
-	send_recip_split_trimmed = FOREACH send_recip_split GENERATE from as from, TRIM(to) as to;
-	send_recip_grouped = GROUP send_recip_split_trimmed BY (from, to);
-	send_recip_counted = FOREACH send_recip_grouped GENERATE group, COUNT($1) as count;
-	STORE send_recip_counted INTO 'file:///tmp/enron_emailcounts.bson' using com.mongodb.hadoop.pig.BSONStorage;
+    REGISTER ../mongo-2.10.1.jar;
+    REGISTER ../core/target/mongo-hadoop-core_cdh4.3.0-1.1.0.jar
+    REGISTER ../pig/target/mongo-hadoop-pig_cdh4.3.0-1.1.0.jar
+    
+    raw = LOAD 'file:///Users/mike/dump/enron_mail/messages.bson' using com.mongodb.hadoop.pig.BSONLoader('','headers:[]') ; 
+    send_recip = FOREACH raw GENERATE $0#'From' as from, $0#'To' as to;
+    send_recip_filtered = FILTER send_recip BY to IS NOT NULL;
+    send_recip_split = FOREACH send_recip_filtered GENERATE from as from, FLATTEN(TOKENIZE(to)) as to;
+    send_recip_split_trimmed = FOREACH send_recip_split GENERATE from as from, TRIM(to) as to;
+    send_recip_grouped = GROUP send_recip_split_trimmed BY (from, to);
+    send_recip_counted = FOREACH send_recip_grouped GENERATE group, COUNT($1) as count;
+    STORE send_recip_counted INTO 'file:///tmp/enron_emailcounts.bson' using com.mongodb.hadoop.pig.BSONStorage;
 
 ## Example 3 - Sensor Logs
 
@@ -201,34 +201,36 @@ We will solve this by doing two passes of Map/Reduce. The first will operate ove
 
 The `Mapper` code in phase one just produces the pair `<owner,_id>` for each device. The `Reducer` then takes the list of all `_id`s for each owner and creates a new document containing them. 
 
-	public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
-	
-		@Override
-		public void map(Object key, BSONObject val, final Context context) 
-		    throws IOException, InterruptedException {
-	        String keyOut = (String)val.get("owner") + " " + (String)val.get("type");
-	        context.write(new Text(keyOut), new Text(val.get("_id").toString()));
-	    }
-	
-	}
-	
-	public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdateWritable>{
+    public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
+    
+        @Override
+        public void map(Object key, BSONObject val, final Context context) 
+            throws IOException, InterruptedException {
+            String keyOut = (String)val.get("owner") + " " + (String)val.get("type");
+            context.write(new Text(keyOut), new Text(val.get("_id").toString()));
+        }
+    
+    }
+    
+    public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdateWritable>{
 
-	    @Override
-	    public void reduce( final Text pKey, final Iterable<Text> pValues,
-	                        final Context pContext )
-	            throws IOException, InterruptedException{
-	        
-	        BasicBSONObject query = new BasicBSONObject("_id", pKey.toString());
-	        ArrayList<ObjectId> devices = new ArrayList<ObjectId>();
-	        for(Text val : pValues){
-	            devices.add(new ObjectId(val.toString()));
-	        }
-			BasicBSONObject devices_list = new BasicBSONObject("devices", devices);
-	        BasicBSONObject output = new BasicBSONObject("_id", pKey);
-	        pContext.write(null, new MongoUpdateWritable(query, update, true, false));
-	    }
-	}
+        @Override
+        public void reduce( final Text pKey, final Iterable<Text> pValues,
+                            final Context pContext )
+                throws IOException, InterruptedException{
+            
+            BasicBSONObject query = new BasicBSONObject("_id", pKey.toString());
+            ArrayList<ObjectId> devices = new ArrayList<ObjectId>();
+            for(Text val : pValues){
+                devices.add(new ObjectId(val.toString()));
+            }
+
+            BasicBSONObject devices_list = new BasicBSONObject("devices", devices);
+            BasicBSONObject update = new BasicBSONObject("$pushAll", devices_list);
+
+            pContext.write(null, new MongoUpdateWritable(query, update, true, false));
+        }
+    }
 
 
 
@@ -250,35 +252,35 @@ After phase one, the output collection documents each look like this:
 
 In phase two, we map over the large collection `logs` and compute the totals for each device owner/type. The mapper emits the device id from each log item along, and the reducer uses `MongoUpdateWritable` to increment counts of these into the output collection by querying the record that contains the device's `_id` in its `devices` array which we populated in phase one. Between phase one and phase two, we create an index on `devices` to make sure this will be fast (see the script in `examples/sensors/run_job.sh` for details)
 
-	public class LogMapper extends Mapper<Object, BSONObject, Text, IntWritable>{
-		@Override
-		public void map(Object key, BSONObject val, 
-		                final Context context)
-		                throws IOException, InterruptedException{
-	        context.write(new Text(((ObjectId)val.get("d_id")).toString()), 
-	                      new IntWritable(1));
-	    }
-	}
-	
-	public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUpdateWritable> {
+    public class LogMapper extends Mapper<Object, BSONObject, Text, IntWritable>{
+        @Override
+        public void map(Object key, BSONObject val, 
+                        final Context context)
+                        throws IOException, InterruptedException{
+            context.write(new Text(((ObjectId)val.get("d_id")).toString()), 
+                          new IntWritable(1));
+        }
+    }
+    
+    public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUpdateWritable> {
 
-	    @Override
-	    public void reduce( final Text pKey,
-	                        final Iterable<IntWritable> pValues,
-	                        final Context pContext )
-	            throws IOException, InterruptedException{
-	        
-	        int count = 0;
-	        for(IntWritable val : pValues){
-	            count += val.get();
-	        }
-	
-	        BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(pKey.toString()));
-	        BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
-	        pContext.write(null, new MongoUpdateWritable(query, update, true, false));
-	    }
-	
-	}
+        @Override
+        public void reduce( final Text pKey,
+                            final Iterable<IntWritable> pValues,
+                            final Context pContext )
+                throws IOException, InterruptedException{
+            
+            int count = 0;
+            for(IntWritable val : pValues){
+                count += val.get();
+            }
+    
+            BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(pKey.toString()));
+            BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
+            pContext.write(null, new MongoUpdateWritable(query, update, true, false));
+        }
+    
+    }
 
 After phase two is finished, the result documents look like this (the `logs_count` field is now populated with the result):
 
