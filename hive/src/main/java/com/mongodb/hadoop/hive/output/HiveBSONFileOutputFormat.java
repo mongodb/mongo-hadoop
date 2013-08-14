@@ -46,12 +46,23 @@ public class HiveBSONFileOutputFormat<K, V>
      */
     @Override
     public RecordWriter getHiveRecordWriter(JobConf jc, 
-	    Path fileOutputPath,
+	        Path fileOutputPath,
             Class<? extends Writable> valueClass, 
             boolean isCompressed, 
             Properties tableProperties,
             Progressable progress) throws IOException {
         
+        if (jc.get("mapred.output.file") != null) {
+            fileOutputPath = new Path(jc.get("mapred.output.file"));
+        } else {
+            fileOutputPath = new Path(fileOutputPath, fileOutputPath.getName());
+                                                                                                
+            if (!fileOutputPath.toString().endsWith(".bson")) {
+                fileOutputPath = fileOutputPath.suffix(".bson");
+            }
+        }
+        LOG.info("Output going into " + fileOutputPath);
+
         FileSystem fs = fileOutputPath.getFileSystem(jc);
         FSDataOutputStream outFile = fs.create(fileOutputPath);
         
