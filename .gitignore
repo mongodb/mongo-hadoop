@@ -41,3 +41,4 @@ testing/*.pyc
 streaming/language_support/python/dist/
 streaming/language_support/python/pymongo_hadoop.egg-info/
 metastore_db/
+TempStatsStore/

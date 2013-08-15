@@ -1,5 +1,11 @@
 #! /usr/bin/env python
 
+"""
+Contains unit tests for:
+* MongoStorageHandler
+* BSONStorageHandler
+"""
+
 import unittest
 import subprocess
 import sys
@@ -26,38 +32,48 @@ from thrift.protocol import TBinaryProtocol
 # * testHiveFileType
 # * testHiveFieldsDelim
 # * testMongoTblName
-# * testMongoPath
+# * testBSONTblName
+# * storageHandlerPath
 # * testMongoPName
+# * testBSONPName
 # * mongoPort
 # * verbose
 hivePort = int(os.environ.get("HIVE_PORT", 10000))
 mongoPort = int(os.environ.get("MONGOD_PORT", 27017))
 testDataFile = None
 testHiveTblSchema = None
-testMongoPath = None
+storageHandlerPath = None
+testBSONFilePath = None
 serdeProperties = None
 hostname = socket.gethostname()
 testHiveTblName = os.environ.get("HIVE_TEST_TABLE", "hive_test")
 testHiveFileType = os.environ.get("HIVE_TEST_FILE_TYPE", "textfile")
 testHiveFieldsDelim = os.environ.get("HIVE_TEST_DELIM", '\t')
 testMongoTblName = os.environ.get("MONGO_TEST_TABLE", "mongo_test")
+testBSONTblName = os.environ.get("BSON_TEST_TABLE", "bson_test")
 testMongoPName = os.environ.get("MSH_PACKAGE_NAME", 
                                 "com.mongodb.hadoop.hive.MongoStorageHandler")
+testBSONPName = os.environ.get("BSH_PACKAGE_NAME",
+                               "com.mongodb.hadoop.hive.BSONStorageHandler")
 serdeProperties = os.environ.get("SERDE_PROPERTIES", "''=''")
 verbose = bool(int(os.environ.get("VERBOSE_TESTS", 0)))
 
 try:
     testDataFile = os.environ.get("TEST_DATA_FILE")
     testHiveTblSchema = os.environ.get("HIVE_TEST_SCHEMA")
-    testMongoPath = os.environ.get("MSH_PATH")
+    testBSONFilePath = os.environ.get("TEST_BSON_FILE_PATH")
+    storageHandlerPath = os.environ.get("MSH_PATH")
     mongoTestURI = os.environ.get("MONGO_TEST_URI")
 except KeyError:
     print "You must set ALL these environment variables:"
     print "\t$TEST_DATA_FILE : absolute path of test data file"
     print "\t$HIVE_TEST_SCHEMA : hive schema of TEST_DATA_FILE"
     print "\t$MSH_PATH : absolute path of MongoStorageHandler jar"
+    print "\t$TEST_BSON_FILE_PATH : local FS BSON file"
     print "\t$MONGO_TEST_URI : URI of mongo collection"
     sys.exit(1)
+
+
 
 """
 Some Helper methods to be used in the unit tests to follow
@@ -87,7 +103,7 @@ class Helpers:
         return False
     
     """
-    Start hive server at 'hivePort'
+    Starts hive server at 'hivePort'
     """
     @staticmethod
     def startHiveServer():
@@ -117,29 +133,58 @@ class Helpers:
         Helpers.executeQuery(client, cmd)
 
     """
-    Creates HDFS-based hive table 'tblName' with schema 'schema',
+    Creates an HDFS-based hive table 'tblName' with schema 'schema',
     delimited by 'delim' of file type 'ftype'
     """
     @staticmethod
-    def createHiveTable(client, tblName, schema, delim, ftype):
+    def createHDFSHiveTable(client, tblName, schema, delim, ftype):
         cmd = ["CREATE TABLE", tblName, schema,
                "ROW FORMAT DELIMITED",
                "FIELDS TERMINATED BY", Helpers.quote(delim),
                "STORED AS", ftype]
         Helpers.executeQuery(client, cmd)
-        
+
     """
-    Loads data into already-created HDFS-based hive table
+    Create a new empty HDFS-based hive table
     """
     @staticmethod
-    def loadDataIntoHiveTable(client):
+    def createEmptyHDFSHiveTable(client):
         Helpers.dropTable(client, testHiveTblName)
-        Helpers.createHiveTable(client, testHiveTblName,
-                                testHiveTblSchema, testHiveFieldsDelim,
-                                testHiveFileType)
+        Helpers.createHDFSHiveTable(client, testHiveTblName,
+                                    testHiveTblSchema, testHiveFieldsDelim,
+                                    testHiveFileType)
+        
+    """
+    Transfer data from 'fromTable' into 'toTable'
+    """
+    @staticmethod
+    def transferData(client, fromTable, toTable):
+        cmd = ["INSERT OVERWRITE TABLE", toTable,
+               "SELECT * FROM", fromTable]
+        Helpers.executeQuery(client, cmd)
+
+    """
+    Loads data into a HDFS-based hive table
+    """
+    @staticmethod
+    def loadDataIntoHDFSHiveTable(client):
+        Helpers.createEmptyHDFSHiveTable(client)
         # then load data into the new table
         cmd = ["LOAD DATA LOCAL INPATH", Helpers.quote(testDataFile),
                "INTO TABLE", testHiveTblName]
+        Helpers.executeQuery(client, cmd)
+
+    """
+    Loads data into a BSON-based hive table.
+    """
+    @staticmethod
+    def loadDataIntoBSONHiveTable(client, withLocation):
+        Helpers.dropTable(client, testBSONTblName)        
+        # create the BSON-based hive table using the BSONStorageHandler
+        cmd = ["CREATE TABLE", testBSONTblName, testHiveTblSchema,
+               "STORED BY", Helpers.quote(testBSONPName)]
+        if withLocation:
+            cmd.extend(["LOCATION", Helpers.quote(testBSONFilePath)])
         Helpers.executeQuery(client, cmd)
 
     """
@@ -147,7 +192,7 @@ class Helpers:
     """
     @staticmethod
     def addJars(client):
-        cmd = ["ADD JAR", testMongoPath]
+        cmd = ["ADD JAR", storageHandlerPath]
         Helpers.executeQuery(client, cmd)
 
     """
@@ -158,23 +203,27 @@ class Helpers:
         return "'" + toQuote + "'"
 
     """
-    Load data into a MongoDB-based hive table. You can specify
-    if you want to use SerDe properties (via SERDEPROPERTIES) or not.
+    Creates an empty MongoDB-based hive table
     """
     @staticmethod
-    def loadDataIntoMongoTable(client, withSerDeProps):
-        Helpers.addJars(client)
+    def createMongoDBHiveTable(client, withSerDeProps):
         Helpers.dropTable(client, testMongoTblName)
 
-        # create the MongoDB-based hive table using the MongoStorageHandler
         props = serdeProperties if withSerDeProps else "''=''"
         cmd = ["CREATE TABLE", testMongoTblName, testHiveTblSchema,
                "STORED BY", Helpers.quote(testMongoPName),
                "WITH SERDEPROPERTIES(", props, ")",
-               "TBLPROPERTIES ('mongo.uri'=",
-               Helpers.quote(mongoTestURI),
-               ")"]
-        Helpers.executeQuery(client, cmd)
+               "TBLPROPERTIES ('mongo.uri'=", Helpers.quote(mongoTestURI), ")"]
+        Helpers.executeQuery(client, cmd)        
+
+    """
+    Load data into a MongoDB-based hive table. You can specify
+    if you want to use SerDe properties (via SERDEPROPERTIES) or not.
+    """
+    @staticmethod
+    def loadDataIntoMongoDBHiveTable(client, withSerDeProps):
+        # create the MongoDB-based hive table using the MongoStorageHandler
+        Helpers.createMongoDBHiveTable(client, withSerDeProps)
 
         cmd = ["INSERT OVERWRITE TABLE", testMongoTblName,
                "SELECT * FROM", testHiveTblName]
@@ -232,6 +281,16 @@ class Helpers:
         return int(count)
 
     """
+    Return the result of JOINing 'firstTable' with 'secondTable'
+    """
+    @staticmethod
+    def performTwoTableJOIN(client, firstTable, secondTable):
+        # pretty simple join, you can add to it if need be
+        joinTable = " ".join([firstTable, "JOIN", secondTable])
+
+        return Helpers.getAllDataFromTable(client, joinTable)
+
+    """
     Executes the hive query in the list 'lscmd'
     """
     @staticmethod
@@ -256,7 +315,9 @@ class Helpers:
             
             # start the hive server
             cls.hserverpid = Helpers.startHiveServer()
-            print "Successfully started hive server"
+            
+            if verbose:
+                print "Successfully started hive server"
             
             ts = TSocket.TSocket(hostname, hivePort)
             transport = TTransport.TBufferedTransport(ts)
@@ -265,6 +326,9 @@ class Helpers:
             client = ThriftHive.Client(protocol)
             transport.open()
             
+            # first add all required JARS for the tests
+            Helpers.addJars(client)
+
             cls.transport = transport
             cls.client = client
             cls.mongoc = conn[dbName][collName]
@@ -282,10 +346,21 @@ class Helpers:
             cls.transport.close()
             # stop hive server
             Helpers.stopHiveServer(cls.hserverpid)
-            print "Successfully stopped hiveserver"
+            
+            if verbose:
+                print "Successfully stopped hive server"
+
+            # wait for a number of seconds after shutting the hive server
+            # before next suite of tests are run to avoid a
+            # 'connection reset by peer' network error
+            time.sleep(2)
         except Thrift.TException, tx:
             print "Unable to close transport and/or close hiveserver"
             print '%s' % (tx.message)
+
+
+
+
 
 """
 To test:
@@ -295,16 +370,18 @@ To test:
    in the MongoDB-based hive table mirroring the MongoDB collection.
 3. Drop a MongoDB collection that stores data in a MongoDB-based hive table.
    Make sure that the hive table is also emptied.
+4. Test that we can perform a JOIN involving both a MongoDB-based hive table
+   and a HDFS-based hive table. Verify that the result is same as expected.
 """
-class TestBasicMongoTable(unittest.TestCase):
+class TestHDFSToMongoDBTable(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls):        
         Helpers.setUpClass(cls)
 
     def setUp(self):
         try:          
-            Helpers.loadDataIntoHiveTable(self.client)
-            Helpers.loadDataIntoMongoTable(self.client, False)
+            Helpers.loadDataIntoHDFSHiveTable(self.client)
+            Helpers.loadDataIntoMongoDBHiveTable(self.client, False)
         except Thrift.TException, tx:
             print '%s' % (tx.message)
 
@@ -318,12 +395,8 @@ class TestBasicMongoTable(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         Helpers.tearDownClass(cls) 
-        # wait for a number of seconds after shutting the hive server
-        # before next suite of tests are run to avoid a
-        # 'connection reset by peer' network error
-        time.sleep(2)
 
-    def testSameDataInTables(self):
+    def testSameDataHDFSAndMongoHiveTables(self):
         hiveSchema, hiveData = Helpers.getAllDataFromTable(self.client, testHiveTblName)
         mongoSchema, mongoData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
 
@@ -370,6 +443,16 @@ class TestBasicMongoTable(unittest.TestCase):
         mongoSchema, mongoTblData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
         self.assertTrue(len(mongoTblData) == 0)
 
+    def testJOINHDFSMongoDB(self):
+        mongoSchema, mongoTblData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
+        hiveSchema, hiveTblData = Helpers.getAllDataFromTable(self.client, testHiveTblName)
+        self.assertTrue(len(hiveTblData) > 0)
+        self.assertTrue(len(mongoTblData) > 0)
+
+        joinedSchema, joinedData = Helpers.performTwoTableJOIN(self.client, testMongoTblName, testHiveTblName)
+        
+        self.assertTrue(len(joinedData) == len(hiveTblData) * len(mongoTblData))
+
 """
 To test:
 1. Using more options in SERDEPROPERTIES,
@@ -377,15 +460,15 @@ To test:
    between table columns and mongo fields.
    Make sure that the mapping is correctly mirrored.
 """
-class TestOptionsMongoTable(unittest.TestCase):
+class TestHDFSToMongoDBTableWithOptions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         Helpers.setUpClass(cls)
 
     def setUp(self):
         try:          
-            Helpers.loadDataIntoHiveTable(self.client)
-            Helpers.loadDataIntoMongoTable(self.client, True)
+            Helpers.loadDataIntoHDFSHiveTable(self.client)
+            Helpers.loadDataIntoMongoDBHiveTable(self.client, True)
         except Thrift.TException, tx:
             print '%s' % (tx.message)
 
@@ -423,10 +506,67 @@ class TestOptionsMongoTable(unittest.TestCase):
         docKeys = doc.keys()
         self.assertTrue(set(docKeys) == set(lsMap))
         
-    def testLenTable(self):
+    def testCountSameTable(self):
         collCount = Helpers.getCollectionCount(self.mongoc)
         tableCount = Helpers.getTableCount(self.client, testMongoTblName)
+
         self.assertTrue(collCount == tableCount)
+
+"""
+To test:
+1. Test that we can successfully copy data from a BSON file into a
+   BSON-based hive table. Then copy the data into a MongoDB-based hive table.
+   Make sure the data in the BSON-based hive table is the same as that in the
+   MongoDB-based hive table.
+2. Also, copy the data into a HDFS-based hive table. Verify it's the same also.
+"""
+class TestBSONFileToHiveTable(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Helpers.setUpClass(cls)
+        
+    def setUp(self):            
+        try:
+            Helpers.loadDataIntoBSONHiveTable(self.client, True)
+            Helpers.createMongoDBHiveTable(self.client, False)
+            Helpers.createEmptyHDFSHiveTable(self.client)
+        except Thrift.TException, tx:
+            print '%s' % (tx.message)
+            
+    def tearDown(self):
+        try:
+            Helpers.dropTable(self.client, testBSONTblName)
+            Helpers.dropTable(self.client, testMongoTblName)
+            Helpers.dropTable(self.client, testHiveTblName)
+        except Thrift.TException, tx:
+            print '%s' % (tx.message)
+            
+    @classmethod
+    def tearDownClass(cls):
+        Helpers.tearDownClass(cls)
+        
+    def testSameDataMongoAndBSONHiveTables(self):
+        # put data in testBSONTblName into testMongoTblName
+        Helpers.transferData(self.client, testBSONTblName, testMongoTblName)
+        
+        mongoSchema, mongoData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
+        bsonSchema, bsonData = Helpers.getAllDataFromTable(self.client, testBSONTblName)
+        
+        self.assertEqual(len(mongoData), len(bsonData))
+        for i in range(len(mongoData)):
+            self.assertEqual(mongoData[i], bsonData[i])
+            
+    def testSameDataHDFSAndBSONHiveTables(self):
+        # put data in testBSONTblName into testHiveTblName
+        Helpers.transferData(self.client, testBSONTblName, testHiveTblName)
+        
+        hiveSchema, hiveData = Helpers.getAllDataFromTable(self.client, testHiveTblName)
+        bsonSchema, bsonData = Helpers.getAllDataFromTable(self.client, testBSONTblName)
+        
+        self.assertEqual(len(hiveData), len(bsonData))
+        for i in range(len(hiveData)):
+            self.assertEqual(hiveData[i], bsonData[i])
+        
         
 if __name__ == "__main__":
     unittest.main()
