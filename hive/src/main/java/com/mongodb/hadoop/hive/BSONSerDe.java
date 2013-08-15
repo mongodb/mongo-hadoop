@@ -28,7 +28,7 @@ import org.bson.types.*;
 import com.mongodb.hadoop.io.BSONWritable;
 
 public class BSONSerDe implements SerDe {
-    private static final Log log = LogFactory.getLog(BSONSerDe.class);
+    private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
     
     private static final int BSON_TYPE = 8;
     private static final String OID = "oid";
@@ -46,7 +46,7 @@ public class BSONSerDe implements SerDe {
      */
     @Override
     public void initialize(Configuration conf, Properties tblProps)
-	throws SerDeException {
+    throws SerDeException {
         // regex used to split column names between commas
         String splitCols = "\\s*,\\s*";
         
@@ -71,10 +71,10 @@ public class BSONSerDe implements SerDe {
         columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(colTypesStr);
         
         assert( columnNames.size() == columnTypes.size()) :
-	    "Column Names and Types don't match in size";
+        "Column Names and Types don't match in size";
         
         // Get the structure and object inspector
-	docTypeInfo = 
+        docTypeInfo = 
             (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI = 
             TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
@@ -100,7 +100,7 @@ public class BSONSerDe implements SerDe {
         BSONObject lower = new BasicBSONObject();
         for (Entry<String, Object> entry : ((BasicBSONObject) doc).entrySet()) {
             if (lower.containsField(entry.getKey().toLowerCase())) {
-                log.error("Fields should only be lower cased and not duplicated: " 
+                LOG.error("Fields should only be lower cased and not duplicated: " 
                           + entry.getKey());
             } else {
                 lower.put(entry.getKey().toLowerCase(), entry.getValue());
@@ -114,7 +114,8 @@ public class BSONSerDe implements SerDe {
             String fieldName = structFieldNames.get(i);
             try {
                 TypeInfo fieldTypeInfo = docTypeInfo.getStructFieldTypeInfo(fieldName);
-                value = deserializeField(lower.get(mongoFields.get(i)), fieldTypeInfo);                
+                value = deserializeField(lower.get(mongoFields.get(i)), 
+                            fieldTypeInfo);                
             } catch (Exception e) {
                 value = null;
             }
@@ -133,22 +134,22 @@ public class BSONSerDe implements SerDe {
      */
     public Object deserializeField(Object value, TypeInfo valueTypeInfo) {
         if (value != null) {
-	    switch (valueTypeInfo.getCategory()) {
-	        case LIST:
-		    return deserializeList(value, (ListTypeInfo) valueTypeInfo);
-	        case MAP:
-		    return deserializeMap(value, (MapTypeInfo) valueTypeInfo);
-	        case PRIMITIVE:
-		    return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
-	        case STRUCT:
-		    // Supports both struct and map, but should use struct 
-		    return deserializeStruct(value, (StructTypeInfo) valueTypeInfo);
-	        case UNION:
-		    // Mongo also has no union
-		    return null;
-	        default:
-		    // Must be an unknown (a Mongo specific type)
-		    return deserializeMongoType(value);
+        switch (valueTypeInfo.getCategory()) {
+            case LIST:
+                return deserializeList(value, (ListTypeInfo) valueTypeInfo);
+            case MAP:
+                return deserializeMap(value, (MapTypeInfo) valueTypeInfo);
+            case PRIMITIVE:
+                return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
+            case STRUCT:
+                // Supports both struct and map, but should use struct 
+                return deserializeStruct(value, (StructTypeInfo) valueTypeInfo);
+            case UNION:
+                // Mongo also has no union
+                return null;
+            default:
+                // Must be an unknown (a Mongo specific type)
+                return deserializeMongoType(value);
             }
         }
         return null;
@@ -160,7 +161,7 @@ public class BSONSerDe implements SerDe {
     private Object deserializeList(Object value, ListTypeInfo valueTypeInfo) {
         BasicBSONList list = (BasicBSONList) value;
         TypeInfo listElemTypeInfo = valueTypeInfo.getListElementTypeInfo();
-	
+    
         for (int i = 0 ; i < list.size() ; i++) {
             list.set(i, deserializeField(list.get(i), listElemTypeInfo));
         }
@@ -174,15 +175,15 @@ public class BSONSerDe implements SerDe {
      * @return
      */        
     @SuppressWarnings("unchecked")
-    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo) {	
+    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo) {    
         if (value instanceof ObjectId) {
             return deserializeObjectId(value, valueTypeInfo);
         } else {
-	    
+        
             Map<Object, Object> map = (Map<Object, Object>) value;
             ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
             ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
-	    
+        
             List<Object> struct = new ArrayList<Object> (structNames.size());
             for (int i = 0 ; i < structNames.size() ; i++) {
                 struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
@@ -201,7 +202,7 @@ public class BSONSerDe implements SerDe {
         for (Entry<String, Object> entry : b.entrySet()) {
             b.put(entry.getKey(), deserializeField(entry.getValue(), mapValueTypeInfo));
         }
-	
+    
         return b.toMap();
     }    
     
@@ -210,35 +211,35 @@ public class BSONSerDe implements SerDe {
      */
     private Object deserializePrimitive(Object value, PrimitiveTypeInfo valueTypeInfo) {
         switch (valueTypeInfo.getPrimitiveCategory()) {
-	    case BINARY:
-		return (byte[]) value;
-	    case BOOLEAN:
-		return (Boolean) value;
-	    case DOUBLE:
-		return (Double) value;
-	    case FLOAT:
-		return (Float) value;
+            case BINARY:
+                return (byte[]) value;
+            case BOOLEAN:
+                return (Boolean) value;
+            case DOUBLE:
+                return (Double) value;
+            case FLOAT:
+                return (Float) value;
             case INT:
-		if (value instanceof Double) {
-		    return ((Double) value).intValue(); 
-		}
-		return (Integer) value;
+                if (value instanceof Double) {
+                    return ((Double) value).intValue(); 
+                }
+                return (Integer) value;
             case LONG:
-		return (Long) value;
+                return (Long) value;
             case SHORT:
-		return (Short) value;
+                return (Short) value;
             case STRING:
-		return value.toString();
+                return value.toString();
             case TIMESTAMP:
-		if (value instanceof Date) {
-		    return new Timestamp(((Date) value).getTime());
-		} else if (value instanceof BSONTimestamp) {
-		    return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
-		} else {
-		    return (Timestamp) value;
-		}
+                if (value instanceof Date) {
+                    return new Timestamp(((Date) value).getTime());
+                } else if (value instanceof BSONTimestamp) {
+                    return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
+                } else {
+                    return (Timestamp) value;
+                }
             default:
-		return deserializeMongoType(value);
+                return deserializeMongoType(value);
         }
     }
     
@@ -254,15 +255,16 @@ public class BSONSerDe implements SerDe {
         } else if (value instanceof Symbol) {
             return ((Symbol) value).toString();
         } else {
-	    
-            log.error("Unable to parse " + value.toString() + " for type " + value.getClass().toString());
+        
+            LOG.error("Unable to parse " + value.toString() + " for type " + 
+                    value.getClass().toString());
             return null;
         }
     }
     
     private Object deserializeObjectId(Object value, StructTypeInfo valueTypeInfo) {
         ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
-	
+    
         List<Object> struct = new ArrayList<Object> (structNames.size());
         for (int i = 0 ; i < structNames.size() ; i++) {
             if (structNames.get(i).equals(OID)) {
@@ -294,24 +296,24 @@ public class BSONSerDe implements SerDe {
 
     @Override
     public Writable serialize(Object obj, ObjectInspector oi)
-	throws SerDeException {
+            throws SerDeException {
         return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, true));
     }
     
     public Object serializeObject(Object obj, ObjectInspector oi) {
         switch (oi.getCategory()) {
             case LIST:
-		return serializeList(obj, (ListObjectInspector) oi);
+                return serializeList(obj, (ListObjectInspector) oi);
             case MAP:
-		return serializeMap(obj, (MapObjectInspector) oi);
+                return serializeMap(obj, (MapObjectInspector) oi);
             case PRIMITIVE:
-		return serializePrimitive(obj, (PrimitiveObjectInspector) oi);
+                return serializePrimitive(obj, (PrimitiveObjectInspector) oi);
             case STRUCT:
-		return serializeStruct(obj, (StructObjectInspector) oi, false);
+                return serializeStruct(obj, (StructObjectInspector) oi, false);
             case UNION:
             default:
-		log.error("Cannot serialize " + obj.toString() + " of type " + obj.toString());
-		break;
+                LOG.error("Cannot serialize " + obj.toString() + " of type " + obj.toString());
+                break;
         }
         return null;
     }
@@ -320,11 +322,11 @@ public class BSONSerDe implements SerDe {
         BasicBSONList list = new BasicBSONList();
         List<?> field = oi.getList(obj);
         ObjectInspector elemOI = oi.getListElementObjectInspector();
-	
+    
         for (Object elem : field) {
             list.add(serializeObject(elem, elemOI));
         }
-	
+    
         return list;
     }
     
@@ -332,8 +334,8 @@ public class BSONSerDe implements SerDe {
      * Turn struct obj into a BasicBSONObject
      */
     private Object serializeStruct(Object obj, 
-				   StructObjectInspector structOI, 
-				   boolean isRow) {
+                   StructObjectInspector structOI, 
+                   boolean isRow) {
         if (!isRow && isObjectIdStruct(structOI)) {
             
             String objectIdString = "";
@@ -345,14 +347,14 @@ public class BSONSerDe implements SerDe {
             }
             return new ObjectId(objectIdString);
         } else {
-	    
+        
             BasicBSONObject bsonObject = new BasicBSONObject();
             // fields is the list of all variable names and information within the struct obj
             List<? extends StructField> fields = structOI.getAllStructFieldRefs();
-	    
+        
             for (int i = 0 ; i < fields.size() ; i++) {
                 StructField field = fields.get(i);
-		
+        
                 // get corresponding mongoDB field
                 String fieldName = isRow ? mongoFields.get(i) : field.getFieldName();
                 
@@ -361,7 +363,7 @@ public class BSONSerDe implements SerDe {
                 
                 bsonObject.put(fieldName, serializeObject(fieldObj, fieldOI));
             }
-	    
+        
             return bsonObject;
         }
     }
@@ -373,7 +375,7 @@ public class BSONSerDe implements SerDe {
      */
     private boolean isObjectIdStruct(StructObjectInspector structOI) {
         List<? extends StructField> fields = structOI.getAllStructFieldRefs();
-	
+    
         // If the struct are of incorrect size, then there's no need to create
         // a list of names
         if (fields.size() != 2) {
@@ -392,7 +394,7 @@ public class BSONSerDe implements SerDe {
     private Object serializeMap(Object obj, MapObjectInspector mapOI) {
         BasicBSONObject bsonObject = new BasicBSONObject();
         ObjectInspector mapValOI = mapOI.getMapValueObjectInspector();
-	
+    
         // Each value is guaranteed to be of the same type
         for (Entry<?, ?> entry : mapOI.getMap(obj).entrySet()) {        
             String field = entry.getKey().toString();
