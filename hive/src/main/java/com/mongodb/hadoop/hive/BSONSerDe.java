@@ -409,31 +409,31 @@ public class BSONSerDe implements SerDe {
     private Object serializePrimitive(Object obj, PrimitiveObjectInspector oi) {
         switch (oi.getPrimitiveCategory()) {
             case BOOLEAN:
-		return (Boolean) obj;
-	    case BYTE:
-		return (byte[]) obj;
+                return (Boolean) obj;
+            case BINARY:
+            case BYTE:
+                return (byte[]) obj;
             case DOUBLE:
             case FLOAT:
-		return (Double) obj;
+                return (Double) obj;
             case LONG:
             case SHORT:
             case INT:
-		if (obj instanceof LazyInteger) {
-		    return Integer.parseInt(((LazyInteger) obj).toString());
-		}
-		return (Integer) obj;
+                if (obj instanceof LazyInteger) {
+                    return Integer.parseInt(((LazyInteger) obj).toString());
+                }
+                return (Integer) obj;
             case STRING:
-		if (obj instanceof LazyString) {
-		    return ((LazyString) obj).toString();
-		}
-		return (String) obj;
+                if (obj instanceof LazyString) {
+                    return ((LazyString) obj).toString();
+                }
+                return (String) obj;
             case TIMESTAMP:
-		return new BSONTimestamp(((Long) (((Timestamp) obj).getTime() / 1000L)).intValue(), 1);
-            case BINARY:
+                return new BSONTimestamp(((Long) (((Timestamp) obj).getTime() / 1000L)).intValue(), 1);
             case UNKNOWN:
             case VOID:
             default:
-		return null;
+                return null;
         }
     }
 }
