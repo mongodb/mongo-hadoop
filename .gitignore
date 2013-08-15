@@ -43,3 +43,4 @@ streaming/language_support/python/pymongo_hadoop.egg-info/
 *.splits
 *.crc
 metastore_db/
+TempStatsStore/

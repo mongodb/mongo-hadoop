@@ -29,38 +29,42 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
     
     @Override
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, 
-								    JobConf conf,
-								    Reporter reporter)
-	throws IOException {
-	// split is of type 'MongoHiveInputSplit'
-	MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
-	
-	// return MongoRecordReader. Delegate is of type 'MongoInputSplit'
-	return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
+                                    JobConf conf,
+                                    Reporter reporter)
+            throws IOException {
+
+        // split is of type 'MongoHiveInputSplit'
+        MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
+        
+        // return MongoRecordReader. Delegate is of type 'MongoInputSplit'
+        return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
     }
 
     @Override
     public FileSplit[] getSplits(JobConf conf, int numSplits)
-	throws IOException {
-	try {
-	    MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
-	    final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
-	    InputSplit[] splitIns = splits.toArray(new InputSplit[0]);
-	    
-	    // wrap InputSplits in FileSplits so that 'getPath' doesn't produce an error (Hive bug)
-	    FileSplit[] wrappers = new FileSplit[splitIns.length];
-	    Path path = new Path(conf.get(MongoStorageHandler.TABLE_LOCATION));
-	    for (int i = 0; i < wrappers.length; i++) {
-		wrappers[i] = new MongoHiveInputSplit(splitIns[i], path);
-	    }
-	    
-	    return wrappers;
-	} catch (SplitFailedException spfe) {
-	    // split failed because no namespace found (so the corresponding collection doesn't exist)
-	    return new MongoHiveInputSplit[0];
-	} catch (Exception e) {
-	    throw new IOException(e);
-	}
+            throws IOException {
+        try {
+            MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
+            final List<org.apache.hadoop.mapreduce.InputSplit> splits = 
+                splitterImpl.calculateSplits();
+            InputSplit[] splitIns = splits.toArray(new InputSplit[0]);
+            
+            // wrap InputSplits in FileSplits so that 'getPath' 
+            // doesn't produce an error (Hive bug)
+            FileSplit[] wrappers = new FileSplit[splitIns.length];
+            Path path = new Path(conf.get(MongoStorageHandler.TABLE_LOCATION));
+            for (int i = 0; i < wrappers.length; i++) {
+                wrappers[i] = new MongoHiveInputSplit(splitIns[i], path);
+            }
+            
+            return wrappers;
+        } catch (SplitFailedException spfe) {
+            // split failed because no namespace found 
+            // (so the corresponding collection doesn't exist)
+            return new MongoHiveInputSplit[0];
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
     }
     
     /*
@@ -72,48 +76,48 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
         private InputSplit delegate;
         private Path path;
 
-	MongoHiveInputSplit() {
-	    this(new MongoInputSplit());
-	}
-	
-	MongoHiveInputSplit(InputSplit delegate) {
-	    this(delegate, null);
-	}
+        MongoHiveInputSplit() {
+            this(new MongoInputSplit());
+        }
         
+        MongoHiveInputSplit(InputSplit delegate) {
+            this(delegate, null);
+        }
+            
         MongoHiveInputSplit(InputSplit delegate, Path path) {
             super(path, 0, 0, (String[]) null);
             this.delegate = delegate;
             this.path = path;
         }
-	
+
         public InputSplit getDelegate() {
-	    return delegate;
+        return delegate;
+        }
+            
+        @Override
+        public long getLength() {
+            return 1L;
         }
         
         @Override
-	public long getLength() {
-            return 1L;
-        }
-	
-        @Override
-	public void write(DataOutput out) throws IOException {
+        public void write(DataOutput out) throws IOException {
             Text.writeString(out, path.toString());
             delegate.write(out);
         }
-	
+        
         @Override
-	public void readFields(DataInput in) throws IOException {
+        public void readFields(DataInput in) throws IOException {
             path = new Path(Text.readString(in));
             delegate.readFields(in);
         }
-	
+        
         @Override
-	public String toString() {
+        public String toString() {
             return delegate.toString();
         }
-	
+        
         @Override
-	public Path getPath() {
+        public Path getPath() {
             return path;
         }
     }

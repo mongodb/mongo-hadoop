@@ -11,6 +11,8 @@
 
 # location of data file used in testing
 export TEST_DATA_FILE="./test_data.txt"
+# directory containing BSON file to be used for testing -- CHANGE ME --
+export TEST_BSON_FILE_PATH="/Users/danielalabi/mongo-hadoop-sweet/testing/hive_tests/bson_test/"
 # schema of the $TEST_DATA_FILE -- should be in hive schema format
 export HIVE_TEST_SCHEMA="(id int, name string, age int)"
 # Type of data file. For example, sequencefile, rcfile, textfile
@@ -25,7 +27,7 @@ export MONGO_TEST_URI="mongodb://localhost:27017/test.mongo_hive_test"
 #   specify a comma-delimited serde properties mapping for test data file
 export SERDE_PROPERTIES="'mongo.columns.mapping'='_id, name, age'"
 # run tests in "verbose" mode; 0 -> False, 1 -> True
-export VERBOSE_TESTS=0
+export VERBOSE_TESTS=1
 
 # path of "mongod" executable
 export MONGOD="mongod"

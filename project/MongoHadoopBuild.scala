@@ -322,12 +322,17 @@ object MongoHadoopBuild extends Build {
 
   def hiveDependency(hiveVersion: String): () => Seq[ModuleID] = {
     () => {
-      println("*** Adding Hive Dependency for Version '%s'".format(hiveVersion))
+      if (hiveVersion == "") {
+        println("*** Sorry, no Hive support for cdh3")
+        Seq()
+      } else {
+        println("*** Adding Hive Dependency for Version '%s'".format(hiveVersion))
 
-      Seq(
-        "org.apache.hive" % "hive-serde" % hiveVersion, 
-        "org.apache.hive" % "hive-exec" % hiveVersion
-      )
+        Seq(
+          "org.apache.hive" % "hive-serde" % hiveVersion, 
+          "org.apache.hive" % "hive-exec" % hiveVersion
+        )
+      }
     }
   }
 

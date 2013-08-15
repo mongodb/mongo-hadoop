@@ -28,7 +28,7 @@ import com.mongodb.hadoop.io.BSONWritable;
  */
 @SuppressWarnings("deprecation")
 public class HiveBSONFileOutputFormat<K, V> 
-    extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
+            extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
     
     private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
     
@@ -46,7 +46,7 @@ public class HiveBSONFileOutputFormat<K, V>
      */
     @Override
     public RecordWriter getHiveRecordWriter(JobConf jc, 
-	        Path fileOutputPath,
+            Path fileOutputPath,
             Class<? extends Writable> valueClass, 
             boolean isCompressed, 
             Properties tableProperties,
@@ -68,7 +68,8 @@ public class HiveBSONFileOutputFormat<K, V>
         
         FSDataOutputStream splitFile = null;
         if (MongoConfigUtil.getBSONOutputBuildSplits(jc)) {
-            Path splitPath = new Path(fileOutputPath.getParent(), "." + fileOutputPath.getName() + ".splits");
+            Path splitPath = new Path(fileOutputPath.getParent(), "." + 
+                    fileOutputPath.getName() + ".splits");
             splitFile = fs.create(splitPath);
         }
         
@@ -79,23 +80,23 @@ public class HiveBSONFileOutputFormat<K, V>
     
     @SuppressWarnings("deprecation")
     public class HiveBSONFileRecordWriter<K, V> 
-	extends BSONFileRecordWriter<K, V> 
-	implements RecordWriter {
-	
-	public HiveBSONFileRecordWriter(FSDataOutputStream outFile,
-					FSDataOutputStream splitFile, long splitSize) {
-	    super(outFile, splitFile, splitSize);
-	}
-	
-	@Override
-	public void close(boolean toClose) throws IOException {
-	    super.close(toClose ? (TaskAttemptContext) new Object() : (TaskAttemptContext) null);
-	}
-	
-	@Override
-	@SuppressWarnings("unchecked")
-	public void write(Writable value) throws IOException {
-	    super.write(null, (BSONWritable) value);
-	}
+            extends BSONFileRecordWriter<K, V> 
+            implements RecordWriter {
+    
+        public HiveBSONFileRecordWriter(FSDataOutputStream outFile,
+                        FSDataOutputStream splitFile, long splitSize) {
+            super(outFile, splitFile, splitSize);
+        }
+        
+        @Override
+        public void close(boolean toClose) throws IOException {
+            super.close((TaskAttemptContext) null);
+        }
+        
+        @Override
+        @SuppressWarnings("unchecked")
+        public void write(Writable value) throws IOException {
+            super.write(null, (BSONWritable) value);
+        }
     }
 }
