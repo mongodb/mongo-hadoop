@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -30,6 +31,9 @@ import com.mongodb.hadoop.io.BSONWritable;
 public class BSONSerDe implements SerDe {
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
     
+    // ObjectId should be translated to a struct, these are
+    // the pre-defined field names and values identifying
+    // that struct as an ObjectId struct
     private static final int BSON_TYPE = 8;
     private static final String OID = "oid";
     
@@ -39,6 +43,7 @@ public class BSONSerDe implements SerDe {
     public List<String> mongoFields;
     public List<TypeInfo> columnTypes;
     
+    // A row represents a row in the Hive table 
     private List<Object> row = new ArrayList<Object>();
     
     /**
@@ -180,11 +185,17 @@ public class BSONSerDe implements SerDe {
             return deserializeObjectId(value, valueTypeInfo);
         } else {
         
-            Map<Object, Object> map = (Map<Object, Object>) value;
+            Map<Object, Object> anyCase = (Map<Object, Object>) value;
+            Map<Object, Object> map = new HashMap<Object, Object>(anyCase.size());
+            for (Entry<Object, Object> e : anyCase.entrySet()) {
+                map.put(((String) e.getKey()).toLowerCase(), e.getValue());
+            }
+
             ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
             ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
-        
+                        
             List<Object> struct = new ArrayList<Object> (structNames.size());
+                        
             for (int i = 0 ; i < structNames.size() ; i++) {
                 struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
             }
