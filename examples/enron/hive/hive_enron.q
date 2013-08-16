@@ -24,7 +24,7 @@ CREATE TABLE raw(
     >
 )
 STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
-LOCATION '@{INPUT}/messagesNew/';
+LOCATION '${INPUT}/messagesNew/';
 
 
 CREATE TABLE send_recip (
@@ -72,7 +72,7 @@ CREATE TABLE send_recip_counted (
 )
 STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
 WITH SERDEPROPERTIES ("mongo.columns.mapping"="_id,count")
-LOCATION '@{OUTPUT}/outs/';
+LOCATION '${OUTPUT}/outs/';
 
 -- Final output with the correct format
 INSERT INTO TABLE send_recip_counted
