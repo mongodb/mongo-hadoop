@@ -30,14 +30,13 @@ public class HiveMongoOutputFormat implements HiveOutputFormat<BSONWritable, BSO
                         boolean isCompressed,
                         Properties tableProperties,
                         Progressable progress) throws IOException {
-    return new HiveMongoRecordWriter(MongoConfigUtil.getOutputCollections(conf), conf);
+        return new HiveMongoRecordWriter(MongoConfigUtil.getOutputCollections(conf), conf);
     }
     
     
     @Override
     public void checkOutputSpecs(FileSystem arg0, JobConf arg1)
             throws IOException {
-            // TODO Auto-generated method stub
     }
     
     

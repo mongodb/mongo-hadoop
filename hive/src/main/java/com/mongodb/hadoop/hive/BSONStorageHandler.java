@@ -4,7 +4,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import com.mongodb.hadoop.mapred.*;
+import com.mongodb.hadoop.mapred.BSONFileInputFormat;
+import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
 
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
@@ -12,7 +13,6 @@ import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
 
-import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
 
 public class BSONStorageHandler extends DefaultStorageHandler {
 

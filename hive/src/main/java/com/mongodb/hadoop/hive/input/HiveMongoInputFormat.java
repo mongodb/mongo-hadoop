@@ -31,23 +31,26 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, 
                                     JobConf conf,
                                     Reporter reporter)
-    throws IOException {
-    // split is of type 'MongoHiveInputSplit'
-    MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
-    
-    // return MongoRecordReader. Delegate is of type 'MongoInputSplit'
-    return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
+            throws IOException {
+
+        // split is of type 'MongoHiveInputSplit'
+        MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
+        
+        // return MongoRecordReader. Delegate is of type 'MongoInputSplit'
+        return new MongoRecordReader((MongoInputSplit) mhis.getDelegate());
     }
 
     @Override
     public FileSplit[] getSplits(JobConf conf, int numSplits)
-    throws IOException {
+            throws IOException {
         try {
             MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
-            final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
+            final List<org.apache.hadoop.mapreduce.InputSplit> splits = 
+                splitterImpl.calculateSplits();
             InputSplit[] splitIns = splits.toArray(new InputSplit[0]);
             
-            // wrap InputSplits in FileSplits so that 'getPath' doesn't produce an error (Hive bug)
+            // wrap InputSplits in FileSplits so that 'getPath' 
+            // doesn't produce an error (Hive bug)
             FileSplit[] wrappers = new FileSplit[splitIns.length];
             Path path = new Path(conf.get(MongoStorageHandler.TABLE_LOCATION));
             for (int i = 0; i < wrappers.length; i++) {
@@ -56,7 +59,8 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
             
             return wrappers;
         } catch (SplitFailedException spfe) {
-            // split failed because no namespace found (so the corresponding collection doesn't exist)
+            // split failed because no namespace found 
+            // (so the corresponding collection doesn't exist)
             return new MongoHiveInputSplit[0];
         } catch (Exception e) {
             throw new IOException(e);
@@ -90,29 +94,29 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
         return delegate;
         }
             
-            @Override
+        @Override
         public long getLength() {
             return 1L;
         }
         
-            @Override
+        @Override
         public void write(DataOutput out) throws IOException {
             Text.writeString(out, path.toString());
             delegate.write(out);
         }
         
-            @Override
+        @Override
         public void readFields(DataInput in) throws IOException {
             path = new Path(Text.readString(in));
             delegate.readFields(in);
         }
         
-            @Override
+        @Override
         public String toString() {
             return delegate.toString();
         }
         
-            @Override
+        @Override
         public Path getPath() {
             return path;
         }
