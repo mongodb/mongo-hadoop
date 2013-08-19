@@ -90,7 +90,7 @@ public class HiveBSONFileOutputFormat<K, V>
         
         @Override
         public void close(boolean toClose) throws IOException {
-            super.close(toClose ? (TaskAttemptContext) new Object() : (TaskAttemptContext) null);
+            super.close((TaskAttemptContext) null);
         }
         
         @Override

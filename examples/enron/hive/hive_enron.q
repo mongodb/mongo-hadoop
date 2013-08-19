@@ -6,26 +6,11 @@
 -- Get the headers struct, which contains the "from" and "to".
 -- except the words "from", "to", and "date" are reserved in Hive 
 CREATE TABLE raw(
-    headers STRUCT<
-        x_cc:STRING, 
-        anotherfrom:STRING,
-        subject : STRING,
-        x_folder : STRING,
-        content_transfer_encoding : STRING,
-        x_bcc : STRING,
-        anotherto : STRING,
-        x_origin : STRING,
-        x_filename : STRING,
-        x_from : STRING,
-        anotherdate : STRING,
-        x_to : STRING,
-        message_id : STRING,
-        content_type : STRING,
-        mime_version : STRING
-    >
+    h STRUCT<hivefrom:STRING,hiveto:STRING>
 )
 STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
-LOCATION '${INPUT}/messagesNew/';
+WITH SERDEPROPERTIES("mongo.columns.mapping"="{'h.hivefrom':'headers.From','h.hiveto':'headers.To'}")
+LOCATION '${INPUT}';
 
 
 CREATE TABLE send_recip (
@@ -33,16 +18,16 @@ CREATE TABLE send_recip (
     t_array ARRAY<STRING>
 );
 
--- Strip the white space from the "anotherto" string
+-- Strip the white space from the "hiveto" string
 -- Then split the comma delimited string into an array of strings
 INSERT OVERWRITE TABLE send_recip 
 SELECT 
-    headers.anotherfrom AS f,
-    split(headers.anotherto, "\\s*,\\s*") 
+    h.hivefrom AS f,
+    split(h.hiveto, "\\s*,\\s*") 
         AS t_array
 FROM raw
-WHERE headers IS NOT NULL 
-    AND headers.anotherto IS NOT NULL;
+WHERE h IS NOT NULL 
+    AND h.hiveto IS NOT NULL;
 
 
 CREATE TABLE send_recip_explode (
@@ -72,8 +57,8 @@ CREATE TABLE send_recip_counted (
     count INT
 )
 STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
-WITH SERDEPROPERTIES ("mongo.columns.mapping"="_id,count")
-LOCATION '${OUTPUT}/outs/';
+WITH SERDEPROPERTIES ("mongo.columns.mapping"="{'id':'_id'}")
+LOCATION '${OUTPUT}';
 
 -- Final output with the correct format
 INSERT INTO TABLE send_recip_counted
