@@ -1,8 +1,8 @@
-#Mongo-Hadoop Adapter
+#MongoDB Connector for Hadoop
 
 ##Purpose
 
-The mongo-hadoop adapter is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem. 
+The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem. 
 
 Current release: **1.1**
 
@@ -11,9 +11,9 @@ Current release: **1.1**
 * Can create data splits to read from standalone, replica set, or sharded configurations
 * Source data can be filtered with queries using the MongoDB query language
 * Supports Hadoop Streaming, to allow job code to be written in any language (python, ruby, nodejs currently supported)
-* Can read data from MongoDB backup files residing on s3, hdfs, or local filesystems
-* Can write data out in .bson format, which can then be imported to any mongo database with `mongorestore`
-* Work with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
+* Can read data from MongoDB backup files residing on S3, HDFS, or local filesystems
+* Can write data out in .bson format, which can then be imported to any MongoDB database with `mongorestore`
+* Works with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
 
 ## Download
 
@@ -67,7 +67,7 @@ or for Hadoop 1.0.x:
 
     hadoopRelease in ThisBuild := "1.0"
 
-To figure out which value you need to set in this file, refer to the list of distributions below.
+To determine which value you need to set in this file, refer to the list of distributions below.
 Then run `./sbt package` to build the jars, which will be generated in the `target/` directory.
 
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the following locations, depending on which Hadoop release you are using:
@@ -111,14 +111,14 @@ After successfully building, you must copy the jars to the lib directory on each
    
    Build using `"0.21"` or `"0.21.x"`
 
-* ###Cloudera Hadoop Release 3
+* ###Cloudera Distribution for Hadoop Release 3
     This is derived from Apache Hadoop 0.20.2 and includes custom patches.
     
    Includes support for streaming and Pig 0.8.1.
 
    Build with `"cdh3"`
 
-* ###Cloudera Hadoop Release 4
+* ###Cloudera Distribution for Hadoop Release 4
  
    This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1 is still fully compatible.
    
@@ -146,17 +146,17 @@ After successfully building, you must copy the jars to the lib directory on each
 
 Amazon Elastic MapReduce is a managed Hadoop framework that allows you to submit jobs to a cluster of customizable size and configuration, without needing to deal with provisioning nodes and installing software.
 
-Using EMR with mongo-hadoop allows you to run MapReduce jobs against mongo backup files stored in S3.
+Using EMR with the MongoDB Connector for Hadoop allows you to run MapReduce jobs against MongoDB backup files stored in S3.
 
-Submitting jobs using mongo-hadoop to EMR simply requires that the bootstrap actions fetch the dependencies (mongoDB java driver, mongo-hadoop-core libs, etc.) and place them into the hadoop distributions `lib` folders.
+Submitting jobs using the MongoDB Connector for Hadoop to EMR simply requires that the bootstrap actions fetch the dependencies (mongoDB java driver, mongo-hadoop-core libs, etc.) and place them into the hadoop distributions `lib` folders.
 
 For a full example (running the enron example on Elastic MapReduce) please see [here](examples/elastic-mapreduce/README.md).
 
 ## Usage with Pig
 
-[Documentation on Pig with Mongo-Hadoop](pig/README.md).
+[Documentation on Pig with the MongoDB Connector for Hadoopp](pig/README.md).
 
-For examples on using Pig with mongo-hadoop, also refer to the [examples section](examples/README.md).
+For examples on using Pig with the MongoDB Connector for Hadoop, also refer to the [examples section](examples/README.md).
 
 ## Notes for Contributors
 
