@@ -11,9 +11,9 @@ Current release: **1.1**
 * Can create data splits to read from standalone, replica set, or sharded configurations
 * Source data can be filtered with queries using the MongoDB query language
 * Supports Hadoop Streaming, to allow job code to be written in any language (python, ruby, nodejs currently supported)
-* Can read data from MongoDB backup files residing on s3, hdfs, or local filesystems
+* Can read data from MongoDB backup files residing on S3, HDFS, or local filesystems
 * Can write data out in .bson format, which can then be imported to any MongoDB database with `mongorestore`
-* Work with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
+* Works with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
 
 ## Download
 
@@ -111,14 +111,14 @@ After successfully building, you must copy the jars to the lib directory on each
    
    Build using `"0.21"` or `"0.21.x"`
 
-* ###Cloudera Hadoop Release 3
+* ###Cloudera Distribution for Hadoop Release 3
     This is derived from Apache Hadoop 0.20.2 and includes custom patches.
     
    Includes support for streaming and Pig 0.8.1.
 
    Build with `"cdh3"`
 
-* ###Cloudera Hadoop Release 4
+* ###Cloudera Distribution for Hadoop Release 4
  
    This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1 is still fully compatible.
    
