@@ -13,6 +13,7 @@ import os
 import time
 import socket
 import random 
+import json
 
 from pymongo import MongoClient
 
@@ -25,7 +26,7 @@ from thrift.protocol import TBinaryProtocol
 
 # get/set the variables representing environment variables:
 # * hivePort
-# * testDataFile
+# * textDataFile
 # * mongoTestURI
 # * testHiveTblName
 # * testHiveTblSchema
@@ -40,15 +41,15 @@ from thrift.protocol import TBinaryProtocol
 # * verbose
 hivePort = int(os.environ.get("HIVE_PORT", 10000))
 mongoPort = int(os.environ.get("MONGOD_PORT", 27017))
-testDataFile = None
+textDataFile = None
 testHiveTblSchema = None
 storageHandlerPath = None
 testBSONFilePath = None
 serdeProperties = None
 hostname = socket.gethostname()
-testHiveTblName = os.environ.get("HIVE_TEST_TABLE", "hive_test")
-testHiveFileType = os.environ.get("HIVE_TEST_FILE_TYPE", "textfile")
-testHiveFieldsDelim = os.environ.get("HIVE_TEST_DELIM", '\t')
+testHiveTblName = os.environ.get("HDFS_TEST_TABLE", "hive_test")
+testHiveFileType = os.environ.get("HDFS_TEST_FILE_TYPE", "textfile")
+testHiveFieldsDelim = os.environ.get("HDFS_TEST_DELIM", '\t')
 testMongoTblName = os.environ.get("MONGO_TEST_TABLE", "mongo_test")
 testBSONTblName = os.environ.get("BSON_TEST_TABLE", "bson_test")
 testMongoPName = os.environ.get("MSH_PACKAGE_NAME", 
@@ -59,10 +60,10 @@ serdeProperties = os.environ.get("SERDE_PROPERTIES", "''=''")
 verbose = bool(int(os.environ.get("VERBOSE_TESTS", 0)))
 
 try:
-    testDataFile = os.environ.get("TEST_DATA_FILE")
-    testHiveTblSchema = os.environ.get("HIVE_TEST_SCHEMA")
-    testBSONFilePath = os.environ.get("TEST_BSON_FILE_PATH")
-    storageHandlerPath = os.environ.get("MSH_PATH")
+    textDataFile = os.environ.get("TEXT_TEST_PATH")
+    testBSONFilePath = os.environ.get("BSON_TEST_PATH")
+    testHiveTblSchema = os.environ.get("TEST_SCHEMA")
+    storageHandlerPath = os.environ.get("PACKAGE_PATH")
     mongoTestURI = os.environ.get("MONGO_TEST_URI")
 except KeyError:
     print "You must set ALL these environment variables:"
@@ -154,6 +155,12 @@ class Helpers:
                                     testHiveTblSchema, testHiveFieldsDelim,
                                     testHiveFileType)
         
+    @staticmethod
+    def loadDataFromDirectory(client):
+        loadPath = ""
+        cmd = ["INSERT OVERWRITE DIRECTORY", loadPath,
+               ""]
+
     """
     Transfer data from 'fromTable' into 'toTable'
     """
@@ -170,7 +177,7 @@ class Helpers:
     def loadDataIntoHDFSHiveTable(client):
         Helpers.createEmptyHDFSHiveTable(client)
         # then load data into the new table
-        cmd = ["LOAD DATA LOCAL INPATH", Helpers.quote(testDataFile),
+        cmd = ["LOAD DATA LOCAL INPATH", Helpers.quote(textDataFile),
                "INTO TABLE", testHiveTblName]
         Helpers.executeQuery(client, cmd)
 
@@ -300,6 +307,7 @@ class Helpers:
         query = " ".join(lscmd)
         if verbose:
             print "executing", query
+        
         client.execute(query)
     
     """
@@ -501,10 +509,15 @@ class TestHDFSToMongoDBTableWithOptions(unittest.TestCase):
         self.assertIsNotNone(colsMap)
         # first remove '' around colsMap
         self.assertTrue(colsMap[0] == "'" and colsMap[len(colsMap)-1] == "'")
-        
-        lsMap = [each.strip() for each in colsMap[1:len(colsMap)-1].split(",")]
+        # load the JSON mapping into a dictionary using the 'simplejson' module
+        lsMap = json.loads(colsMap[1:len(colsMap)-1])
+
+        mongoTrans = lsMap.values()
         docKeys = doc.keys()
-        self.assertTrue(set(docKeys) == set(lsMap))
+
+        # make sure that each key specified is in the MongoDB doc
+        for k in mongoTrans:
+            self.assertTrue(k in docKeys)
         
     def testCountSameTable(self):
         collCount = Helpers.getCollectionCount(self.mongoc)
@@ -565,8 +578,7 @@ class TestBSONFileToHiveTable(unittest.TestCase):
         
         self.assertEqual(len(hiveData), len(bsonData))
         for i in range(len(hiveData)):
-            self.assertEqual(hiveData[i], bsonData[i])
-        
+            self.assertEqual(hiveData[i], bsonData[i])        
         
 if __name__ == "__main__":
     unittest.main()

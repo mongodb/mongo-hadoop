@@ -32,7 +32,6 @@ public class HiveBSONFileOutputFormat<K, V>
     
     private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
     
-
     /**
      * 
      * create the final output file
@@ -52,15 +51,6 @@ public class HiveBSONFileOutputFormat<K, V>
             Properties tableProperties,
             Progressable progress) throws IOException {
         
-        if (jc.get("mapred.output.file") != null) {
-            fileOutputPath = new Path(jc.get("mapred.output.file"));
-        } else {
-            fileOutputPath = new Path(fileOutputPath, fileOutputPath.getName());
-                                                                                                
-            if (!fileOutputPath.toString().endsWith(".bson")) {
-                fileOutputPath = fileOutputPath.suffix(".bson");
-            }
-        }
         LOG.info("Output going into " + fileOutputPath);
 
         FileSystem fs = fileOutputPath.getFileSystem(jc);
