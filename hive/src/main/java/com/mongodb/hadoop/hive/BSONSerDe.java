@@ -22,11 +22,12 @@ import org.apache.hadoop.hive.serde2.lazy.LazyString;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.typeinfo.*;
 import org.apache.hadoop.io.Writable;
-
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.types.*;
+
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.util.JSON;
 
 public class BSONSerDe implements SerDe {
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
@@ -40,8 +41,10 @@ public class BSONSerDe implements SerDe {
     private StructTypeInfo docTypeInfo;
     private ObjectInspector docOI;
     public List<String> columnNames;
-    public List<String> mongoFields;
     public List<TypeInfo> columnTypes;
+    
+    // maps hive columns to fields in a MongoDB collection
+    public Map<String, String> hiveToMongo;    
     
     // A row represents a row in the Hive table 
     private List<Object> row = new ArrayList<Object>();
@@ -49,26 +52,63 @@ public class BSONSerDe implements SerDe {
     /**
      * Finds out the information of the table, including the column names and types. 
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void initialize(Configuration conf, Properties tblProps)
-    throws SerDeException {
+        throws SerDeException {
         // regex used to split column names between commas
         String splitCols = "\\s*,\\s*";
         
         // Get the table column names
         String colNamesStr = tblProps.getProperty(serdeConstants.LIST_COLUMNS);
         columnNames = Arrays.asList(colNamesStr.split(splitCols));
-
-        // Get the Mongo collection column mapping
+        
+        // Get mappings specified by the user
         if (tblProps.containsKey(MongoStorageHandler.MONGO_COLS)) {
             String mongoFieldsStr = tblProps.getProperty(MongoStorageHandler.MONGO_COLS);
-            mongoFields = Arrays.asList(mongoFieldsStr.split(splitCols));
-        } else {
-            mongoFields = columnNames;
-        }
-        
-        if (columnNames.size() != mongoFields.size()) {
-            throw new SerDeException("'mongo.columns.mapping' must be of same length as table columns");
+            Map<String, String> rules = ((BasicBSONObject) JSON.parse(mongoFieldsStr)).toMap();
+            
+            hiveToMongo = new HashMap<String, String>();
+            
+            // explode/infer shorter mappings
+            for (Entry e : rules.entrySet()) {
+                String key = (String) e.getKey();
+                String value = (String) e.getValue(); 
+                
+                if ( hiveToMongo.containsKey(key) && !hiveToMongo.get(key).equals(value)) {
+                    throw new SerDeException("Ambiguous rule definition for " + key);                    
+                } else {
+                    hiveToMongo.put(key, value);
+                }
+                
+                if (key.contains(".")) {
+                    // split by "."
+                    String[] miniKeys = key.split("\\.");
+                    String[] miniValues = value.split("\\.");
+                    
+                    if (miniKeys.length != miniValues.length) {
+                        throw new SerDeException(key + " should be of same depth as " + value);
+                    }
+                    
+                    int i = 0; 
+                    String curKey = "", curValue = "";
+                    while ( i < miniKeys.length-1 ) {
+                        curKey += miniKeys[i];
+                        curValue += miniValues[i];
+                        
+                        if ( hiveToMongo.containsKey(curKey) && !hiveToMongo.get(curKey).equals(curValue)) {
+                            throw new SerDeException("Ambiguous rule definition for " + curKey);
+                        } else {
+                            hiveToMongo.put(curKey, curValue);
+                        }
+                        
+                        curKey += ".";
+                        curValue += ".";
+                        
+                        i += 1;
+                    }                    
+                }                
+            }
         }
         
         // Get the table column types
@@ -101,17 +141,6 @@ public class BSONSerDe implements SerDe {
                                      "requires a BSONWritable object, not" + writ.getClass());
         }
         
-        // Only lower case names
-        BSONObject lower = new BasicBSONObject();
-        for (Entry<String, Object> entry : ((BasicBSONObject) doc).entrySet()) {
-            if (lower.containsField(entry.getKey().toLowerCase())) {
-                LOG.error("Fields should only be lower cased and not duplicated: " 
-                          + entry.getKey());
-            } else {
-                lower.put(entry.getKey().toLowerCase(), entry.getValue());
-            }
-        }
-        
         // For each field, cast it to a HIVE type and add to the current row
         Object value = null;
         List<String> structFieldNames = docTypeInfo.getAllStructFieldNames();
@@ -119,8 +148,16 @@ public class BSONSerDe implements SerDe {
             String fieldName = structFieldNames.get(i);
             try {
                 TypeInfo fieldTypeInfo = docTypeInfo.getStructFieldTypeInfo(fieldName);
-                value = deserializeField(lower.get(mongoFields.get(i)), 
-                            fieldTypeInfo);                
+                
+                // get the corresponding field name in MongoDB
+                String fieldTrans;
+                if (hiveToMongo == null) {
+                    fieldTrans = fieldName;
+                } else {
+                    fieldTrans = hiveToMongo.containsKey(fieldName) ? hiveToMongo.get(fieldName) : fieldName;
+                }
+                
+                value = deserializeField(doc, doc.get(fieldTrans), fieldTypeInfo, fieldName);                  
             } catch (Exception e) {
                 value = null;
             }
@@ -132,29 +169,30 @@ public class BSONSerDe implements SerDe {
     
     /**
      * For a given Object value and its supposed TypeInfo
-     * determine and return its Java object representation
+     * determine and return its Hive object representation
      * 
      * Map in here must be of the same type, so instead an embedded doc
      * becomes a struct instead. ***
+     * 
      */
-    public Object deserializeField(Object value, TypeInfo valueTypeInfo) {
+    public Object deserializeField(Object whole, Object value, TypeInfo valueTypeInfo, String ext) {
         if (value != null) {
-        switch (valueTypeInfo.getCategory()) {
-            case LIST:
-                return deserializeList(value, (ListTypeInfo) valueTypeInfo);
-            case MAP:
-                return deserializeMap(value, (MapTypeInfo) valueTypeInfo);
-            case PRIMITIVE:
-                return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
-            case STRUCT:
-                // Supports both struct and map, but should use struct 
-                return deserializeStruct(value, (StructTypeInfo) valueTypeInfo);
-            case UNION:
-                // Mongo also has no union
-                return null;
-            default:
-                // Must be an unknown (a Mongo specific type)
-                return deserializeMongoType(value);
+            switch (valueTypeInfo.getCategory()) {
+                case LIST:
+                    return deserializeList(whole, value, (ListTypeInfo) valueTypeInfo, ext);
+                case MAP:
+                    return deserializeMap(whole, value, (MapTypeInfo) valueTypeInfo, ext);
+                case PRIMITIVE:
+                    return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
+                case STRUCT:
+                    // Supports both struct and map, but should use struct 
+                    return deserializeStruct(whole, value, (StructTypeInfo) valueTypeInfo, ext);
+                case UNION:
+                    // Mongo also has no union
+                    return null;
+                default:
+                    // Must be an unknown (a Mongo specific type)
+                    return deserializeMongoType(value);
             }
         }
         return null;
@@ -163,12 +201,12 @@ public class BSONSerDe implements SerDe {
     /**
      * Deserialize a List with the same listElemTypeInfo for its elements
      */
-    private Object deserializeList(Object value, ListTypeInfo valueTypeInfo) {
+    private Object deserializeList(Object whole, Object value, ListTypeInfo valueTypeInfo, String ext) {
         BasicBSONList list = (BasicBSONList) value;
         TypeInfo listElemTypeInfo = valueTypeInfo.getListElementTypeInfo();
     
         for (int i = 0 ; i < list.size() ; i++) {
-            list.set(i, deserializeField(list.get(i), listElemTypeInfo));
+            list.set(i, deserializeField(whole, list.get(i), listElemTypeInfo, ext));
         }
         return list.toArray();
     }
@@ -180,38 +218,74 @@ public class BSONSerDe implements SerDe {
      * @return
      */        
     @SuppressWarnings("unchecked")
-    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo) {    
+    private Object deserializeStruct(Object whole, Object value, StructTypeInfo valueTypeInfo, String ext) {    
         if (value instanceof ObjectId) {
             return deserializeObjectId(value, valueTypeInfo);
         } else {
-        
-            Map<Object, Object> anyCase = (Map<Object, Object>) value;
-            Map<Object, Object> map = new HashMap<Object, Object>(anyCase.size());
-            for (Entry<Object, Object> e : anyCase.entrySet()) {
-                map.put(((String) e.getKey()).toLowerCase(), e.getValue());
-            }
-
+            Map<Object, Object> map = (Map<Object, Object>) value;
+            
             ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
             ArrayList<TypeInfo> structTypes = valueTypeInfo.getAllStructFieldTypeInfos();
                         
             List<Object> struct = new ArrayList<Object> (structNames.size());
-                        
+            
             for (int i = 0 ; i < structNames.size() ; i++) {
-                struct.add(deserializeField(map.get(structNames.get(i)), structTypes.get(i)));
+                String fieldName = structNames.get(i);
+                
+                // fullFieldName -> prefixed by parent struct names. 
+                // For example, in {"wife":{"name":{"first":"Sydney"}}},
+                // the fullFieldName of "first" is "wife.name.first"
+                String fullFieldName = ext.length() == 0 ? fieldName : (ext + "." + structNames.get(i));
+                
+                // get the corresponding field name in MongoDB
+                String fieldTrans;
+                if (hiveToMongo == null) {
+                    fieldTrans = fullFieldName;
+                } else {
+                    if (hiveToMongo.containsKey(fullFieldName)) {
+                        fieldTrans = hiveToMongo.get(fullFieldName);
+                    } else {
+                        fieldTrans = ext.length() > 0 && hiveToMongo.containsKey(ext) ? 
+                                              (hiveToMongo.get(ext)+"."+fieldName) : 
+                                              fullFieldName;
+                    }
+                }
+                    
+                // traverse the document 'whole' and return the value of 'fieldTrans'
+                Object in = traverseDocument(whole, fieldTrans);
+
+                struct.add(deserializeField(whole, in, structTypes.get(i), fullFieldName));
             }
             return struct;
+        }
+    }
+    
+    /*
+     * traverse the MongoDB document, looking for the field 'fieldTrans'
+     */
+    private Object traverseDocument(Object o, String fieldTrans) {
+        BSONObject b = (BSONObject) o;
+        int dotPos = fieldTrans.indexOf(".");
+        
+        if (dotPos == -1) {
+            return b.get(fieldTrans);
+        } else {
+            String first = fieldTrans.substring(0, dotPos);
+            Object inner = b.get(first);
+            
+            return traverseDocument(inner, fieldTrans.substring(dotPos+1));
         }
     }
     
     /**
      * Also deserialize a Map with the same mapElemTypeInfo
      */
-    private Object deserializeMap(Object value, MapTypeInfo valueTypeInfo) {
+    private Object deserializeMap(Object whole, Object value, MapTypeInfo valueTypeInfo, String ext) {
         BasicBSONObject b = (BasicBSONObject) value;
         TypeInfo mapValueTypeInfo = valueTypeInfo.getMapValueTypeInfo();
         
         for (Entry<String, Object> entry : b.entrySet()) {
-            b.put(entry.getKey(), deserializeField(entry.getValue(), mapValueTypeInfo));
+            b.put(entry.getKey(), deserializeField(whole, entry.getValue(), mapValueTypeInfo, ext));
         }
     
         return b.toMap();
@@ -308,19 +382,19 @@ public class BSONSerDe implements SerDe {
     @Override
     public Writable serialize(Object obj, ObjectInspector oi)
             throws SerDeException {
-        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, true));
+        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
     }
     
-    public Object serializeObject(Object obj, ObjectInspector oi) {
+    public Object serializeObject(Object obj, ObjectInspector oi, String ext) {
         switch (oi.getCategory()) {
             case LIST:
-                return serializeList(obj, (ListObjectInspector) oi);
+                return serializeList(obj, (ListObjectInspector) oi, ext);
             case MAP:
-                return serializeMap(obj, (MapObjectInspector) oi);
+                return serializeMap(obj, (MapObjectInspector) oi, ext);
             case PRIMITIVE:
                 return serializePrimitive(obj, (PrimitiveObjectInspector) oi);
             case STRUCT:
-                return serializeStruct(obj, (StructObjectInspector) oi, false);
+                return serializeStruct(obj, (StructObjectInspector) oi, ext);
             case UNION:
             default:
                 LOG.error("Cannot serialize " + obj.toString() + " of type " + obj.toString());
@@ -329,13 +403,13 @@ public class BSONSerDe implements SerDe {
         return null;
     }
     
-    private Object serializeList(Object obj, ListObjectInspector oi) {
+    private Object serializeList(Object obj, ListObjectInspector oi, String ext) {
         BasicBSONList list = new BasicBSONList();
         List<?> field = oi.getList(obj);
         ObjectInspector elemOI = oi.getListElementObjectInspector();
     
         for (Object elem : field) {
-            list.add(serializeObject(elem, elemOI));
+            list.add(serializeObject(elem, elemOI, ext));
         }
     
         return list;
@@ -346,8 +420,8 @@ public class BSONSerDe implements SerDe {
      */
     private Object serializeStruct(Object obj, 
                    StructObjectInspector structOI, 
-                   boolean isRow) {
-        if (!isRow && isObjectIdStruct(structOI)) {
+                   String ext) {
+        if (ext.length() > 0 && isObjectIdStruct(structOI)) {
             
             String objectIdString = "";
             for (StructField s : structOI.getAllStructFieldRefs()) {
@@ -366,16 +440,42 @@ public class BSONSerDe implements SerDe {
             for (int i = 0 ; i < fields.size() ; i++) {
                 StructField field = fields.get(i);
         
-                // get corresponding mongoDB field
-                String fieldName = isRow ? mongoFields.get(i) : field.getFieldName();
+                String fieldName, fullFieldName;
+                
+                // get corresponding mongoDB field  
+                if (ext.length() == 0) {
+                    fieldName = columnNames.get(i);
+                    fullFieldName = fieldName;
+                } else {
+                    fieldName = field.getFieldName();
+                    fullFieldName = (ext + "." + fieldName);
+                }
                 
                 ObjectInspector fieldOI = field.getFieldObjectInspector();
                 Object fieldObj = structOI.getStructFieldData(obj, field);
                 
-                bsonObject.put(fieldName, serializeObject(fieldObj, fieldOI));
+                if (hiveToMongo != null && hiveToMongo.containsKey(fullFieldName)) {
+                    bsonObject.put(getLastPart(hiveToMongo.get(fullFieldName)), 
+                                   serializeObject(fieldObj, fieldOI, fullFieldName));
+                } else {
+                    bsonObject.put(fieldName, 
+                                   serializeObject(fieldObj, fieldOI, fullFieldName));   
+                }
             }
-        
+            
             return bsonObject;
+        }
+    }
+    
+    /*
+     * Returns the part of the String, after the last '.'
+     */
+    String getLastPart(String s) {
+        int lastDotPos = s.lastIndexOf(".");
+        if (lastDotPos == -1) {
+            return s;
+        } else {
+            return s.substring(lastDotPos+1);
         }
     }
     
@@ -402,14 +502,14 @@ public class BSONSerDe implements SerDe {
     /**
      * For a map of <String, Object> convert to an embedded document 
      */
-    private Object serializeMap(Object obj, MapObjectInspector mapOI) {
+    private Object serializeMap(Object obj, MapObjectInspector mapOI, String ext) {
         BasicBSONObject bsonObject = new BasicBSONObject();
         ObjectInspector mapValOI = mapOI.getMapValueObjectInspector();
     
         // Each value is guaranteed to be of the same type
         for (Entry<?, ?> entry : mapOI.getMap(obj).entrySet()) {        
             String field = entry.getKey().toString();
-            Object value = serializeObject(entry.getValue(), mapValOI);
+            Object value = serializeObject(entry.getValue(), mapValOI, ext);
             bsonObject.put(field, value);
         }
         return bsonObject;

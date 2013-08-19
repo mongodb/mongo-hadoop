@@ -35,7 +35,7 @@ public class BSONSerDeTest {
         
         serde.initialize(new Configuration(), tblProperties);
         
-        return serde.deserializeField(value, serde.columnTypes.get(0));
+        return serde.deserializeField(value, value, serde.columnTypes.get(0), "");
     } 
     
     /**
@@ -71,7 +71,7 @@ public class BSONSerDeTest {
     
     @Test
     public void testString() throws SerDeException {
-	String columnNames = "s";
+    String columnNames = "s";
         String columnTypes = "string";
         String value = "value";
         BSONSerDe serde = new BSONSerDe();
@@ -161,11 +161,11 @@ public class BSONSerDeTest {
         Object result = helpDeserialize(serde, columnNames, columnTypes, value);
         assertThat(value, equalTo(result));
         
-        result = serde.deserializeField(d, serde.columnTypes.get(0));
+        result = serde.deserializeField(d, d, serde.columnTypes.get(0), "");
         assertThat(value, equalTo(result));
         
         BSONTimestamp bts = new BSONTimestamp(((Long) (d.getTime() / 1000L)).intValue(), 1);
-        result = serde.deserializeField(bts, serde.columnTypes.get(0));
+        result = serde.deserializeField(bts, bts, serde.columnTypes.get(0), "");
         // BSONTimestamp only takes an int, so the long returned in the Timestamp won't be the same
         assertThat((long) bts.getTime(), equalTo(((Timestamp) result).getTime() / 1000L));
         
