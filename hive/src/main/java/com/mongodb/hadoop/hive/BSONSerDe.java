@@ -86,7 +86,7 @@ public class BSONSerDe implements SerDe {
 
             // register the hive field mappings to mongo field mappings
             hiveToMongo = new HashMap<String, String>();
-            registerMappings(rules, hiveToMongo);                                       
+            registerMappings(rules);                                       
         }
         
         // Get the table column types
@@ -109,7 +109,7 @@ public class BSONSerDe implements SerDe {
      * MongoDB fields
      * 
      */
-    private void registerMappings(Map<String, String> rules, Map<String, String> hiveToMongo) throws SerDeException {
+    private void registerMappings(Map<String, String> rules) throws SerDeException {
         // explode/infer shorter mappings
         for (Entry e : rules.entrySet()) {
             String key = (String) e.getKey();
