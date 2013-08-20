@@ -45,9 +45,9 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
     
     @Override
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, 
-                                    JobConf conf,
-                                    Reporter reporter)
-            throws IOException {
+            JobConf conf,
+            Reporter reporter)
+        throws IOException {
 
         // split is of type 'MongoHiveInputSplit'
         MongoHiveInputSplit mhis = (MongoHiveInputSplit) split;
@@ -58,7 +58,8 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
 
     @Override
     public FileSplit[] getSplits(JobConf conf, int numSplits)
-            throws IOException {
+        throws IOException {
+
         try {
             MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
             final List<org.apache.hadoop.mapreduce.InputSplit> splits = 

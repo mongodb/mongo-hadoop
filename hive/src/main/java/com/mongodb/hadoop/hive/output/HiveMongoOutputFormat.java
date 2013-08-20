@@ -65,6 +65,7 @@ public class HiveMongoOutputFormat implements HiveOutputFormat<BSONWritable, BSO
         throw new IOException("Hive should call 'getHiveRecordWriter' instead of 'getRecordWriter'");
     }
     
+
     /*
      * HiveMongoRecordWriter ->
      * MongoRecordWriter used to write from Hive into BSON Objects
