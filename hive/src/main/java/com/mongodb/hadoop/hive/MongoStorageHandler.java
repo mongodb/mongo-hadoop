@@ -44,8 +44,6 @@ import com.mongodb.hadoop.hive.output.HiveMongoOutputFormat;
 public class MongoStorageHandler extends DefaultStorageHandler {
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
-    // stores the 1-to-1 mapping of MongoDB fields to hive columns
-    public static final String MONGO_COLS = "mongo.columns.mapping";
     // get location of where meta-data is stored about the mongo collection
     public static final String TABLE_LOCATION = "location";
     
