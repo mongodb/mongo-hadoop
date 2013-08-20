@@ -88,7 +88,7 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
      *  Used to wrap MongoInputSplits (as a delegate) to by-pass the Hive bug where
      *  'HiveInputSplit.getPath' is always called.
      */
-    private static class MongoHiveInputSplit extends FileSplit {
+    public static class MongoHiveInputSplit extends FileSplit {
         private InputSplit delegate;
         private Path path;
 

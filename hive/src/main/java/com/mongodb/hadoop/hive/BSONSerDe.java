@@ -94,8 +94,6 @@ public class BSONSerDe implements SerDe {
             Map<String, String> rules = ((BasicBSONObject) JSON.parse(mongoFieldsStr)).toMap();
 
             // register the hive field mappings to mongo field mappings
-            hiveToMongo = new HashMap<String, String>();
-            registerMappings(rules);                                       
             this.hiveToMongo = new HashMap<String, String>();
             registerMappings(rules);
         }
@@ -104,7 +102,7 @@ public class BSONSerDe implements SerDe {
         String colTypesStr = tblProps.getProperty(serdeConstants.LIST_COLUMN_TYPES);
         this.columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(colTypesStr);
         
-        if (columnNames.size() == columnTypes.size()) {
+        if (this.columnNames.size() != this.columnTypes.size()) {
             throw new SerDeException("Column Names and Types don't match in size");
         }
         
@@ -119,7 +117,7 @@ public class BSONSerDe implements SerDe {
     /**
      * Takes in the object represented by JSON for Hive to Mongo/BSON mapping.
      * Records these mappings and infers upper level mappings from lower level
-     * declaration.
+     * declarations.
      */
     private void registerMappings(Map<String, String> rules) throws SerDeException {
         // explode/infer shorter mappings
@@ -136,18 +134,18 @@ public class BSONSerDe implements SerDe {
             if (key.contains(".")) {
                 // split by "."
                 String[] miniKeys = key.split("\\.");
-                String[] miniValues = value.split("\\.");
-                
+                String[] miniValues = value.split("\\.");  
+              
                 if (miniKeys.length != miniValues.length) {
                     throw new SerDeException(key + " should be of same depth as " + value);
-                }
-                
+                }                
+
                 int i = 0; 
                 String curKey = "", curValue = "";
                 while ( i < miniKeys.length-1 ) {
                     curKey += miniKeys[i];
-                    curValue += miniValues[i];
-                    
+                    curValue += miniValues[i];                    
+
                     if (this.hiveToMongo.containsKey(curKey) && !this.hiveToMongo.get(curKey).equals(curValue)) {
                         throw new SerDeException("Ambiguous rule definition for " + curKey);
                     } else {
@@ -155,8 +153,7 @@ public class BSONSerDe implements SerDe {
                     }
                     
                     curKey += ".";
-                    curValue += ".";
-                    
+                    curValue += ".";                    
                     i += 1;
                 }                    
             }   
@@ -193,8 +190,9 @@ public class BSONSerDe implements SerDe {
                 if (this.hiveToMongo == null) {
                     mongoMapping = fieldName;
                 } else {
-                    // TODO: On line 291, this is formatted, but here it isn't. Let's keep it consistent?
-                    mongoMapping = this.hiveToMongo.containsKey(fieldName) ? this.hiveToMongo.get(fieldName) : fieldName;
+                    mongoMapping = this.hiveToMongo.containsKey(fieldName) ?
+                                        this.hiveToMongo.get(fieldName) : 
+                                        fieldName;
                 }
                 value = deserializeField(doc.get(mongoMapping), fieldTypeInfo, fieldName); 
             } catch (Exception e) {
@@ -321,8 +319,7 @@ public class BSONSerDe implements SerDe {
            }
            
            mongoSeen += ".";
-           hiveSeen += ".";
-           
+           hiveSeen += ".";           
            i++;                   
        }
        
@@ -517,7 +514,10 @@ public class BSONSerDe implements SerDe {
                 Object fieldObj = structOI.getStructFieldData(obj, field);
                 
                 if (this.hiveToMongo != null && this.hiveToMongo.containsKey(hiveMapping)) {
-                    bsonObject.put(getLastPart(this.hiveToMongo.get(hiveMapping)), 
+                    String mongoMapping = this.hiveToMongo.get(hiveMapping);
+                    int lastDotPos = mongoMapping.lastIndexOf(".");
+                    String lastMapping = lastDotPos == -1 ? mongoMapping :  mongoMapping.substring(lastDotPos+1);
+                    bsonObject.put(lastMapping,
                                    serializeObject(fieldObj, fieldOI, hiveMapping));
                 } else {
                     bsonObject.put(fieldName, 
@@ -527,20 +527,7 @@ public class BSONSerDe implements SerDe {
             
             return bsonObject;
         }
-    }
-    
-    /*
-     * Returns the part of the String, after the last '.'
-     */
-    String getLastPart(String s) {
-        int lastDotPos = s.lastIndexOf(".");
-        if (lastDotPos == -1) {
-            return s;
-        } else {
-            return s.substring(lastDotPos+1);
-        }
-    }
-    
+    }    
     
     /**
      *
