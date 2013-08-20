@@ -46,7 +46,20 @@ import com.mongodb.hadoop.io.BSONWritable;
 public class HiveBSONFileOutputFormat<K, V> 
             extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
     
-    private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
+    public Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
+    public String MONGO_OUTPUT_FILE = "mongo.output.file";
+
+    @Override
+    public RecordWriter getHiveRecordWriter(JobConf jc, 
+            Path fileOutputPath,
+            Class<? extends Writable> valueClass, 
+            boolean isCompressed, 
+            Properties tableProperties,
+            Progressable progress) throws IOException {
+        
+        return getHiveRecordWriter(jc, fileOutputPath, valueClass,
+                isCompressed, tableProperties, progress, false);
+    }
     
     /**
      * 
@@ -59,13 +72,30 @@ public class HiveBSONFileOutputFormat<K, V>
      * @return: RecordWriter for the output file
      * 
      */
-    @Override
     public RecordWriter getHiveRecordWriter(JobConf jc, 
             Path fileOutputPath,
             Class<? extends Writable> valueClass, 
             boolean isCompressed, 
             Properties tableProperties,
-            Progressable progress) throws IOException {
+            Progressable progress, 
+            boolean isStorageHandler) throws IOException {
+    
+        // Storage Handler tries to save a file in the location
+        // of the directory of the table, which fails.
+        // Instead, it should save within the directory if not
+        // specified output
+        if (isStorageHandler) {
+            if (jc.get(this.MONGO_OUTPUT_FILE) != null) {
+                fileOutputPath = new Path(jc.get(this.MONGO_OUTPUT_FILE));
+            } else {
+
+                fileOutputPath = new Path(fileOutputPath, fileOutputPath.getName());
+
+                if (!fileOutputPath.toString().endsWith(".bson")) {
+                    fileOutputPath = fileOutputPath.suffix(".bson");
+                }
+            }
+        }
         
         LOG.info("Output going into " + fileOutputPath);
 
@@ -84,7 +114,11 @@ public class HiveBSONFileOutputFormat<K, V>
         return new HiveBSONFileRecordWriter(outFile, splitFile, splitSize);
     }
     
-    @SuppressWarnings("deprecation")
+
+    /**
+     * 
+     * A Hive Record Write that calls the BSON one
+     */
     public class HiveBSONFileRecordWriter<K, V> 
             extends BSONFileRecordWriter<K, V> 
             implements RecordWriter {
