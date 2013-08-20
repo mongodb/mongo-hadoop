@@ -1,3 +1,19 @@
+/*
+ * Copyright 2010-2013 10gen Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.mongodb.hadoop.hive;
 
 import java.sql.Timestamp;
@@ -55,7 +71,7 @@ public class BSONSerDe implements SerDe {
     @SuppressWarnings("unchecked")
     @Override
     public void initialize(Configuration conf, Properties tblProps)
-            throws SerDeException {
+        throws SerDeException {
         // regex used to split column names between commas
         String splitCols = "\\s*,\\s*";
         
@@ -77,8 +93,9 @@ public class BSONSerDe implements SerDe {
         String colTypesStr = tblProps.getProperty(serdeConstants.LIST_COLUMN_TYPES);
         columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(colTypesStr);
         
-        assert( columnNames.size() == columnTypes.size()) :
-        "Column Names and Types don't match in size";
+        if (columnNames.size() == columnTypes.size()) {
+            throw new SerDeException("Column Names and Types don't match in size");
+        }
         
         // Get the structure and object inspector
         docTypeInfo = 
@@ -86,7 +103,12 @@ public class BSONSerDe implements SerDe {
         docOI = 
             TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
     }
-    
+
+    /*
+     * Copy over rules defined by the user for mapping hive columns into
+     * MongoDB fields
+     * 
+     */
     private void registerMappings(Map<String, String> rules, Map<String, String> hiveToMongo) throws SerDeException {
         // explode/infer shorter mappings
         for (Entry e : rules.entrySet()) {
