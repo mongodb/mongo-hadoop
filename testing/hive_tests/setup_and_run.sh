@@ -18,14 +18,14 @@ export HIVE_TEST_SCHEMA="(id int, name string, age int)"
 # Type of data file. For example, sequencefile, rcfile, textfile
 export HIVE_TEST_FILE_TYPE="textfile"
 # path (absolute or relative) where MongoStorageHandler resides
-export MSH_PATH="../../hive/target/mongo-hadoop-hive-1.1.0.jar"
+export MSH_PATH="/usr/local/Cellar/hadoop/1.1.2/libexec/lib/mongo-hadoop-hive_1.1.2-1.1.0.jar"
 # Class name of MongoStorageHandler (prefixed by package name)
 export MSH_PACKAGE_NAME="com.mongodb.hadoop.hive.MongoStorageHandler"
 # URL of MongoDB collection to use in testing
 export MONGO_TEST_URI="mongodb://localhost:27017/test.mongo_hive_test"
 # serde properties =>
 #   specify a comma-delimited serde properties mapping for test data file
-export SERDE_PROPERTIES="'mongo.columns.mapping'='_id, name, age'"
+export SERDE_PROPERTIES="'mongo.columns.mapping'='{\"id\":\"_id\"}'"
 # run tests in "verbose" mode; 0 -> False, 1 -> True
 export VERBOSE_TESTS=1
 

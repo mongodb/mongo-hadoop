@@ -32,7 +32,6 @@ public class HiveBSONFileOutputFormat<K, V>
     
     private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
     
-
     /**
      * 
      * create the final output file
@@ -55,6 +54,8 @@ public class HiveBSONFileOutputFormat<K, V>
         if (jc.get("mapred.output.file") != null) {
             fileOutputPath = new Path(jc.get("mapred.output.file"));
         } else {
+            // getDefaultWorkFile(path, ".bson") -> 
+            
             fileOutputPath = new Path(fileOutputPath, fileOutputPath.getName());
                                                                                                 
             if (!fileOutputPath.toString().endsWith(".bson")) {

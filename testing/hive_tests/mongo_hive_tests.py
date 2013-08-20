@@ -13,6 +13,7 @@ import os
 import time
 import socket
 import random 
+import json
 
 from pymongo import MongoClient
 
@@ -154,6 +155,12 @@ class Helpers:
                                     testHiveTblSchema, testHiveFieldsDelim,
                                     testHiveFileType)
         
+    @staticmethod
+    def loadDataFromDirectory(client):
+        loadPath = ""
+        cmd = ["INSERT OVERWRITE DIRECTORY", loadPath,
+               ""]
+
     """
     Transfer data from 'fromTable' into 'toTable'
     """
@@ -300,7 +307,10 @@ class Helpers:
         query = " ".join(lscmd)
         if verbose:
             print "executing", query
-        client.execute(query)
+        
+        print "client before=", client
+        client.execute(query)        
+        print "client after=", client
     
     """
     Prepares a test suite for executing hive queries. 
@@ -502,7 +512,8 @@ class TestHDFSToMongoDBTableWithOptions(unittest.TestCase):
         # first remove '' around colsMap
         self.assertTrue(colsMap[0] == "'" and colsMap[len(colsMap)-1] == "'")
         
-        lsMap = [each.strip() for each in colsMap[1:len(colsMap)-1].split(",")]
+        # load the JSON mapping into a dictionary using the 'simplejson' module
+        lsMap = json.loads(colsMap)
         docKeys = doc.keys()
         self.assertTrue(set(docKeys) == set(lsMap))
         
@@ -567,6 +578,37 @@ class TestBSONFileToHiveTable(unittest.TestCase):
         for i in range(len(hiveData)):
             self.assertEqual(hiveData[i], bsonData[i])
         
+"""
+To test:
+1. Test that we can load data into a BSON-based hive table from a directory using the
+   "INSERT OVERWRITE DIRECTORY" statement.
+"""
+class TestBSONFileLoadFromDirectory(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Helpers.setUpClass(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        Helpers.tearDownClass(cls)
+
+    def setUp(self):            
+        try:
+            Helpers.loadDataIntoBSONHiveTable(self.client, True)
+        except Thrift.TException, tx:
+            print '%s' % (tx.message)
+            
+    def tearDown(self):
+        try:
+            Helpers.dropTable(self.client, testBSONTblName)
+        except Thrift.TException, tx:
+            print '%s' % (tx.message)
+
+    def testDataPresence(self):
+        # make sure that there's data loaded
+        bsonSchema, bsonData = Helpers.getAllDataFromTable(self.client, testBSONTblName)
+        self.assertTrue(len(bsonData) > 0)
+    
         
 if __name__ == "__main__":
     unittest.main()
