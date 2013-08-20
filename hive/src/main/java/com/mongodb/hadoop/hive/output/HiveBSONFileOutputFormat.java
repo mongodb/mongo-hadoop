@@ -1,3 +1,19 @@
+/*
+ * Copyright 2010-2013 10gen Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.mongodb.hadoop.hive.output;
 
 import java.io.IOException;
@@ -30,7 +46,8 @@ import com.mongodb.hadoop.io.BSONWritable;
 public class HiveBSONFileOutputFormat<K, V> 
             extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
     
-    private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
+    public Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
+    public String MONGO_OUTPUT_FILE = "mongo.output.file";
     
     /**
      * 
@@ -43,6 +60,7 @@ public class HiveBSONFileOutputFormat<K, V>
      * @return: RecordWriter for the output file
      * 
      */
+
     @Override
     public RecordWriter getHiveRecordWriter(JobConf jc, 
             Path fileOutputPath,
@@ -50,7 +68,7 @@ public class HiveBSONFileOutputFormat<K, V>
             boolean isCompressed, 
             Properties tableProperties,
             Progressable progress) throws IOException {
-        
+      
         LOG.info("Output going into " + fileOutputPath);
 
         FileSystem fs = fileOutputPath.getFileSystem(jc);
@@ -68,7 +86,11 @@ public class HiveBSONFileOutputFormat<K, V>
         return new HiveBSONFileRecordWriter(outFile, splitFile, splitSize);
     }
     
-    @SuppressWarnings("deprecation")
+
+    /**
+     * 
+     * A Hive Record Write that calls the BSON one
+     */
     public class HiveBSONFileRecordWriter<K, V> 
             extends BSONFileRecordWriter<K, V> 
             implements RecordWriter {

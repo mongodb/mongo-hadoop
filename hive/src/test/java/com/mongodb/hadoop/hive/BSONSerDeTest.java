@@ -11,6 +11,7 @@ import java.util.Properties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.SerDeException;
+import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.bson.BasicBSONObject;
@@ -45,8 +46,7 @@ public class BSONSerDeTest {
         return helpDeserialize(serde, columnNames, columnTypes, value, false);
     }
     
-    
-    
+
     /**
      * Given the column names and the object inspector, returns the 
      * struct object inspector, Notice how the fieldNames and the fieldInspectors
@@ -60,7 +60,6 @@ public class BSONSerDeTest {
         
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldInspectors);
     }
-
 
     
     /**
@@ -82,7 +81,6 @@ public class BSONSerDeTest {
     }
     
     
-    
     @Test
     public void testString() throws SerDeException {        
         
@@ -99,8 +97,6 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-    
-    
     
     
     @Test
@@ -121,8 +117,6 @@ public class BSONSerDeTest {
     }
     
     
-    
-    
     @Test
     public void testInt() throws SerDeException {
         
@@ -139,8 +133,6 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-    
-    
     
     
     @Test
@@ -163,8 +155,6 @@ public class BSONSerDeTest {
     }
     
     
-    
-    
     @Test
     public void testBoolean() throws SerDeException {
         
@@ -181,8 +171,6 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-    
-    
     
     
     @Test
@@ -204,8 +192,10 @@ public class BSONSerDeTest {
         // BSONTimestamp only takes an int, so the long returned in the Timestamp won't be the same
         assertThat((long) bts.getTime(), equalTo(((Timestamp) result).getTime() / 1000L));
         
+        // Utilizes a timestampWritable because there's no native timestamp type in java for
+        // object inspector class to relate to
         ObjectInspector innerInspector = 
-                PrimitiveObjectInspectorFactory.getPrimitiveObjectInspectorFromClass(Timestamp.class);
+                PrimitiveObjectInspectorFactory.getPrimitiveObjectInspectorFromClass(TimestampWritable.class);
         BasicBSONObject bObject = new BasicBSONObject();
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         
@@ -216,17 +206,18 @@ public class BSONSerDeTest {
     }
     
     
-    
-    
     @Test
     public void testObjectID() throws SerDeException {
         
         String columnNames = "o";
-        String columnTypes = "string";        
+        String columnTypes = "struct<oid:string,bsontype:int>";        
         ObjectId value = new ObjectId();
+        ArrayList<Object> returned = new ArrayList<Object>(2);
+        returned.add(value.toString());
+        returned.add(8);
         BSONSerDe serde = new BSONSerDe();
         Object result = helpDeserialize(serde, columnNames, columnTypes, value);
-        assertThat(value.toString(), equalTo(result));
+        assertThat(returned, equalTo(result));
         
 
         // Since objectid is currently taken to be a string
@@ -263,8 +254,6 @@ public class BSONSerDeTest {
     }
     
     
-    
-    
     @Test
     public void testMap() throws SerDeException {
         String columnNames = "m";
@@ -294,8 +283,6 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, mapInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-    
-    
     
     
     @Test

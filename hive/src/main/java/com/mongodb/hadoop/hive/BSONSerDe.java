@@ -1,3 +1,19 @@
+/*
+ * Copyright 2010-2013 10gen Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.mongodb.hadoop.hive;
 
 import java.sql.Timestamp;
@@ -29,14 +45,24 @@ import org.bson.types.*;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.util.JSON;
 
+/**
+ * The BSONSerDe class deserializes (parses) and serializes object from
+ * BSON to Hive represented object. It's initialized with the hive
+ * columns and hive recognized types as well as other config variables
+ * mandated by the StorageHanders. 
+ */
 public class BSONSerDe implements SerDe {
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
+
+    // stores the 1-to-1 mapping of MongoDB fields to hive columns
+    public static final String MONGO_COLS = "mongo.columns.mapping";
     
     // ObjectId should be translated to a struct, these are
     // the pre-defined field names and values identifying
     // that struct as an ObjectId struct
-    private static final int BSON_TYPE = 8;
+    private static final int BSON_NUM = 8;
     private static final String OID = "oid";
+    private static final String BSON_TYPE = "bsontype";
     
     private StructTypeInfo docTypeInfo;
     private ObjectInspector docOI;
@@ -55,86 +81,94 @@ public class BSONSerDe implements SerDe {
     @SuppressWarnings("unchecked")
     @Override
     public void initialize(Configuration conf, Properties tblProps)
-            throws SerDeException {
+        throws SerDeException {
         // regex used to split column names between commas
         String splitCols = "\\s*,\\s*";
         
         // Get the table column names
         String colNamesStr = tblProps.getProperty(serdeConstants.LIST_COLUMNS);
-        columnNames = Arrays.asList(colNamesStr.split(splitCols));
+        this.columnNames = Arrays.asList(colNamesStr.split(splitCols));
 
         // Get mappings specified by the user
-        if (tblProps.containsKey(MongoStorageHandler.MONGO_COLS)) {
-            String mongoFieldsStr = tblProps.getProperty(MongoStorageHandler.MONGO_COLS);
+        if (tblProps.containsKey(this.MONGO_COLS)) {
+            String mongoFieldsStr = tblProps.getProperty(this.MONGO_COLS);
             Map<String, String> rules = ((BasicBSONObject) JSON.parse(mongoFieldsStr)).toMap();
 
             // register the hive field mappings to mongo field mappings
-            hiveToMongo = new HashMap<String, String>();
-            registerMappings(rules, hiveToMongo);                                       
+            this.hiveToMongo = new HashMap<String, String>();
+            registerMappings(rules);
         }
         
         // Get the table column types
         String colTypesStr = tblProps.getProperty(serdeConstants.LIST_COLUMN_TYPES);
-        columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(colTypesStr);
+        this.columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(colTypesStr);
         
-        assert( columnNames.size() == columnTypes.size()) :
-        "Column Names and Types don't match in size";
+        if (this.columnNames.size() != this.columnTypes.size()) {
+            throw new SerDeException("Column Names and Types don't match in size");
+        }
         
         // Get the structure and object inspector
-        docTypeInfo = 
-            (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
-        docOI = 
-            TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
+        this.docTypeInfo = 
+            (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(this.columnNames, this.columnTypes);
+        this.docOI = 
+            TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(this.docTypeInfo);
     }
     
-    private void registerMappings(Map<String, String> rules, Map<String, String> hiveToMongo) throws SerDeException {
+
+    /**
+     * Takes in the object represented by JSON for Hive to Mongo/BSON mapping.
+     * Records these mappings and infers upper level mappings from lower level
+     * declarations.
+     */
+    private void registerMappings(Map<String, String> rules) throws SerDeException {
         // explode/infer shorter mappings
         for (Entry e : rules.entrySet()) {
             String key = (String) e.getKey();
             String value = (String) e.getValue(); 
 
-            if ( hiveToMongo.containsKey(key) && !hiveToMongo.get(key).equals(value)) {
-                throw new SerDeException("Ambiguous rule definition for " + key);                    
+            if (this.hiveToMongo.containsKey(key) && !this.hiveToMongo.get(key).equals(value)) {
+                throw new SerDeException("Ambiguous rule definition for " + key); 
             } else {
-                hiveToMongo.put(key, value);
+                this.hiveToMongo.put(key, value);
             }
 
             if (key.contains(".")) {
                 // split by "."
                 String[] miniKeys = key.split("\\.");
-                String[] miniValues = value.split("\\.");
-                
+                String[] miniValues = value.split("\\.");  
+              
                 if (miniKeys.length != miniValues.length) {
                     throw new SerDeException(key + " should be of same depth as " + value);
-                }
-                
+                }                
+
                 int i = 0; 
                 String curKey = "", curValue = "";
                 while ( i < miniKeys.length-1 ) {
                     curKey += miniKeys[i];
-                    curValue += miniValues[i];
-                    
-                    if ( hiveToMongo.containsKey(curKey) && !hiveToMongo.get(curKey).equals(curValue)) {
+                    curValue += miniValues[i];                    
+
+                    if (this.hiveToMongo.containsKey(curKey) && !this.hiveToMongo.get(curKey).equals(curValue)) {
                         throw new SerDeException("Ambiguous rule definition for " + curKey);
                     } else {
-                        hiveToMongo.put(curKey, curValue);
+                        this.hiveToMongo.put(curKey, curValue);
                     }
                     
                     curKey += ".";
-                    curValue += ".";
-                    
+                    curValue += ".";                    
                     i += 1;
                 }                    
             }   
         }
     }
+
+
     /**
      * Given a Writable object of BSON, turn it into a Hive table row
      */
     @Override
     public Object deserialize(Writable writ) throws SerDeException {
         BSONObject doc = null;
-        row.clear();
+        this.row.clear();
         
         // Make sure it's a BSONWritable object
         if (writ instanceof BSONWritable) {
@@ -146,29 +180,33 @@ public class BSONSerDe implements SerDe {
         
         // For each field, cast it to a HIVE type and add to the current row
         Object value = null;
-        List<String> structFieldNames = docTypeInfo.getAllStructFieldNames();
+        List<String> structFieldNames = this.docTypeInfo.getAllStructFieldNames();
         for (int i = 0; i < structFieldNames.size(); i++) {
             String fieldName = structFieldNames.get(i);
             try {
-                TypeInfo fieldTypeInfo = docTypeInfo.getStructFieldTypeInfo(fieldName);
+                TypeInfo fieldTypeInfo = this.docTypeInfo.getStructFieldTypeInfo(fieldName);
                 
                 // get the corresponding field name in MongoDB
                 String mongoMapping;
-                if (hiveToMongo == null) {
+                if (this.hiveToMongo == null) {
                     mongoMapping = fieldName;
                 } else {
-                    mongoMapping = hiveToMongo.containsKey(fieldName) ? hiveToMongo.get(fieldName) : fieldName;
+                    mongoMapping = this.hiveToMongo.containsKey(fieldName) ?
+                                        this.hiveToMongo.get(fieldName) : 
+                                        fieldName;
                 }
-                value = deserializeField(doc.get(mongoMapping), fieldTypeInfo, fieldName);                  
+                value = deserializeField(doc.get(mongoMapping), fieldTypeInfo, fieldName); 
             } catch (Exception e) {
+                LOG.warn("Could not find the appropriate field for name " + fieldName);
                 value = null;
             }
-            row.add(value);
+            this.row.add(value);
         }
         
-        return row;
+        return this.row;
     }
     
+
     /**
      * For a given Object value and its supposed TypeInfo
      * determine and return its Hive object representation
@@ -191,6 +229,7 @@ public class BSONSerDe implements SerDe {
                 return deserializeStruct(value, (StructTypeInfo) valueTypeInfo, ext);
             case UNION:
                 // Mongo also has no union
+                LOG.warn("BSONSerDe does not support unions.");
                 return null;
             default:
                 // Must be an unknown (a Mongo specific type)
@@ -200,6 +239,7 @@ public class BSONSerDe implements SerDe {
         return null;
     }
     
+
     /**
      * Deserialize a List with the same listElemTypeInfo for its elements
      */
@@ -213,12 +253,14 @@ public class BSONSerDe implements SerDe {
         return list.toArray();
     }
     
+
     /**
      * deserialize the struct stored in 'value' 
      * ext : the hive mapping(s) seen so far before 'value' is encountered.
      */        
     @SuppressWarnings("unchecked")
-    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo, String ext) {        
+    private Object deserializeStruct(Object value, StructTypeInfo valueTypeInfo, String ext) {
+        // ObjectId will be stored in a special struct
         if (value instanceof ObjectId) {
             return deserializeObjectId(value, valueTypeInfo);
         } else {
@@ -239,18 +281,18 @@ public class BSONSerDe implements SerDe {
                 
                 // get the corresponding field name in MongoDB
                 String mongoMapping;
-                if (hiveToMongo == null) {
+                if (this.hiveToMongo == null) {
                     mongoMapping = hiveMapping;
                 } else {
-                    if (hiveToMongo.containsKey(hiveMapping)) {
-                        mongoMapping = hiveToMongo.get(hiveMapping);
+                    if (this.hiveToMongo.containsKey(hiveMapping)) {
+                        mongoMapping = this.hiveToMongo.get(hiveMapping);
                     } else {
-                        mongoMapping = ext.length() > 0 && hiveToMongo.containsKey(ext) ? 
-                                          (hiveToMongo.get(ext)+"."+fieldName) : 
+                        mongoMapping = ext.length() > 0 && this.hiveToMongo.containsKey(ext) ? 
+                                          (this.hiveToMongo.get(ext)+"."+fieldName) : 
                                           hiveMapping;
                     }
                 }                
-                
+
                 String nextFieldTrans = extractMongoField(mongoMapping, hiveMapping, ext);
                 struct.add(deserializeField(map.get(nextFieldTrans), structTypes.get(i), hiveMapping));
             }
@@ -258,9 +300,10 @@ public class BSONSerDe implements SerDe {
         }
     }
     
+
     /*
-     * Gets the next field to be extracted in the process of (recursively) mapping fields in MongoDB
-     * to Hive struct field names
+     * Gets the next field to be extracted in the process of (recursively) mapping fields in
+     * MongoDB to Hive struct field names
      */
     private String extractMongoField(String mongoMapping, String hiveMapping, String ext) {
        String[] splitMongo = mongoMapping.split("\\.");
@@ -277,14 +320,14 @@ public class BSONSerDe implements SerDe {
            }
            
            mongoSeen += ".";
-           hiveSeen += ".";
-           
+           hiveSeen += ".";           
            i++;                   
        }
        
        return null;
     }     
     
+
     /**
      * Also deserialize a Map with the same mapElemTypeInfo
      */
@@ -299,6 +342,7 @@ public class BSONSerDe implements SerDe {
         return b.toMap();
     }    
     
+
     /**
      * Most primitives are included, but some are specific to Mongo instances
      */
@@ -342,10 +386,7 @@ public class BSONSerDe implements SerDe {
      * For Mongo Specific types, return the most appropriate java types
      */
     private Object deserializeMongoType(Object value) {
-        // TODO:: Add more here
-        if (value instanceof ObjectId) {
-            return ((ObjectId) value).toString();
-        } else if (value instanceof Symbol) {
+        if (value instanceof Symbol) {
             return ((Symbol) value).toString();
         } else {
         
@@ -355,44 +396,54 @@ public class BSONSerDe implements SerDe {
         }
     }
     
+
+    /**
+     * Parses an ObjectId into the corresponding struct declared in Hive
+     */
     private Object deserializeObjectId(Object value, StructTypeInfo valueTypeInfo) {
         ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
     
         List<Object> struct = new ArrayList<Object> (structNames.size());
         for (int i = 0 ; i < structNames.size() ; i++) {
-            if (structNames.get(i).equals(OID)) {
+            LOG.warn("SWEET ------ structName is " + structNames.get(i));
+            if (structNames.get(i).equals(this.OID)) {
                 struct.add(((ObjectId) value).toString());
-            } else if (structNames.get(i).equals("bsonType")) {
+            } else if (structNames.get(i).equals(this.BSON_TYPE)) {
                 // the bson type is an int order type
                 // http://docs.mongodb.org.manual/faq/developers/
-                struct.add(BSON_TYPE);
+                struct.add(this.BSON_NUM);
             }
         }
         return struct;
     }
     
+
     @Override
     public ObjectInspector getObjectInspector() throws SerDeException {
-        return docOI;
+        return this.docOI;
     }
     
+
     @Override
     public SerDeStats getSerDeStats() {
-        //TODO:: this needs to be determined. what is it?
         return null;
     } 
     
+
     @Override
     public Class<? extends Writable> getSerializedClass() {
         return BSONWritable.class;
     }
 
+
     @Override
     public Writable serialize(Object obj, ObjectInspector oi)
-            throws SerDeException {
-        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        throws SerDeException {
+        return new BSONWritable((BSONObject) serializeStruct(obj, 
+                    (StructObjectInspector) oi, ""));
     }
     
+
     public Object serializeObject(Object obj, ObjectInspector oi, String ext) {
         switch (oi.getCategory()) {
             case LIST:
@@ -411,6 +462,7 @@ public class BSONSerDe implements SerDe {
         return null;
     }
     
+
     private Object serializeList(Object obj, ListObjectInspector oi, String ext) {
         BasicBSONList list = new BasicBSONList();
         List<?> field = oi.getList(obj);
@@ -423,17 +475,18 @@ public class BSONSerDe implements SerDe {
         return list;
     }
     
+
     /**
      * Turn struct obj into a BasicBSONObject
      */
     private Object serializeStruct(Object obj, 
-                   StructObjectInspector structOI, 
-                   String ext) {
-        if (ext.length() > 0 && isObjectIdStruct(structOI)) {
+            StructObjectInspector structOI, 
+            String ext) {
+        if (ext.length() > 0 && isObjectIdStruct(obj, structOI)) {
             
             String objectIdString = "";
             for (StructField s : structOI.getAllStructFieldRefs()) {
-                if (s.getFieldName().equals(OID)) {
+                if (s.getFieldName().equals(this.OID)) {
                     objectIdString = structOI.getStructFieldData(obj, s).toString();
                     break;
                 }
@@ -452,7 +505,7 @@ public class BSONSerDe implements SerDe {
                 
                 // get corresponding mongoDB field  
                 if (ext.length() == 0) {
-                    fieldName = columnNames.get(i);
+                    fieldName = this.columnNames.get(i);
                     hiveMapping = fieldName;
                 } else {
                     fieldName = field.getFieldName();
@@ -462,8 +515,11 @@ public class BSONSerDe implements SerDe {
                 ObjectInspector fieldOI = field.getFieldObjectInspector();
                 Object fieldObj = structOI.getStructFieldData(obj, field);
                 
-                if (hiveToMongo != null && hiveToMongo.containsKey(hiveMapping)) {
-                    bsonObject.put(getLastPart(hiveToMongo.get(hiveMapping)), 
+                if (this.hiveToMongo != null && this.hiveToMongo.containsKey(hiveMapping)) {
+                    String mongoMapping = this.hiveToMongo.get(hiveMapping);
+                    int lastDotPos = mongoMapping.lastIndexOf(".");
+                    String lastMapping = lastDotPos == -1 ? mongoMapping :  mongoMapping.substring(lastDotPos+1);
+                    bsonObject.put(lastMapping,
                                    serializeObject(fieldObj, fieldOI, hiveMapping));
                 } else {
                     bsonObject.put(fieldName, 
@@ -473,26 +529,14 @@ public class BSONSerDe implements SerDe {
             
             return bsonObject;
         }
-    }
-    
-    /*
-     * Returns the part of the String, after the last '.'
-     */
-    String getLastPart(String s) {
-        int lastDotPos = s.lastIndexOf(".");
-        if (lastDotPos == -1) {
-            return s;
-        } else {
-            return s.substring(lastDotPos+1);
-        }
-    }
+    }    
     
     /**
      *
      * Given a struct, look to se if it contains the fields that a ObjectId
      * struct should contain
      */
-    private boolean isObjectIdStruct(StructObjectInspector structOI) {
+    private boolean isObjectIdStruct(Object obj, StructObjectInspector structOI) {
         List<? extends StructField> fields = structOI.getAllStructFieldRefs();
     
         // If the struct are of incorrect size, then there's no need to create
@@ -500,13 +544,22 @@ public class BSONSerDe implements SerDe {
         if (fields.size() != 2) {
             return false;
         }
-        ArrayList<String> fieldNames = new ArrayList<String>();
+        boolean hasOID = false;
+        boolean isBSONType = false;
         for (StructField s : fields) {
-            fieldNames.add(s.getFieldName());
+            String fieldName = s.getFieldName();
+            if (fieldName.equals(this.OID)) {
+                hasOID = true;
+            } else if (fieldName.equals(this.BSON_TYPE)) {
+                String num = structOI.getStructFieldData(obj, s).toString();
+                isBSONType = (Integer.parseInt(num) == this.BSON_NUM);
+            }
+
         }
-        return (fieldNames.contains(OID)) && (fieldNames.contains("bsonType"));
+        return hasOID && isBSONType;
     }  
     
+
     /**
      * For a map of <String, Object> convert to an embedded document 
      */
@@ -547,8 +600,10 @@ public class BSONSerDe implements SerDe {
             case STRING:
                 if (obj instanceof LazyString) {
                     return ((LazyString) obj).toString();
+                } else if (obj instanceof String) {
+                    return (String) obj;
                 }
-                return (String) obj;
+                return obj.toString();
             case TIMESTAMP:
                 return new BSONTimestamp(((Long) (((Timestamp) obj).getTime() / 1000L)).intValue(), 1);
             case UNKNOWN:

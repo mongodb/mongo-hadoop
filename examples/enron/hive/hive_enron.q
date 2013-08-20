@@ -8,8 +8,11 @@
 CREATE TABLE raw(
     h STRUCT<hivefrom:STRING,hiveto:STRING>
 )
-STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
-WITH SERDEPROPERTIES("mongo.columns.mapping"="{'h.hivefrom':'headers.From','h.hiveto':'headers.To'}")
+ROW FORMAT SERDE "com.mongodb.hadoop.hive.BSONSerDe"
+WITH SERDEPROPERTIES("mongo.columns.mapping"="{'h.hivefrom':'headers.From',
+ 'h.hiveto':'headers.To'}")
+STORED AS INPUTFORMAT "com.mongodb.hadoop.mapred.BSONFileInputFormat"
+OUTPUTFORMAT "com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat"
 LOCATION '${INPUT}';
 
 
@@ -56,8 +59,10 @@ CREATE TABLE send_recip_counted (
     >,
     count INT
 )
-STORED BY 'com.mongodb.hadoop.hive.BSONStorageHandler'
+ROW FORMAT SERDE "com.mongodb.hadoop.hive.BSONSerDe"
 WITH SERDEPROPERTIES ("mongo.columns.mapping"="{'id':'_id'}")
+STORED AS INPUTFORMAT "com.mongodb.hadoop.mapred.BSONFileInputFormat"
+OUTPUTFORMAT "com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat"
 LOCATION '${OUTPUT}';
 
 -- Final output with the correct format
