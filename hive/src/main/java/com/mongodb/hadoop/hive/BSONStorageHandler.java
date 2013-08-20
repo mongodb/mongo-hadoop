@@ -5,7 +5,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import com.mongodb.hadoop.mapred.BSONFileInputFormat;
-import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
+import com.mongodb.hadoop.hive.output.HiveBSONStorageHandlerFileOutputFormat;
 
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
@@ -25,7 +25,7 @@ public class BSONStorageHandler extends DefaultStorageHandler {
     
     @Override
     public Class<? extends OutputFormat> getOutputFormatClass() {
-        return HiveBSONFileOutputFormat.class;
+        return HiveBSONStorageHandlerFileOutputFormat.class;
     }
  
     @Override

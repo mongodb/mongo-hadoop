@@ -27,7 +27,7 @@ import com.mongodb.hadoop.io.BSONWritable;
  * 
  */
 @SuppressWarnings("deprecation")
-public class HiveBSONFileOutputFormat<K, V> 
+public class HiveBSONStorageHandlerFileOutputFormat<K, V> 
             extends BSONFileOutputFormat<K, V> implements HiveOutputFormat<K, V>{
     
     private static final Log LOG = LogFactory.getLog(HiveBSONFileOutputFormat.class);
@@ -51,6 +51,17 @@ public class HiveBSONFileOutputFormat<K, V>
             Properties tableProperties,
             Progressable progress) throws IOException {
         
+        if (jc.get("mapred.output.file") != null) {
+            fileOutputPath = new Path(jc.get("mapred.output.file"));
+        } else {
+            // getDefaultWorkFile(path, ".bson") -> 
+            
+            fileOutputPath = new Path(fileOutputPath, fileOutputPath.getName());
+                                                                                                
+            if (!fileOutputPath.toString().endsWith(".bson")) {
+                fileOutputPath = fileOutputPath.suffix(".bson");
+            }
+        }
         LOG.info("Output going into " + fileOutputPath);
 
         FileSystem fs = fileOutputPath.getFileSystem(jc);
