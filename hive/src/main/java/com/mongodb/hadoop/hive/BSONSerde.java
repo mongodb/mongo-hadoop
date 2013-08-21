@@ -129,7 +129,7 @@ public class BSONSerde implements SerDe {
         if (blob instanceof BSONWritable) {
             BSONWritable b = (BSONWritable) blob;
             LOG.debug("Got a BSONWritable: " + b);
-            doc = (BSONObject) b;
+            doc = b.getDoc();
         } else {
             throw new SerDeException(getClass().toString() +
                     " requires a BSONWritable object, not " + blob.getClass());
