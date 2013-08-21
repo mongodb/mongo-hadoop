@@ -87,3 +87,91 @@ To make each output record be used as an insert into a MongoDB collection, use t
 The `MongoInsertStorage` class also takes two args: an `idAlias` and a `schema` as described above. If `schema` is left blank, it will attempt to infer the output schema from the data using the strategy described above. If `idAlias` is left blank, an `ObjectId` will be generated for the value of the `_id` field in each output document.
 
 
+### Updating a MongoDB collection
+
+Just like in the MongoDB javascript shell, you can now update documents in a MongoDB collection within a Pig script via `com.mongodb.hadoop.pig.MongoUpdateStorage`. Use:
+```
+STORE <aliasname> INTO 'mongodb://localhost:27017/<db>.<collection>'
+              	  USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+                        '<query>',
+                        '<update>',
+                        '<schema>', '<fieldtoignore>',
+                        '<updateOptions>');
+```
+where
+* `<aliasname>` is the name of the alias you want to use in updating documents in your collection
+* `<db>` is the name of the database to update and `<collection>` is the name of the collection to update
+* `<query>` is the (valid) JSON representing the query to use to find document(s) in the collection
+* `<update>` is the (valid) JSON representing the kind of updates to perform on document(s) in the collection
+* Optional: `<schema>` is the PIG schema of <aliasname>. **Strongly** advised to use this.
+* Optional: `<fieldtoignore>` is the fieldname to ignore in `schema` during construction of BSON objects.
+  	    Particularly useful for updating/writing an array to a document
+* Optional: you can use `<updateOptions>` to provide other update options, just as in the MongoDB JS shell.
+  	    For example, `{upsert : true, multi : true}`. Only upsert and multi are supported for now.
+
+Consider the following examples:
+
+Assume we have an alias `data` that is a bag of tuples. 
+```
+data =
+{
+ ("Bab", "Alabi", "male", 19, {("a"), ("b"), ("c")}),
+ ("Dad", "Alabi", "male", 21, {("d"), ("e"))}),
+ ("Tins", "Dada", "female", 50, {})
+}
+```
+with schema `f:chararray, l:chararray, g:chararray, age:int, cars:{t:(car:chararray)}`.
+**Note**: Every pig data structure in a pig schema has to be named.
+
+To insert the gender, first and last names of each person in `data` into a `test.persons_info` collection, 
+making sure that we update any existing documents with the same `first` and `last` fields, use
+```
+STORE data INTO 'mongodb://localhost:27017/test.persons_info'
+      	   USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+                 '{first:"\$f", last:"\$l"}',
+                 '{\$set:{gender:"\$g"}}',
+                 'f:chararray, l:chararray, g:chararray, age:int, cars:{t:(car:chararray)}'
+	   );
+```
+The resulting collection looks like this:
+```
+{ "_id" : ObjectId("..."), "first":"Bab", "last":"Alabi", "gender":"male"},
+{ "_id" : ObjectId("..."), "first":"Dad", "last":"Alabi", "gender":"male"},
+{ "_id" : ObjectId("..."), "first":"Tins", "last":"Dada", "gender":"female"}
+```
+Next, let's say, we want to include the `age` and `cars` for each person into the collection, use:
+```
+STORE data INTO 'mongodb://localhost:27017/test.persons_info'
+           USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+                 '{first:"\$f", last:"\$l"}',
+                 '{\$set:{age:"\$age"}, \$pushAll:{cars:"\$cars"}}',
+                 'f:chararray, l:chararray, g:chararray, age:int, cars:{t:(car:chararray)}'
+           );
+```
+The resulting collection looks like this:
+```
+{ "_id" : ObjectId("..."), "gender":"male", "age" : 19, "cars" : [{"car": "a"}, {"car":"b"}, {"car":"c"}], "first" : "Daniel", "last" : "Alabi" }
+{ "_id" : ObjectId("..."), "gender":"male", "age" : 21, "cars" : [{"car":"d"}, {"car":"e"}], "first" : "Tolu", "last" : "Alabi" }
+{ "_id" : ObjectId("..."), "gender":"female", "age" : 50, "cars" : [], "first" : "Tinuke", "last" : "Dada" }
+```
+Notice that every element in `cars` is a named map with one key `car`. In most cases, such update is unwanted/unnecessary. To instead make
+`cars` an array of strings, we can use:
+```
+STORE data INTO 'mongodb://localhost:27017/test.persons_info'
+           USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+                 '{first:"\$f", last:"\$l"}',
+                 '{\$set:{age:"\$age"}, \$pushAll:{cars:"\$cars"}}',
+                 'f:chararray, l:chararray, age:int, cars:{t:(car:chararray)}'
+                 'car'
+           );
+```
+specifying what field to ignore in the schema while inserting pig objects. The resulting collection looks like this:
+```
+{ "_id" : ObjectId("..."), "gender":"male", "age" : 19, "cars" : ["a", "b", "c"], "first" : "Daniel", "last" : "Alabi" }
+{ "_id" : ObjectId("..."), "gender":"male", "age" : 21, "cars" : ["d", "e"], "first" : "Tolu", "last" : "Alabi" }
+{ "_id" : ObjectId("..."), "gender":"female", "age" : 50, "cars" : [], "first" : "Tinuke", "last" : "Dada" }
+```
+More like it.
+
+
+
