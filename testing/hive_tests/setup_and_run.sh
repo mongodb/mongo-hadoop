@@ -10,13 +10,16 @@
 ## * mongo-hadoop-hive-*.jar
 
 # test directory -- CHANGE ME --
-export TEST_DIR="/Users/danielalabi/mongo-hadoop-sweet/testing/hive_tests/"
+export TEST_DIR="/Users/danielalabi/mongo-hadoop-sweet/testing/hive_tests"
 
 # location of data file used in testing
 export TEXT_TEST_PATH="$TEST_DIR/text_test_files/test_data.txt"
 
-# directory containing BSON file to be used for testing
-export BSON_TEST_PATH="$TEST_DIR/bson_test_files/"
+# Path containing BSON file to be used for testing
+export BSON_LOCAL_TEST_PATH="$TEST_DIR/bson_test_files/users.bson"
+
+# directory to transfer "bson_test_files" for use in testing
+export BSON_HDFS_TEST_PATH="/user/hive/warehouse/bson_test_files/"
 
 # schema of the data files (bson,text) used in testing
 export TEST_SCHEMA="(id INT, name STRING, age INT)"

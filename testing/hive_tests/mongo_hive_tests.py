@@ -26,26 +26,30 @@ from thrift.protocol import TBinaryProtocol
 
 # get/set the variables representing environment variables:
 # * hivePort
+# * mongoPort
 # * textDataFile
-# * mongoTestURI
-# * testHiveTblName
 # * testHiveTblSchema
+# * storageHandlerPath
+# * testBSONLocalPath
+# * testBSONHDFSPath
+# * serdeProperties
+# * hostname
+# * testHiveTblName
 # * testHiveFileType
 # * testHiveFieldsDelim
 # * testMongoTblName
 # * testBSONTblName
-# * storageHandlerPath
 # * testMongoPName
 # * testBSONPName
-# * mongoPort
 # * verbose
 hivePort = int(os.environ.get("HIVE_PORT", 10000))
 mongoPort = int(os.environ.get("MONGOD_PORT", 27017))
 textDataFile = None
 testHiveTblSchema = None
 storageHandlerPath = None
-testBSONFilePath = None
-serdeProperties = None
+testBSONLocalPath = None
+testBSONHDFSPath = None
+mongoTestURI = None
 hostname = socket.gethostname()
 testHiveTblName = os.environ.get("HDFS_TEST_TABLE", "hive_test")
 testHiveFileType = os.environ.get("HDFS_TEST_FILE_TYPE", "textfile")
@@ -61,7 +65,8 @@ verbose = bool(int(os.environ.get("VERBOSE_TESTS", 0)))
 
 try:
     textDataFile = os.environ.get("TEXT_TEST_PATH")
-    testBSONFilePath = os.environ.get("BSON_TEST_PATH")
+    testBSONHDFSPath = os.environ.get("BSON_HDFS_TEST_PATH")
+    testBSONLocalPath = os.environ.get("BSON_LOCAL_TEST_PATH")
     testHiveTblSchema = os.environ.get("TEST_SCHEMA")
     storageHandlerPath = os.environ.get("PACKAGE_PATH")
     mongoTestURI = os.environ.get("MONGO_TEST_URI")
@@ -70,7 +75,8 @@ except KeyError:
     print "\t$TEST_DATA_FILE : absolute path of test data file"
     print "\t$HIVE_TEST_SCHEMA : hive schema of TEST_DATA_FILE"
     print "\t$MSH_PATH : absolute path of MongoStorageHandler jar"
-    print "\t$TEST_BSON_FILE_PATH : local FS BSON file"
+    print "\t$TEST_BSON_LOCAL_PATH : local FS BSON directory location"
+    print "\t$TEST_BSON_HDFS_PATH : HDFS BSON directory location"
     print "\t$MONGO_TEST_URI : URI of mongo collection"
     sys.exit(1)
 
@@ -155,12 +161,6 @@ class Helpers:
                                     testHiveTblSchema, testHiveFieldsDelim,
                                     testHiveFileType)
         
-    @staticmethod
-    def loadDataFromDirectory(client):
-        loadPath = ""
-        cmd = ["INSERT OVERWRITE DIRECTORY", loadPath,
-               ""]
-
     """
     Transfer data from 'fromTable' into 'toTable'
     """
@@ -182,16 +182,35 @@ class Helpers:
         Helpers.executeQuery(client, cmd)
 
     """
+    Copy files in 'localPath' into HDFS at 'hdfsPath'.
+    Only call if the 'hdfsPath' doesn't already exist.
+    """
+    @staticmethod
+    def loadIntoHDFS(localPath, hdfsPath):
+        # create 'hdfsPath'
+        cmd = ["hadoop", "fs", "-mkdir", hdfsPath]
+        subprocess.call(cmd)
+
+        # copy over files to 'hdfsPath'
+        cmd = ["hadoop", "fs", "-put", 
+               localPath, hdfsPath]
+        subprocess.call(cmd)
+
+    """
     Loads data into a BSON-based hive table.
     """
     @staticmethod
     def loadDataIntoBSONHiveTable(client, withLocation):
+        # drop the BSON-based table. This also drops the corresponding 
+        # bson files so we'd have to reload the BSON files into HDFS again
         Helpers.dropTable(client, testBSONTblName)        
+        Helpers.loadIntoHDFS(testBSONLocalPath, testBSONHDFSPath)
+
         # create the BSON-based hive table using the BSONStorageHandler
         cmd = ["CREATE TABLE", testBSONTblName, testHiveTblSchema,
                "STORED BY", Helpers.quote(testBSONPName)]
         if withLocation:
-            cmd.extend(["LOCATION", Helpers.quote(testBSONFilePath)])
+            cmd.extend(["LOCATION", Helpers.quote(testBSONHDFSPath)])
         Helpers.executeQuery(client, cmd)
 
     """
@@ -564,7 +583,9 @@ class TestBSONFileToHiveTable(unittest.TestCase):
         
         mongoSchema, mongoData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
         bsonSchema, bsonData = Helpers.getAllDataFromTable(self.client, testBSONTblName)
-        
+
+        self.assertTrue(len(bsonData) > 0)
+
         self.assertEqual(len(mongoData), len(bsonData))
         for i in range(len(mongoData)):
             self.assertEqual(mongoData[i], bsonData[i])
@@ -575,7 +596,9 @@ class TestBSONFileToHiveTable(unittest.TestCase):
         
         hiveSchema, hiveData = Helpers.getAllDataFromTable(self.client, testHiveTblName)
         bsonSchema, bsonData = Helpers.getAllDataFromTable(self.client, testBSONTblName)
-        
+
+        self.assertTrue(len(bsonData) > 0)
+
         self.assertEqual(len(hiveData), len(bsonData))
         for i in range(len(hiveData)):
             self.assertEqual(hiveData[i], bsonData[i])        
