@@ -186,7 +186,7 @@ public class BSONSplitter extends Configured implements Tool {
                     curSplitLen += bsonDocSize;
                     numDocsRead++;
                     if(numDocsRead % 1000 == 0){
-                        float splitProgress = 100f * (fsDataStream.getPos() / length);
+                        float splitProgress = 100f * ((float) fsDataStream.getPos() / length);
                         log.info("Read " + numDocsRead + " docs calculating splits for " + file.toString() + "; " + splitProgress + "% complete.");
                     }
                 }
