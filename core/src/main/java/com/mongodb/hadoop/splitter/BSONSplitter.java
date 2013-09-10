@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.BlockLocation;
@@ -45,6 +44,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+
 
 import org.bson.BSONObject;
 import org.bson.BasicBSONCallback;
@@ -153,8 +154,18 @@ public class BSONSplitter extends Configured implements Tool {
         ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
-        if(!getConf().getBoolean("bson.split.read_splits", true)){
+        boolean dosplits = true;
+        if (!getConf().getBoolean("bson.split.read_splits", true)) {
             log.info("Reading splits is disabled - constructing single split for " + file);
+            dosplits = false;
+        } else {
+            CompressionCodecFactory compressionCodecs = new CompressionCodecFactory(getConf());
+            if (compressionCodecs.getCodec(file.getPath()) != null) {
+                dosplits = false;
+            }
+            log.info("File is compressed - constructing single split for " + file);
+        }
+        if (!dosplits) {
             FileSplit onesplit = createFileSplit(file, fs, 0, length);
             splits.add(onesplit);
             this.splitsList = splits;
