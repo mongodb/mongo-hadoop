@@ -76,6 +76,10 @@ public class MongoSplitterFactory{
                 coll = MongoConfigUtil.getCollection(uri);
                 stats = coll.getStats();
             }
+            
+            if (!stats.getBoolean( "ok", false )) {
+                throw new RuntimeException( "Unable to calculate input splits from collection stats: " + stats.getString( "errmsg" ) );
+            }
 
             final boolean isSharded = stats.getBoolean( "sharded", false );
             if(!isSharded){
