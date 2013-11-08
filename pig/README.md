@@ -19,15 +19,15 @@ To load records from MongoDB database to use in a Pig script, a class called `Mo
 
 However, by creating a MongoLoader instance with a specific list of field names, you can map fields in the document to fields in a Pig named tuple datatype. When used this way, `MongoLoader` takes two arguments:
 
-`idAlias` - an alias to use for the `_id` field in documents retrieved from the collection. The string "_id" is not a legal pig variable name, so the contents of the field in `_id` will be mapped to a value in Pig accordingly by providing a value here. 
-
 `schema` - a schema (list of fields/datatypes) that will map fields in the document to fields in the Pig records. See section below on Datatype Mapping for details.
+
+`idAlias` - an alias to use for the `_id` field in documents retrieved from the collection. The string "_id" is not a legal pig variable name, so the contents of the field in `_id` will be mapped to a value in Pig accordingly by providing a value here. 
 
 Example:
 
     -- Load two fields from the documents in the collection specified by this URI
     -- map the "_id" field in the documents to the "id" field in pig
-    > raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader('id', 'id, bc10Year');
+    > raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader('id, bc10Year', 'id');
     > raw_limited = LIMIT raw 3;
     > dump raw_limited; 
     (631238400000,7.94)
