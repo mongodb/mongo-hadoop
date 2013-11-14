@@ -41,14 +41,13 @@ import java.util.*;
 public class TreasuryYieldUpdateReducer
         extends Reducer<IntWritable, DoubleWritable, NullWritable, MongoUpdateWritable> {
 
+    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
 
     @Override
     public void reduce( final IntWritable pKey,
                         final Iterable<DoubleWritable> pValues,
                         final Context pContext )
             throws IOException, InterruptedException{
-
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldReducer.class );
 
         int count = 0;
         double sum = 0;
