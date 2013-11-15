@@ -49,6 +49,105 @@ import com.mongodb.util.JSON;
 public class JSONPigReplace {
     // create logger for use, in debugging 
     final static Log log = LogFactory.getLog(JSONPigReplace.class);
+
+    public static final String[] PREDEFINED_MONGODB_FUNCTIONS = new String[] {
+            "$add",
+            "$addToSet",
+            "$all",
+            "$and",
+            "$atomic",
+            "$avg",
+            "$bit",
+            "$box",
+            "$center",
+            "$centerSphere",
+            "$cmd",
+            "$cmp",
+            "$comment",
+            "$concat",
+            "$cond",
+            "$dayOfMonth",
+            "$dayOfWeek",
+            "$dayOfYear",
+            "$divide",
+            "$each",
+            "$elemMatch",
+            "$eq",
+            "$exists",
+            "$explain",
+            "$first",
+            "$geoIntersects",
+            "$geometry",
+            "$geoNear",
+            "$geoWithin",
+            "$group",
+            "$gt",
+            "$gte",
+            "$hint",
+            "$hour",
+            "$ifNull",
+            "$in",
+            "$inc",
+            "$isolated",
+            "$last",
+            "$limit",
+            "$lt",
+            "$lte",
+            "$match",
+            "$max",
+            "$maxDistance",
+            "$maxScan",
+            "$millisecond",
+            "$min",
+            "$minute",
+            "$mod",
+            "$month",
+            "$multiply",
+            "$natural",
+            "$ne",
+            "$near",
+            "$nearSphere",
+            "$nin",
+            "$nor",
+            "$not",
+            "$options",
+            "$or",
+            "$orderby",
+            "$polygon",
+            "$pop",
+            "$project",
+            "$pull",
+            "$pullAll",
+            "$push",
+            "$pushAll",
+            "$query",
+            "$regex",
+            "$rename",
+            "$returnKey",
+            "$second",
+            "$set",
+            "$setOnInsert",
+            "$showDiskLoc",
+            "$size",
+            "$skip",
+            "$slice",
+            "$snapshot",
+            "$sort",
+            "$strcasecmp",
+            "$substr",
+            "$subtract",
+            "$sum",
+            "$toLower",
+            "$toUpper",
+            "$type",
+            "$uniqueDocs",
+            "$unset",
+            "$unwind",
+            "$week",
+            "$where",
+            "$within",
+            "$year",
+    };
     
     // initial 'JSONPigReplace' strings
     final private String[] initStrs; 
@@ -85,7 +184,7 @@ public class JSONPigReplace {
             } catch (Exception e) {
                 log.error("Error while extracting strings to replace");
             }
-        }   
+        }
     }
     
     /*
@@ -117,7 +216,7 @@ public class JSONPigReplace {
             fields = schema.getFields();
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid Schema Format");
-    }
+        }
         
         // Make Tuple t into BSONObject using schema provided and store result in pObj
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
@@ -205,9 +304,16 @@ public class JSONPigReplace {
         BasicBSONObject res = new BasicBSONObject();
         String k;
         Object v;
+
+        List predefined = Arrays.asList(JSONPigReplace.PREDEFINED_MONGODB_FUNCTIONS);
+
         for (Entry<String, Object> e : in.entrySet()) {
             k = e.getKey();
             v = e.getValue();
+
+            if (k.startsWith("$") && !predefined.contains(k)) {
+                k = (String)reps.get(k.substring(1));
+            }
             
             // v is a nested BasicBSONObject or an array
             if (v instanceof BasicBSONObject) {
