@@ -129,7 +129,7 @@ class MongosManager(object):
         print "pid is", self.pid
 
         if addShards:
-            mongos_cxn = pymongo.Connection(self.host)
+            mongos_cxn = pymongo.Connection("localhost:" + str(self.port))
             admin = mongos_cxn['admin']
             for shard in shards:
                 admin.command("addShard", shard)
@@ -623,7 +623,8 @@ class ReplicaSetManager(object):
         num_retries = 10
         while True:
             try:
-                c = pymongo.Connection([m['host'] for m in self.members])
+                # Use localhost to avoid authentication
+                c = pymongo.Connection("localhost:" + str(self.primary_port), replicaset=self.name)
                 break
             except (pymongo.errors.AutoReconnect, pymongo.errors.ConnectionFailure) as e:
                 # Special case: all nodes down, or only arbiter (to which we are
