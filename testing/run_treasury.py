@@ -35,7 +35,7 @@ if not os.path.isdir(TEMPDIR):
 
 #declare -a job_args
 #cd ..
-VERSION_SUFFIX = "1.1.0"
+VERSION_SUFFIX = "1.2.0-rc0"
 
 
 def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
