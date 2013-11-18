@@ -8,7 +8,7 @@ import AssemblyKeys._
 object MongoHadoopBuild extends Build {
 
   lazy val buildSettings = Seq(
-    version := "1.1.0",
+    version := "1.2.0-rc0",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
