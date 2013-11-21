@@ -43,6 +43,7 @@ def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
 
 version_buildtarget =\
     {"0.22" : "0.22.0",
+     "2.2" : "2.2.0",
      "1.0" : "1.0.4",
      "1.1" : "1.1.2",
      "cdh4" : "cdh4.3.0",
@@ -756,7 +757,7 @@ class TestStandaloneAuth(TestBasic):
         x = self.server.connection()['admin'].add_user("test_user","test_pw", roles=["clusterAdmin", "readWriteAnyDatabase"])
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.auth.uri'] = 'mongodb://%s:%s@%s/admin' % ('test_user', 'test_pw', self.server_hostname) 
-        runjob('test_user:test_pw@' + self.server_hostname, PARAMETERS)
+        runjob(self.server_hostname, PARAMETERS)
 
         server_connection = self.server.connection()
         server_connection['admin'].authenticate("test_user","test_pw")

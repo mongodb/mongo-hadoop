@@ -44,6 +44,8 @@ object MongoHadoopBuild extends Build {
                                   "1.0.x" -> hadoopDependencies("1.0.4", false, stockPig, stockHive),
                                   "1.1" -> hadoopDependencies("1.1.2", true, stockPig, stockHive),
                                   "1.1.x" -> hadoopDependencies("1.1.2", true, stockPig, stockHive),
+                                  "2.2" -> hadoopDependencies("2.2.0", true, stockPig, stockHive, nextGen=true),
+                                  "2.2.x" -> hadoopDependencies("2.2.0", true, stockPig, stockHive, nextGen=true),
                                   "default" -> hadoopDependencies("1.0.4", false, stockPig, stockHive)
                                  )
 
@@ -295,7 +297,7 @@ object MongoHadoopBuild extends Build {
 
         if (hadoopVersion.startsWith("0.22")) {
             deps ++ Seq("org.apache.hadoop" % "hadoop-mapred" % altStreamingVer.getOrElse(hadoopVersion))
-        } else if (hadoopVersion.startsWith("0.23") || hadoopVersion.startsWith("2.0.0")) {
+        } else if (hadoopVersion.startsWith("0.23") || hadoopVersion.startsWith("2.0.0") || hadoopVersion.startsWith("2.2.0")) {
           deps ++ Seq(mrDep("core"), mrDep("common"), mrDep("shuffle"),
                       mrDep("shuffle"), mrDep("app"), mrDep("jobclient"))
         } else {
@@ -362,7 +364,7 @@ object Resolvers {
 }
 
 object Dependencies {
-  val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.10.1"
+  val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.11.3"
   val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.10.0"
   val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0" 
   val junit = "junit" % "junit" % "4.10" % "test"
