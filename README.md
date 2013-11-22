@@ -69,7 +69,7 @@ or for Hadoop 1.0.x:
     hadoopRelease in ThisBuild := "1.0"
 
 To determine which value you need to set in this file, refer to the list of distributions below.
-Then run `./sbt package` to build the jars, which will be generated in the `target/` directory.
+Then run `./sbt package` to build the jars, which will be generated in the `core/target/` directory.
 
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the following locations, depending on which Hadoop release you are using:
 
