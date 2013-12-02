@@ -575,41 +575,18 @@ public class BSONSerDe implements SerDe {
         }
         return bsonObject;
     }
-    
+
     /**
      * For primitive types, depending on the primitive type, 
      * cast it to types that Mongo supports
      */
     private Object serializePrimitive(Object obj, PrimitiveObjectInspector oi) {
         switch (oi.getPrimitiveCategory()) {
-            case BOOLEAN:
-                return (Boolean) obj;
-            case BINARY:
-            case BYTE:
-                return (byte[]) obj;
-            case DOUBLE:
-            case FLOAT:
-                return (Double) obj;
-            case LONG:
-            case SHORT:
-            case INT:
-                if (obj instanceof LazyInteger) {
-                    return Integer.parseInt(((LazyInteger) obj).toString());
-                }
-                return (Integer) obj;
-            case STRING:
-                if (obj instanceof LazyString) {
-                    return ((LazyString) obj).toString();
-                } else if (obj instanceof String) {
-                    return (String) obj;
-                }
-                return obj.toString();
             case TIMESTAMP:
-                return new BSONTimestamp(((Long) (((Timestamp) obj).getTime() / 1000L)).intValue(), 1);
-            case UNKNOWN:
-            case VOID:
+                Timestamp ts = (Timestamp) oi.getPrimitiveJavaObject(obj);
+                return new Date(ts.getTime());
             default:
-                return null;
+                return oi.getPrimitiveJavaObject(obj);
         }
     }
 }
