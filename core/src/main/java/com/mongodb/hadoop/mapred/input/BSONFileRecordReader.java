@@ -30,6 +30,11 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.TaskAttemptContext;
 import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.fs.Seekable;
+import org.apache.hadoop.io.compress.Decompressor;
+import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.CompressionCodec;
 import org.bson.*;
 
 import java.io.DataInputStream;
@@ -49,7 +54,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     private Object key;
     private BSONWritable value;
     byte[] headerBuf = new byte[4];
-    private FSDataInputStream in;
+    private InputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
 
@@ -57,14 +62,36 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     private BSONDecoder decoder;
 
     public BSONFileRecordReader(){ }
+    
+    private CompressionCodecFactory compressionCodecs = null;
+    private CompressionCodec codec;
+    private Decompressor decompressor;
+    private Seekable filePosition;
 
     public void initialize(InputSplit inputSplit, Configuration conf) throws IOException {
         this.fileSplit = (FileSplit) inputSplit;
         this.conf = conf;
         Path file = fileSplit.getPath();
+        compressionCodecs = new CompressionCodecFactory(this.conf);
+        codec = compressionCodecs.getCodec(file);
         FileSystem fs = file.getFileSystem(conf);
-        in = fs.open(file, 16*1024*1024);
-        in.seek(fileSplit.getStart());
+        FSDataInputStream fileIn = fs.open(file, 16*1024*1024);
+        if (codec == null) {
+            log.info("reading split " + this.fileSplit.toString());
+            fileIn.seek(fileSplit.getStart());
+            in = fileIn;
+        } else {
+            if (fileSplit.getStart() > 0) {
+                throw new IOException("File is not seekable but start of split is non-zero");
+            }
+            decompressor = CodecPool.getDecompressor(codec);
+            in = codec.createInputStream(fileIn, decompressor);
+            log.info("reading compressed split " + this.fileSplit.toString());
+            // start is ignored. as the file is not really seekable.
+            // but then the splits should be starting at 0
+        }
+        filePosition = fileIn;
+
         if (MongoConfigUtil.getLazyBSON(conf)) {
             callback = new LazyBSONCallback();
             decoder = new LazyBSONDecoder();
@@ -77,7 +104,8 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     @Override
     public boolean next(NullWritable key, BSONWritable value) throws IOException {
         try{
-            if(in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()){
+            if (filePosition.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()
+                    && (codec == null || in.available() == 0)) {
                 try{
                     this.close();
                 }catch(Exception e){
@@ -93,7 +121,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
 
             numDocsRead++;
             if(numDocsRead % 5000 == 0){
-                log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+                log.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + filePosition.getPos());
             }
             return true;
         }catch(Exception e){
@@ -111,15 +139,15 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
         if(this.finished)
             return 1f;
         if(in != null)
-            return new Float(in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
+            return new Float(filePosition.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
         return 0f;
     }
 
     public long getPos() throws IOException {
         if(this.finished)
             return this.fileSplit.getStart() + this.fileSplit.getLength();
-        if(in != null )
-            return in.getPos();
+        if (in != null)
+            return filePosition.getPos();
         return this.fileSplit.getStart();
     }
 
@@ -139,6 +167,9 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
         this.finished = true;
         if(this.in != null){
             in.close();
+        }
+        if (codec != null) {
+            ((FSDataInputStream)this.filePosition).close();
         }
     }
 
