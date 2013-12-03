@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/bin/env python
 import sys
 import struct
 import pymongo
