@@ -23,8 +23,8 @@ from bson_splitter import split_bson
 CLEANUP_TMP=os.environ.get('CLEANUP_TMP', True)
 HADOOP_HOME=os.environ['HADOOP_HOME']
 HADOOP_RELEASE=os.environ.get('HADOOP_RELEASE',None)
-AWS_SECRET=os.environ.get('AWS_SECRET',None) 
-AWS_ACCESSKEY=os.environ.get('AWS_ACCESSKEY',None) 
+AWS_SECRET=os.environ.get('AWS_SECRET',None)
+AWS_ACCESSKEY=os.environ.get('AWS_ACCESSKEY',None)
 TEMPDIR=os.environ.get('TEMPDIR','/tmp')
 USE_ASSEMBLY=os.environ.get('USE_ASSEMBLY', True)
 num_runs = 0
@@ -35,7 +35,7 @@ if not os.path.isdir(TEMPDIR):
 
 #declare -a job_args
 #cd ..
-VERSION_SUFFIX = "1.2.0-rc0"
+VERSION_SUFFIX = "1.2.0-rc1"
 
 
 def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
@@ -66,7 +66,7 @@ else:
     streaming_jar_name = generate_jar_name("mongo-hadoop-streaming", VERSION_SUFFIX);
 
 # result set for sanity check#{{{
-check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 }, 
+check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 2138.1000000000004 },
                   { "_id": 1991, "count": 250, "avg": 7.8623600000000025, "sum": 1965.5900000000006 },
                   { "_id": 1992, "count": 251, "avg": 7.008844621513946, "sum": 1759.2200000000005 },
                   { "_id": 1993, "count": 250, "avg": 5.866279999999999, "sum": 1466.5699999999997 },
@@ -87,7 +87,7 @@ check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 
                   { "_id": 2008, "count": 251, "avg": 3.6642629482071714, "sum": 919.73 },
                   { "_id": 2009, "count": 250, "avg": 3.2641200000000037, "sum": 816.0300000000009 },
                   { "_id": 2010, "count": 189, "avg": 3.3255026455026435, "sum": 628.5199999999996 } ]#}}}
-                             
+
 def compare_results(collection, reference=check_results):
     output = list(collection.find().sort("_id"))
     if len(output) != len(reference):
@@ -98,7 +98,7 @@ def compare_results(collection, reference=check_results):
         #round to account for slight changes due to precision in case ops are run in different order.
         if doc['_id'] != reference[i]['_id'] or \
                 doc['count'] != reference[i]['count'] or \
-                round(doc['avg'], 7) != round(reference[i]['avg'], 7): 
+                round(doc['avg'], 7) != round(reference[i]['avg'], 7):
             print "docs do not match", doc, reference[i]
             return False
     return True
@@ -177,8 +177,8 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
         cmd.append("-D")
         cmd.append(key + "=" + val)
 
-    
-    #if it's not set, assume that the test is 
+
+    #if it's not set, assume that the test is
     # probably setting it in some other property (e.g. multi collection)
     if input_collection:
         cmd.append("-D")
@@ -186,7 +186,7 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
             input_uri = " ".join('mongodb://%s/%s?readPreference=%s' % (hostname, x, readpref) for x in input_collection)
             input_uri = '"' + input_uri + '"'
         else:
-            input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+            input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref)
         cmd.append("mongo.input.uri=%s" % input_uri)
 
     cmd.append("-D")
@@ -225,13 +225,13 @@ def runbsonjob(input_path, params, hostname,
 
     print cmd
     subprocess.call(' '.join(cmd), shell=True)
-    
+
 
 def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
            output_collection='mongo_hadoop.yield_historical.out',
            readpref="primary",
            input_auth=None,
-           output_auth=None, 
+           output_auth=None,
            inputpath='file://' + os.path.join(TEMPDIR, 'in'),
            outputpath='file://' + os.path.join(TEMPDIR, 'out'),
            inputformat='com.mongodb.hadoop.mapred.MongoInputFormat',
@@ -250,9 +250,9 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
     cmd += ["-inputformat",inputformat]
     cmd += ["-outputformat",outputformat]
     cmd += ["-io", 'mongodb']
-    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref)
     cmd += ['-jobconf', "mongo.input.uri=%s" % input_uri]
-    output_uri = "mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection) 
+    output_uri = "mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection)
     cmd += ['-jobconf', output_uri]
     cmd += ['-jobconf', 'stream.io.identifier.resolver.class=com.mongodb.hadoop.streaming.io.MongoIdentifierResolver']
 
@@ -518,7 +518,7 @@ class TestShardedNoMongos(BaseShardedTest):
             #logging.info(doc['_id'], "was on shard ", self.shard1.name, "now on ", self.shard2.name)
             #print "inserting", doc
             destination['mongo_hadoop']['yield_historical.in'].insert(doc, safe=True)
-        
+
         PARAMETERS = DEFAULT_PARAMETERS.copy()
         PARAMETERS['mongo.input.split.allow_read_from_secondaries'] = 'true'
         PARAMETERS['mongo.input.split.read_from_shards'] = 'true'
@@ -574,7 +574,7 @@ class TestStaticBSON(Standalone):
         self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_', dir=TEMPDIR)
         mongo_manager.mongo_dump(self.server_hostname, "mongo_hadoop",
                                    "yield_historical.in", self.temp_outdir)
-        
+
 
     def tearDown(self):
         logging.info("TestStaticBSON teardown")
@@ -756,7 +756,7 @@ class TestStandaloneAuth(TestBasic):
         logging.info("Testing standalone with authentication on")
         x = self.server.connection()['admin'].add_user("test_user","test_pw", roles=["clusterAdmin", "readWriteAnyDatabase"])
         PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS['mongo.auth.uri'] = 'mongodb://%s:%s@%s/admin' % ('test_user', 'test_pw', self.server_hostname) 
+        PARAMETERS['mongo.auth.uri'] = 'mongodb://%s:%s@%s/admin' % ('test_user', 'test_pw', self.server_hostname)
         runjob(self.server_hostname, PARAMETERS)
 
         server_connection = self.server.connection()

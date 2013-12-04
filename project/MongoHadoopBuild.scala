@@ -8,7 +8,7 @@ import AssemblyKeys._
 object MongoHadoopBuild extends Build {
 
   lazy val buildSettings = Seq(
-    version := "1.2.0-rc0",
+    version := "1.2.0-rc1",
     crossScalaVersions := Nil,
     crossPaths := false,
     organization := "org.mongodb"
@@ -331,7 +331,7 @@ object MongoHadoopBuild extends Build {
         println("*** Adding Hive Dependency for Version '%s'".format(hiveVersion))
 
         Seq(
-          "org.apache.hive" % "hive-serde" % hiveVersion, 
+          "org.apache.hive" % "hive-serde" % hiveVersion,
           "org.apache.hive" % "hive-exec" % hiveVersion
         )
       }
@@ -366,7 +366,7 @@ object Resolvers {
 object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.11.3"
   val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.10.0"
-  val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0" 
+  val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0"
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
   val casbah = "org.mongodb" %% "casbah" % "2.3.0"

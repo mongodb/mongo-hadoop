@@ -2,10 +2,11 @@
 
 ##Purpose
 
-The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem. 
+The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
 Current stable release: **1.1**
-Current unstable release: **1.2.0-rc0**
+
+Current unstable release: **1.2.0-rc1**
 
 ## Features
 
@@ -19,7 +20,7 @@ Current unstable release: **1.2.0-rc0**
 ## Download
 
 * 0.20.x
-    
+
      * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.20.205.0-1.1.0.jar)
      * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.20.205.0-1.1.0.jar)
      * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.20.205.0-1.1.0.jar)
@@ -84,7 +85,7 @@ After successfully building, you must copy the jars to the lib directory on each
    Does **not** support Hadoop Streaming.
 
    Build using `"1.0"` or `"1.0.x"`
-   
+
 * ###Apache Hadoop 1.1
    Includes support for Hadoop Streaming.
 
@@ -93,38 +94,38 @@ After successfully building, you must copy the jars to the lib directory on each
 
 * ###Apache Hadoop 0.20.*
    Does **not** support Hadoop Streaming
-   
+
    Includes Pig 0.9.2.
-   
+
    Build using `"0.20"` or `"0.20.x"`
-   
+
 * ###Apache Hadoop 0.23
    Includes Pig 0.9.2.
-   
+
    Includes support for Streaming
-   
+
    Build using `"0.23"` or `"0.23.x"`
 
 * ###Apache Hadoop 0.21
    Includes Pig 0.9.1
-   
+
    Includes support for Streaming
-   
+
    Build using `"0.21"` or `"0.21.x"`
 
 * ###Cloudera Distribution for Hadoop Release 3
     This is derived from Apache Hadoop 0.20.2 and includes custom patches.
-    
+
    Includes support for streaming and Pig 0.8.1.
 
    Build with `"cdh3"`
 
 * ###Cloudera Distribution for Hadoop Release 4
- 
+
    This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1 is still fully compatible.
-   
+
    Includes support for Streaming and Pig 0.11.1.
-   
+
    Build with `"cdh4"`
 
 ## Configuration
@@ -161,7 +162,7 @@ For examples on using Pig with the MongoDB Connector for Hadoop, also refer to t
 
 ## Notes for Contributors
 
-If your code introduces new features, please add tests that cover them if possible and make sure that the existing test suite  still passes. If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details and we will try to help. 
+If your code introduces new features, please add tests that cover them if possible and make sure that the existing test suite  still passes. If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details and we will try to help.
 
 ### Maintainers
 Mike O'Brien (mikeo@10gen.com)
