@@ -1,5 +1,4 @@
 -- Update these jar locations to point to the correct location on your machine
-REGISTER /tmp/piggybank-0.3-amzn.jar
 REGISTER  /Users/mike/Downloads/mongo-2.10.1.jar;
 REGISTER  /Users/mike/piggybank.jar;
 REGISTER ../core/target/mongo-hadoop-core_0.20.205.0-1.1.0.jar
@@ -7,11 +6,10 @@ REGISTER ../pig/target/mongo-hadoop-pig_0.20.205.0-1.1.0.jar
 
 raw = LOAD 'file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson' using com.mongodb.hadoop.pig.BSONLoader; 
 DEFINE UnixToISO org.apache.pig.piggybank.evaluation.datetime.convert.UnixToISO();
-DEFINE FORMAT org.apache.pig.piggybank.evaluation.string.FORMAT();
-DEFINE EXTRACT org.apache.pig.piggybank.evaluation.string.EXTRACT();
+DEFINE RegexExtract org.apache.pig.piggybank.evaluation.string.RegexExtract();
 
 date_tenyear = foreach raw generate UnixToISO($0#'_id'), $0#'bc10Year';
-parsed_year = foreach date_tenyear generate FLATTEN(EXTRACT($0, '(\\d{4})')) AS year, (double)$1 as bc;
+parsed_year = foreach date_tenyear generate RegexExtract($0, '(\\d{4})', 0) AS year, (double)$1 as bc;
 
 by_year = GROUP parsed_year BY (chararray)year;
 year_10yearavg = FOREACH by_year GENERATE group, AVG(parsed_year.bc);
