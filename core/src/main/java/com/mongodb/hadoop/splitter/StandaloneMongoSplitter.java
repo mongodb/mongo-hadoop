@@ -82,32 +82,26 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
         // and each entry is just a boundary key; not ranged
         BasicDBList splitData = (BasicDBList) data.get( "splitKeys" );
 
-        if (splitData.size() <= 1) {
-            if (splitData.size() < 1)
-                log.warn( "WARNING: No Input Splits were calculated by the split code. " +
-                          "Proceeding with a *single* split. " + 
-                          "Data may be too small, try lowering 'mongo.input.split_size' " +
-                          "if this is undesirable." );
-            // no splits really. Just do the whole thing data is likely small
-            MongoInputSplit oneBigSplit = createSplitFromBounds((BasicDBObject)null, (BasicDBObject)null);
-            returnVal.add(oneBigSplit);
-        } else {
-            //First split, with empty lower boundary
-            BasicDBObject lastKey = (BasicDBObject) splitData.get( 0 );
-            MongoInputSplit firstSplit = createSplitFromBounds( (BasicDBObject)null, lastKey);
-            returnVal.add(firstSplit);
-
-            for (int i = 1; i < splitData.size(); i++ ) {
-                final BasicDBObject _tKey = (BasicDBObject)splitData.get(i);
-                MongoInputSplit split = createSplitFromBounds(lastKey, _tKey);
-                returnVal.add(split);
-                lastKey = _tKey;
-            }
-
-            //Last max split, with empty upper boundary
-            MongoInputSplit lastSplit = createSplitFromBounds(lastKey, (BasicDBObject)null);
-            returnVal.add(lastSplit);
+        if (splitData.size() == 0) {
+            log.warn( "WARNING: No Input Splits were calculated by the split code. " +
+                    "Proceeding with a *single* split. " +
+                    "Data may be too small, try lowering 'mongo.input.split_size' " +
+                    "if this is undesirable." );
         }
+
+        BasicDBObject lastKey = null; // Lower boundary of the first min split
+
+        for (int i = 0; i < splitData.size(); i++) {
+            BasicDBObject currentKey = (BasicDBObject)splitData.get(i);
+            MongoInputSplit split = createSplitFromBounds(lastKey, currentKey);
+            returnVal.add(split);
+            lastKey = currentKey;
+        }
+
+        // Last max split, with empty upper boundary
+        MongoInputSplit lastSplit = createSplitFromBounds(lastKey, null);
+        returnVal.add(lastSplit);
+
         return returnVal;
     }
 
