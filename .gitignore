@@ -44,4 +44,5 @@ metastore_db/
 TempStatsStore/
 *.splits
 *.crc
+tags
 
