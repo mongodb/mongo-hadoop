@@ -100,6 +100,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
             for (int i = 1; i < splitData.size(); i++ ) {
                 final BasicDBObject _tKey = (BasicDBObject)splitData.get(i);
                 MongoInputSplit split = createSplitFromBounds(lastKey, _tKey);
+                returnVal.add(split);
                 lastKey = _tKey;
             }
 
