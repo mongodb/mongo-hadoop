@@ -129,6 +129,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
     @Override
     public void putNext(Tuple tuple) throws IOException{
         try{
+            //log.info("writing " + tuple.toString());
             // perform substitution on variables "marked" for replacements
             BasicBSONObject[] toUpdate = repl.substitute(tuple,  schema, unnamedStr);
             // 'query' JSON
@@ -144,8 +145,9 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
                 isUpsert = (mu.containsField("upsert") ? mu.getBoolean("upsert") : isUpsert);
                 isMulti = (mu.containsField("multi") ? mu.getBoolean("multi") : isMulti);
             }
-            
-            _recordWriter.write(null, new MongoUpdateWritable(q,u, 
+
+            //log.info("Update query: Select:" + q.toString() + ", Update: " + u.toString());
+            _recordWriter.write(null, new MongoUpdateWritable(q,u,
                                                               isUpsert,
                                                               isMulti));
         }catch(Exception e){
