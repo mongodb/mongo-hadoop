@@ -121,5 +121,5 @@ public class MongoTool extends Configured implements Tool {
     /**
      * SET ME Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc
      */
-    String _jobName = "<unnamed MongoTool job>";
+    protected String _jobName = "<unnamed MongoTool job>";
 }
