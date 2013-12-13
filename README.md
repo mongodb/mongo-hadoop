@@ -4,9 +4,7 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
-Current stable release: **1.1**
-
-Current unstable release: **1.2.0-rc1**
+Current stable release: **1.2.0**
 
 ## Features
 
@@ -18,46 +16,7 @@ Current unstable release: **1.2.0-rc1**
 * Works with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
 
 ## Download
-
-* 0.20.x
-
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.20.205.0-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.20.205.0-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.20.205.0-1.1.0.jar)
-
-* 0.22.x
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.22.0-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.22.0-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.22.0-1.1.0.jar)
-
-* 0.23.x
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_0.23.1-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_0.23.1-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_0.23.1-1.1.0.jar)
-     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_0.23.1-1.1.0.jar)
-
-* 1.0.x
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_1.0.4-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_1.0.4-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_1.0.4-1.1.0.jar)
-
-* 1.1.x
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_1.1.2-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_1.1.2-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_1.1.2-1.1.0.jar)
-     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_1.1.2-1.1.0.jar)
-
-* cdh3
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_cdh3u3-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_cdh3u3-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_cdh3u3-1.1.0.jar)
-     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_cdh3u3-1.1.0.jar)
-
-* cdh4
-     * [core](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-core_cdh4.3.0-1.1.0.jar)
-     * [pig support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-pig_cdh4.3.0-1.1.0.jar)
-     * [hive support](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-hive_cdh4.3.0-1.1.0.jar)
-     * [streaming](https://s3.amazonaws.com/drivers.mongodb.org/hadoop/mongo-hadoop-streaming_cdh4.3.0-1.1.0.jar)
+See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
 
 ## Building
 
@@ -106,20 +65,6 @@ After successfully building, you must copy the jars to the lib directory on each
 
    Build using `"0.23"` or `"0.23.x"`
 
-* ###Apache Hadoop 0.21
-   Includes Pig 0.9.1
-
-   Includes support for Streaming
-
-   Build using `"0.21"` or `"0.21.x"`
-
-* ###Cloudera Distribution for Hadoop Release 3
-    This is derived from Apache Hadoop 0.20.2 and includes custom patches.
-
-   Includes support for streaming and Pig 0.8.1.
-
-   Build with `"cdh3"`
-
 * ###Cloudera Distribution for Hadoop Release 4
 
    This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1 is still fully compatible.
@@ -127,6 +72,14 @@ After successfully building, you must copy the jars to the lib directory on each
    Includes support for Streaming and Pig 0.11.1.
 
    Build with `"cdh4"`
+
+
+* ###Apache Hadoop 2.2
+   Includes Pig 0.9.2
+
+   Includes support for Streaming
+
+   Build using `"2.2"` or `"2.2.x"`
 
 ## Configuration
 
@@ -162,7 +115,7 @@ For examples on using Pig with the MongoDB Connector for Hadoop, also refer to t
 
 ## Notes for Contributors
 
-If your code introduces new features, please add tests that cover them if possible and make sure that the existing test suite  still passes. If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details and we will try to help.
+If your code introduces new features, please add tests that cover them if possible and make sure that the existing test suite still passes. If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details and we will try to help.
 
 ### Maintainers
 Mike O'Brien (mikeo@10gen.com)
