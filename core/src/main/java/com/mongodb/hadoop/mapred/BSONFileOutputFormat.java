@@ -38,6 +38,8 @@ public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOut
         Path outPath;
         if(job.get("mapred.output.file") != null){
             outPath = new Path(job.get("mapred.output.file"));
+            LOG.warn("WARNING: mapred.output.file is deprecated since it only allows one reducer. "
+                    + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
         }else{
             outPath = getPathForCustomFile(job, name);
         }

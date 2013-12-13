@@ -41,6 +41,8 @@ public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
         Configuration conf = context.getConfiguration();
         if(conf.get("mapred.output.file") != null){
             outPath = new Path(conf.get("mapred.output.file"));
+            LOG.warn("WARNING: mapred.output.file is deprecated since it only allows one reducer. "
+                    + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
         }else{
             outPath = getDefaultWorkFile(context, ".bson");
         }
