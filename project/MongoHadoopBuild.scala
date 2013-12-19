@@ -243,6 +243,7 @@ object MongoHadoopBuild extends Build {
         Seq("org.apache.hive" % "hive-serde" % "0.10.0-cdh4.2.0")
       }else{
         val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+        println(hadoopDeps._4())
         hadoopDeps._4()
       }
     }
