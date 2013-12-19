@@ -290,7 +290,6 @@ class Standalone(unittest.TestCase):
         logging.info("Standalone Teardown")
         pass
 
-
     @classmethod
     def tearDownClass(self):
         print "Standalone Teardown: killing mongod"

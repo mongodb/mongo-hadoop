@@ -2,7 +2,7 @@
 
 
 #Set your HADOOP_HOME directory here.
-export HADOOP_HOME="/Users/mike/hadoop/hadoop-1.1.2" 
+#export HADOOP_HOME="/Users/mike/hadoop/hadoop-1.1.2" 
 
 declare -a job_args
 
