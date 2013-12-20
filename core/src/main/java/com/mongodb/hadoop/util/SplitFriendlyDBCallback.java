@@ -13,9 +13,10 @@
 
 package com.mongodb.hadoop.util;
 
-import com.mongodb.*;
-
-import java.util.logging.*;
+import com.mongodb.DBCallback;
+import com.mongodb.DBCallbackFactory;
+import com.mongodb.DBCollection;
+import com.mongodb.DefaultDBCallback;
 
 public class SplitFriendlyDBCallback extends DefaultDBCallback {
 
@@ -26,29 +27,26 @@ public class SplitFriendlyDBCallback extends DefaultDBCallback {
     }
 
     static class SplitFriendlyFactory implements DBCallbackFactory {
-        public DBCallback create( DBCollection collection ){
-            return new DefaultDBCallback( collection );
+        public DBCallback create(final DBCollection collection) {
+            return new DefaultDBCallback(collection);
         }
     }
 
-    public static DBCallbackFactory FACTORY = new SplitFriendlyFactory();
-    public static MinKey MIN_KEY_TYPE = new MinKey();
-    public static MaxKey MAX_KEY_TYPE = new MaxKey();
+    public static final DBCallbackFactory FACTORY = new SplitFriendlyFactory();
+    public static final MinKey MIN_KEY_TYPE = new MinKey();
+    public static final MaxKey MAX_KEY_TYPE = new MaxKey();
 
-    public SplitFriendlyDBCallback( DBCollection coll ){
-        super( coll );
+    public SplitFriendlyDBCallback(final DBCollection coll) {
+        super(coll);
     }
 
     @Override
-    public void gotMinKey( String name ){
-        cur().put( name, MAX_KEY_TYPE );
+    public void gotMinKey(final String name) {
+        cur().put(name, MAX_KEY_TYPE);
     }
 
     @Override
-    public void gotMaxKey( String name ){
-        cur().put( name, MAX_KEY_TYPE );
+    public void gotMaxKey(final String name) {
+        cur().put(name, MAX_KEY_TYPE);
     }
-
-    static final Logger LOGGER = Logger.getLogger( "com.mongo.DECODING" );
-
 }

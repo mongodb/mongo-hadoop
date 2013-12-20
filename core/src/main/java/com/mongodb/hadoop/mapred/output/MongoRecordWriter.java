@@ -17,83 +17,78 @@
 
 package com.mongodb.hadoop.mapred.output;
 
-import java.io.*;
-import java.util.List;
-
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
+import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapred.*;
-import org.bson.*;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.mapred.Reporter;
+import org.bson.BSONObject;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.*;
+import java.io.IOException;
+import java.util.List;
 
 public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
-    public MongoRecordWriter(List<DBCollection> c, JobConf conf) {
-        _collections = c;
-        _conf = conf;
-        _numberOfHosts = c.size();
+    private int roundRobinCounter = 0;
+    private final int numberOfHosts;
+    private final List<DBCollection> collections;
+
+    private final JobConf configuration;
+
+    public MongoRecordWriter(final List<DBCollection> c, final JobConf conf) {
+        collections = c;
+        configuration = conf;
+        numberOfHosts = c.size();
     }
 
-    public void close(Reporter reporter) {
-        for (DBCollection collection : _collections) {
+
+    public void close(final Reporter reporter) {
+        for (DBCollection collection : collections) {
             collection.getDB().getLastError();
         }
     }
 
+    public void write(final K key, final V value) throws IOException {
+        final DBObject o = new BasicDBObject();
 
-
-    public void write(K key, V value) throws IOException {
-         final DBObject o = new BasicDBObject();
-
-        if ( key instanceof BSONWritable ){
-            o.put("_id", ((BSONWritable)key).getDoc());
-        }
-        else if ( key instanceof BSONObject ){
-            o.put( "_id", key );
-        }
-        else{
-            o.put( "_id", BSONWritable.toBSON(key) );
+        if (key instanceof BSONWritable) {
+            o.put("_id", ((BSONWritable) key).getDoc());
+        } else if (key instanceof BSONObject) {
+            o.put("_id", key);
+        } else {
+            o.put("_id", BSONWritable.toBSON(key));
         }
 
-        if (value instanceof BSONWritable ){
-            o.putAll( ((BSONWritable)value).getDoc() );
-        }
-        else if ( value instanceof MongoOutput ){
-            ( (MongoOutput) value ).appendAsValue( o );
-        }
-        else if ( value instanceof BSONObject ){
-            o.putAll( (BSONObject) value );
-        }
-        else{
-            o.put( "value", BSONWritable.toBSON( value ) );
+        if (value instanceof BSONWritable) {
+            o.putAll(((BSONWritable) value).getDoc());
+        } else if (value instanceof MongoOutput) {
+            ((MongoOutput) value).appendAsValue(o);
+        } else if (value instanceof BSONObject) {
+            o.putAll((BSONObject) value);
+        } else {
+            o.put("value", BSONWritable.toBSON(value));
         }
 
         try {
             DBCollection dbCollection = getDbCollectionByRoundRobin();
             dbCollection.save(o);
-        } catch ( final MongoException e ) {
-            e.printStackTrace();
-            throw new IOException( "can't write to mongo", e );
-        } 
+        } catch (final MongoException e) {
+            throw new IOException("can't write to mongo", e);
+        }
 
     }
 
     private synchronized DBCollection getDbCollectionByRoundRobin() {
-        int hostIndex = (_roundRobinCounter++ & 0x7FFFFFFF) % _numberOfHosts;
-        return _collections.get(hostIndex);
+        int hostIndex = (roundRobinCounter++ & 0x7FFFFFFF) % numberOfHosts;
+        return collections.get(hostIndex);
     }
 
     public JobConf getConf() {
-        return _conf;
+        return configuration;
     }
-
-    int _roundRobinCounter = 0;
-    final int _numberOfHosts;
-    final List<DBCollection> _collections;
-    final JobConf _conf;
-
-    private static final Log log = LogFactory.getLog(MongoRecordWriter.class);
 
 }

@@ -1,12 +1,12 @@
 package com.mongodb.hadoop.splitter;
 
-public class SplitFailedException extends Exception{
+public class SplitFailedException extends Exception {
 
-    public SplitFailedException(String message){
+    public SplitFailedException(final String message) {
         super(message);
     }
 
-    public SplitFailedException(String message, Throwable cause){
+    public SplitFailedException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

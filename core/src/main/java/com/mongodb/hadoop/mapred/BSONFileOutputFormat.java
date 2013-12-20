@@ -18,13 +18,18 @@ package com.mongodb.hadoop.mapred;
 
 // Mongo
 
-import com.mongodb.hadoop.mapred.output.*;
-import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.mapred.output.BSONFileRecordWriter;
 import com.mongodb.hadoop.splitter.BSONSplitter;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.util.*;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.util.Progressable;
+
 import java.io.IOException;
 
 // Commons
@@ -32,32 +37,33 @@ import java.io.IOException;
 
 public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOutputFormat<K, V> {
 
-    public void checkOutputSpecs( FileSystem fs, final JobConf job ){ }
+    public void checkOutputSpecs(final FileSystem fs, final JobConf job) {
+    }
 
-    public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
+    public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name, final Progressable progress)
+        throws IOException {
         Path outPath;
-        if(job.get("mapred.output.file") != null){
+        if (job.get("mapred.output.file") != null) {
             outPath = new Path(job.get("mapred.output.file"));
             LOG.warn("WARNING: mapred.output.file is deprecated since it only allows one reducer. "
-                    + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
-        }else{
+                     + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
+        } else {
             outPath = getPathForCustomFile(job, name);
         }
         FileSystem fs = outPath.getFileSystem(job);
         FSDataOutputStream outFile = fs.create(outPath);
 
         FSDataOutputStream splitFile = null;
-        if(MongoConfigUtil.getBSONOutputBuildSplits(job)){
-            Path splitPath = new Path(outPath.getParent(),  "." + outPath.getName() + ".splits");
+        if (MongoConfigUtil.getBSONOutputBuildSplits(job)) {
+            Path splitPath = new Path(outPath.getParent(), "." + outPath.getName() + ".splits");
             splitFile = fs.create(splitPath);
         }
 
         long splitSize = BSONSplitter.getSplitSize(job, null);
 
-        BSONFileRecordWriter<K,V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
-        return recWriter;
+        return new BSONFileRecordWriter<K, V>(outFile, splitFile, splitSize);
     }
 
-    private static final Log LOG = LogFactory.getLog( BSONFileOutputFormat.class );
+    private static final Log LOG = LogFactory.getLog(BSONFileOutputFormat.class);
 }
 

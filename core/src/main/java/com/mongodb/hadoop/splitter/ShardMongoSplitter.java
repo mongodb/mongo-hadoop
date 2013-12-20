@@ -16,51 +16,43 @@
 
 package com.mongodb.hadoop.splitter;
 
-import com.mongodb.*;
+import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
-import com.mongodb.hadoop.util.*;
-import java.util.*;
-import org.apache.commons.logging.*;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.bson.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 /**
- * This implementation of MongoSplitter can be used for 
- * sharded systems. It treats each shard as a single split, by
- * reading all of the data on each shard for that split.
- * This should be used with caution as the input splits could
- * contain duplicate data from ongoing, or aborted migrations.
+ * This implementation of MongoSplitter can be used for sharded systems. It treats each shard as a single split, by reading all of the data
+ * on each shard for that split. This should be used with caution as the input splits could contain duplicate data from ongoing, or aborted
+ * migrations.
  */
-public class ShardMongoSplitter extends MongoCollectionSplitter{
+public class ShardMongoSplitter extends MongoCollectionSplitter {
 
-    private static final Log log = LogFactory.getLog( ShardMongoSplitter.class );
-
-    public ShardMongoSplitter(Configuration conf){
+    public ShardMongoSplitter(final Configuration conf) {
         super(conf);
     }
 
     // Treat each shard as one split.
     @Override
-    public List<InputSplit> calculateSplits() throws SplitFailedException{
+    public List<InputSplit> calculateSplits() throws SplitFailedException {
         this.init();
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-        DB configDB = this.mongo.getDB("config");
-        DBCollection chunksCollection = configDB.getCollection( "chunks" );
         MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
 
-        String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
-
-        Map<String, String> shardsMap = null;
+        Map<String, String> shardsMap;
         shardsMap = this.getShardsMap();
 
-        for(Map.Entry<String,String> entry : shardsMap.entrySet()){
-            String shardName = entry.getKey();
+        for (Map.Entry<String, String> entry : shardsMap.entrySet()) {
             String shardHosts = entry.getValue();
 
-            MongoInputSplit chunkSplit = createSplitFromBounds((BasicDBObject)null, (BasicDBObject)null);
+            MongoInputSplit chunkSplit = createSplitFromBounds(null, null);
             MongoURI newURI = rewriteURI(inputURI, shardHosts);
             chunkSplit.setInputURI(newURI);
             returnVal.add(chunkSplit);

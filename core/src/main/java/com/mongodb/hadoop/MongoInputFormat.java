@@ -18,45 +18,50 @@ package com.mongodb.hadoop;
 
 // Mongo
 
-import com.mongodb.*;
-import com.mongodb.hadoop.input.*;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.splitter.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapreduce.*;
-import org.bson.*;
+import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.hadoop.splitter.MongoSplitterFactory;
+import com.mongodb.hadoop.splitter.SplitFailedException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.bson.BSONObject;
 
-import java.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.util.List;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
+    private static final Log LOG = LogFactory.getLog(MongoInputFormat.class);
 
     @Override
-    public RecordReader<Object, BSONObject> createRecordReader( InputSplit split, TaskAttemptContext context ) {
-        if ( !( split instanceof MongoInputSplit ) )
-            throw new IllegalStateException( "Creation of a new RecordReader requires a MongoInputSplit instance." );
+    public RecordReader<Object, BSONObject> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
+        if (!(split instanceof MongoInputSplit)) {
+            throw new IllegalStateException("Creation of a new RecordReader requires a MongoInputSplit instance.");
+        }
 
         final MongoInputSplit mis = (MongoInputSplit) split;
 
-        return new com.mongodb.hadoop.input.MongoRecordReader( mis );
+        return new com.mongodb.hadoop.input.MongoRecordReader(mis);
     }
 
     @Override
-    public List<InputSplit> getSplits( JobContext context ) throws IOException{
+    public List<InputSplit> getSplits(final JobContext context) throws IOException {
         final Configuration conf = context.getConfiguration();
-        try{
+        try {
             MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
-            log.info("Using " + splitterImpl.toString() + " to calculate splits.");
+            LOG.info("Using " + splitterImpl.toString() + " to calculate splits.");
             return splitterImpl.calculateSplits();
-        }catch(SplitFailedException spfe){
+        } catch (SplitFailedException spfe) {
             throw new IOException(spfe);
         }
     }
 
-    public boolean verifyConfiguration( Configuration conf ){
+    public boolean verifyConfiguration(final Configuration conf) {
         return true;
     }
-
-    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
 }

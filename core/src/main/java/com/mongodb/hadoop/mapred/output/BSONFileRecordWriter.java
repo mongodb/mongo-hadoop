@@ -16,35 +16,22 @@
 
 package com.mongodb.hadoop.mapred.output;
 
-import com.mongodb.*;
-import com.mongodb.hadoop.mapred.*;
-import com.mongodb.hadoop.io.BSONWritable;
-import com.mongodb.hadoop.io.MongoUpdateWritable;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.RecordWriter;
-import org.bson.*;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.apache.commons.logging.*;
+import java.io.IOException;
 
 
 public class BSONFileRecordWriter<K, V> extends com.mongodb.hadoop.output.BSONFileRecordWriter implements RecordWriter<K, V> {
 
-    public BSONFileRecordWriter(FSDataOutputStream outFile, FSDataOutputStream splitFile, long splitSize){
+    public BSONFileRecordWriter(final FSDataOutputStream outFile, final FSDataOutputStream splitFile, final long splitSize) {
         super(outFile, splitFile, splitSize);
     }
 
-    public void close( Reporter reporter ) throws IOException{
-        this.close((TaskAttemptContext)null);
+    public void close(final Reporter reporter) throws IOException {
+        this.close((TaskAttemptContext) null);
     }
 
 }

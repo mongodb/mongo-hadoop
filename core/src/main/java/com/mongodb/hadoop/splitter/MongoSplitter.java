@@ -16,32 +16,28 @@
 
 package com.mongodb.hadoop.splitter;
 
-import java.util.*;
-import com.mongodb.*;
-import com.mongodb.hadoop.input.*;
-import com.mongodb.hadoop.util.*;
-import org.bson.*;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
-import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.commons.logging.*;
+import org.apache.hadoop.mapreduce.InputSplit;
+
+import java.util.List;
 
 public abstract class MongoSplitter {
 
+    //CHECKSTYLE:OFF
     protected Configuration conf;
+    //CHECKSTYLE:ON
 
-    public MongoSplitter(){ }
+    public MongoSplitter() {
+    }
 
-    public MongoSplitter(Configuration conf){
+    public MongoSplitter(final Configuration conf) {
         this.conf = conf;
     }
 
-    public void setConfiguration(Configuration conf){
+    public void setConfiguration(final Configuration conf) {
         this.conf = conf;
     }
 
-    public abstract List<InputSplit> calculateSplits()
-        throws SplitFailedException;
+    public abstract List<InputSplit> calculateSplits() throws SplitFailedException;
 
 }

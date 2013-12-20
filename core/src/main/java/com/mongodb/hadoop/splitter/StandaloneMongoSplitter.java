@@ -16,16 +16,21 @@
 
 package com.mongodb.hadoop.splitter;
 
-import com.mongodb.*;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.CommandResult;
+import com.mongodb.DBObject;
+import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
-import com.mongodb.hadoop.util.*;
-import java.util.*;
-import org.apache.commons.logging.*;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.bson.*;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /* This class is an implementation of MongoSplitter which
@@ -40,17 +45,17 @@ import org.bson.types.MinKey;
  * collection which is not sharded.
  *
  */
-public class StandaloneMongoSplitter extends MongoCollectionSplitter{
+public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
-    private static final Log log = LogFactory.getLog( StandaloneMongoSplitter.class );
+    private static final Log LOG = LogFactory.getLog(StandaloneMongoSplitter.class);
 
-    public StandaloneMongoSplitter(Configuration conf){
+    public StandaloneMongoSplitter(final Configuration conf) {
         super(conf);
     }
 
     // Generate one split per chunk.
     @Override
-    public List<InputSplit> calculateSplits() throws SplitFailedException{
+    public List<InputSplit> calculateSplits() throws SplitFailedException {
         this.init();
         final DBObject splitKey = MongoConfigUtil.getInputSplitKey(conf);
         final int splitSize = MongoConfigUtil.getSplitSize(conf);
@@ -60,39 +65,40 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter{
 
         MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
 
-        log.info("Running splitvector to check splits against " + inputURI);
-        final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns).
-                                          add( "keyPattern", splitKey ).
-                                          add( "force", false ). // force:True is misbehaving it seems
-                                          add( "maxChunkSize", splitSize ).get();
-        
+        LOG.info("Running splitvector to check splits against " + inputURI);
+        final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)
+                                 .add("keyPattern", splitKey)
+                                      // force:True is misbehaving it seems
+                                 .add("force", false)
+                                 .add("maxChunkSize", splitSize)
+                                 .get();
+
         CommandResult data;
-        if(this.authDB == null){
-            data = this.inputCollection.getDB().getSisterDB("admin").command( cmd );
-        }else{
-            data = this.authDB.command( cmd );
+        if (this.authDB == null) {
+            data = this.inputCollection.getDB().getSisterDB("admin").command(cmd);
+        } else {
+            data = this.authDB.command(cmd);
         }
 
-        if ( data.containsField( "$err" ) ){
-            throw new SplitFailedException( "Error calculating splits: " + data );
-        } else if ( !((Double)data.get("ok")).equals(1.0) )
-            throw new SplitFailedException( "Unable to calculate input splits: " + ( (String) data.get( "errmsg" ) ) );
-        
+        if (data.containsField("$err")) {
+            throw new SplitFailedException("Error calculating splits: " + data);
+        } else if (!data.get("ok").equals(1.0)) {
+            throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
+        }
+
         // Comes in a format where "min" and "max" are implicit
         // and each entry is just a boundary key; not ranged
-        BasicDBList splitData = (BasicDBList) data.get( "splitKeys" );
+        BasicDBList splitData = (BasicDBList) data.get("splitKeys");
 
         if (splitData.size() == 0) {
-            log.warn( "WARNING: No Input Splits were calculated by the split code. " +
-                    "Proceeding with a *single* split. " +
-                    "Data may be too small, try lowering 'mongo.input.split_size' " +
-                    "if this is undesirable." );
+            LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"
+                     + " small, try lowering 'mongo.input.split_size' if this is undesirable.");
         }
 
         BasicDBObject lastKey = null; // Lower boundary of the first min split
 
-        for (int i = 0; i < splitData.size(); i++) {
-            BasicDBObject currentKey = (BasicDBObject)splitData.get(i);
+        for (Object aSplitData : splitData) {
+            BasicDBObject currentKey = (BasicDBObject) aSplitData;
             MongoInputSplit split = createSplitFromBounds(lastKey, currentKey);
             returnVal.add(split);
             lastKey = currentKey;

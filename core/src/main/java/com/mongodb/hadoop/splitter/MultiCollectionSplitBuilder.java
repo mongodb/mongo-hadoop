@@ -16,38 +16,41 @@
 
 package com.mongodb.hadoop.splitter;
 
-import com.mongodb.*;
-import com.mongodb.util.*;
-import com.mongodb.hadoop.util.*;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import java.util.*;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.MongoURI;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.util.JSON;
 
-public class MultiCollectionSplitBuilder{
-    LinkedList<CollectionSplitterConf> collectionSplitters;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
-    public MultiCollectionSplitBuilder(){
+public class MultiCollectionSplitBuilder {
+    private LinkedList<CollectionSplitterConf> collectionSplitters;
+
+    public MultiCollectionSplitBuilder() {
         collectionSplitters = new LinkedList<CollectionSplitterConf>();
     }
 
-    public MultiCollectionSplitBuilder addConf(CollectionSplitterConf conf){
+    public MultiCollectionSplitBuilder addConf(final CollectionSplitterConf conf) {
         collectionSplitters.add(conf);
         return this;
     }
 
-    public MultiCollectionSplitBuilder add(MongoURI inputURI,
-                                           MongoURI authURI,
-                                           boolean notimeout,
-                                           DBObject fields,
-                                           DBObject sort,
-                                           DBObject query,
-                                           boolean useRangeQuery, 
-                                           Class<? extends MongoSplitter> splitClass){
+    public MultiCollectionSplitBuilder add(final MongoURI inputURI,
+                                           final MongoURI authURI,
+                                           final boolean noTimeout,
+                                           final DBObject fields,
+                                           final DBObject sort,
+                                           final DBObject query,
+                                           final boolean useRangeQuery,
+                                           final Class<? extends MongoSplitter> splitClass) {
         CollectionSplitterConf conf = new CollectionSplitterConf();
         conf.inputURI = inputURI;
         conf.authURI = authURI;
-        conf.notimeout = notimeout;
+        conf.noTimeout = noTimeout;
         conf.fields = fields;
         conf.sort = sort;
         conf.query = query;
@@ -56,47 +59,52 @@ public class MultiCollectionSplitBuilder{
         return addConf(conf);
     }
 
-    public String toJSON(){
+    public String toJSON() {
         BasicDBList returnVal = new BasicDBList();
-        for(CollectionSplitterConf conf : this.collectionSplitters){
+        for (CollectionSplitterConf conf : this.collectionSplitters) {
             returnVal.add(new BasicDBObject(conf.toConfigMap()));
         }
         return JSON.serialize(returnVal);
     }
 
-    public static class CollectionSplitterConf{
-        MongoURI inputURI = null;
-        MongoURI authURI = null;
-        boolean notimeout = false;
-        DBObject fields = null;
-        DBObject sort = null;
-        DBObject query = null;
-        boolean useRangeQuery = false;
-        Class<? extends MongoSplitter> splitClass;
+    public static class CollectionSplitterConf {
+        private MongoURI inputURI = null;
+        private MongoURI authURI = null;
+        private boolean noTimeout = false;
+        private DBObject fields = null;
+        private DBObject sort = null;
+        private DBObject query = null;
+        private boolean useRangeQuery = false;
+        private Class<? extends MongoSplitter> splitClass;
 
-        public Map<String,String> toConfigMap(){
-            HashMap<String,String> outMap = new HashMap<String,String>();
+        public Map<String, String> toConfigMap() {
+            HashMap<String, String> outMap = new HashMap<String, String>();
 
-            if(inputURI != null)
+            if (inputURI != null) {
                 outMap.put(MongoConfigUtil.INPUT_URI, inputURI.toString());
+            }
 
-            if(authURI != null)
+            if (authURI != null) {
                 outMap.put(MongoConfigUtil.AUTH_URI, authURI.toString());
+            }
 
-            outMap.put(MongoConfigUtil.INPUT_NOTIMEOUT, notimeout ? "true" : "false");
+            outMap.put(MongoConfigUtil.INPUT_NOTIMEOUT, noTimeout ? "true" : "false");
 
-            if(fields != null)
+            if (fields != null) {
                 outMap.put(MongoConfigUtil.INPUT_FIELDS, JSON.serialize(fields));
+            }
 
-            if(sort != null)
+            if (sort != null) {
                 outMap.put(MongoConfigUtil.INPUT_SORT, JSON.serialize(sort));
+            }
 
-            if(query != null)
+            if (query != null) {
                 outMap.put(MongoConfigUtil.INPUT_QUERY, JSON.serialize(query));
+            }
 
             outMap.put(MongoConfigUtil.SPLITS_USE_RANGEQUERY, useRangeQuery ? "true" : "false");
 
-            if(splitClass != null){
+            if (splitClass != null) {
                 outMap.put(MongoConfigUtil.MONGO_SPLITTER_CLASS, splitClass.getCanonicalName());
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 10gen Inc.
+ * Copyright 2010-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package com.mongodb.hadoop.output;
+
+package com.mongodb.hadoop.mapred.output;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.OutputCommitter;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapred.JobContext;
+import org.apache.hadoop.mapred.OutputCommitter;
+import org.apache.hadoop.mapred.TaskAttemptContext;
 
 public class MongoOutputCommitter extends OutputCommitter {
-
     private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
 
     public void abortTask(final TaskAttemptContext taskContext) {
-        LOG.info("Aborting task.");
+        LOG.info("should abort task");
     }
 
+    @Deprecated
     public void cleanupJob(final JobContext jobContext) {
-        LOG.info("Cleaning up job.");
+        LOG.info("should cleanup job");
     }
 
     public void commitTask(final TaskAttemptContext taskContext) {
-        LOG.info("Committing task.");
+        LOG.info("should commit task");
     }
 
     public boolean needsTaskCommit(final TaskAttemptContext taskContext) {
@@ -43,12 +44,10 @@ public class MongoOutputCommitter extends OutputCommitter {
     }
 
     public void setupJob(final JobContext jobContext) {
-        LOG.info("Setting up job.");
+        LOG.info("should setup job");
     }
 
     public void setupTask(final TaskAttemptContext taskContext) {
-        LOG.info("Setting up task.");
+        LOG.info("should setup context");
     }
-
 }
-

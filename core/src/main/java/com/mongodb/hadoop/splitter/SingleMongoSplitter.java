@@ -16,42 +16,45 @@
 
 package com.mongodb.hadoop.splitter;
 
-import org.apache.hadoop.conf.Configuration;
+import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
-import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
-import com.mongodb.*;
-import org.bson.*;
-import java.util.*;
-import org.apache.commons.logging.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /* This implementation of MongoSplitter does not actually
  * do any splitting, it will just create a single input split
  * which represents the entire data set within a collection.
  */
-public class SingleMongoSplitter extends MongoCollectionSplitter{
+public class SingleMongoSplitter extends MongoCollectionSplitter {
 
-    private static final Log log = LogFactory.getLog( SingleMongoSplitter.class );
+    private static final Log LOG = LogFactory.getLog(SingleMongoSplitter.class);
 
     //Create a single split which consists of a single 
     //a query over the entire collection.
 
 
-    public SingleMongoSplitter(){ }
+    public SingleMongoSplitter() {
+    }
 
-    public SingleMongoSplitter(Configuration conf){
+    public SingleMongoSplitter(final Configuration conf) {
         super(conf);
     }
 
     @Override
-    public List<InputSplit> calculateSplits(){
+    public List<InputSplit> calculateSplits() {
         init();
 
         MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
-        log.info("SingleMongoSplitter calculating splits for " + inputURI);
+        LOG.info("SingleMongoSplitter calculating splits for " + inputURI);
         final List<InputSplit> splits = new ArrayList<InputSplit>();
         MongoInputSplit mongoSplit = new MongoInputSplit();
-    
+
         mongoSplit.setInputURI(MongoConfigUtil.getInputURI(conf));
         mongoSplit.setAuthURI(MongoConfigUtil.getAuthURI(conf));
         mongoSplit.setQuery(MongoConfigUtil.getQuery(conf));

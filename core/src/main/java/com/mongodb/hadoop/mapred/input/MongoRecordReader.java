@@ -16,103 +16,110 @@
 
 package com.mongodb.hadoop.mapred.input;
 
-import java.io.IOException;
-import com.mongodb.*;
-import com.mongodb.hadoop.io.*;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.mongodb.hadoop.input.MongoInputSplit;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapred.*;
-import org.bson.*;
+import com.mongodb.hadoop.io.BSONWritable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.TaskAttemptContext;
+import org.bson.BasicBSONObject;
 
-@SuppressWarnings( "deprecation" )
+import java.io.IOException;
+
+@SuppressWarnings("deprecation")
 public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritable> {
 
-    public MongoRecordReader( MongoInputSplit split ){
-        _split = split;
-        _cursor = split.getCursor();
-        _keyField = split.getKeyField();
+    private static final Log LOG = LogFactory.getLog(MongoRecordReader.class);
+    
+    private final DBCursor cursor;
+    private BSONWritable currentVal = new BSONWritable();
+    private BSONWritable currentKey = new BSONWritable();
+    private float seen = 0;
+    private float total;
+    private String keyField;
+
+    private MongoInputSplit split;
+
+    public MongoRecordReader(final MongoInputSplit split) {
+        this.split = split;
+        cursor = split.getCursor();
+        keyField = split.getKeyField();
     }
 
-    public void close(){
-        if ( _cursor != null )
-            _cursor.close();
+    public void close() {
+        if (cursor != null) {
+            cursor.close();
+        }
     }
 
-    public BSONWritable createKey(){
+
+    public BSONWritable createKey() {
         return new BSONWritable();
     }
 
-
-    public BSONWritable createValue(){
+    public BSONWritable createValue() {
         return new BSONWritable();
     }
 
-    public BSONWritable getCurrentKey(){
+    public BSONWritable getCurrentKey() {
         return this.currentKey;
     }
 
-    public BSONWritable getCurrentValue(){
+    public BSONWritable getCurrentValue() {
         return this.currentVal;
     }
 
-    public float getProgress(){
+    public float getProgress() {
         try {
-            if ( _cursor.hasNext() ){
+            if (cursor.hasNext()) {
                 return 0.0f;
-            }else{
+            } else {
                 return 1.0f;
             }
-        } catch ( MongoException e ) {
+        } catch (MongoException e) {
             return 1.0f;
         }
     }
 
-    public long getPos(){
+    public long getPos() {
         return 0; // no progress to be reported, just working on it
     }
 
-    public void initialize( InputSplit split, TaskAttemptContext context ){
-        _total = 1.0f;
+    public void initialize(final InputSplit split, final TaskAttemptContext context) {
+        total = 1.0f;
     }
 
-    public boolean nextKeyValue() throws IOException{
+    public boolean nextKeyValue() throws IOException {
         try {
-            if ( !_cursor.hasNext() ){
-                log.info("Read " + _seen + " documents from:");
-                log.info(_split.toString());
+            if (!cursor.hasNext()) {
+                LOG.info("Read " + seen + " documents from:");
+                LOG.info(split.toString());
                 return false;
             }
 
-            DBObject next = _cursor.next();
+            DBObject next = cursor.next();
             this.currentVal.setDoc(next);
             this.currentKey.setDoc(new BasicBSONObject("_id", next.get("_id")));
-            _seen++;
+            seen++;
 
             return true;
-        } catch ( MongoException e ) {
+        } catch (MongoException e) {
             throw new IOException("Couldn't get next key/value from mongodb: ", e);
         }
     }
 
-     public boolean next( BSONWritable key, BSONWritable value ) throws IOException{
-         if ( nextKeyValue() ){
-             key.setDoc(this.currentKey.getDoc());
-             value.setDoc(this.currentVal.getDoc());
-             return true;
-         } else{
-             log.info( "Cursor exhausted." );
-             return false;
-         }
-     }
-
-    private final DBCursor _cursor;
-    private BSONWritable currentVal = new BSONWritable();
-    private BSONWritable currentKey = new BSONWritable();
-    private BasicDBObject _current;
-    private float _seen = 0;
-    private float _total;
-    private String _keyField;
-    private MongoInputSplit _split;
-
-    private static final Log log = LogFactory.getLog( MongoRecordReader.class );
+    public boolean next(final BSONWritable key, final BSONWritable value) throws IOException {
+        if (nextKeyValue()) {
+            key.setDoc(this.currentKey.getDoc());
+            value.setDoc(this.currentVal.getDoc());
+            return true;
+        } else {
+            LOG.info("Cursor exhausted.");
+            return false;
+        }
+    }
 }

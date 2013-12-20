@@ -1,7 +1,6 @@
 package com.mongodb.hadoop.splitter;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Test;

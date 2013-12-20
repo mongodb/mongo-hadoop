@@ -4,8 +4,8 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,16 +17,13 @@
 package com.mongodb.hadoop
 package test
 
-import org.specs2._
-import com.mongodb.{BasicDBObject, DBObject, MongoURI}
-import scala.collection.JavaConverters._
 import java.io.FileInputStream
 import com.mongodb.hadoop.util.BSONLoader
 import org.bson.BSONObject
 
 class BSONFileSpec extends Specification {
   def is = "Reading BSON Files off the disk should you know, work... " !
-          readBSONFile  ^ end
+    readBSONFile ^ end
 
   def readBSONFile() = {
     val fh = new FileInputStream("core/src/test/resources/bookstore-dump/inventory.bson")

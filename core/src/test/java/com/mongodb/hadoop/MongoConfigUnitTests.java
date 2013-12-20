@@ -17,11 +17,13 @@
 package com.mongodb.hadoop;
 
 // Hadoop
+
 import org.apache.hadoop.conf.Configuration;
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
 
 // JUnit
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  * The mongo config unit tests.
@@ -29,7 +31,7 @@ import static org.junit.Assert.*;
 public final class MongoConfigUnitTests {
 
     @Test
-    public final void testConstructor() {
+    public void testConstructor() {
         assertNotNull(new MongoConfig(new Configuration(false)));
     }
 }

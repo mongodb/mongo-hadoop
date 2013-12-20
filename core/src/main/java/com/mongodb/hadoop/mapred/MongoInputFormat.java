@@ -16,54 +16,52 @@
 
 package com.mongodb.hadoop.mapred;
 
-import java.util.*;
-
 import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.splitter.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Reporter;
+import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.hadoop.splitter.MongoSplitterFactory;
+import com.mongodb.hadoop.splitter.SplitFailedException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Reporter;
 
-import com.mongodb.hadoop.MongoConfig;
-import com.mongodb.hadoop.io.*;
-import org.bson.BSONObject;
-import com.mongodb.BasicDBObject;
 import java.io.IOException;
+import java.util.List;
 
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
+    private static final Log LOG = LogFactory.getLog(MongoInputFormat.class);
 
-    @SuppressWarnings("deprecation") 
-    public org.apache.hadoop.mapred.RecordReader<BSONWritable, BSONWritable> getRecordReader(InputSplit split, JobConf job, Reporter reporter) {
-        if (!(split instanceof MongoInputSplit))
+    @SuppressWarnings("deprecation")
+    public org.apache.hadoop.mapred.RecordReader<BSONWritable, BSONWritable> getRecordReader(final InputSplit split, final JobConf job,
+                                                                                             final Reporter reporter) {
+        if (!(split instanceof MongoInputSplit)) {
             throw new IllegalStateException("Creation of a new RecordReader requires a MongoInputSplit instance.");
+        }
 
         final MongoInputSplit mis = (MongoInputSplit) split;
 
         return new MongoRecordReader(mis);
     }
 
-    public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
-        try{
+    public InputSplit[] getSplits(final JobConf job, final int numSplits) throws IOException {
+        try {
             MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(job);
-            log.info("Using " + splitterImpl.toString() + " to calculate splits. (old mapreduce API)");
+            LOG.info("Using " + splitterImpl.toString() + " to calculate splits. (old mapreduce API)");
             final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
-            return splits.toArray(new InputSplit[0]);
-        }catch(SplitFailedException spfe){
+            return splits.toArray(new InputSplit[splits.size()]);
+        } catch (SplitFailedException spfe) {
             throw new IOException(spfe);
         }
     }
 
-    public boolean verifyConfiguration(Configuration conf) {
+    public boolean verifyConfiguration(final Configuration conf) {
         return true;
     }
-
-    private static final Log log = LogFactory.getLog(MongoInputFormat.class);
 
 }

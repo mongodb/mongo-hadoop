@@ -19,47 +19,54 @@ package com.mongodb.hadoop;
 // Mongo
 
 import com.mongodb.MongoURI;
-import com.mongodb.hadoop.output.*;
-import com.mongodb.hadoop.util.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
-import java.util.List;
+import com.mongodb.hadoop.output.MongoOutputCommitter;
+import com.mongodb.hadoop.output.MongoRecordWriter;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+
 import java.io.IOException;
+import java.util.List;
 
 public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
-    
+
     private final String[] updateKeys;
     private final boolean multiUpdate;
 
-    public void checkOutputSpecs( final JobContext context ) throws IOException{
-        List<MongoURI> outputUris; 
+    public void checkOutputSpecs(final JobContext context) throws IOException {
+        List<MongoURI> outputUris;
         outputUris = MongoConfigUtil.getOutputURIs(context.getConfiguration());
-        if(outputUris == null || outputUris.size() == 0){
+        if (outputUris == null || outputUris.size() == 0) {
             throw new IOException("No output URI is specified. You must set mongo.output.uri.");
         }
     }
 
-    public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
+    public OutputCommitter getOutputCommitter(final TaskAttemptContext context) {
         return new MongoOutputCommitter();
     }
 
     /**
      * Get the record writer that points to the output collection.
      */
-    public RecordWriter<K, V> getRecordWriter( final TaskAttemptContext context ){
-        return new MongoRecordWriter( MongoConfigUtil.getOutputCollections( context.getConfiguration() ), context );
+    public RecordWriter<K, V> getRecordWriter(final TaskAttemptContext context) {
+        return new MongoRecordWriter(MongoConfigUtil.getOutputCollections(context.getConfiguration()), context);
     }
 
-    public MongoOutputFormat(){ 
+    public MongoOutputFormat() {
         multiUpdate = false;
         updateKeys = null;
     }
-    
-    public MongoOutputFormat(String[] updateKeys, boolean multiUpdate) {
+
+    public MongoOutputFormat(final String[] updateKeys, final boolean multiUpdate) {
         this.updateKeys = updateKeys;
         this.multiUpdate = multiUpdate;
     }
 
-    private static final Log LOG = LogFactory.getLog( MongoOutputFormat.class );
+    private static final Log LOG = LogFactory.getLog(MongoOutputFormat.class);
 }
 

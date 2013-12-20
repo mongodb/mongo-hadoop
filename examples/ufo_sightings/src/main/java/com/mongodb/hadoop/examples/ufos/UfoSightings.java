@@ -17,31 +17,31 @@ package com.mongodb.hadoop.examples.ufos;
 
 // Mongo
 
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 // Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.mapreduce.*;
 
 /**
  * The ufo sightings xml config object.
  */
 
 public class UfoSightings extends Configured implements Tool {
-    private static final Log log = LogFactory.getLog( UfoSightings.class );
+    private static final Log LOG = LogFactory.getLog(UfoSightings.class);
 
-    public int run( String[] args ) throws Exception{
+    private static final boolean BACKGROUND = false;
+    
+    public int run(final String[] args) throws Exception {
         final Configuration conf = getConf();
 
-        final Job job = new Job( conf, "ufo-sightings" );
-        final Class mapper = UfoSightingsMapper.class;
-        job.setMapperClass( mapper );
-        final Class reducer = UfoSightingsReducer.class;
-
+        final Job job = new Job(conf, "ufo-sightings");
+        
+        job.setMapperClass(UfoSightingsMapper.class);
         job.setReducerClass(UfoSightingsReducer.class);
         job.setOutputFormatClass(com.mongodb.hadoop.MongoOutputFormat.class);
         job.setOutputKeyClass(org.apache.hadoop.io.Text.class);
@@ -49,26 +49,23 @@ public class UfoSightings extends Configured implements Tool {
         job.setInputFormatClass(com.mongodb.hadoop.MongoInputFormat.class);
 
         final boolean verbose = true;
-        final boolean background = false;
         try {
-            if ( background ){
-                log.info( "Setting up and running MapReduce job in background." );
+            if (BACKGROUND) {
+                LOG.info("Setting up and running MapReduce job in background.");
                 job.submit();
                 return 0;
+            } else {
+                LOG.info("Setting up and running MapReduce job in foreground, will wait for results.  {Verbose? " + verbose + "}");
+                return job.waitForCompletion(true) ? 0 : 1;
             }
-            else{
-                log.info( "Setting up and running MapReduce job in foreground, will wait for results.  {Verbose? "
-                          + verbose + "}" );
-                return job.waitForCompletion( true ) ? 0 : 1;
-            }
-        } catch ( final Exception e ) {
-            log.error( "Exception while executing job... ", e );
+        } catch (final Exception e) {
+            LOG.error("Exception while executing job... ", e);
             return 1;
         }
     }
 
-    public static void main( final String[] pArgs ) throws Exception{
-        System.exit( ToolRunner.run( new UfoSightings(), pArgs ) );
+    public static void main(final String[] pArgs) throws Exception {
+        System.exit(ToolRunner.run(new UfoSightings(), pArgs));
     }
 }
 

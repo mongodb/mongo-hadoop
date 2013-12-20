@@ -18,13 +18,11 @@ package com.mongodb.hadoop;
 
 // Mongo
 
-import com.mongodb.*;
+import com.mongodb.DBObject;
 
 public interface MongoOutput {
+    void appendAsKey(DBObject o);
 
-    public void appendAsKey( DBObject o );
-
-    public void appendAsValue( DBObject o );
-
+    void appendAsValue(DBObject o);
 }
 

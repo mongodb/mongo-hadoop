@@ -16,464 +16,456 @@
 
 package com.mongodb.hadoop;
 
-// Mongo
-
-import com.mongodb.*;
-import com.mongodb.hadoop.util.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoURI;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Partitioner;
+import org.apache.hadoop.mapreduce.Reducer;
 
-
-import java.io.*;
-
-// Hadoop
-// Commons
+import java.io.DataInput;
+import java.io.IOException;
 
 /**
- * Configuration helper tool for MongoDB related Map/Reduce jobs Instance based, more idiomatic for those who prefer it
- * to the static methoding of ConfigUtil
+ * Configuration helper tool for MongoDB related Map/Reduce jobs Instance based, more idiomatic for those who prefer it to the static
+ * methods of ConfigUtil
  */
+@SuppressWarnings("UnusedDeclaration")
 public class MongoConfig {
+
+    private static final Log LOG = LogFactory.getLog(MongoConfig.class);
+
+    private final Configuration configuration;
 
     /**
      * You probably don't want to use this.
      */
     @Deprecated
-    public MongoConfig(){
-        _conf = new Configuration();
+    public MongoConfig() {
+        configuration = new Configuration();
     }
 
-    public MongoConfig( Configuration conf ){
-        _conf = conf;
+    public MongoConfig(final Configuration conf) {
+        configuration = conf;
     }
 
-    public MongoConfig( DataInput in ) throws IOException{
-        _conf = new Configuration();
-        _conf.readFields( in );
+    public MongoConfig(final DataInput in) throws IOException {
+        configuration = new Configuration();
+        configuration.readFields(in);
     }
 
-    public boolean isJobVerbose(){
-        return MongoConfigUtil.isJobVerbose( _conf );
+    public boolean isJobVerbose() {
+        return MongoConfigUtil.isJobVerbose(configuration);
     }
 
-    public void setJobVerbose( boolean val ){
-        MongoConfigUtil.setJobVerbose( _conf, val );
+    public void setJobVerbose(final boolean val) {
+        MongoConfigUtil.setJobVerbose(configuration, val);
     }
 
-    public boolean isJobBackground(){
-        return MongoConfigUtil.isJobBackground( _conf );
+    public boolean isJobBackground() {
+        return MongoConfigUtil.isJobBackground(configuration);
     }
 
-    public void setJobBackground( boolean val ){
-        MongoConfigUtil.setJobBackground( _conf, val );
+    public void setJobBackground(final boolean val) {
+        MongoConfigUtil.setJobBackground(configuration, val);
     }
 
-    public Class<? extends Mapper> getMapper(){
-        return MongoConfigUtil.getMapper( _conf );
+    public Class<? extends Mapper> getMapper() {
+        return MongoConfigUtil.getMapper(configuration);
     }
 
-    public void setMapper( Class<? extends Mapper> val ){
-        MongoConfigUtil.setMapper( _conf, val );
+    public void setMapper(final Class<? extends Mapper> val) {
+        MongoConfigUtil.setMapper(configuration, val);
     }
 
-    public Class<?> getMapperOutputKey(){
-        return MongoConfigUtil.getMapperOutputKey( _conf );
+    public Class<?> getMapperOutputKey() {
+        return MongoConfigUtil.getMapperOutputKey(configuration);
     }
 
-    public void setMapperOutputKey( Class<?> val ){
-        MongoConfigUtil.setMapperOutputKey( _conf, val );
+    public void setMapperOutputKey(final Class<?> val) {
+        MongoConfigUtil.setMapperOutputKey(configuration, val);
     }
 
-    public Class<?> getMapperOutputValue(){
-        return MongoConfigUtil.getMapperOutputValue( _conf );
+    public Class<?> getMapperOutputValue() {
+        return MongoConfigUtil.getMapperOutputValue(configuration);
     }
 
-    public void setMapperOutputValue( Class<?> val ){
-        MongoConfigUtil.setMapperOutputKey( _conf, val );
+    public void setMapperOutputValue(final Class<?> val) {
+        MongoConfigUtil.setMapperOutputKey(configuration, val);
     }
 
-    public Class<? extends Reducer> getCombiner(){
-        return MongoConfigUtil.getCombiner( _conf );
+    public Class<? extends Reducer> getCombiner() {
+        return MongoConfigUtil.getCombiner(configuration);
     }
 
-    public void setCombiner( Class<? extends Reducer> val ){
-        MongoConfigUtil.setCombiner( _conf, val );
+    public void setCombiner(final Class<? extends Reducer> val) {
+        MongoConfigUtil.setCombiner(configuration, val);
     }
 
-    public Class<? extends Reducer> getReducer(){
-        return MongoConfigUtil.getReducer( _conf );
+    public Class<? extends Reducer> getReducer() {
+        return MongoConfigUtil.getReducer(configuration);
     }
 
-    public void setReducer( Class<? extends Reducer> val ){
-        MongoConfigUtil.setReducer( _conf, val );
+    public void setReducer(final Class<? extends Reducer> val) {
+        MongoConfigUtil.setReducer(configuration, val);
     }
 
-    public Class<? extends Partitioner> getPartitioner(){
-        return MongoConfigUtil.getPartitioner( _conf );
+    public Class<? extends Partitioner> getPartitioner() {
+        return MongoConfigUtil.getPartitioner(configuration);
     }
 
-    public void setPartitioner( Class<? extends Partitioner> val ){
-        MongoConfigUtil.setPartitioner( _conf, val );
+    public void setPartitioner(final Class<? extends Partitioner> val) {
+        MongoConfigUtil.setPartitioner(configuration, val);
     }
 
-    public Class<? extends RawComparator> getSortComparator(){
-        return MongoConfigUtil.getSortComparator( _conf );
+    public Class<? extends RawComparator> getSortComparator() {
+        return MongoConfigUtil.getSortComparator(configuration);
     }
 
-    public void setSortComparator( Class<? extends RawComparator> val ){
-        MongoConfigUtil.setSortComparator( _conf, val );
+    public void setSortComparator(final Class<? extends RawComparator> val) {
+        MongoConfigUtil.setSortComparator(configuration, val);
     }
 
-    public Class<? extends OutputFormat> getOutputFormat(){
-        return MongoConfigUtil.getOutputFormat( _conf );
+    public Class<? extends OutputFormat> getOutputFormat() {
+        return MongoConfigUtil.getOutputFormat(configuration);
     }
 
-    public void setOutputFormat( Class<? extends OutputFormat> val ){
-        MongoConfigUtil.setOutputFormat( _conf, val );
+    public void setOutputFormat(final Class<? extends OutputFormat> val) {
+        MongoConfigUtil.setOutputFormat(configuration, val);
     }
 
-    public Class<?> getOutputKey(){
-        return MongoConfigUtil.getOutputKey( _conf );
+    public Class<?> getOutputKey() {
+        return MongoConfigUtil.getOutputKey(configuration);
     }
 
-    public void setOutputKey( Class<?> val ){
-        MongoConfigUtil.setOutputKey( _conf, val );
+    public void setOutputKey(final Class<?> val) {
+        MongoConfigUtil.setOutputKey(configuration, val);
     }
 
-    public Class<?> getOutputValue(){
-        return MongoConfigUtil.getOutputValue( _conf );
+    public Class<?> getOutputValue() {
+        return MongoConfigUtil.getOutputValue(configuration);
     }
 
-    public void setOutputValue( Class<?> val ){
-        MongoConfigUtil.setOutputValue( _conf, val );
+    public void setOutputValue(final Class<?> val) {
+        MongoConfigUtil.setOutputValue(configuration, val);
     }
 
-    public Class<? extends InputFormat> getInputFormat(){
-        return MongoConfigUtil.getInputFormat( _conf );
+    public Class<? extends InputFormat> getInputFormat() {
+        return MongoConfigUtil.getInputFormat(configuration);
     }
 
-    public void setInputFormat( Class<? extends InputFormat> val ){
-        MongoConfigUtil.setInputFormat( _conf, val );
+    public void setInputFormat(final Class<? extends InputFormat> val) {
+        MongoConfigUtil.setInputFormat(configuration, val);
     }
 
-    public MongoURI getMongoURI( String key ){
-        return MongoConfigUtil.getMongoURI( _conf, key );
+    public MongoURI getMongoURI(final String key) {
+        return MongoConfigUtil.getMongoURI(configuration, key);
     }
 
-    public MongoURI getInputURI(){
-        return MongoConfigUtil.getInputURI( _conf );
+    public MongoURI getInputURI() {
+        return MongoConfigUtil.getInputURI(configuration);
     }
 
-    public MongoURI getAuthURI(){
-        return MongoConfigUtil.getAuthURI( _conf );
+    public MongoURI getAuthURI() {
+        return MongoConfigUtil.getAuthURI(configuration);
     }
 
-    public DBCollection getOutputCollection(){
-        return MongoConfigUtil.getOutputCollection( _conf );
+    public DBCollection getOutputCollection() {
+        return MongoConfigUtil.getOutputCollection(configuration);
     }
 
-    public DBCollection getInputCollection(){
-        return MongoConfigUtil.getInputCollection( _conf );
+    public DBCollection getInputCollection() {
+        return MongoConfigUtil.getInputCollection(configuration);
     }
 
-    public void setMongoURI( String key, MongoURI value ){
-        MongoConfigUtil.setMongoURI( _conf, key, value );
+    public void setMongoURI(final String key, final MongoURI value) {
+        MongoConfigUtil.setMongoURI(configuration, key, value);
     }
 
-    public void setMongoURIString( String key, String value ){
-        MongoConfigUtil.setMongoURIString( _conf, key, value );
+    public void setMongoURIString(final String key, final String value) {
+        MongoConfigUtil.setMongoURIString(configuration, key, value);
     }
 
-    public void setInputURI( String uri ){
-        MongoConfigUtil.setInputURI( _conf, uri );
+    public void setInputURI(final String uri) {
+        MongoConfigUtil.setInputURI(configuration, uri);
     }
 
-    public void setInputURI( MongoURI uri ){
-        MongoConfigUtil.setInputURI( _conf, uri );
+    public void setInputURI(final MongoURI uri) {
+        MongoConfigUtil.setInputURI(configuration, uri);
     }
 
-    public void setAuthUri( String uri ) {
-        MongoConfigUtil.setAuthURI( _conf, uri );
+    public void setAuthUri(final String uri) {
+        MongoConfigUtil.setAuthURI(configuration, uri);
     }
 
-    public MongoURI getOutputURI(){
-        return MongoConfigUtil.getOutputURI( _conf );
+    public MongoURI getOutputURI() {
+        return MongoConfigUtil.getOutputURI(configuration);
     }
 
-    public void setOutputURI( String uri ){
-        MongoConfigUtil.setOutputURI( _conf, uri );
+    public void setOutputURI(final String uri) {
+        MongoConfigUtil.setOutputURI(configuration, uri);
     }
 
-    public void setOutputURI( MongoURI uri ){
-        MongoConfigUtil.setOutputURI( _conf, uri );
+    public void setOutputURI(final MongoURI uri) {
+        MongoConfigUtil.setOutputURI(configuration, uri);
     }
 
     /**
      * Set JSON but first validate it's parseable into a BSON Object
      */
-    public void setJSON( String key, String value ){
-        MongoConfigUtil.setJSON( _conf, key, value );
+    public void setJSON(final String key, final String value) {
+        MongoConfigUtil.setJSON(configuration, key, value);
     }
 
-    public DBObject getDBObject( String key ){
-        return MongoConfigUtil.getDBObject( _conf, key );
+    public DBObject getDBObject(final String key) {
+        return MongoConfigUtil.getDBObject(configuration, key);
     }
 
-    public void setDBObject( String key, DBObject value ){
-        MongoConfigUtil.setDBObject( _conf, key, value );
+    public void setDBObject(final String key, final DBObject value) {
+        MongoConfigUtil.setDBObject(configuration, key, value);
     }
 
-    public void setQuery( String query ){
-        MongoConfigUtil.setQuery( _conf, query );
+    public void setQuery(final String query) {
+        MongoConfigUtil.setQuery(configuration, query);
     }
 
-    public void setQuery( DBObject query ){
-        MongoConfigUtil.setQuery( _conf, query );
+    public void setQuery(final DBObject query) {
+        MongoConfigUtil.setQuery(configuration, query);
     }
 
-    public DBObject getQuery(){
-        return MongoConfigUtil.getQuery( _conf );
+    public DBObject getQuery() {
+        return MongoConfigUtil.getQuery(configuration);
     }
 
-    public void setFields( String fields ){
-        MongoConfigUtil.setFields( _conf, fields );
+    public void setFields(final String fields) {
+        MongoConfigUtil.setFields(configuration, fields);
     }
 
-    public void setFields( DBObject fields ){
-        MongoConfigUtil.setFields( _conf, fields );
+    public void setFields(final DBObject fields) {
+        MongoConfigUtil.setFields(configuration, fields);
     }
 
-    public DBObject getFields(){
-        return MongoConfigUtil.getFields( _conf );
+    public DBObject getFields() {
+        return MongoConfigUtil.getFields(configuration);
     }
 
-    public void setSort( String sort ){
-        MongoConfigUtil.setSort( _conf, sort );
+    public void setSort(final String sort) {
+        MongoConfigUtil.setSort(configuration, sort);
     }
 
-    public void setSort( DBObject sort ){
-        MongoConfigUtil.setSort( _conf, sort );
+    public void setSort(final DBObject sort) {
+        MongoConfigUtil.setSort(configuration, sort);
     }
 
-    public DBObject getSort(){
-        return MongoConfigUtil.getSort( _conf );
+    public DBObject getSort() {
+        return MongoConfigUtil.getSort(configuration);
     }
 
-    public int getLimit(){
-        return MongoConfigUtil.getLimit( _conf );
+    public int getLimit() {
+        return MongoConfigUtil.getLimit(configuration);
     }
 
-    public void setLimit( int limit ){
-        MongoConfigUtil.setLimit( _conf, limit );
+    public void setLimit(final int limit) {
+        MongoConfigUtil.setLimit(configuration, limit);
     }
 
-    public int getSkip(){
-        return MongoConfigUtil.getSkip( _conf );
+    public int getSkip() {
+        return MongoConfigUtil.getSkip(configuration);
     }
 
-    public void setSkip( int skip ){
-        MongoConfigUtil.setSkip( _conf, skip );
+    public void setSkip(final int skip) {
+        MongoConfigUtil.setSkip(configuration, skip);
     }
 
-    public boolean getLazyBSON(){
-        return MongoConfigUtil.getLazyBSON( _conf );
+    public boolean getLazyBSON() {
+        return MongoConfigUtil.getLazyBSON(configuration);
     }
 
-    public void setLazyBSON( boolean lazy ){
-        MongoConfigUtil.setLazyBSON( _conf, lazy) ;
+    public void setLazyBSON(final boolean lazy) {
+        MongoConfigUtil.setLazyBSON(configuration, lazy);
     }
 
-    public int getSplitSize(){
-        return MongoConfigUtil.getSplitSize( _conf );
+    public int getSplitSize() {
+        return MongoConfigUtil.getSplitSize(configuration);
     }
 
-    public void setSplitSize( int value ){
-        MongoConfigUtil.setSplitSize( _conf, value );
+    public void setSplitSize(final int value) {
+        MongoConfigUtil.setSplitSize(configuration, value);
     }
 
     /**
-     * if TRUE,
-     * Splits will be read by connecting to the individual shard servers,
-     *  however this really isn't safe unless you know what you're doing.
-     *  ( issue has to do with chunks moving / relocating during balancing phases)
-     * @return
+     * if TRUE, Splits will be read by connecting to the individual shard servers, however this really isn't safe unless you know what
+     * you're doing. ( issue has to do with chunks moving / relocating during balancing phases)
      */
-   public boolean canReadSplitsFromShards() {
-        return MongoConfigUtil.canReadSplitsFromShards( _conf );
+    public boolean canReadSplitsFromShards() {
+        return MongoConfigUtil.canReadSplitsFromShards(configuration);
     }
 
-    public void setReadSplitsFromShards( boolean value ){
-        MongoConfigUtil.setReadSplitsFromShards( _conf, value );
+    public void setReadSplitsFromShards(final boolean value) {
+        MongoConfigUtil.setReadSplitsFromShards(configuration, value);
     }
 
     /**
-     * If sharding is enabled,
-     * Use the sharding configured chunks to split up data.
+     * If sharding is enabled, Use the sharding configured chunks to split up data.
      */
     public boolean isShardChunkedSplittingEnabled() {
-        return MongoConfigUtil.isShardChunkedSplittingEnabled( _conf );
+        return MongoConfigUtil.isShardChunkedSplittingEnabled(configuration);
     }
 
-    public void setShardChunkSplittingEnabled( boolean value) {
-        MongoConfigUtil.setShardChunkSplittingEnabled( _conf, value );
-    }
-    
-
-    public boolean isRangeQueryEnabled(){
-        return MongoConfigUtil.isRangeQueryEnabled( _conf );
+    public void setShardChunkSplittingEnabled(final boolean value) {
+        MongoConfigUtil.setShardChunkSplittingEnabled(configuration, value);
     }
 
-    public void setRangeQueryEnabled(boolean value){
-        MongoConfigUtil.setRangeQueryEnabled( _conf, value );
+
+    public boolean isRangeQueryEnabled() {
+        return MongoConfigUtil.isRangeQueryEnabled(configuration);
+    }
+
+    public void setRangeQueryEnabled(final boolean value) {
+        MongoConfigUtil.setRangeQueryEnabled(configuration, value);
     }
 
     public boolean canReadSplitsFromSecondary() {
-        return MongoConfigUtil.canReadSplitsFromSecondary( _conf );
+        return MongoConfigUtil.canReadSplitsFromSecondary(configuration);
     }
 
-    public void setReadSplitsFromSecondary( boolean value ) {
-        MongoConfigUtil.setReadSplitsFromSecondary( _conf, value );
+    public void setReadSplitsFromSecondary(final boolean value) {
+        MongoConfigUtil.setReadSplitsFromSecondary(configuration, value);
     }
-    
+
     /**
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
-     * to create custom input splits for you.  By default it will split on {@code _id}, which is a
-     * reasonable/sane default.
-     *
-     * If you want to customize that split point for efficiency reasons (such as different distribution)
-     * you may set this to any valid field name. The restriction on this key name are the *exact same rules*
-     * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
-     * rules outlined in the docs.
-     *
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
+     * default it will split on {@code _id}, which is a reasonable/sane default.
+     * <p/>
+     * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
+     * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
+     * index on the field, and follow the other rules outlined in the docs.
+     * <p/>
      * This must be a JSON document, and not just a field name!
      *
      * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
      */
     public String getInputSplitKeyPattern() {
-        return MongoConfigUtil.getInputSplitKeyPattern( _conf );
+        return MongoConfigUtil.getInputSplitKeyPattern(configuration);
     }
 
     // Convenience by DBObject rather than "Pattern"
     public DBObject getInputSplitKey() {
-        return MongoConfigUtil.getInputSplitKey( _conf );
+        return MongoConfigUtil.getInputSplitKey(configuration);
     }
 
     /**
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt
-     * to create custom input splits for you.  By default it will split on {@code _id}, which is a
-     * reasonable/sane default.
-     *
-     * If you want to customize that split point for efficiency reasons (such as different distribution)
-     * you may set this to any valid field name. The restriction on this key name are the *exact same rules*
-     * as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other
-     * rules outlined in the docs.
-     *
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
+     * default it will split on {@code _id}, which is a reasonable/sane default.
+     * <p/>
+     * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
+     * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
+     * index on the field, and follow the other rules outlined in the docs.
+     * <p/>
      * This must be a JSON document, and not just a field name!
      *
      * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
      */
-    public void setInputSplitKeyPattern( String pattern ) {
-        MongoConfigUtil.setInputSplitKeyPattern( _conf, pattern );
+    public void setInputSplitKeyPattern(final String pattern) {
+        MongoConfigUtil.setInputSplitKeyPattern(configuration, pattern);
     }
 
     // Convenience by DBObject rather than "Pattern"
-    public void setInputSplitKey( DBObject key ) {
-        MongoConfigUtil.setInputSplitKey( _conf, key );
-    }
-            
-    /**
-     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
-     * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
-     * Hadoop will assign one InputSplit per mapper.
-     *
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be
-     * assigned to Hadoop – severely reducing parallel mapping.
-     */
-    public boolean createInputSplits() {
-        return MongoConfigUtil.createInputSplits( _conf );
+    public void setInputSplitKey(final DBObject key) {
+        MongoConfigUtil.setInputSplitKey(configuration, key);
     }
 
     /**
-     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into
-     * multiple InputSplits to allow parallelism/concurrency in processing within Hadoop.  That is to say,
-     * Hadoop will assign one InputSplit per mapper.
-     *
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be
-     * assigned to Hadoop – severely reducing parallel mapping.
+     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
+     * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
+     * <p/>
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * severely reducing parallel mapping.
      */
-    public void setCreateInputSplits( boolean value ) {
-        MongoConfigUtil.setCreateInputSplits( _conf, value );
+    public boolean createInputSplits() {
+        return MongoConfigUtil.createInputSplits(configuration);
+    }
+
+    /**
+     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
+     * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
+     * <p/>
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * severely reducing parallel mapping.
+     */
+    public void setCreateInputSplits(final boolean value) {
+        MongoConfigUtil.setCreateInputSplits(configuration, value);
     }
 
     /**
      * The MongoDB field to read from for the Mapper Input.
-     *
+     * <p/>
      * This will be fed to your mapper as the "Key" for the input.
-     *
+     * <p/>
      * Defaults to {@code _id}
      */
     public String getInputKey() {
-        return MongoConfigUtil.getInputKey( _conf );
+        return MongoConfigUtil.getInputKey(configuration);
     }
 
     /**
      * The MongoDB field to read from for the Mapper Input.
-     *
+     * <p/>
      * This will be fed to your mapper as the "Key" for the input.
-     *
+     * <p/>
      * Defaults to {@code _id}
      */
-    public void setInputKey( String fieldName ) {
-        MongoConfigUtil.setInputKey( _conf, fieldName );
+    public void setInputKey(final String fieldName) {
+        MongoConfigUtil.setInputKey(configuration, fieldName);
     }
-    
+
     public boolean isNoTimeout() {
-        return MongoConfigUtil.isNoTimeout( _conf );
-    }
-    
-    public void setNoTimeout( boolean value ) {
-        MongoConfigUtil.setNoTimeout( _conf, value );
+        return MongoConfigUtil.isNoTimeout(configuration);
     }
 
-    final Configuration _conf;
-
-    private static final Log LOG = LogFactory.getLog( MongoConfig.class );
-
+    public void setNoTimeout(final boolean value) {
+        MongoConfigUtil.setNoTimeout(configuration, value);
+    }
 
     //BSON-related config options
-    public boolean getBSONReadSplits(){
-        return MongoConfigUtil.getBSONReadSplits(_conf);
+    public boolean getBSONReadSplits() {
+        return MongoConfigUtil.getBSONReadSplits(configuration);
     }
 
-    public void setBSONReadSplits(boolean val){
-        MongoConfigUtil.setBSONReadSplits(_conf, val);
+    public void setBSONReadSplits(final boolean val) {
+        MongoConfigUtil.setBSONReadSplits(configuration, val);
     }
 
-    public boolean getBSONWriteSplits(){
-        return MongoConfigUtil.getBSONWriteSplits(_conf);
+    public boolean getBSONWriteSplits() {
+        return MongoConfigUtil.getBSONWriteSplits(configuration);
     }
 
-    public void setBSONWriteSplits(boolean val){
-        MongoConfigUtil.setBSONWriteSplits(_conf, val);
+    public void setBSONWriteSplits(final boolean val) {
+        MongoConfigUtil.setBSONWriteSplits(configuration, val);
     }
 
-    public boolean getBSONOutputBuildSplits(){
-        return MongoConfigUtil.getBSONOutputBuildSplits(_conf);
+    public boolean getBSONOutputBuildSplits() {
+        return MongoConfigUtil.getBSONOutputBuildSplits(configuration);
     }
 
-    public void setBSONOutputBuildSplits(boolean val){
-        MongoConfigUtil.setBSONOutputBuildSplits(_conf, val);
+    public void setBSONOutputBuildSplits(final boolean val) {
+        MongoConfigUtil.setBSONOutputBuildSplits(configuration, val);
     }
 
-    public void setBSONPathFilter(Class<? extends PathFilter> val ){
-        MongoConfigUtil.setBSONPathFilter(_conf, val);
+    public void setBSONPathFilter(final Class<? extends PathFilter> val) {
+        MongoConfigUtil.setBSONPathFilter(configuration, val);
     }
 
-    public Class<?> getBSONPathFilter(){
-        return MongoConfigUtil.getBSONPathFilter(_conf);
+    public Class<?> getBSONPathFilter() {
+        return MongoConfigUtil.getBSONPathFilter(configuration);
     }
 }
 

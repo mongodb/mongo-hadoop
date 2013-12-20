@@ -16,54 +16,50 @@
 
 package com.mongodb.hadoop.mapred;
 
-import com.mongodb.hadoop.splitter.BSONSplitter;
-import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
-import org.apache.hadoop.fs.Path;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapred.JobConf;
-//import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapred.Reporter;
 
-import java.util.ArrayList;
 import java.io.IOException;
-import org.apache.commons.logging.*;
+import java.util.ArrayList;
+
+//import org.apache.hadoop.mapred.FileSplit;
 
 public class BSONFileInputFormat extends FileInputFormat {
 
-    private static final Log log = LogFactory.getLog( BSONFileInputFormat.class );
-
-    protected boolean isSplitable(JobContext context, Path filename) {
+    protected boolean isSplitable(final JobContext context, final Path filename) {
         return true;
     }
 
     @Override
-    public org.apache.hadoop.mapred.FileSplit[] getSplits(JobConf job, int numSplits) throws IOException {
+    public org.apache.hadoop.mapred.FileSplit[] getSplits(final JobConf job, final int numSplits) throws IOException {
 
         FileStatus[] inputFiles = listStatus(job);
         //Using fully-qualified class names here to avoid confusion between the two APIs, because
         //mapred.* vs. mapreduce.* are both needed here and it gets pretty impossible to read otherwise.
         ArrayList<org.apache.hadoop.mapred.FileSplit> results = new ArrayList<org.apache.hadoop.mapred.FileSplit>();
-        for(FileStatus file : inputFiles){
+        for (FileStatus file : inputFiles) {
             BSONSplitter splitter = new BSONSplitter();
             splitter.setConf(job);
             splitter.setInputPath(file.getPath());
             Path splitFilePath;
-            splitFilePath = new Path(file.getPath().getParent(),  "." + file.getPath().getName() + ".splits");
-            try{
+            splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
+            try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
-            }catch(BSONSplitter.NoSplitFileException nsfe){
-                log.info("No split file for " + file + "; building split file");
+            } catch (BSONSplitter.NoSplitFileException nsfe) {
+                LOG.info("No split file for " + file + "; building split file");
                 splitter.readSplitsForFile(file);
             }
-            log.info("BSONSplitter found " + splitter.getAllSplits().size() + " splits.");
+            LOG.info("BSONSplitter found " + splitter.getAllSplits().size() + " splits.");
 
-            for(org.apache.hadoop.mapreduce.lib.input.FileSplit split : splitter.getAllSplits() ){
+            for (org.apache.hadoop.mapreduce.lib.input.FileSplit split : splitter.getAllSplits()) {
                 org.apache.hadoop.mapred.FileSplit fsplit =
                     new org.apache.hadoop.mapred.FileSplit(split.getPath(),
                                                            split.getStart(),
@@ -72,12 +68,12 @@ public class BSONFileInputFormat extends FileInputFormat {
                 results.add(fsplit);
             }
         }
-        log.info("Total of " + results.size() + " found.");
-        return results.toArray(new org.apache.hadoop.mapred.FileSplit[0]);
+        LOG.info("Total of " + results.size() + " found.");
+        return results.toArray(new org.apache.hadoop.mapred.FileSplit[results.size()]);
     }
 
     @Override
-    public RecordReader getRecordReader(InputSplit split, JobConf job, Reporter reporter) throws IOException {
+    public RecordReader getRecordReader(final InputSplit split, final JobConf job, final Reporter reporter) throws IOException {
         BSONFileRecordReader reader = new BSONFileRecordReader();
         reader.initialize(split, job);
         return reader;

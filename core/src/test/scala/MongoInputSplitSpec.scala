@@ -4,8 +4,8 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,27 +17,26 @@
 package com.mongodb.hadoop
 package test
 
-import org.specs2._
-import com.mongodb.{BasicDBObject, DBObject, MongoURI}
+import com.mongodb.{BasicDBObject, MongoURI}
 import com.mongodb.hadoop.input._
 import java.io._
 
 
 class MongoInputSplitSpec extends Specification {
   def is = "Mongo Input Splits should serialize/deserialize correctly" !
-           serializationTest ^ end
-  
+    serializationTest ^ end
+
   def serializationTest = {
     val split = new MongoInputSplit(new MongoURI("mongodb://localhost/test.in"),
-                                    "_id",
-                                    new BasicDBObject("x", 5),
-                                    new BasicDBObject("username", 1),
-                                    new BasicDBObject("creation_date", 1),
-                                    new BasicDBObject("_id", 10), //min
-                                    new BasicDBObject("_id", 20), //max
-                                    10000,
-                                    0,
-                                    false)
+      "_id",
+      new BasicDBObject("x", 5),
+      new BasicDBObject("username", 1),
+      new BasicDBObject("creation_date", 1),
+      new BasicDBObject("_id", 10), //min
+      new BasicDBObject("_id", 20), //max
+      10000,
+      0,
+      false)
 
     val bytesOut = new ByteArrayOutputStream
     val out = new DataOutputStream(bytesOut)
@@ -48,9 +47,9 @@ class MongoInputSplitSpec extends Specification {
 
 
     val deserSplit = new MongoInputSplit()
-    
+
     deserSplit.readFields(new DataInputStream(new ByteArrayInputStream(bytes)))
 
-    deserSplit must_==(split)
+    deserSplit must_== (split)
   }
 }
