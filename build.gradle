@@ -11,21 +11,15 @@ buildscript {
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
     dependencies {
-        classpath 'me.trnl:clirr-gradle-plugin:0.4'
         classpath 'me.trnl:github-release-gradle-plugin:0.1'
     }
 }
+
 
 configure(subprojects) {
     apply plugin: 'java'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
-    apply plugin: 'jacoco'
-
-    group = 'org.mongodb'
-    version = '1.2.0'
-    sourceCompatibility = '1.5'
-    targetCompatibility = '1.5'
 
     repositories {
         mavenCentral()
@@ -33,18 +27,17 @@ configure(subprojects) {
         maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
     }
 
+    group = 'org.mongodb'
+    version = '1.2.0'
+    sourceCompatibility = '1.5'
+    targetCompatibility = '1.5'
+    
     dependencies {
         compile "org.mongodb:mongo-java-driver:2.11.3"
 
         testCompile 'junit:junit:4.11'
         testCompile 'org.hamcrest:hamcrest-all:1.3'
     }
-/*
-    sourceSets {
-        main { java.srcDirs = ['src/main'] }
-        test { java.srcDirs = ['src/test'] }
-    }
-*/
 
     /* Compiling */
     tasks.withType(AbstractCompile) {
@@ -64,16 +57,8 @@ configure(subprojects) {
     tasks.withType(Test) {
         maxParallelForks = 1
 
-        jacoco { enabled = false }
-
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
-        }
-    }
-
-    gradle.taskGraph.whenReady { taskGraph ->
-        if (taskGraph.hasTask(check)) {
-            tasks.withType(Test) { jacoco { enabled = true } }
         }
     }
 
