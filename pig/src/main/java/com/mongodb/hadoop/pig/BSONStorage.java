@@ -167,6 +167,9 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
                 return a;
             case DataType.MAP:
+                if (o == null) {
+                    return o;
+                }
                 Map map = (Map) o;
                 Map<String, Object> out = new HashMap<String, Object>(map.size());
                 for (Object key : map.keySet()) {
