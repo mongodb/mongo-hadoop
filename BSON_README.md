@@ -51,30 +51,35 @@ changing the value for `SPLIT_SIZE` in the script source, and re-running it.
  
 ###Producing .bson files as output
 
-By using `BSONFileOutputFormat` you can write the output data of a Hadoop job into a .bson file, which can then be fed into a subsequent 
+By using `BSONFileOutputFormat` you can write the output data of a Hadoop job into .bson files, which can then be fed into a subsequent 
 job or loaded into a MongoDB instance using `mongorestore`.
 
 #####Setup
 
-To write the output of a job to a .bson file, set `mongo.job.output.format` to `"com.mongodb.hadoop.BSONFileOutputFormat"` or use 
+To write the output of a job to .bson files, set `mongo.job.output.format` to `com.mongodb.hadoop.BSONFileOutputFormat` or use 
 `MongoConfigUtil.setOutputFormat(com.mongodb.hadoop.BSONFileOutputFormat.class)`
 
-Then set `mapred.output.file` to be the location where the output .bson file should be written. This may be a path on the local filesystem, 
-HDFS, S3, etc. Only one output file will be written, regardless of the number of input files used.
+Then set `mapreduce.output.fileoutputformat.outputdir` to be the directory where the output .bson files should be written. This may be a
+ path on the local filesystem, HDFS, S3, etc.  Every reducer will generate its own output file, just like writing output into plain text 
+ files using TextOutputFormat.
 
 #####Writing splits during output
 
-If you intend to feed this output .bson file into subsequent jobs, you can generate the `.splits` file on the fly as it is written, by 
-setting `bson.output.build_splits` to `true`. This will save time over building the `.splits` file on demand at the beginning of another 
-job. By default, this setting is set to `false` and no `.splits` files will be written during output.
+If you intend to feed these output .bson files into subsequent jobs, you can generate the `.splits` files on the fly as they are 
+written, by setting `bson.output.build_splits` to `true`. This will save time over building the `.splits` files on demand at the 
+beginning of another job. By default, this setting is set to `false` and no `.splits` files will be written during output.
 
-####Settings for BSON input/output
+###Settings for BSON input/output
 
 * `bson.split.read_splits` - When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set 
 to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
 * `mapred.min.split.size` - Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
 * `mapred.max.split.size` - Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.
-* `bson.split.write_splits` - Automatically save any split information calculated for input files, by writing to corresponding `.splits` files. Defaults to `true`.
+* `bson.split.write_splits` - Automatically save any split information calculated for input files, 
+by writing to corresponding `.splits` files. Defaults to `true`.
 * `bson.output.build_splits` - Build a `.splits` file on the fly when constructing an output .BSON file. Defaults to `false`.
-* `bson.pathfilter.class` - Set the class name for a `[PathFilter](http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/PathFilter.html)` to filter which files to process when scanning directories for bson input files. Defaults to `null` (no additional filtering). You can set this value to `com.mongodb.hadoop.BSONPathFilter` to restrict input to only files ending with the ".bson" extension.
+* `bson.pathfilter.class` - Set the class name for a `[PathFilter](http://hadoop.apache
+.org/docs/current/api/org/apache/hadoop/fs/PathFilter.html)` to filter which files to process when scanning directories for bson input 
+files. Defaults to `null` (no additional filtering). You can set this value to `com.mongodb.hadoop.BSONPathFilter` to restrict input to 
+only files ending with the ".bson" extension.
 * `mongo.input.lazy_bson` - True to indicate using LazyBSONObject as input to Mapper, false will utilize BasicBSONObject.
