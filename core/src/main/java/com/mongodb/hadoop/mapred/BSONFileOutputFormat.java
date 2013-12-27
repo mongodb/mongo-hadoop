@@ -37,19 +37,10 @@ import java.io.IOException;
 
 public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOutputFormat<K, V> {
 
-    public void checkOutputSpecs(final FileSystem fs, final JobConf job) {
-    }
+    public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
+        Path outPath = getDefaultWorkFile(job, name, ".bson");
+        LOG.info("output going into " + outPath);
 
-    public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name, final Progressable progress)
-        throws IOException {
-        Path outPath;
-        if (job.get("mapred.output.file") != null) {
-            outPath = new Path(job.get("mapred.output.file"));
-            LOG.warn("WARNING: mapred.output.file is deprecated since it only allows one reducer. "
-                     + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
-        } else {
-            outPath = getPathForCustomFile(job, name);
-        }
         FileSystem fs = outPath.getFileSystem(job);
         FSDataOutputStream outFile = fs.create(outPath);
 
@@ -61,7 +52,12 @@ public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOut
 
         long splitSize = BSONSplitter.getSplitSize(job, null);
 
-        return new BSONFileRecordWriter<K, V>(outFile, splitFile, splitSize);
+        BSONFileRecordWriter<K,V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
+        return recWriter;
+    }
+
+    public static Path getDefaultWorkFile(JobConf conf, String name, String extension) {
+        return new Path(getWorkOutputPath(conf), getUniqueName(conf, name) + extension);
     }
 
     private static final Log LOG = LogFactory.getLog(BSONFileOutputFormat.class);
