@@ -92,6 +92,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
                                     muw.isMultiUpdate());
                 return;
             } catch (final MongoException e) {
+                e.printStackTrace();
                 throw new IOException("can't write to mongo", e);
             }
         }
@@ -138,4 +139,3 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         return context;
     }
 }
-
