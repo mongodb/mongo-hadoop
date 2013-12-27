@@ -45,36 +45,16 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     private final List<DBCollection> collections;
     private final int numberOfHosts;
     private final TaskAttemptContext context;
-    private final String[] updateKeys;
-    private final boolean multiUpdate;
 
     private int roundRobinCounter = 0;
 
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
-        this(c, ctx, null);
+    public MongoRecordWriter(DBCollection c, TaskAttemptContext ctx) {
+        this(Arrays.asList(c), ctx);
     }
 
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx, final String[] updateKeys) {
-        this(c, ctx, updateKeys, false);
-    }
-
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx, final String[] updateKeys, final boolean multi) {
-        this(Arrays.asList(c), ctx, updateKeys, multi);
-    }
-
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx) {
-        this(c, ctx, null);
-    }
-
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx, final String[] updateKeys) {
-        this(c, ctx, updateKeys, false);
-    }
-
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx, final String[] updateKeys, final boolean multi) {
+    public MongoRecordWriter(List<DBCollection> c, TaskAttemptContext ctx) {
         collections = new ArrayList<DBCollection>(c);
         context = ctx;
-        this.updateKeys = updateKeys;
-        this.multiUpdate = false;
         this.numberOfHosts = c.size();
 
         //authenticate if necessary - but don't auth twice on same DB
@@ -136,24 +116,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
         try {
             DBCollection dbCollection = getDbCollectionByRoundRobin();
-
-            if (updateKeys == null) {
-                dbCollection.save(o);
-            } else {
-                // Form the query fields
-                DBObject query = new BasicDBObject(updateKeys.length);
-                for (String updateKey : updateKeys) {
-                    query.put(updateKey, o.get(updateKey));
-                    o.removeField(updateKey);
-                }
-                // If _id is null remove it, we don't want to override with null _id
-                if (o.get("_id") == null) {
-                    o.removeField("_id");
-                }
-                DBObject set = new BasicDBObject().append("$set", o);
-                dbCollection.update(query, set, true, multiUpdate);
-            }
+            dbCollection.save(o);
         } catch (final MongoException e) {
+            e.printStackTrace();
             throw new IOException("can't write to mongo", e);
         }
     }
