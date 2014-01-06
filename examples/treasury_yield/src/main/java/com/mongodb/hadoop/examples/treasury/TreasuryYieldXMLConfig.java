@@ -15,27 +15,21 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-// Mongo
-
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
-
-// Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
+import com.mongodb.hadoop.util.MongoTool;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.ToolRunner;
 
 /**
  * The treasury yield xml config object.
  */
 public class TreasuryYieldXMLConfig extends MongoTool {
 
-    static{
-        Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
-        Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );
+    static {
+        Configuration.addDefaultResource("src/examples/hadoop-local.xml");
+        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
     }
 
-    public static void main( final String[] pArgs ) throws Exception{
-        System.exit( ToolRunner.run( new TreasuryYieldXMLConfig(), pArgs ) );
+    public static void main(final String[] pArgs) throws Exception {
+        System.exit(ToolRunner.run(new TreasuryYieldXMLConfig(), pArgs));
     }
 }
-

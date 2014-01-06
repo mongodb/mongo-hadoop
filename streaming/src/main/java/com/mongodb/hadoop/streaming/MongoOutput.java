@@ -17,10 +17,10 @@
 
 package com.mongodb.hadoop.streaming;
 
-import com.mongodb.*;
+import com.mongodb.DBObject;
 
 public interface MongoOutput {
-    public void appendAsKey(DBObject o);
+    void appendAsKey(DBObject o);
 
-    public void appendAsValue(DBObject o);
+    void appendAsValue(DBObject o);
 }

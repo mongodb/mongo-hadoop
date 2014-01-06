@@ -15,45 +15,34 @@
  */
 package com.mongodb.hadoop.examples.enron;
 
-// Mongo
-
-import org.bson.*;
 import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.io.*;
+import com.mongodb.hadoop.io.BSONWritable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.bson.BSONObject;
 
-// Commons
-import org.apache.commons.logging.*;
+import java.io.IOException;
 
-// Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+public class EnronMailReducer extends Reducer<MailPair, IntWritable, BSONWritable, IntWritable> {
 
-// Java
-import java.io.*;
-import java.util.*;
-
-public class EnronMailReducer
-	extends Reducer <MailPair, IntWritable, BSONWritable, IntWritable> {
-
-    private static final Log LOG = LogFactory.getLog( EnronMailReducer.class );
+    private static final Log LOG = LogFactory.getLog(EnronMailReducer.class);
 
     @Override
-    public void reduce( final MailPair pKey,
-                        final Iterable<IntWritable> pValues,
-                        final Context pContext )
-            throws IOException, InterruptedException{
+    public void reduce(final MailPair pKey,
+                       final Iterable<IntWritable> pValues,
+                       final Context pContext)
+        throws IOException, InterruptedException {
         int sum = 0;
-        for ( final IntWritable value : pValues ){
+        for (final IntWritable value : pValues) {
             sum += value.get();
         }
-        BSONObject outDoc = new BasicDBObjectBuilder().start().add( "f" , pKey.from).add( "t" , pKey.to ).get();
+        BSONObject outDoc = BasicDBObjectBuilder.start().add("f", pKey.from).add("t", pKey.to).get();
         BSONWritable pkeyOut = new BSONWritable(outDoc);
 
-        pContext.write( pkeyOut, new IntWritable(sum) );
+        pContext.write(pkeyOut, new IntWritable(sum));
     }
-
 
 }
 

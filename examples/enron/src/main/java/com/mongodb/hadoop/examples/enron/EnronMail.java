@@ -16,16 +16,13 @@
 package com.mongodb.hadoop.examples.enron;
 
 
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
-
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
+import com.mongodb.hadoop.util.MongoTool;
+import org.apache.hadoop.util.ToolRunner;
 
 public class EnronMail extends MongoTool {
 
-    public static void main( final String[] pArgs ) throws Exception{
-        System.exit( ToolRunner.run( new EnronMail(), pArgs ) );
+    public static void main(final String[] pArgs) throws Exception {
+        System.exit(ToolRunner.run(new EnronMail(), pArgs));
     }
 }
 

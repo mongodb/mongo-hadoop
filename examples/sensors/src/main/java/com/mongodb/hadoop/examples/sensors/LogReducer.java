@@ -1,30 +1,29 @@
 package com.mongodb.hadoop.examples.sensors;
-import org.bson.*;
+
+import com.mongodb.hadoop.io.MongoUpdateWritable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.bson.BasicBSONObject;
 import org.bson.types.ObjectId;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.io.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.commons.logging.*;
-import java.io.*;
-import java.util.*;
+
+import java.io.IOException;
 
 public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUpdateWritable> {
 
-    private static final Log LOG = LogFactory.getLog( LogReducer.class );
+    private static final Log LOG = LogFactory.getLog(LogReducer.class);
 
     @Override
-    public void reduce( final Text pKey,
-                        final Iterable<IntWritable> pValues,
-                        final Context pContext )
-            throws IOException, InterruptedException{
-        
+    public void reduce(final Text pKey,
+                       final Iterable<IntWritable> pValues,
+                       final Context pContext)
+        throws IOException, InterruptedException {
+
         int count = 0;
-        for(IntWritable val : pValues){
+        for (IntWritable val : pValues) {
             count += val.get();
         }
 

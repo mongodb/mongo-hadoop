@@ -1,30 +1,27 @@
 
 package com.mongodb.hadoop.examples.sensors;
-import org.bson.*;
-import org.bson.types.ObjectId;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.io.*;
+
 import com.mongodb.hadoop.io.MongoUpdateWritable;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import java.io.*;
-import java.util.*;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.bson.BasicBSONObject;
+import org.bson.types.ObjectId;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdateWritable> {
 
     @Override
-    public void reduce( final Text pKey,
-                        final Iterable<Text> pValues,
-                        final Context pContext )
-            throws IOException, InterruptedException{
-        
+    public void reduce(final Text pKey,
+                       final Iterable<Text> pValues,
+                       final Context pContext)
+        throws IOException, InterruptedException {
+
         BasicBSONObject query = new BasicBSONObject("_id", pKey.toString());
         ArrayList<ObjectId> devices = new ArrayList<ObjectId>();
-        for(Text val : pValues){
+        for (Text val : pValues) {
             devices.add(new ObjectId(val.toString()));
         }
 

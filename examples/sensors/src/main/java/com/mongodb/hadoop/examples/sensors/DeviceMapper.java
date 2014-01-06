@@ -1,17 +1,12 @@
 package com.mongodb.hadoop.examples.sensors;
-import org.bson.*;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.io.*;
-import org.apache.commons.logging.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import java.io.*;
-import java.util.*;
 
-public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.bson.BSONObject;
+
+import java.io.IOException;
+
+public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text> {
 
     /*
 
@@ -25,9 +20,9 @@ public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
         }
     */
 
-	@Override
-	public void map(Object key, BSONObject val, final Context context) throws IOException, InterruptedException{
-        String keyOut = (String)val.get("owner") + " " + (String)val.get("type");
+    @Override
+    public void map(final Object key, final BSONObject val, final Context context) throws IOException, InterruptedException {
+        String keyOut = (String) val.get("owner") + " " + (String) val.get("type");
         context.write(new Text(keyOut), new Text(val.get("_id").toString()));
     }
 

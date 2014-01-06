@@ -15,44 +15,30 @@
  */
 package com.mongodb.hadoop.examples.ufos;
 
-// Mongo
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
 
-import org.bson.*;
-import org.bson.types.ObjectId;
-import com.mongodb.hadoop.util.*;
-
-// Commons
-import org.apache.commons.logging.*;
-
-// Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-
-// Java
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
 
 /**
  * The ufo sightings reducer.
  */
-public class UfoSightingsReducer
-        extends Reducer<Text, IntWritable, Text, IntWritable> {
+public class UfoSightingsReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+    
+    private static final Log LOG = LogFactory.getLog(UfoSightingsReducer.class);
+
     @Override
-    public void reduce( final Text location,
-                        final Iterable<IntWritable> sightings,
-                        final Context pContext )
-            throws IOException, InterruptedException{
+    public void reduce(final Text location, final Iterable<IntWritable> sightings, final Context pContext)
+        throws IOException, InterruptedException {
         int count = 0;
-        for ( final IntWritable v: sightings){
-            LOG.debug( "Location: " + location + " Value: " + v );
+        for (final IntWritable v : sightings) {
+            LOG.debug("Location: " + location + " Value: " + v);
             count += v.get();
         }
 
-        pContext.write( location, new IntWritable( count ) );
+        pContext.write(location, new IntWritable(count));
     }
-
-    private static final Log LOG = LogFactory.getLog( UfoSightingsReducer.class );
-
 }
-

@@ -15,42 +15,34 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-// Mongo
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.bson.BSONObject;
 
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
-
-// Commons
-import org.apache.commons.logging.*;
-
-// Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-
-import com.mongodb.hadoop.io.BSONWritable;
-// Java
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Date;
 
 /**
  * The treasury yield mapper.
  */
 public class TreasuryYieldMapper
-        extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
+    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
 
     @Override
-    public void map( final Object pKey,
-                     final BSONObject pValue,
-                     final Context pContext )
-            throws IOException, InterruptedException{
+    public void map(final Object pKey,
+                    final BSONObject pValue,
+                    final Context pContext)
+        throws IOException, InterruptedException {
 
-        final int year = ((Date)pValue.get("_id")).getYear() + 1900;
-        double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
+        final int year = ((Date) pValue.get("_id")).getYear() + 1900;
+        double bid10Year = ((Number) pValue.get("bc10Year")).doubleValue();
 
-        pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
+        pContext.write(new IntWritable(year), new DoubleWritable(bid10Year));
     }
 
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldMapper.class );
+    private static final Log LOG = LogFactory.getLog(TreasuryYieldMapper.class);
 }
 

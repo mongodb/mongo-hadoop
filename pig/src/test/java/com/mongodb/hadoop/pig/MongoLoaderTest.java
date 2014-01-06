@@ -1,25 +1,24 @@
 package com.mongodb.hadoop.pig;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.Tuple;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.pig.data.DataBag;
-import org.apache.pig.data.Tuple;
-import org.junit.Test;
-
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 
 
 public class MongoLoaderTest {
     @Test
-    public void testReadField_simpleChararray() throws IOException {
+    public void testSimpleChararray() throws IOException {
         String userSchema = "d:chararray";
         MongoLoader ml = new MongoLoader(userSchema);
 
@@ -28,7 +27,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleFloat() throws IOException {
+    public void testSimpleFloat() throws IOException {
         String userSchema = "d:float";
         MongoLoader ml = new MongoLoader(userSchema);
 
@@ -37,7 +36,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleFloatAsDouble() throws IOException {
+    public void testSimpleFloatAsDouble() throws IOException {
         String userSchema = "d:float";
         MongoLoader ml = new MongoLoader(userSchema);
 
@@ -46,7 +45,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleTuple() throws IOException {
+    public void testSimpleTuple() throws IOException {
         String userSchema = "t:tuple(t1:chararray, t2:chararray)";
         Object val = new BasicDBObject()
             .append("t1", "t1_value")
@@ -62,7 +61,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleTupleMissingField() throws IOException {
+    public void testSimpleTupleMissingField() throws IOException {
         String userSchema = "t:tuple(t1:chararray, t2:chararray, t3:chararray)";
         Object val = new BasicDBObject()
             .append("t1", "t1_value")
@@ -79,7 +78,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleTupleIncorrectFieldType() throws IOException {
+    public void testSimpleTupleIncorrectFieldType() throws IOException {
         String userSchema = "t:tuple(t1:chararray, t2:float)";
         Object val = new BasicDBObject()
             .append("t1", "t1_value")
@@ -95,7 +94,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleBag() throws IOException {
+    public void testSimpleBag() throws IOException {
         String userSchema = "b:{t:tuple(t1:chararray, t2:chararray)}";
         BasicDBList bag = new BasicDBList();
         bag.add(new BasicDBObject()
@@ -125,7 +124,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_bagThatIsNotABag() throws IOException {
+    public void testBagThatIsNotABag() throws IOException {
         String userSchema = "b:{t:tuple(t1:chararray, t2:chararray)}";
         BasicDBObject notABag = new BasicDBObject();
         notABag.append("f1", new BasicDBObject()
@@ -141,7 +140,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_deepness() throws IOException {
+    public void testDeepness() throws IOException {
         String userSchema = "b:{t:tuple(t1:chararray, b:{t:tuple(i1:int, i2:int)})}";
         
         BasicDBList innerBag = new BasicDBList();
@@ -177,7 +176,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_simpleMap() throws Exception {
+    public void testSimpleMap() throws Exception {
         //String userSchema = "m:[int]";
         // Note: before pig 0.9, explicitly setting the type for
         // map keys was not allowed, so can't test that here :(
@@ -195,7 +194,7 @@ public class MongoLoaderTest {
     }
     
     @Test
-    public void testReadField_mapWithTuple() throws Exception {
+    public void testMapWithTuple() throws Exception {
         //String userSchema = "m:[(t1:chararray, t2:int)]";
         // Note: before pig 0.9, explicitly setting the type for
         // map keys was not allowed, so can't test that here :(

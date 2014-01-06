@@ -13,9 +13,7 @@ public class StandaloneMongoSplitterTest {
     public void testNullBounds() throws Exception {
         Configuration config = new Configuration();
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
-        BasicDBObject lowerBound = null;
-        BasicDBObject upperBound = null;
-        MongoInputSplit split = splitter.createSplitFromBounds(lowerBound, upperBound);
+        MongoInputSplit split = splitter.createSplitFromBounds(null, null);
         assertEquals(new BasicDBObject(), split.getMin());
         assertEquals(new BasicDBObject(), split.getMax());
     }
@@ -24,9 +22,8 @@ public class StandaloneMongoSplitterTest {
     public void testNullLowerBound() throws Exception {
         Configuration config = new Configuration();
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
-        BasicDBObject lowerBound = null;
         BasicDBObject upperBound = new BasicDBObject("a", 10);
-        MongoInputSplit split = splitter.createSplitFromBounds(lowerBound, upperBound);
+        MongoInputSplit split = splitter.createSplitFromBounds(null, upperBound);
         assertEquals(new BasicDBObject(), split.getMin());
         assertEquals(10, split.getMax().get("a"));
     }
@@ -36,8 +33,7 @@ public class StandaloneMongoSplitterTest {
         Configuration config = new Configuration();
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
         BasicDBObject lowerBound = new BasicDBObject("a", 10);
-        BasicDBObject upperBound = null;
-        MongoInputSplit split = splitter.createSplitFromBounds(lowerBound, upperBound);
+        MongoInputSplit split = splitter.createSplitFromBounds(lowerBound, null);
         assertEquals(10, split.getMin().get("a"));
         assertEquals(new BasicDBObject(), split.getMax());
     }

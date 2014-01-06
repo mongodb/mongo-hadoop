@@ -15,41 +15,26 @@
  */
 package com.mongodb.hadoop.examples.ufos;
 
-// Mongo
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.bson.BSONObject;
 
-import org.bson.*;
-import org.bson.types.*;
-import com.mongodb.hadoop.util.*;
-
-// Commons
-import org.apache.commons.logging.*;
-
-// Hadoop
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-
-// Java
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
 
 /**
  * The UFO Sightings yield mapper.
  */
+public class UfoSightingsMapper extends Mapper<Object, BSONObject, Text, IntWritable> {
 
-public class UfoSightingsMapper 
-        extends Mapper<Object, BSONObject, Text, IntWritable> {
+    private static final Log LOG = LogFactory.getLog(UfoSightingsMapper.class);
 
     @Override
-    public void map( final Object obj,
-                     final BSONObject doc,
-                     final Context pContext )
-            throws IOException, InterruptedException{
-
-        String shape = ( (String) doc.get( "shape" ) );
-        String _loc = ( (String) doc.get( "location" ) );
-        pContext.write( new Text( _loc ), new IntWritable( 1 ) );
+    public void map(final Object obj, final BSONObject doc, final Context pContext) throws IOException, InterruptedException {
+        String shape = ((String) doc.get("shape"));
+        String loc = ((String) doc.get("location"));
+        pContext.write(new Text(loc), new IntWritable(1));
     }
-
-    private static final Log LOG = LogFactory.getLog( UfoSightingsMapper.class );
 }

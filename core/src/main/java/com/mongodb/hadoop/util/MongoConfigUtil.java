@@ -49,8 +49,6 @@ import java.util.Map;
 public final class MongoConfigUtil {
     private static final Log LOG = LogFactory.getLog(MongoConfigUtil.class);
 
-    private static final Mongo.Holder HOLDER = new Mongo.Holder();
-
     /**
      * The JOB_* values are entirely optional and disregarded unless you use the MongoTool base toolset... If you don't, feel free to ignore
      * these
@@ -400,13 +398,7 @@ public final class MongoConfigUtil {
     }
 
     public static void setMongoURIString(final Configuration conf, final String key, final String value) {
-
-        try {
-            final MongoURI uri = new MongoURI(value);
-            setMongoURI(conf, key, uri);
-        } catch (final Exception e) {
-            throw new IllegalArgumentException("Invalid Mongo URI '" + value + "' for Input URI", e);
-        }
+        setMongoURI(conf, key, new MongoURI(value));
     }
 
     public static void setAuthURI(final Configuration conf, final String uri) {
@@ -551,8 +543,6 @@ public final class MongoConfigUtil {
      * if TRUE, Splits will be queried using $lt/$gt instead of $max and $min. This allows the database's query optimizer to choose the best
      * index, instead of being forced to use the one in the $max/$min keys. This will only work if the key used for splitting is *not* a
      * compound key. Make sure that all values under the splitting key are of the same type, or this will cause incomplete results.
-     *
-     * @return
      */
     public static boolean isRangeQueryEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_RANGEQUERY, false);
@@ -565,8 +555,6 @@ public final class MongoConfigUtil {
     /**
      * if TRUE, Splits will be read by connecting to the individual shard servers, Only use this ( issue has to do with chunks moving /
      * relocating during balancing phases)
-     *
-     * @return
      */
     public static boolean canReadSplitsFromShards(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_SHARDS, false);

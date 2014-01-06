@@ -35,6 +35,33 @@ import java.util.Map.Entry;
 public class MongoTool extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(MongoTool.class);
 
+    /**
+     * Main will be a necessary method to run the job - suggested implementation
+     * template:
+     * public static void main(String[] args) throws Exception {
+     * int exitCode = ToolRunner.run(new <YourClass>(), args);
+     * System.exit(exitCode);
+     * }
+     *
+     */
+
+    //CHECKSTYLE:OFF
+    /**
+     * Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc
+     * 
+     * @deprecated use setJobName(String)
+     */
+    protected String _jobName = "<unnamed MongoTool job>";
+
+    public String getJobName() {
+        return _jobName;
+    }
+
+    public void setJobName(final String name) {
+        _jobName = name;
+    }
+    //CHECKSTYLE:ON
+
     public int run(final String[] args) throws Exception {
         /**
          * ToolRunner will configure/process/setup the config
@@ -43,13 +70,13 @@ public class MongoTool extends Configured implements Tool {
          */
         final Configuration conf = getConf();
 
-        LOG.info("Created a conf: '" + conf + "' on {" + this.getClass() + "} as job named '" + _jobName + "'");
+        LOG.info(String.format("Created a conf: '%s' on {%s} as job named '%s'", conf, this.getClass(), getJobName()));
 
         for (final Entry<String, String> entry : conf) {
             LOG.trace(String.format("%s=%s\n", entry.getKey(), entry.getValue()));
         }
 
-        final Job job = new Job(conf, _jobName);
+        final Job job = new Job(conf, getJobName());
         /**
          * Any arguments specified with -D <property>=<value>
          * on the CLI will be picked up and set here
@@ -108,21 +135,4 @@ public class MongoTool extends Configured implements Tool {
             return 1;
         }
     }
-
-    /**
-     * Main will be a necessary method to run the job - suggested implementation
-     * template:
-     * public static void main(String[] args) throws Exception {
-     * int exitCode = ToolRunner.run(new <YourClass>(), args);
-     * System.exit(exitCode);
-     * }
-     *
-     */
-
-    //CHECKSTYLE:OFF
-    /**
-     * SET ME Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc
-     */
-    protected String _jobName = "<unnamed MongoTool job>";
-    //CHECKSTYLE:ON
 }

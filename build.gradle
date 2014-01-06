@@ -31,7 +31,7 @@ configure(subprojects) {
     version = '1.2.0'
     sourceCompatibility = '1.5'
     targetCompatibility = '1.5'
-    
+
     dependencies {
         compile "org.mongodb:mongo-java-driver:2.11.3"
 
@@ -68,6 +68,15 @@ configure(subprojects) {
     /* Code quality */
     checkstyle {
         configFile = new File("$configDir/checkstyle.xml")
+
+    }
+
+    checkstyleTest {
+        classpath += configurations.compile
+    }
+
+    checkstyleMain {
+        classpath += configurations.compile
     }
 
     findbugs {
@@ -135,6 +144,7 @@ project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
     dependencies {
         compile project(':core')
+        compile "org.antlr:antlr:3.4"
 
         if (hadoop_version == "cdh4") {
             compile "org.apache.pig:pig:0.10.0-cdh4.2.0"
@@ -171,7 +181,7 @@ project(":streaming") {
                 break
         }
     }
-    
+
     compileJava.onlyIf { hadoop_version != "1.0" }
     jar.onlyIf { hadoop_version != "1.0" }
 }
@@ -219,6 +229,21 @@ task('build-all') {
 }
 */
 
+
+task yieldHistorical(type: Exec) {
+    commandLine "mongoimport", "-d", "mongo_hadoop","-c", "yield_historical.in", "--drop", "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+}
+
+task ufoSightings(type: Exec) {
+    commandLine "mongoimport", "-d", "mongo_hadoop","-c", "ufo_sightings.in", "--drop", "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
+}
+
+task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
+    println("********")
+    println("Loading the Enron, Word Count and Twitter sample data requires manual intervention.  Please see the respective documentation")
+    println("********")
+}
+
 def mapReduceDeps(it, version) {
     ["core", "common", "shuffle", "app", "jobclient"].each { module ->
         it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
@@ -226,5 +251,7 @@ def mapReduceDeps(it, version) {
         }
     }
 }
+
+
 
 

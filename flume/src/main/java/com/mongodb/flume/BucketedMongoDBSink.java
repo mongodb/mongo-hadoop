@@ -10,22 +10,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 /**
- * Created by IntelliJ IDEA.
- * User: ayakushev
- * Date: 8/30/11
- * Time: 12:21 PM
+ * Created by IntelliJ IDEA. User: ayakushev Date: 8/30/11 Time: 12:21 PM
  */
 public class BucketedMongoDBSink extends EventSink.Base {
 
     static final Logger LOG = LoggerFactory.getLogger(BucketedMongoDBSink.class);
 
-    private final SimpleLRUMap<String, MongoDBSink> mongoWriters = new SimpleLRUMap<String, MongoDBSink>(10,
+    private final SimpleLRUMap<String, MongoDBSink> mongoWriters =
+        new SimpleLRUMap<String, MongoDBSink>(10,
             new SimpleLRUMap.OnRemove<MongoDBSink>() {
-                public void removed(MongoDBSink obj) {
+                public void removed(final MongoDBSink obj) {
                     try {
                         closeWriter(obj);
                     } catch (IOException e) {
@@ -38,12 +41,12 @@ public class BucketedMongoDBSink extends EventSink.Base {
     private MongoDBSink singleWriter = null;
     private String formatUrl;
 
-    public BucketedMongoDBSink(String formatUrl) {
+    public BucketedMongoDBSink(final String formatUrl) {
         this.formatUrl = formatUrl;
         shouldSub = Event.containsTag(formatUrl);
     }
 
-    public void append(Event e) throws IOException, InterruptedException {
+    public void append(final Event e) throws IOException, InterruptedException {
         MongoDBSink w = singleWriter;
         if (shouldSub) {
             String realUrl = e.escapeString(formatUrl);
@@ -57,7 +60,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
         super.append(e);
     }
 
-    protected MongoDBSink openWriter(String url) throws IOException {
+    protected MongoDBSink openWriter(final String url) throws IOException {
         LOG.info("Opening " + url);
         MongoDBSink w = new MongoDBSink(url);
         w.open();
@@ -71,7 +74,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
         }
     }
 
-    protected void closeWriter(MongoDBSink writer) throws IOException {
+    protected void closeWriter(final MongoDBSink writer) throws IOException {
         LOG.info("Closing writer " + writer._uri);
         writer.close();
     }
@@ -90,17 +93,23 @@ public class BucketedMongoDBSink extends EventSink.Base {
         return new SinkBuilder() {
 
             @Override
-            public EventSink build(Context context, String... args) {
+            public EventSink build(final Context context, final String... args) {
                 Preconditions
-                        .checkArgument(
-                                args.length == 1,
-                                "usage: mongoDBSink(\"mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]\")"
-                                        + "\n ... See http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB Connection URI Format."
-                                        + "\n\t Note that using [?options] you can specify Write Concern related settings: "
-                                        + "\n\t\t safe={true|false} (default: false) Whether or not the driver should send getLastError to verify each write operation."
-                                        + "\n\t\t w={n} (default: 0) Specify the number of servers to replicate a write to before returning success. When non-zero, implies safe=true."
-                                        + "\n\t\t wtimeout={ms} (default: wait forever) The number of milliseconds to wait for W replications to complete.  When non-zero, implies safe=true."
-                                        + "\n\t\t fsync={true|false} (default: false) When enabled, forces an fsync after each write operation to increase durability.  You probably *don't* want to do this; see the MongoDB docs for info.  When 'true', implies safe=true");
+                    .checkArgument(args.length == 1,
+                                   "usage: mongoDBSink(\"mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:"
+                                   + "portN]]][/[database][?options]]\")"
+                                   + "\n ... See http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB "
+                                   + "Connection URI Format."
+                                   + "\n\t Note that using [?options] you can specify Write Concern related settings: "
+                                   + "\n\t\t safe={true|false} (default: false) Whether or not the driver should send getLastError to "
+                                   + "verify each write operation."
+                                   + "\n\t\t w={n} (default: 0) Specify the number of servers to replicate a write to before returning "
+                                   + "success. When non-zero, implies safe=true."
+                                   + "\n\t\t wtimeout={ms} (default: wait forever) The number of milliseconds to wait for W " 
+                                   + "replications to complete.  When non-zero, implies safe=true."
+                                   + "\n\t\t fsync={true|false} (default: false) When enabled, forces an fsync after each write operation "
+                                   + "to increase durability.  You probably *don't* want to do this; see the MongoDB docs for info.  " 
+                                   + "When 'true', implies safe=true");
                 return new BucketedMongoDBSink(args[0]);
             }
         };
@@ -119,13 +128,13 @@ public class BucketedMongoDBSink extends EventSink.Base {
         private final int capacity;
         private final OnRemove<V> removeCallback;
 
-        public SimpleLRUMap(int capacity, OnRemove<V> removeCallback) {
+        public SimpleLRUMap(final int capacity, final OnRemove<V> removeCallback) {
             this.dataMap = new HashMap<K, KeyValueWithUsage<K, V>>();
             this.capacity = capacity;
             this.removeCallback = removeCallback;
         }
 
-        public V get(K key) {
+        public V get(final K key) {
             KeyValueWithUsage<K, V> usageInfo = dataMap.get(key);
             if (usageInfo != null) {
                 usageInfo.timestamp = System.currentTimeMillis();
@@ -134,7 +143,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
             return null;
         }
 
-        public V put(K key, V value) {
+        public V put(final K key, final V value) {
             KeyValueWithUsage<K, V> oldValue = dataMap.put(key, new KeyValueWithUsage<K, V>(key, value));
             if (dataMap.size() > capacity) {
                 expireLRU();
@@ -142,7 +151,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
             return oldValue != null ? oldValue.value : null;
         }
 
-        public V remove(K key) {
+        public V remove(final K key) {
             KeyValueWithUsage<K, V> removed = dataMap.remove(key);
             return onRemove(removed);
         }
@@ -156,7 +165,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
             }
         }
 
-        private V onRemove(KeyValueWithUsage<K, V> removed) {
+        private V onRemove(final KeyValueWithUsage<K, V> removed) {
             if (removed != null) {
                 removeCallback.removed(removed.value);
                 return removed.value;
@@ -171,27 +180,26 @@ public class BucketedMongoDBSink extends EventSink.Base {
             remove(toExpire.key);
         }
 
-        public static interface OnRemove<T> {
-            public void removed(T obj);
+        public interface OnRemove<T> {
+            void removed(T obj);
         }
 
         private static class KeyValueWithUsage<K, V> implements Comparable<KeyValueWithUsage> {
 
-            public K key;
-            public V value;
-            public long timestamp;
+            private K key;
+            private V value;
+            private long timestamp;
 
-            public KeyValueWithUsage(K key, V value) {
+            public KeyValueWithUsage(final K key, final V value) {
                 this.key = key;
                 this.value = value;
                 this.timestamp = System.currentTimeMillis();
             }
 
-            public int compareTo(KeyValueWithUsage other) {
+            public int compareTo(final KeyValueWithUsage other) {
                 return timestamp >= other.timestamp ? (timestamp != other.timestamp ? 1 : 0) : -1;
             }
         }
     }
-
 
 }

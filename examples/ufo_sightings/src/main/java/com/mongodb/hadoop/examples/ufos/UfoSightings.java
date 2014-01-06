@@ -15,8 +15,6 @@
  */
 package com.mongodb.hadoop.examples.ufos;
 
-// Mongo
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -25,22 +23,19 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-// Hadoop
-
 /**
  * The ufo sightings xml config object.
  */
-
 public class UfoSightings extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(UfoSightings.class);
 
     private static final boolean BACKGROUND = false;
-    
+
     public int run(final String[] args) throws Exception {
         final Configuration conf = getConf();
 
         final Job job = new Job(conf, "ufo-sightings");
-        
+
         job.setMapperClass(UfoSightingsMapper.class);
         job.setReducerClass(UfoSightingsReducer.class);
         job.setOutputFormatClass(com.mongodb.hadoop.MongoOutputFormat.class);

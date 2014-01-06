@@ -15,52 +15,57 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-// Mongo
+import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+import org.bson.BasicBSONObject;
 
-import org.bson.*;
-import com.mongodb.hadoop.util.*;
-import com.mongodb.hadoop.io.*;
-import com.mongodb.hadoop.mapred.MongoInputFormat;
-import com.mongodb.hadoop.mapred.MongoOutputFormat;
-
-// Hadoop
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.util.*;
-
-import org.apache.commons.logging.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Iterator;
 
 /**
  * The treasury yield xml config object.
  */
-public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
+public class TreasuryYieldXMLConfigV2 extends Configured implements Tool {
 
-    static class TreasuryYieldMapperV2 
-        extends MapReduceBase
-        implements Mapper<BSONWritable, BSONWritable, IntWritable, DoubleWritable> {
+    private static final Log LOG = LogFactory.getLog(TreasuryYieldXMLConfigV2.class);
+
+    static class TreasuryYieldMapperV2 extends MapReduceBase implements Mapper<BSONWritable, BSONWritable, IntWritable, DoubleWritable> {
 
         @Override
-        public void map(BSONWritable key, BSONWritable value, OutputCollector<IntWritable, DoubleWritable> output, Reporter reporter) throws IOException {
-            final int year = ((Date)value.getDoc().get("_id")).getYear() + 1900;
-            double bid10Year = ( (Number) value.getDoc().get( "bc10Year" ) ).doubleValue();
-            output.collect( new IntWritable( year ), new DoubleWritable( bid10Year ) );
+        public void map(final BSONWritable key, final BSONWritable value, final OutputCollector<IntWritable, DoubleWritable> output,
+                        final Reporter reporter)
+            throws IOException {
+            final int year = ((Date) value.getDoc().get("_id")).getYear() + 1900;
+            double bid10Year = ((Number) value.getDoc().get("bc10Year")).doubleValue();
+            output.collect(new IntWritable(year), new DoubleWritable(bid10Year));
         }
 
     }
 
-    static class TreasuryYieldReducerV2
-        extends MapReduceBase
-        implements Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
+    static class TreasuryYieldReducerV2 extends MapReduceBase implements Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
 
         @Override
-        public void reduce(IntWritable key, Iterator<DoubleWritable> values, OutputCollector<IntWritable, BSONWritable> output, Reporter reporter) throws IOException {
+        public void reduce(final IntWritable key, final Iterator<DoubleWritable> values,
+                           final OutputCollector<IntWritable, BSONWritable> output, final Reporter reporter) throws IOException {
             int count = 0;
             double sum = 0;
-            while(values.hasNext()){
+            while (values.hasNext()) {
                 DoubleWritable value = values.next();
                 sum += value.get();
                 count++;
@@ -68,36 +73,32 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
 
             final double avg = sum / count;
 
-            log.info( "V2: Average 10 Year Treasury for " + key.get() + " was " + avg );
+            LOG.info("V2: Average 10 Year Treasury for " + key.get() + " was " + avg);
             BasicBSONObject outputObj = new BasicBSONObject();
             outputObj.put("count", count);
             outputObj.put("avg", avg);
             outputObj.put("sum", sum);
-            output.collect( key, new BSONWritable( outputObj ) );
+            output.collect(key, new BSONWritable(outputObj));
         }
 
     }
 
-    public int run(String args[]) throws Exception{
+    public int run(final String[] args) throws Exception {
         final Configuration conf = getConf();
-        final JobConf job = new JobConf( conf );
-        job.setReducerClass( TreasuryYieldReducerV2.class );
-        job.setMapperClass( TreasuryYieldMapperV2.class );
-        job.setOutputFormat( com.mongodb.hadoop.mapred.MongoOutputFormat.class );
-        job.setOutputKeyClass( MongoConfigUtil.getOutputKey( conf ) );
-        job.setOutputValueClass( MongoConfigUtil.getOutputValue( conf ) );
-        job.setMapOutputKeyClass(  MongoConfigUtil.getMapperOutputKey( conf ) );
-        job.setMapOutputValueClass(  MongoConfigUtil.getMapperOutputValue( conf ) );
-        job.setInputFormat( com.mongodb.hadoop.mapred.MongoInputFormat.class );
+        final JobConf job = new JobConf(conf);
+        job.setReducerClass(TreasuryYieldReducerV2.class);
+        job.setMapperClass(TreasuryYieldMapperV2.class);
+        job.setOutputFormat(com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+        job.setOutputKeyClass(MongoConfigUtil.getOutputKey(conf));
+        job.setOutputValueClass(MongoConfigUtil.getOutputValue(conf));
+        job.setMapOutputKeyClass(MongoConfigUtil.getMapperOutputKey(conf));
+        job.setMapOutputValueClass(MongoConfigUtil.getMapperOutputValue(conf));
+        job.setInputFormat(com.mongodb.hadoop.mapred.MongoInputFormat.class);
         JobClient.runJob(job);
         return 0;
     }
 
-    public static void main(String args[]) throws Exception{
-        ToolRunner.run(new TreasuryYieldXMLConfigV2(), args );
+    public static void main(final String[] args) throws Exception {
+        ToolRunner.run(new TreasuryYieldXMLConfigV2(), args);
     }
-
-    private static final Log log = LogFactory.getLog( TreasuryYieldXMLConfigV2.class );
-
 }
-
