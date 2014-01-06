@@ -109,7 +109,7 @@ For a full example (running the enron example on Elastic MapReduce) please see [
 
 ## Usage with Pig
 
-[Documentation on Pig with the MongoDB Connector for Hadoopp](pig/README.md).
+[Documentation on Pig with the MongoDB Connector for Hadoop](pig/README.md).
 
 For examples on using Pig with the MongoDB Connector for Hadoop, also refer to the [examples section](examples/README.md).
 
