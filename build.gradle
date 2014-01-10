@@ -45,8 +45,6 @@ configure(subprojects) {
         options.fork = true
         options.debug = true
 //        options.compilerArgs = ['-Xlint:all', '-Xlint:-options']
-
-        onlyIf { JavaVersion.current().isJava7Compatible() }
     }
 
     project.ext.buildingWith = { n ->
@@ -152,6 +150,18 @@ project(":pig") {
             compile "org.apache.pig:pig:0.9.2"
         }
     }
+    
+    jar {
+        from project(':core').sourceSets.main.output
+        from sourceSets.main.output
+
+        configurations.compile.filter { 
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
+        }
+    }
+    
 }
 
 project(":streaming") {
@@ -182,8 +192,18 @@ project(":streaming") {
         }
     }
 
-    compileJava.onlyIf { hadoop_version != "1.0" }
-    jar.onlyIf { hadoop_version != "1.0" }
+    jar {
+        onlyIf { hadoop_version != "1.0" }
+
+        from project(':core').sourceSets.main.output
+        from sourceSets.main.output
+
+        configurations.compile.filter { 
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
+        }
+    }
 }
 
 project(":flume") {
@@ -231,17 +251,16 @@ task('build-all') {
 
 
 task yieldHistorical(type: Exec) {
-    commandLine "mongoimport", "-d", "mongo_hadoop","-c", "yield_historical.in", "--drop", "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+    commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                "examples/treasury_yield/src/main/resources/yield_historical_in.json"
 }
 
 task ufoSightings(type: Exec) {
-    commandLine "mongoimport", "-d", "mongo_hadoop","-c", "ufo_sightings.in", "--drop", "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
+    commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "ufo_sightings.in", "--drop",
+                "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
 }
 
 task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
-    println("********")
-    println("Loading the Enron, Word Count and Twitter sample data requires manual intervention.  Please see the respective documentation")
-    println("********")
 }
 
 def mapReduceDeps(it, version) {
