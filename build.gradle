@@ -15,6 +15,9 @@ buildscript {
     }
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.9'
+}
 
 configure(subprojects) {
     apply plugin: 'java'
