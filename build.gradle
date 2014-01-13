@@ -3,6 +3,14 @@ apply plugin: 'java'
 def configDir = new File(rootDir, 'config')
 def cdh4rel = 'cdh4.3.0'
 def hadoop_version = project.getProperties().get('hadoop_version', 'cdh4')
+def hadoopVersionMap = [
+        "0.23": "0.23.10",
+        "1.0" : "1.0.4",
+        "1.1" : "1.1.2",
+        "cdh4": "2.0.0-${cdh4rel}",
+        "2.2" : "2.2.0"
+]
+def hadoopArtifactVersion = hadoopVersionMap[hadoop_version]
 
 buildscript {
     repositories {
@@ -21,6 +29,7 @@ task wrapper(type: Wrapper) {
 
 configure(subprojects) {
     apply plugin: 'java'
+    apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
 
@@ -32,8 +41,12 @@ configure(subprojects) {
 
     group = 'org.mongodb'
     version = '1.2.0'
-    sourceCompatibility = '1.5'
-    targetCompatibility = '1.5'
+    jar {
+        classifier = "hadoop_${hadoop_version}"
+    }
+
+    sourceCompatibility = '1.6'
+    targetCompatibility = '1.6'
 
     dependencies {
         compile "org.mongodb:mongo-java-driver:2.11.3"
@@ -103,22 +116,22 @@ project(":core") {
     dependencies {
         switch (hadoop_version) {
             case ("0.23"):
-                compile "org.apache.hadoop:hadoop-common:0.23.10"
-                mapReduceDeps(it, "0.23.10")
+                compile "org.apache.hadoop:hadoop-common:${hadoopArtifactVersion}"
+                mapReduceDeps(it, hadoopArtifactVersion)
                 break
             case ("1.0"):
-                compile "org.apache.hadoop:hadoop-core:1.0.4"
+                compile "org.apache.hadoop:hadoop-core:${hadoopArtifactVersion}"
                 break
             case ("1.1"):
-                compile "org.apache.hadoop:hadoop-core:1.1.2"
+                compile "org.apache.hadoop:hadoop-core:${hadoopArtifactVersion}"
                 break
             case ("cdh4"):
-                compile "org.apache.hadoop:hadoop-common:2.0.0-${cdh4rel}"
-                mapReduceDeps(it, "2.0.0-${cdh4rel}")
+                compile "org.apache.hadoop:hadoop-common:${hadoopArtifactVersion}"
+                mapReduceDeps(it, hadoopArtifactVersion)
                 break
             case ("2.2"):
-                compile "org.apache.hadoop:hadoop-common:2.2.0"
-                mapReduceDeps(it, "2.2.0")
+                compile "org.apache.hadoop:hadoop-common:${hadoopArtifactVersion}"
+                mapReduceDeps(it, hadoopArtifactVersion)
                 break
             default:
                 throw new GradleException("Unknown hadoop version: ${hadoop_version}")
@@ -153,18 +166,18 @@ project(":pig") {
             compile "org.apache.pig:pig:0.9.2"
         }
     }
-    
+
     jar {
         from project(':core').sourceSets.main.output
         from sourceSets.main.output
 
-        configurations.compile.filter { 
+        configurations.compile.filter {
             it.name.startsWith('mongo-java-driver')
         }.each {
             from zipTree(it)
         }
     }
-    
+
 }
 
 project(":streaming") {
@@ -172,27 +185,7 @@ project(":streaming") {
 
     dependencies {
         compile project(':core')
-
-        switch (hadoop_version) {
-            case ("0.23"):
-                compile "org.apache.hadoop:hadoop-streaming:0.23.10"
-                break
-            case ("1.0"):
-                compile "org.apache.hadoop:hadoop-streaming:1.0.4"
-                break
-            case ("1.1"):
-                compile "org.apache.hadoop:hadoop-streaming:1.1.2"
-                break
-            case ("cdh4"):
-                compile "org.apache.hadoop:hadoop-streaming:2.0.0-${cdh4rel}"
-                break
-            case ("2.2"):
-                compile "org.apache.hadoop:hadoop-streaming:2.2.0"
-                break
-            default:
-                throw new GradleException("Unknown hadoop version: ${hadoop_version}")
-                break
-        }
+        compile "org.apache.hadoop:hadoop-streaming:${hadoopArtifactVersion}"
     }
 
     jar {
@@ -201,7 +194,7 @@ project(":streaming") {
         from project(':core').sourceSets.main.output
         from sourceSets.main.output
 
-        configurations.compile.filter { 
+        configurations.compile.filter {
             it.name.startsWith('mongo-java-driver')
         }.each {
             from zipTree(it)
@@ -220,11 +213,18 @@ project(":examples/ufo_sightings") {
     dependencies {
         compile project(':core')
     }
+    jar {
+        baseName = project.name.split('/')[1]
+    }
+
 }
 
 project(":examples/treasury_yield") {
     dependencies {
         compile project(':core')
+    }
+    jar {
+        baseName = project.name.split('/')[1]
     }
 }
 
@@ -232,12 +232,20 @@ project(":examples/enron") {
     dependencies {
         compile project(':core')
     }
+    jar {
+        baseName = project.name.split('/')[1]
+    }
+
 }
 
 project(":examples/sensors") {
     dependencies {
         compile project(':core')
     }
+    jar {
+        baseName = project.name.split('/')[1]
+    }
+
 }
 
 /*
@@ -273,7 +281,3 @@ def mapReduceDeps(it, version) {
         }
     }
 }
-
-
-
-
