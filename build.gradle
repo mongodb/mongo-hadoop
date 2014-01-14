@@ -3,14 +3,15 @@ apply plugin: 'java'
 def configDir = new File(rootDir, 'config')
 def cdh4rel = 'cdh4.3.0'
 def hadoop_version = project.getProperties().get('hadoop_version', 'cdh4')
-def hadoopVersionMap = [
+def hadoopArtifactVersion = [
         "0.23": "0.23.10",
         "1.0" : "1.0.4",
         "1.1" : "1.1.2",
         "cdh4": "2.0.0-${cdh4rel}",
         "2.2" : "2.2.0"
-]
-def hadoopArtifactVersion = hadoopVersionMap[hadoop_version]
+].withDefault {
+    throw new GradleException("Unknown hadoop version: ${hadoop_version}")
+}[hadoop_version]
 
 buildscript {
     repositories {
@@ -82,7 +83,6 @@ configure(subprojects) {
     /* Code quality */
     checkstyle {
         configFile = new File("$configDir/checkstyle.xml")
-
     }
 
     checkstyleTest {
@@ -110,6 +110,12 @@ configure(subprojects) {
     }
 }
 
+configure(subprojects.findAll { it.name.contains('examples/') }) {
+    jar {
+        baseName = project.name.split('/')[1]
+    }
+}
+
 project(":core") {
     archivesBaseName = "mongo-hadoop-core"
 
@@ -132,9 +138,6 @@ project(":core") {
             case ("2.2"):
                 compile "org.apache.hadoop:hadoop-common:${hadoopArtifactVersion}"
                 mapReduceDeps(it, hadoopArtifactVersion)
-                break
-            default:
-                throw new GradleException("Unknown hadoop version: ${hadoop_version}")
                 break
         }
     }
@@ -213,18 +216,11 @@ project(":examples/ufo_sightings") {
     dependencies {
         compile project(':core')
     }
-    jar {
-        baseName = project.name.split('/')[1]
-    }
-
 }
 
 project(":examples/treasury_yield") {
     dependencies {
         compile project(':core')
-    }
-    jar {
-        baseName = project.name.split('/')[1]
     }
 }
 
@@ -232,20 +228,12 @@ project(":examples/enron") {
     dependencies {
         compile project(':core')
     }
-    jar {
-        baseName = project.name.split('/')[1]
-    }
-
 }
 
 project(":examples/sensors") {
     dependencies {
         compile project(':core')
     }
-    jar {
-        baseName = project.name.split('/')[1]
-    }
-
 }
 
 /*
