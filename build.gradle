@@ -1,5 +1,3 @@
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-
 apply plugin: 'java'
 
 def configDir = new File(rootDir, 'config')
@@ -104,6 +102,8 @@ configure(subprojects) {
         }
     }
 
+    compileJava.onlyIf { false }
+
     jar {
 //        onlyIf { classifier != "" }
         jar {
@@ -114,23 +114,6 @@ configure(subprojects) {
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
-
-/*
-    versionMap.each { key, value ->
-        def task = tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
-            classifier = "hadoop_${key}"
-            hadoop_version = key
-            project.cleanCompileJava
-            project.compileJava
-            project.dependencies {
-                compile "org.apache.hadoop:hadoop-common:${versionMap[key]}"
-            }
-            project.listDependencies
-            from sourceSets.main.output
-        }
-        jar.dependsOn(task)
-    }
-*/
 }
 
 configure(subprojects.findAll { it.name.contains('examples/') }) {
@@ -141,73 +124,57 @@ configure(subprojects.findAll { it.name.contains('examples/') }) {
 
 project(":core") {
     archivesBaseName = "mongo-hadoop-core"
-    compileJava.onlyIf { false }
-
-/*
-    dependencies {
-        switch (hadoop_version) {
-            case ("0.23"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
-                break
-            case ("1.0"):
-                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
-                break
-            case ("1.1"):
-                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
-                break
-            case ("cdh4"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
-                break
-            case ("2.2"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
-                break
-        }
-    }
-*/
 
     versionMap.each { key, value ->
         def configuration = configurations.create("compile-$key")
-        configuration.extendsFrom(configurations['compile'])
+                                          .extendsFrom(configurations['compile'])
+        def name = configuration.name
+        def version = versionMap[key]
 
         switch (key) {
             case ("0.23"):
-                project.dependencies.add(configuration.name, "org.apache.hadoop:hadoop-common:${versionMap[key]}")
-                mapReduceDeps(it, project.dependencies, configuration, versionMap[key])
+                project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
+                mapReduceDeps(name, project.dependencies, version)
                 break
             case ("1.0"):
-                project.dependencies.add(configuration.name, "org.apache.hadoop:hadoop-core:${versionMap[key]}")
+                project.dependencies.add(name, "org.apache.hadoop:hadoop-core:${version}")
                 break
             case ("1.1"):
-                project.dependencies.add(configuration.name, "org.apache.hadoop:hadoop-core:${versionMap[key]}")
+                project.dependencies.add(name, "org.apache.hadoop:hadoop-core:${version}")
                 break
             case ("cdh4"):
-                project.dependencies.add(configuration.name, "org.apache.hadoop:hadoop-common:${versionMap[key]}")
-                mapReduceDeps(it, project.dependencies, configuration, versionMap[key])
+                project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
+                mapReduceDeps(name, project.dependencies, version)
                 break
             case ("2.2"):
-                project.dependencies.add(configuration.name, "org.apache.hadoop:hadoop-common:${versionMap[key]}")
-                mapReduceDeps(it, project.dependencies, configuration, versionMap[key])
+                project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
+                mapReduceDeps(name, project.dependencies, version)
                 break
         }
 
-        def hadoopCompile = tasks.create(name: "${project.name}-compile-hadoop-${key}", type: JavaCompile) {
-            classpath = configurations[configuration.name]
-            source = sourceSets.main.allJava
-            destinationDir = sourceSets.main.output.classesDir
-        }
+        createTasks(project, key, configuration)
+    }
+}
 
-        def hadoopJar = tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
-            classifier = "hadoop_${key}"
-            project.cleanCompileJava
-            from sourceSets.main.output
-        }
+def void createTasks(project, key, configuration) {
+    def hadoopCompile = project.tasks.create(name: "${project.name}-compile-hadoop-${key}", type: JavaCompile) {
+        classpath = project.configurations[configuration.name]
+        source = project.sourceSets.main.allJava
+        destinationDir = project.sourceSets.main.output.classesDir
+    }
 
-        hadoopJar.dependsOn(hadoopCompile)
-        jar.dependsOn(hadoopJar)
-        
+    def hadoopJar = project.tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
+        classifier = "hadoop_${key}"
+        from project.sourceSets.main.output
+    }
+
+    hadoopCompile.dependsOn(project.cleanCompileJava)
+    hadoopJar.dependsOn(hadoopCompile)
+    project.jar.dependsOn(hadoopJar)
+//    project.uploadArchives.dependsOn(hadoopJar)
+
+    project.artifacts {
+       archives hadoopJar
     }
 }
 
@@ -329,9 +296,9 @@ task ufoSightings(type: Exec) {
 task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
 }
 
-def mapReduceDeps(it, dependencies, configuration, version) {
+def mapReduceDeps(name, dependencies, version) {
     ["core", "common", "shuffle", "app", "jobclient"].each { module ->
-        dependencies.add(configuration.name, "org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
+        dependencies.add(name, "org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
             exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
         }
     }
