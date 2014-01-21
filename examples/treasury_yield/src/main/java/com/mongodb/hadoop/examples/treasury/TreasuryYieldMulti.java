@@ -48,15 +48,15 @@ public class TreasuryYieldMulti extends MongoTool {
                  (DBObject) null, // sort
                  (DBObject) null, // query
                  false,
-                 MultiMongoCollectionSplitter.class)
-            .add(new MongoURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in"),
-                 (MongoURI) null, // authuri
-                 true, // notimeout
-                 (DBObject) null, // fields
-                 (DBObject) null, // sort
-                 new BasicDBObject("_id", new BasicDBObject("$gt", new Date(883440000000L))),
-                 false, // range query
-                 MultiMongoCollectionSplitter.class);
+                 null // splitter class, null will let Hadoop-Connector decide.
+        ).add(new MongoURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in"),
+                (MongoURI) null, // authuri
+                true, // notimeout
+                (DBObject) null, // fields
+                (DBObject) null, // sort
+                new BasicDBObject("_id", new BasicDBObject("$gt", new Date(883440000000L))),
+                false, // range query
+                null);
 
         Configuration conf = new Configuration();
         conf.set(MultiMongoCollectionSplitter.MULTI_COLLECTION_CONF_KEY, mcsb.toJSON());
