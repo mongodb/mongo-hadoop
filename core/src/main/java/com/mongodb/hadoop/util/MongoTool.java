@@ -105,7 +105,7 @@ public class MongoTool extends Configured implements Tool {
         Class mapOutputValueClass = MongoConfigUtil.getMapperOutputValue(conf);
 
         if (mapOutputKeyClass != null) {
-            job.setMapOutputValueClass(mapOutputKeyClass);
+            job.setMapOutputKeyClass(mapOutputKeyClass);
         }
         if (mapOutputValueClass != null) {
             job.setMapOutputValueClass(mapOutputValueClass);
