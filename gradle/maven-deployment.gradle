@@ -50,7 +50,7 @@ configure(subprojects) {
 
     modifyPom {
         project {
-            name = 'MongoDB Connector for Hadoop¶'
+            name = 'MongoDB Connector for Hadoop'
             description = 'The MongoDB Connector for Hadoop is a plugin for Hadoop that provides the ability to use MongoDB as an input source and/or an output destination.'
             url 'https://github.com/mongodb/mongo-hadoop.git'
             

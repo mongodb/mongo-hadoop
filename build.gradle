@@ -25,12 +25,11 @@ buildscript {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.9'
+    gradleVersion = '1.10'
 }
 
 configure(subprojects) {
     apply plugin: 'java'
-    apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
 
@@ -40,7 +39,7 @@ configure(subprojects) {
         maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
     }
 
-    group = 'org.mongodb.mongo-hadoop'
+    group = 'org.mongodb'
     version = '1.2.1-SNAPSHOT'
 
     sourceCompatibility = '1.6'
@@ -102,10 +101,11 @@ configure(subprojects) {
         }
     }
 
-    compileJava.onlyIf { false }
-
     jar {
-        onlyIf { classifier != "" }
+//        onlyIf { classifier != "" }
+        jar {
+            classifier = "hadoop_${hadoop_version}"
+        }
     }
 
     task listDependencies << {
@@ -117,88 +117,70 @@ configure(subprojects.findAll { it.name.contains('examples/') }) {
     jar {
         baseName = project.name.split('/')[1]
     }
-    javadoc {
-         source = []
-   	}
-    
 }
 
 project(":core") {
     archivesBaseName = "mongo-hadoop-core"
 
-    versionMap.each { key, value ->
-        def configuration = configurations.create("compile-$key")
-                                          .extendsFrom(configurations['compile'])
-        coreDeps(project, key, configuration.name, versionMap[key])
-
-        createTasks(project, key, configuration)
+    dependencies {
+        switch (hadoop_version) {
+            case ("0.23"):
+                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
+                mapReduceDeps(it, versionMap[hadoop_version])
+                break
+            case ("1.0"):
+                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
+                break
+            case ("1.1"):
+                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
+                break
+            case ("cdh4"):
+                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
+                mapReduceDeps(it, versionMap[hadoop_version])
+                break
+            case ("2.2"):
+                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
+                mapReduceDeps(it, versionMap[hadoop_version])
+                break
+        }
     }
 }
 
 project(":hive") {
     archivesBaseName = "mongo-hadoop-hive"
+    dependencies {
+        compile project(':core')
 
-    versionMap.each { key, value ->
-        def configuration = configurations.create("compile-$key")
-                                          .extendsFrom(configurations['compile'])
-        def name = configuration.name
-
-        project.dependencies.add(name, [group  : project.group, name: 'mongo-hadoop-core',
-                                        version: project.version, classifier: "hadoop_${key}"])
-
-        coreDeps(project, key, name, versionMap[key])
-
-        project.dependencies.add(name, "org.apache.hive:hive-exec:0.10.0")
-
+        compile "org.apache.hive:hive-exec:0.10.0"
         if (hadoop_version == "cdh4") {
-            project.dependencies.add(name, "org.apache.hive:hive-serde:0.10.0-cdh4.2.0")
+            compile "org.apache.hive:hive-serde:0.10.0-cdh4.2.0"
         } else {
-            project.dependencies.add(name, "org.apache.hive:hive-serde:0.10.0")
+            compile "org.apache.hive:hive-serde:0.10.0"
         }
-
-        createTasks(project, key, configuration)
     }
-
 }
 
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
-    jar { onlyIf { false } }
-    versionMap.each { key, value ->
-        def configuration = configurations.create("compile-$key")
-                                          .extendsFrom(configurations['compile'])
-        def name = configuration.name
-
-        project.dependencies.add(name, [group  : project.group, name: 'mongo-hadoop-core',
-                                        version: project.version, classifier: "hadoop_${key}"])
-
-        coreDeps(project, key, name, versionMap[key])
-        project.dependencies.add(name, "org.antlr:antlr:3.4")
+    dependencies {
+        compile project(':core')
+        compile "org.antlr:antlr:3.4"
 
         if (hadoop_version == "cdh4") {
-            project.dependencies.add(name, "org.apache.pig:pig:0.10.0-cdh4.2.0")
+            compile "org.apache.pig:pig:0.10.0-cdh4.2.0"
         } else {
-            project.dependencies.add(name, "org.apache.pig:pig:0.9.2")
+            compile "org.apache.pig:pig:0.9.2"
         }
+    }
 
-        def hadoopCompile = compileTask(project, key, configuration)
+    jar {
+        from project(':core').sourceSets.main.output
+        from sourceSets.main.output
 
-        def hadoopJar = project.tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
-            classifier = "hadoop_${key}"
-            from project.sourceSets.main.output
-            from project(':core').sourceSets.main.output
-            configurations.compile.filter {
-                it.name.startsWith('mongo-java-driver')
-            }.each {
-                from zipTree(it)
-            }
-        }
-        hadoopJar.dependsOn(hadoopCompile)
-        project.jar.dependsOn(hadoopJar)
-
-
-        project.artifacts {
-            archives hadoopJar
+        configurations.compile.filter {
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
         }
     }
 
@@ -206,41 +188,23 @@ project(":pig") {
 
 project(":streaming") {
     archivesBaseName = "mongo-hadoop-streaming"
-    jar { onlyIf { false } }
 
-    versionMap.each { key, value ->
-        def configuration = configurations.create("compile-$key")
-                                          .extendsFrom(configurations['compile'])
-        def name = configuration.name
+    dependencies {
+        compile project(':core')
+        compile "org.apache.hadoop:hadoop-streaming:${versionMap[hadoop_version]}"
+    }
 
-        project.dependencies.add(name, [group  : project.group, name: 'mongo-hadoop-core',
-                                        version: project.version, classifier: "hadoop_${key}"])
+    jar {
+        onlyIf { hadoop_version != "1.0" }
 
-        coreDeps(project, key, name, versionMap[key])
-        project.dependencies.add(name, "org.apache.hadoop:hadoop-streaming:${versionMap[hadoop_version]}")
+        from project(':core').sourceSets.main.output
+        from sourceSets.main.output
 
-        def hadoopCompile = compileTask(project, key, configuration)
-
-        def hadoopJar = project.tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
-            onlyIf { key != "1.0" }
-
-            classifier = "hadoop_${key}"
-            from project.sourceSets.main.output
-            from project(':core').sourceSets.main.output
-            configurations.compile.filter {
-                it.name.startsWith('mongo-java-driver')
-            }.each {
-                from zipTree(it)
-            }
+        configurations.compile.filter {
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
         }
-        hadoopJar.dependsOn(hadoopCompile)
-        project.jar.dependsOn(hadoopJar)
-
-
-        project.artifacts {
-            archives hadoopJar
-        }
-
     }
 }
 
@@ -265,7 +229,7 @@ project(":examples/treasury_yield") {
 
 project(":examples/enron") {
     dependencies {
-        compile group: project.group, name: 'mongo-hadoop-core', version: project.version, classifier: 'hadoop_2.2'
+        compile project(':core')
     }
 }
 
@@ -274,6 +238,19 @@ project(":examples/sensors") {
         compile project(':core')
     }
 }
+
+/*
+task('build-all') {
+    ["0.23", "1.0", "1.1", "cdh4", "2.2"].each {
+        println "Builder with $it"
+        hadoop_version = it
+        project.cleanCompileJava
+        project.test
+        project.jar
+    }
+}
+*/
+
 
 task yieldHistorical(type: Exec) {
     commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
@@ -288,70 +265,12 @@ task ufoSightings(type: Exec) {
 task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
 }
 
-def mapReduceDeps(name, dependencies, version) {
+def mapReduceDeps(it, version) {
     ["core", "common", "shuffle", "app", "jobclient"].each { module ->
-        dependencies.add(name, "org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
+        it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
             exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
         }
     }
-}
-
-def compileTask(project, key, configuration) {
-    def hadoopCompile = project.tasks.create(name: "${project.name}-compile-hadoop-${key}", type: JavaCompile) {
-        classpath = project.configurations[configuration.name]
-        source = project.sourceSets.main.allJava
-        destinationDir = project.sourceSets.main.output.classesDir
-    }
-    hadoopCompile.dependsOn(project.cleanCompileJava)
-
-    hadoopCompile
-}
-
-def coreDeps(project, String key, String name, version) {
-    switch (key) {
-        case ("0.23"):
-            project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
-            mapReduceDeps(name, project.dependencies, version)
-            break
-        case ("1.0"):
-            project.dependencies.add(name, "org.apache.hadoop:hadoop-core:${version}")
-            break
-        case ("1.1"):
-            project.dependencies.add(name, "org.apache.hadoop:hadoop-core:${version}")
-            break
-        case ("cdh4"):
-            project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
-            mapReduceDeps(name, project.dependencies, version)
-            break
-        case ("2.2"):
-            project.dependencies.add(name, "org.apache.hadoop:hadoop-common:${version}")
-            mapReduceDeps(name, project.dependencies, version)
-            break
-    }
-}
-
-def createTasks(project, key, configuration, includeDriver = false) {
-    def hadoopCompile = compileTask(project, key, configuration)
-
-    def hadoopJar = jarTask(project, key, hadoopCompile, includeDriver)
-
-    project.with {
-        artifacts {
-            archives hadoopJar
-        }
-    }
-
-    
-}
-
-def jarTask(project, key, hadoopCompile, includeDriver = false) {
-    def hadoopJar = project.tasks.create(name: "${project.name}-jar-hadoop-${key}", type: Jar) {
-        classifier = "hadoop_${key}"
-        from project.sourceSets.main.output
-    }
-    hadoopJar.dependsOn(hadoopCompile)
-    project.jar.dependsOn(hadoopJar)
-//    project.uploadArchives.dependsOn(hadoopJar)    
 }
 
 apply from: 'gradle/maven-deployment.gradle'
