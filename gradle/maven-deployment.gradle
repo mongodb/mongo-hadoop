@@ -56,7 +56,7 @@ configure(subprojects) {
             
             scm {
                 url 'https://github.com/mongodb/mongo-hadoop.git'
-                connection 'scm:git:https://github.com/mongodb/mongo-hadoop.git'
+                connection 'scm:git:git://github.com/mongodb/mongo-hadoop.git'
             }
 
             licenses {
