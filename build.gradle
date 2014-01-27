@@ -239,19 +239,6 @@ project(":examples/sensors") {
     }
 }
 
-/*
-task('build-all') {
-    ["0.23", "1.0", "1.1", "cdh4", "2.2"].each {
-        println "Builder with $it"
-        hadoop_version = it
-        project.cleanCompileJava
-        project.test
-        project.jar
-    }
-}
-*/
-
-
 task yieldHistorical(type: Exec) {
     commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                 "examples/treasury_yield/src/main/resources/yield_historical_in.json"
