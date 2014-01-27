@@ -149,7 +149,9 @@ public class BSONComparator implements RawComparator<BSONObject> {
 
 
     /**
-     * @param obj1, obj2 - BSONObjects to be compared
+     * @param obj1 BSONObject to be compared
+     * @param obj2 BSONObject to be compared
+     *             
      * @return order (-1, 0, 1) Given the keys shared by both maps, find the sort order of the two maps
      */
     public int compare(final BSONObject obj1, final BSONObject obj2) {
