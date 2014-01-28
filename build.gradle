@@ -104,18 +104,16 @@ configure(subprojects) {
         }
     }
 
-    jar {
-//        onlyIf { classifier != "" }
-        jar {
-            classifier = "hadoop_${hadoop_version}"
-        }
-    }
-
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
 }
 
+configure(subprojects.findAll { !it.name.contains('examples/') }) {
+    jar {
+        classifier = "hadoop_${hadoop_version}"
+    }
+}
 configure(subprojects.findAll { it.name.contains('examples/') }) {
     jar {
         baseName = project.name.split('/')[1]

@@ -43,7 +43,13 @@ configure(subprojects) {
         }
         repositories {
             mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                beforeDeployment { MavenDeployment deployment ->
+                    println "********** deployment = ${deployment}"
+                    println "********** deployment.pomArtifact = ${deployment.pomArtifact}"
+                    println "********** deployment.mainArtifact = ${deployment.mainArtifact}"
+                    println "********** deployment.artifacts = ${deployment.artifacts}"
+                    
+                    signing.signPom(deployment) }
             }
         }
     }
