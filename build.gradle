@@ -2,7 +2,7 @@ apply plugin: 'java'
 
 def configDir = new File(rootDir, 'config')
 def cdh4rel = 'cdh4.3.0'
-def hadoop_version = project.getProperties().get('hadoop_version', 'cdh4')
+def hadoop_version = project.getProperties().get('hadoop_version', '2.2')
 def versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
