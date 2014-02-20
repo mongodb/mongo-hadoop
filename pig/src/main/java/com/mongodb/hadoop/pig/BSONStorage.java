@@ -69,8 +69,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     /**
      * Returns object more suited for BSON storage. Object o corresponds to a field value in pig.
      *
-     * @param o object representing pig type to convert to BSON-like object
-     * @param field field to place o in
+     * @param o        object representing pig type to convert to BSON-like object
+     * @param field    field to place o in
      * @param toIgnore name of field in Object o to ignore
      */
     public static Object getTypeForBSON(final Object o, final ResourceSchema.ResourceFieldSchema field, final String toIgnore)
