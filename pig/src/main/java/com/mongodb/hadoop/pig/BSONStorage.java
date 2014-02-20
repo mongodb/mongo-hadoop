@@ -127,7 +127,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 }
                 return m;
 
-            // Given a BAG, create an Array so BSONEnconder will eat it.
+            // Given a BAG, create an Array so BSONEncoder will eat it.
             case DataType.BAG:
                 if (s == null) {
                     throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
@@ -168,7 +168,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 return a;
             case DataType.MAP:
                 if (o == null) {
-                    return o;
+                    return null;
                 }
                 Map map = (Map) o;
                 Map<String, Object> out = new HashMap<String, Object>(map.size());
