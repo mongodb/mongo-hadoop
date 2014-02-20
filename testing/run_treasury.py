@@ -1,5 +1,7 @@
 #!/bin/env python
 
+import string
+import re
 import logging
 import tempfile
 import shutil
@@ -11,6 +13,8 @@ import os
 import shutil
 from datetime import timedelta
 import time
+import json
+import random
 
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools'))
@@ -33,9 +37,14 @@ if not os.path.isdir(TEMPDIR):
 #cd ..
 VERSION_SUFFIX = "1.1.0"
 
+
+def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
+
 version_buildtarget =\
     {"0.22" : "0.22.0",
      "1.0" : "1.0.4",
+     "1.1" : "1.1.2",
      "cdh4" : "cdh4.3.0",
      "0.20" : "0.20.205.0",
      "0.23" : "0.23.1",
@@ -78,18 +87,18 @@ check_results = [ { "_id": 1990, "count": 250, "avg": 8.552400000000002, "sum": 
                   { "_id": 2009, "count": 250, "avg": 3.2641200000000037, "sum": 816.0300000000009 },
                   { "_id": 2010, "count": 189, "avg": 3.3255026455026435, "sum": 628.5199999999996 } ]#}}}
                              
-def compare_results(collection):
+def compare_results(collection, reference=check_results):
     output = list(collection.find().sort("_id"))
-    if len(output) != len(check_results):
-        print "count is not same", len(output), len(check_results)
+    if len(output) != len(reference):
+        print "count is not same", len(output), len(reference)
         print output
         return False
     for i, doc in enumerate(output):
         #round to account for slight changes due to precision in case ops are run in different order.
-        if doc['_id'] != check_results[i]['_id'] or \
-                doc['count'] != check_results[i]['count'] or \
-                round(doc['avg'], 7) != round(check_results[i]['avg'], 7): 
-            print "docs do not match", doc, check_results[i]
+        if doc['_id'] != reference[i]['_id'] or \
+                doc['count'] != reference[i]['count'] or \
+                round(doc['avg'], 7) != round(reference[i]['avg'], 7): 
+            print "docs do not match", doc, reference[i]
             return False
     return True
 
@@ -135,9 +144,9 @@ DEFAULT_PARAMETERS = {
   "mongo.job.input.format":"com.mongodb.hadoop.MongoInputFormat",
   "mongo.job.output.format":"com.mongodb.hadoop.MongoOutputFormat",
   "mongo.job.output.key":"org.apache.hadoop.io.IntWritable",
-  "mongo.job.output.value":"org.apache.hadoop.io.DoubleWritable",
+  "mongo.job.output.value":"com.mongodb.hadoop.io.BSONWritable",
   "mongo.job.mapper.output.key":"org.apache.hadoop.io.IntWritable",
-  "mongo.job.mapper.output.value":"com.mongodb.hadoop.io.BSONWritable",
+  "mongo.job.mapper.output.value":"org.apache.hadoop.io.DoubleWritable",
   #"mongo.job.combiner":"com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
   "mongo.job.partitioner":"",
   "mongo.job.sort_comparator":"",
@@ -150,6 +159,7 @@ DEFAULT_OLD_PARAMETERS.update(
           "mongo.job.input.format": "com.mongodb.hadoop.mapred.MongoInputFormat",
           "mongo.job.output.format": "com.mongodb.hadoop.mapred.MongoOutputFormat"})
 
+#TODO - too many keyword args here - refactor/simplify.
 def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in',
            output_collection='mongo_hadoop.yield_historical.out',
            output_hostnames=[],
@@ -166,9 +176,18 @@ def runjob(hostname, params, input_collection='mongo_hadoop.yield_historical.in'
         cmd.append("-D")
         cmd.append(key + "=" + val)
 
-    cmd.append("-D")
-    input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
-    cmd.append("mongo.input.uri=%s" % input_uri)
+    
+    #if it's not set, assume that the test is 
+    # probably setting it in some other property (e.g. multi collection)
+    if input_collection:
+        cmd.append("-D")
+        if type(input_collection) == type([]):
+            input_uri = " ".join('mongodb://%s/%s?readPreference=%s' % (hostname, x, readpref) for x in input_collection)
+            input_uri = '"' + input_uri + '"'
+        else:
+            input_uri = 'mongodb://%s%s/%s?readPreference=%s' % (input_auth + "@" if input_auth else '', hostname, input_collection, readpref) 
+        cmd.append("mongo.input.uri=%s" % input_uri)
+
     cmd.append("-D")
     if not output_hostnames:# just use same as input host name
         cmd.append("mongo.output.uri=mongodb://%s%s/%s" % (output_auth + "@" if output_auth else '', hostname, output_collection))
@@ -219,7 +238,7 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 
     cmd = [os.path.join(HADOOP_HOME, "bin", "hadoop")]
     print cmd
-    if HADOOP_RELEASE.startswith('cdh3'):
+    if HADOOP_RELEASE.startswith('cdh3') or HADOOP_RELEASE.startswith('1.1'):
         #Special case for cdh3, as it uses non-default location.
         cmd += ['jar','$HADOOP_HOME/contrib/streaming/hadoop-streaming*']
     else:
@@ -247,20 +266,20 @@ def runstreamingjob(hostname, params, input_collection='mongo_hadoop.yield_histo
 
 
 class Standalone(unittest.TestCase):
+    noauth=True
+
     @classmethod
     def setUpClass(self):
         global num_runs
         self.homedir = "standalone1_" + str(num_runs)
         self.server = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR,self.homedir))
-        self.server_hostname = self.server.start_server(fresh=True)
+        self.server_hostname = self.server.start_server(fresh=True,noauth=self.noauth)
         self.server.connection().drop_database('mongo_hadoop')
-        self.server.connection()['mongo_hadoop'].set_profiling_level(2)
-        mongo_manager.mongo_import(self.server_hostname,
+        mongo_manager.mongo_import('localhost:' + str(self.server.port),
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
         num_runs += 1
-        print "server is ready."
 
     def setUp(self):
         self.server.connection()['mongo_hadoop']['yield_historical.out'].drop()
@@ -277,69 +296,101 @@ class Standalone(unittest.TestCase):
         logging.info("Standalone Teardown: killing mongod")
         self.server.kill_all_members()
         shutil.rmtree(os.path.join(TEMPDIR,self.homedir))
-        time.sleep(10)
+        time.sleep(5)
 
 class TestBasic(Standalone):
 
     def test_treasury(self):
         logging.info("testing basic input source")
-        runjob(self.server_hostname, DEFAULT_PARAMETERS)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.input.notimeout'] = "true"
+        runjob(self.server_hostname, PARAMS)
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
-class TestBSONOutput(Standalone):
+class TestBasicMulti(Standalone):
+
+    def test_treasury_json_config(self):
+        mongo_manager.mongo_import(self.server_hostname,
+                                   "mongo_hadoop",
+                                   "yield_historical.in3",
+                                   JSONFILE_PATH)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter"
+        collection_settings = [{"mongo.input.uri":"mongodb://%s/mongo_hadoop.yield_historical.in" % self.server_hostname,
+                                "query":{"dayOfWeek":"FRIDAY"},
+                                "mongo.splitter.class":"com.mongodb.hadoop.splitter.SingleMongoSplitter",
+                                "mongo.input.split.use_range_queries":True,
+                                "mongo.input.notimeout":True},
+                               {"mongo.input.uri":"mongodb://%s/mongo_hadoop.yield_historical.in3" % self.server_hostname,
+                                "mongo.input.split.use_range_queries":True,
+                                "mongo.input.notimeout":True} ]
+        #we need to escape this for the shell
+        PARAMS["mongo.input.multi_uri.json"] = '"' + re.sub('"','\\"', json.dumps(collection_settings) ) + '"'
+        runjob(self.server_hostname, PARAMS, input_collection=None)
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        print(list(out_col.find()))
 
     def test_treasury(self):
-        self.temp_outdir = tempfile.mkdtemp(prefix='hadooptest_', dir=TEMPDIR)
-        logging.info("Testing bson output")
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
-        PARAMETERS["mapred.output.file"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop","results.bson")
-        print self.temp_outdir
-
-        runjob(self.server_hostname, PARAMETERS)
-        mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out", os.path.join(self.temp_outdir, "mongo_hadoop","results.bson"))
+        logging.info("testing multiple collection support.")
+        mongo_manager.mongo_import(self.server_hostname,
+                                   "mongo_hadoop",
+                                   "yield_historical.in2",
+                                   JSONFILE_PATH)
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.splitter.class'] = "com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter"
+        runjob(self.server_hostname, PARAMS,
+                input_collection=['mongo_hadoop.yield_historical.in', \
+                                  'mongo_hadoop.yield_historical.in2'])
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
-        self.assertTrue(compare_results(out_col))
+        reference_doubled = [{"_id":x['_id'],
+                              "count":x['count'] * 2,
+                              "avg": (x['sum']*2) / (x['count']*2),
+                              "sum": x['sum']*2} for x in check_results]
+        self.assertTrue(compare_results(out_col, reference_doubled))
+        print list(out_col.find())
 
 class BaseShardedTest(unittest.TestCase):
+    noauth=True
 
     @classmethod
     def setUpClass(self):
         time.sleep(5)
         global num_runs
 
-        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + str(num_runs)),
-                with_arbiter=True,
-                num_members=3)
-        self.shard1.start_set(fresh=True)
-        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_" + str(num_runs)),
-                with_arbiter=True,
-                num_members=3)
-        self.shard2.start_set(fresh=True)
-        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_' + str(num_runs)))
-        self.confighost = self.configdb.start_server(fresh=True)
+        randstr = generate_id(size=6)
 
-        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + str(num_runs)))
+        self.shard1 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs0_" + randstr + "_" + str(num_runs)),
+                with_arbiter=True,
+                num_members=3, noauth=self.noauth)
+        self.shard1.start_set(fresh=True)
+        self.shard2 = mongo_manager.ReplicaSetManager(home=os.path.join(TEMPDIR, "rs1_"  + randstr + "_" + str(num_runs)),
+                with_arbiter=True,
+                num_members=3, noauth=self.noauth)
+        self.shard2.start_set(fresh=True)
+        self.configdb = mongo_manager.StandaloneManager(home=os.path.join(TEMPDIR, 'config_db_'  + randstr + "_" + str(num_runs)))
+        self.confighost = self.configdb.start_server(fresh=True,noauth=self.noauth)
+
+        self.mongos = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos_' + randstr + "_"  + str(num_runs)))
         self.mongos_hostname = self.mongos.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
-                noauth=False, fresh=True, addShards=True)
+                noauth=self.noauth, fresh=True, addShards=True)
 
-        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + str(num_runs)))
+        self.mongos2 = mongo_manager.MongosManager(home=os.path.join(TEMPDIR, 'mongos2_' + randstr + "_"  + str(num_runs)))
         self.mongos2_hostname = self.mongos2.start_mongos(self.confighost,
                 [h.get_shard_string() for h in (self.shard1,self.shard2)],
-                noauth=False, fresh=True, addShards=False)
+                noauth=self.noauth, fresh=True, addShards=False)
 
         self.mongos_connection = self.mongos.connection()
         self.mongos2_connection = self.mongos2.connection()
         self.mongos_connection.drop_database('mongo_hadoop')
-        mongo_manager.mongo_import(self.mongos_hostname,
+        mongo_manager.mongo_import("localhost:" + str(self.mongos.port),
                                    "mongo_hadoop",
                                    "yield_historical.in",
                                    JSONFILE_PATH)
         mongos_admindb = self.mongos_connection['admin']
         mongos_admindb.command("enablesharding", "mongo_hadoop")
-        self.homedirs = [x + str(num_runs) for x in ("rs0_", "rs1_", "config_db_", "mongos_", "mongos2_")]
+        self.homedirs = [x + randstr + "_" + str(num_runs) for x in ("rs0_", "rs1_", "config_db_", "mongos_", "mongos2_")]
         num_runs += 1
 
         #turn off the balancer
@@ -400,8 +451,16 @@ class TestSharded(BaseShardedTest):
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
+    def test_treasury_multi_mongos_input(self):
+        logging.info("Testing sharded cluster input with multiplexed mongos INPUTS")
+        PARAMS = DEFAULT_PARAMETERS.copy()
+        PARAMS['mongo.input.mongos_hosts'] = '"' + ' '.join([self.mongos_hostname, self.mongos2_hostname])+ '"'
+        runjob(self.mongos_hostname, PARAMS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
     def test_treasury_multi_mongos(self):
-        logging.info("Testing sharded cluster input with multiplexed mongos")
+        logging.info("Testing sharded cluster input with multiplexed mongos OUTPUTS")
         logging.info("before")
         logging.info(self.mongos_connection['admin'].command("serverStatus")['opcounters'])
         logging.info(self.mongos2_connection['admin'].command("serverStatus")['opcounters'])
@@ -421,26 +480,15 @@ class TestShardedGTE_LT(BaseShardedTest):
 
         shard1db = pymongo.Connection(self.shard1.get_primary()[0])['mongo_hadoop']
         shard2db = pymongo.Connection(self.shard2.get_primary()[0])['mongo_hadoop']
-        shard1db.set_profiling_level(2)
-        shard2db.set_profiling_level(2)
         runjob(self.mongos_hostname, PARAMETERS)
         out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
-        logging.info("showing profiler results")
-        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
-
-        for line in list(shard2db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
 
         PARAMETERS['mongo.input.query'] = '{"_id":{"\$gt":{"\$date":1182470400000}}}'
         out_col.drop()
         runjob(self.mongos_hostname, PARAMETERS)
         #Make sure that this fails when rangequery is used with a query that conflicts
         self.assertEqual(out_col.count(), 0)
-
-        for line in list(shard1db['system.profile'].find({"ns":'mongo_hadoop.yield_historical.in', "op":"query"}, {"query":1})):
-            logging.info(line)
 
 class TestShardedNoMongos(BaseShardedTest):
     #run a simple job against a sharded cluster, going directly to shards (bypass mongos)
@@ -597,6 +645,28 @@ class TestStaticBSON(Standalone):
         out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
         self.assertTrue(compare_results(out_col))
 
+    def test_treasury_directory_out(self):
+        logging.info("Testing bsoninput from directory path")
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        PARAMETERS["mongo.job.input.format"] = "com.mongodb.hadoop.BSONFileInputFormat"
+        PARAMETERS["mongo.job.output.format"] = "com.mongodb.hadoop.BSONFileOutputFormat"
+        PARAMETERS["mapred.output.dir"] = os.path.join("file://" + self.temp_outdir, "mongo_hadoop_out")
+        PARAMETERS["mapred.max.split.size"] = '200000'
+        PARAMETERS["bson.pathfilter.class"] = 'com.mongodb.hadoop.BSONPathFilter'
+        logging.info(PARAMETERS)
+        runbsonjob(os.path.join("file://" + self.temp_outdir, "mongo_hadoop"), PARAMETERS, self.server_hostname)
+
+        paths = os.listdir(os.path.join(self.temp_outdir,'mongo_hadoop_out'))
+        for p in paths:
+            fullpath = os.path.join(self.temp_outdir, "mongo_hadoop_out", p)
+            if not fullpath.endswith('.bson'):
+                continue
+            mongo_manager.mongo_restore(self.server_hostname, "mongo_hadoop", "yield_historical.out",fullpath)
+
+        out_col = self.server.connection()['mongo_hadoop']['yield_historical.out']
+        self.assertTrue(compare_results(out_col))
+
+
     def test_treasury_onesplit(self):
         logging.info("Testing bsoninput with one split")
         PARAMETERS = DEFAULT_PARAMETERS.copy()
@@ -632,6 +702,7 @@ class TestStaticBSON(Standalone):
         self.assertTrue(compare_results(out_col))
 
 class TestShardedAuth(BaseShardedTest):
+    noauth=False
 
     def test_treasury(self):
         logging.info("Testing sharding with authentication on")
@@ -664,15 +735,27 @@ class TestShardedAuth(BaseShardedTest):
         #now with credentials, it should work
         self.assertTrue(compare_results(out_col2))
 
+class TestShardedWithQuery(BaseShardedTest):
+
+    def test_treasury(self):
+        logging.info("Testing queried input against sharded cluster")
+        PARAMETERS = DEFAULT_PARAMETERS.copy()
+        #Only use a subset of dates
+        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
+        runjob(self.mongos_hostname, PARAMETERS)
+        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
+        results = list(out_col.find({},{'_id':1}).sort("_id"))
+        self.assertTrue(len(results) == 14)
+
+
 class TestStandaloneAuth(TestBasic):
+    noauth=False
 
     def test_treasury(self):
         logging.info("Testing standalone with authentication on")
-        self.server.connection()['mongo_hadoop'].add_user("test_user","test_pw")
+        x = self.server.connection()['admin'].add_user("test_user","test_pw", roles=["clusterAdmin", "readWriteAnyDatabase"])
         PARAMETERS = DEFAULT_PARAMETERS.copy()
-        PARAMETERS['mongo.auth.db'] = 'admin'
-        PARAMETERS['mongo.auth.user'] = 'test_user'
-        PARAMETERS['mongo.auth.pw'] = 'test_pw'
+        PARAMETERS['mongo.auth.uri'] = 'mongodb://%s:%s@%s/admin' % ('test_user', 'test_pw', self.server_hostname) 
         runjob('test_user:test_pw@' + self.server_hostname, PARAMETERS)
 
         server_connection = self.server.connection()
@@ -693,18 +776,6 @@ class TestStandaloneWithQuery(Standalone):
         results = list(out_col.find({},{'_id':1}).sort("_id"))
         self.assertTrue(len(results) == 14)
 
-
-class TestShardedWithQuery(BaseShardedTest):
-
-    def test_treasury(self):
-        logging.info("Testing queried input against sharded cluster")
-        PARAMETERS = DEFAULT_PARAMETERS.copy()
-        #Only use a subset of dates
-        PARAMETERS['mongo.input.query'] = '{_id:{\$gte:{\$date:883440000000}}}'
-        runjob(self.mongos_hostname, PARAMETERS)
-        out_col = self.mongos_connection['mongo_hadoop']['yield_historical.out']
-        results = list(out_col.find({},{'_id':1}).sort("_id"))
-        self.assertTrue(len(results) == 14)
 
 class TestUpdateWritable(Standalone):
 

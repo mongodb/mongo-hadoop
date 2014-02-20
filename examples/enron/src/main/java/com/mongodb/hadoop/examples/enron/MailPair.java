@@ -10,8 +10,7 @@ public class MailPair implements WritableComparable{
     String from;
     String to;
 
-    public MailPair(){
-    }
+    public MailPair(){ }
 
     public MailPair(String from, String to){
         this.from = from;

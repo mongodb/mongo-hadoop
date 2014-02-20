@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.fs.PathFilter;
+
 
 import java.io.*;
 
@@ -276,6 +278,14 @@ public class MongoConfig {
         MongoConfigUtil.setSkip( _conf, skip );
     }
 
+    public boolean getLazyBSON(){
+        return MongoConfigUtil.getLazyBSON( _conf );
+    }
+
+    public void setLazyBSON( boolean lazy ){
+        MongoConfigUtil.setLazyBSON( _conf, lazy) ;
+    }
+
     public int getSplitSize(){
         return MongoConfigUtil.getSplitSize( _conf );
     }
@@ -431,5 +441,39 @@ public class MongoConfig {
     final Configuration _conf;
 
     private static final Log LOG = LogFactory.getLog( MongoConfig.class );
+
+
+    //BSON-related config options
+    public boolean getBSONReadSplits(){
+        return MongoConfigUtil.getBSONReadSplits(_conf);
+    }
+
+    public void setBSONReadSplits(boolean val){
+        MongoConfigUtil.setBSONReadSplits(_conf, val);
+    }
+
+    public boolean getBSONWriteSplits(){
+        return MongoConfigUtil.getBSONWriteSplits(_conf);
+    }
+
+    public void setBSONWriteSplits(boolean val){
+        MongoConfigUtil.setBSONWriteSplits(_conf, val);
+    }
+
+    public boolean getBSONOutputBuildSplits(){
+        return MongoConfigUtil.getBSONOutputBuildSplits(_conf);
+    }
+
+    public void setBSONOutputBuildSplits(boolean val){
+        MongoConfigUtil.setBSONOutputBuildSplits(_conf, val);
+    }
+
+    public void setBSONPathFilter(Class<? extends PathFilter> val ){
+        MongoConfigUtil.setBSONPathFilter(_conf, val);
+    }
+
+    public Class<?> getBSONPathFilter(){
+        return MongoConfigUtil.getBSONPathFilter(_conf);
+    }
 }
 

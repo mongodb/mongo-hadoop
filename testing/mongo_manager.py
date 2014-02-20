@@ -14,7 +14,7 @@ import time
 
 import pymongo
 
-hostname = "127.0.0.1"#socket.gethostname()
+hostname = socket.gethostname()
 start_port = int(os.environ.get('DB_PORT', 17000)) 
 standalone_count = 0
 mongos_count = 0
@@ -169,6 +169,7 @@ class MongosManager(object):
 class StandaloneManager(object):
     def __init__(self, port=None, home=None):
         global start_port, replsets, standalone_count
+        self.pid = None
         self.home = home
         if not port:
             self.port = start_port
@@ -187,7 +188,7 @@ class StandaloneManager(object):
         trys = 0
         return_code = proc.poll()
 
-        while return_code is None and trys < 100: # ~25 seconds
+        while return_code is None and trys < 200: # ~50 seconds
             trys += 1
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -256,13 +257,13 @@ class StandaloneManager(object):
             stderr=subprocess.STDOUT)
         res = self.wait_for(proc, port)
         self.pid = proc.pid
-        print "pid is", self.pid
+        print "standalone - pid is", self.pid
         if not res:
             raise Exception("Couldn't execute %s" % ' '.join(cmd))
         else:
             return self.host;
 
-    def start_server(self,fresh=False):
+    def start_server(self,fresh=False, noauth=False):
         if fresh:
             try:
                 logging.info("Deleting dbpth '%s'" % self.dbpath)
@@ -287,7 +288,7 @@ class StandaloneManager(object):
 
         self.start_time = time.time()
         self.info = {}
-        self.host = self.start_mongod(self.port)
+        self.host = self.start_mongod(self.port, noauth=noauth)
         return self.host
 
 class ReplicaSetManager(object):
@@ -516,7 +517,7 @@ class ReplicaSetManager(object):
                 'source_port': source_port,
             }
 
-            configitem = { '_id': _id, 'host': host, 'arbiterOnly': arbiter }
+            configitem = { '_id': _id, 'host': host, 'arbiterOnly': arbiter}
             configitem.update(extras)
             return configitem
 
@@ -569,6 +570,7 @@ class ReplicaSetManager(object):
 
         self.config = {'_id': self.name, 'members': self.members}
         self.primary = self.members[0]['host']
+        self.primary_port = self.members[0]['host'].split(':')[-1]
 
         if self.master_slave:
             # Is there any way to verify the pair is up?
@@ -576,7 +578,9 @@ class ReplicaSetManager(object):
         else:
             # Honestly, what's the hurry? members take a *long* time to start on EC2
             time.sleep(1)
-            c = pymongo.Connection(self.primary)
+            # use localhost bypass here so that if we are using auth,
+            # we don't need to worry about the username/pw
+            c = pymongo.Connection('localhost:' + str(self.primary_port))
 
             logging.info('Initiating replica set....')
             if not restart:

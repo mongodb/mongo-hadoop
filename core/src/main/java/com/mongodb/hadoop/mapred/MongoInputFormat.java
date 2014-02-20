@@ -1,13 +1,12 @@
-// MongoImportFormat.java
 /*
- * Copyright 2010 10gen Inc.
- * 
+ * Copyright 2010-2013 10gen Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +21,7 @@ import java.util.*;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.JobConf;
@@ -34,6 +34,7 @@ import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.io.*;
 import org.bson.BSONObject;
 import com.mongodb.BasicDBObject;
+import java.io.IOException;
 
 public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable> {
 
@@ -48,11 +49,15 @@ public class MongoInputFormat implements InputFormat<BSONWritable, BSONWritable>
         return new MongoRecordReader(mis);
     }
 
-    public InputSplit[] getSplits(JobConf job, int numSplits) {
-        final MongoConfig conf = new MongoConfig(job);
-        // TODO - Support allowing specification of numSplits to affect our ops?
-        final List<org.apache.hadoop.mapreduce.InputSplit> splits = MongoSplitter.calculateSplits( conf );
-        return splits.toArray(new InputSplit[0]);
+    public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
+        try{
+            MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(job);
+            log.info("Using " + splitterImpl.toString() + " to calculate splits. (old mapreduce API)");
+            final List<org.apache.hadoop.mapreduce.InputSplit> splits = splitterImpl.calculateSplits();
+            return splits.toArray(new InputSplit[0]);
+        }catch(SplitFailedException spfe){
+            throw new IOException(spfe);
+        }
     }
 
     public boolean verifyConfiguration(Configuration conf) {

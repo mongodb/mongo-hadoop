@@ -1,13 +1,12 @@
-// MongoTool.java
 /*
- * Copyright 2010 10gen Inc.
- * 
+ * Copyright 2010-2013 10gen Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,8 +70,16 @@ public class MongoTool extends Configured implements Tool {
         job.setOutputFormatClass( MongoConfigUtil.getOutputFormat( conf ) );
         job.setOutputKeyClass( MongoConfigUtil.getOutputKey( conf ) );
         job.setOutputValueClass( MongoConfigUtil.getOutputValue( conf ) );
-
         job.setInputFormatClass( MongoConfigUtil.getInputFormat( conf ) );
+        Class mapOutputKeyClass = MongoConfigUtil.getMapperOutputKey(conf);
+        Class mapOutputValueClass = MongoConfigUtil.getMapperOutputValue(conf);
+
+        if(mapOutputKeyClass != null){
+            job.setMapOutputValueClass(mapOutputKeyClass);
+        }
+        if(mapOutputValueClass != null){
+            job.setMapOutputValueClass(mapOutputValueClass);
+        }
 
         /**
          * Determines if the job will run verbosely e.g. print debug output

@@ -30,7 +30,6 @@ import org.apache.hadoop.util.*;
 public class TreasuryYieldXMLConfig extends MongoTool {
 
     static{
-        // Load the XML config defined in hadoop-local.xml
         Configuration.addDefaultResource( "src/examples/hadoop-local.xml" );
         Configuration.addDefaultResource( "src/examples/mongo-defaults.xml" );
     }

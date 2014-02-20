@@ -46,7 +46,6 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
         @Override
         public void map(BSONWritable key, BSONWritable value, OutputCollector<IntWritable, DoubleWritable> output, Reporter reporter) throws IOException {
             final int year = ((Date)value.getDoc().get("_id")).getYear() + 1900;
-            //final int year = key.getYear() + 1900;
             double bid10Year = ( (Number) value.getDoc().get( "bc10Year" ) ).doubleValue();
             output.collect( new IntWritable( year ), new DoubleWritable( bid10Year ) );
         }
@@ -69,7 +68,7 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
 
             final double avg = sum / count;
 
-            System.out.println( "V2: Average 10 Year Treasury for " + key.get() + " was " + avg );
+            log.info( "V2: Average 10 Year Treasury for " + key.get() + " was " + avg );
             BasicBSONObject outputObj = new BasicBSONObject();
             outputObj.put("count", count);
             outputObj.put("avg", avg);
@@ -87,6 +86,8 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
         job.setOutputFormat( com.mongodb.hadoop.mapred.MongoOutputFormat.class );
         job.setOutputKeyClass( MongoConfigUtil.getOutputKey( conf ) );
         job.setOutputValueClass( MongoConfigUtil.getOutputValue( conf ) );
+        job.setMapOutputKeyClass(  MongoConfigUtil.getMapperOutputKey( conf ) );
+        job.setMapOutputValueClass(  MongoConfigUtil.getMapperOutputValue( conf ) );
         job.setInputFormat( com.mongodb.hadoop.mapred.MongoInputFormat.class );
         JobClient.runJob(job);
         return 0;
@@ -96,7 +97,7 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool{
         ToolRunner.run(new TreasuryYieldXMLConfigV2(), args );
     }
 
-    private static final Log LOG = LogFactory.getLog( TreasuryYieldXMLConfigV2.class );
+    private static final Log log = LogFactory.getLog( TreasuryYieldXMLConfigV2.class );
 
 }
 

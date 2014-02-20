@@ -12,14 +12,15 @@ import java.io.*;
 import java.util.*;
 
 public class EnronMailMapper
-	extends Mapper<NullWritable,BSONObject, MailPair, IntWritable>{
+	extends Mapper<Object,BSONObject, MailPair, IntWritable>{
 
     private static final Log LOG = LogFactory.getLog( EnronMailMapper.class );
 
 
 	@Override
-	public void map(NullWritable key, BSONObject val, final Context context)
+	public void map(Object key, BSONObject val, final Context context)
         throws IOException, InterruptedException{
+
 		if(val.containsKey("headers")){
 			BSONObject headers = (BSONObject)val.get("headers");
 			if(headers.containsKey("From") && headers.containsKey("To")){

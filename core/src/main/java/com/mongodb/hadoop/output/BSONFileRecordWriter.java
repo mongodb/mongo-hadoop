@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 10gen Inc.
+ * Copyright 2011-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,41 +39,37 @@ public class BSONFileRecordWriter<K, V> extends RecordWriter<K, V> {
     
     private static final Log log = LogFactory.getLog( BSONFileRecordWriter.class );
     private BSONEncoder bsonEnc = new BasicBSONEncoder();
-    private final Path outputPath;
     private boolean outFileOpened = false;
     private FSDataOutputStream outFile = null;
-    private Configuration conf;
+    private FSDataOutputStream splitsFile = null;
+    private long bytesWritten = 0L;
+    private long currentSplitLen = 0;
+    private long currentSplitStart = 0;
+    private long splitSize;
 
+    public BSONFileRecordWriter(FSDataOutputStream outFile, FSDataOutputStream splitsFile, long splitSize){
+        this.outFile = outFile;
+        this.splitsFile = splitsFile;
+        this.splitSize = splitSize;
 
-    public BSONFileRecordWriter(Configuration conf){
-        this.conf = conf;
-        this.outputPath = new Path(this.conf.get("mapred.output.file"));
     }
 
-    public BSONFileRecordWriter( TaskAttemptContext ctx ){
-        this(ctx.getConfiguration());
+    public BSONFileRecordWriter(FSDataOutputStream outFile){
+        this(outFile, null, 0);
     }
 
     public void close( TaskAttemptContext context ) throws IOException{
         if( this.outFile != null){
             this.outFile.close();
         }
-    }
-
-    private FSDataOutputStream getOutputStream() throws IOException{
-        if(this.outFile != null){
-            return this.outFile;
-        }else if(this.outFileOpened && this.outFile == null){
-            throw new IllegalStateException("Opening of output file failed.");
-        }else{
-            FileSystem fs = this.outputPath.getFileSystem(this.conf);
-            this.outFile = fs.create(this.outputPath);
-            return this.outFile;
+        writeSplitData(0, true);
+        if(this.splitsFile != null){
+            this.splitsFile.close();
         }
     }
 
     public void write( K key, V value ) throws IOException{
-        final FSDataOutputStream destination = getOutputStream();
+        final FSDataOutputStream destination = this.outFile;
 
         if( value instanceof MongoUpdateWritable ){
             throw new IllegalArgumentException("MongoUpdateWriteable can only be used to output to a mongo collection, not a static BSON file.");
@@ -117,6 +113,30 @@ public class BSONFileRecordWriter<K, V> extends RecordWriter<K, V> {
 
         outputByteBuf = bsonEnc.encode(toEncode);
         destination.write(outputByteBuf, 0, outputByteBuf.length);
+        bytesWritten += outputByteBuf.length;
+        writeSplitData(outputByteBuf.length, false);
+    }
+
+    private void writeSplitData(int docSize, boolean force) throws IOException{
+        //If no split file is being written, bail out now
+        if(this.splitsFile == null)
+            return;
+
+        // hit the threshold of a split, write it to the metadata file
+        if(force || currentSplitLen + docSize >= this.splitSize){
+            BSONObject splitObj = BasicDBObjectBuilder.start()
+                                    .add( "s" , currentSplitStart)
+                                    .add( "l" , currentSplitLen).get();
+            byte[] encodedObj = this.bsonEnc.encode(splitObj);
+            this.splitsFile.write(encodedObj, 0, encodedObj.length);
+
+            //reset the split len and start
+            this.currentSplitLen = 0;
+            this.currentSplitStart = bytesWritten - docSize;
+        }else{
+            // Split hasn't hit threshold yet, just add size
+            this.currentSplitLen += docSize;
+        }
     }
 
 }

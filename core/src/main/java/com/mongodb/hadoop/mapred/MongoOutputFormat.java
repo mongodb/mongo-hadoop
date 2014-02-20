@@ -1,13 +1,12 @@
-// MongoOutputFormat.java
 /*
- * Copyright 2010 10gen Inc.
- * 
+ * Copyright 2010-2013 10gen Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +23,9 @@ import org.apache.hadoop.util.*;
 
 import com.mongodb.hadoop.mapred.output.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.MongoURI;
+import java.util.List;
+import java.io.IOException;
 
 @SuppressWarnings("deprecation")
 public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
@@ -32,7 +34,12 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
     public MongoOutputFormat() {
     }
 
-    public void checkOutputSpecs(FileSystem ignored, JobConf job) {
+    public void checkOutputSpecs(FileSystem ignored, JobConf job) throws IOException {
+        List<MongoURI> outputUris; 
+        outputUris = MongoConfigUtil.getOutputURIs(job);
+        if(outputUris == null || outputUris.size() == 0){
+            throw new IOException("No output URI is specified. You must set mongo.output.uri.");
+        }
     }
 
     public OutputCommitter getOutputCommitter(TaskAttemptContext context) {

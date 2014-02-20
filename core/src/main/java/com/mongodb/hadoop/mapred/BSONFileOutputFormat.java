@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,41 @@ package com.mongodb.hadoop.mapred;
 // Mongo
 
 import com.mongodb.hadoop.mapred.output.*;
+import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.util.*;
+import java.io.IOException;
 
 // Commons
 // Hadoop
 
-public class BSONFileOutputFormat<K, V> implements OutputFormat<K, V> {
+public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOutputFormat<K, V> {
 
     public void checkOutputSpecs( FileSystem fs, final JobConf job ){ }
 
-    public RecordWriter<K, V> getRecordWriter(FileSystem fs, JobConf job, String name, Progressable progress){
-        return new BSONFileRecordWriter(job);
+    public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
+        Path outPath;
+        if(job.get("mapred.output.file") != null){
+            outPath = new Path(job.get("mapred.output.file"));
+        }else{
+            outPath = getPathForCustomFile(job, name);
+        }
+        FileSystem fs = outPath.getFileSystem(job);
+        FSDataOutputStream outFile = fs.create(outPath);
+
+        FSDataOutputStream splitFile = null;
+        if(MongoConfigUtil.getBSONOutputBuildSplits(job)){
+            Path splitPath = new Path(outPath.getParent(),  "." + outPath.getName() + ".splits");
+            splitFile = fs.create(splitPath);
+        }
+
+        long splitSize = BSONSplitter.getSplitSize(job, null);
+
+        BSONFileRecordWriter<K,V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
+        return recWriter;
     }
 
     private static final Log LOG = LogFactory.getLog( BSONFileOutputFormat.class );

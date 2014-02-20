@@ -20,6 +20,7 @@ object MongoHadoopBuild extends Build {
 
 
   private val stockPig = "0.9.2"
+  private val stockHive = "0.10.0"
   private val cdh3Rel = "cdh3u3"
   private val cdh3Hadoop = "0.20.2-%s".format(cdh3Rel) // current "base" version they patch against
   private val cdh3Pig = "0.8.1-%s".format(cdh3Rel)
@@ -28,24 +29,27 @@ object MongoHadoopBuild extends Build {
   private val cdh4CoreHadoop = "2.0.0-mr1-%s".format(cdh4Rel)
   private val cdh4Pig = "0.11.0-%s".format(cdh4Rel)
 
-  private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.205.0", false, stockPig),
-                                  "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig),
-                                  "0.21" -> hadoopDependencies("0.21.0", true, stockPig),
-                                  "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig),
-                                  "0.22" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
-                                  "0.22.x" -> hadoopDependencies("0.22.0", true, stockPig, nextGen=true),
-                                  "0.23" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
-                                  "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, nextGen=true),
-                                  "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, Some(cdh4YarnHadoop), nextGen=true),
-                                  "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig),
-                                  "1.0" -> hadoopDependencies("1.0.4", false, stockPig),
-                                  "1.0.x" -> hadoopDependencies("1.0.4", false, stockPig),
-                                  "default" -> hadoopDependencies("1.0.4", false, stockPig)
+  private val coreHadoopMap = Map("0.20" -> hadoopDependencies("0.20.205.0", false, stockPig, stockHive),
+                                  "0.20.x" -> hadoopDependencies("0.20.205.0", false, stockPig, stockHive),
+                                  "0.21" -> hadoopDependencies("0.21.0", true, stockPig, stockHive),
+                                  "0.21.x" -> hadoopDependencies("0.21.0", true, stockPig, stockHive),
+                                  "0.22" -> hadoopDependencies("0.22.0", true, stockPig, stockHive, nextGen=true),
+                                  "0.22.x" -> hadoopDependencies("0.22.0", true, stockPig, stockHive, nextGen=true),
+                                  "0.23" -> hadoopDependencies("0.23.1", true, stockPig, stockHive, nextGen=true),
+                                  "0.23.x" -> hadoopDependencies("0.23.1", true, stockPig, stockHive, nextGen=true),
+                                  "cdh4" -> hadoopDependencies(cdh4CoreHadoop, true, cdh4Pig, stockHive, Some(cdh4YarnHadoop), nextGen=true),
+                                  /** Hive in mongo-hadoop is not supported for cdh3*/
+                                  "cdh3" -> hadoopDependencies(cdh3Hadoop, true, cdh3Pig, ""),
+                                  "1.0" -> hadoopDependencies("1.0.4", false, stockPig, stockHive),
+                                  "1.0.x" -> hadoopDependencies("1.0.4", false, stockPig, stockHive),
+                                  "1.1" -> hadoopDependencies("1.1.2", true, stockPig, stockHive),
+                                  "1.1.x" -> hadoopDependencies("1.1.2", true, stockPig, stockHive),
+                                  "default" -> hadoopDependencies("1.0.4", false, stockPig, stockHive)
                                  )
 
   lazy val root = Project( id = "mongo-hadoop",
                           base = file("."),
-                          settings = dependentSettings ++ Seq(loadSampleDataTask)) aggregate(core, flume, pig)
+                          settings = dependentSettings ++ Seq(loadSampleDataTask)) aggregate(core, flume, pig, hive)
 
   lazy val core = Project( id = "mongo-hadoop-core",
                            base = file("core"),
@@ -54,7 +58,6 @@ object MongoHadoopBuild extends Build {
   lazy val hive = Project( id = "mongo-hadoop-hive",
                            base = file("hive"),
                            settings = hiveSettings ) dependsOn( core )
-
 
   lazy val pig = Project( id = "mongo-hadoop-pig",
                           base = file("pig"),
@@ -67,6 +70,10 @@ object MongoHadoopBuild extends Build {
   lazy val flume = Project( id = "mongo-flume",
                             base = file("flume"),
                             settings = flumeSettings )
+
+  lazy val ufo = Project( id = "ufo-example",
+                            base = file("examples/ufo_sightings"),
+                            settings = exampleSettings ) dependsOn( core )
 
   lazy val cohort = Project( id = "cohort",
                             base = file("examples/cohort"),
@@ -199,8 +206,12 @@ object MongoHadoopBuild extends Build {
     resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
     libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) =>
 
-      val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
-      hadoopDeps._4()
+      if(hr == "cdh4"){
+        Seq("org.apache.pig" % "pig" % "0.10.0-cdh4.2.0")
+      }else{
+        val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+        hadoopDeps._4()
+      }
     }
   )
 
@@ -221,8 +232,18 @@ object MongoHadoopBuild extends Build {
       })
     } },
 
+    libraryDependencies ++= Seq(Dependencies.hiveSerDe, Dependencies.hiveExec),
+
     resolvers ++= Seq(Resolvers.rawsonApache), /** Seems to have thrift deps I need*/
-    libraryDependencies ++= Seq(Dependencies.hiveSerDe)
+    libraryDependencies <++= (scalaVersion, libraryDependencies, hadoopRelease) { (sv, deps, hr: String) =>
+
+      if(hr == "cdh4"){
+        Seq("org.apache.hive" % "hive-serde" % "0.10.0-cdh4.2.0")
+      }else{
+        val hadoopDeps = coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. Valid entries are in %s".format(hr, coreHadoopMap.keySet)))
+        hadoopDeps._4()
+      }
+    }
   )
 
   val coreSettings = dependentSettings ++ Seq(
@@ -258,8 +279,8 @@ object MongoHadoopBuild extends Build {
   }
 
 
-  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, altStreamingVer: Option[String] = None, nextGen: Boolean = false): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID]) = {
-      (if (useStreaming) Some(streamingDependency(altStreamingVer.getOrElse(hadoopVersion))) else None, () => {
+  def hadoopDependencies(hadoopVersion: String, useStreaming: Boolean, pigVersion: String, hiveVersion: String, altStreamingVer: Option[String] = None, nextGen: Boolean = false): (Option[() => Seq[ModuleID]], () => Seq[ModuleID], String, () => Seq[ModuleID], () => Seq[ModuleID]) = {
+  (if (useStreaming) Some(streamingDependency(altStreamingVer.getOrElse(hadoopVersion))) else None, () => {
       println("*** Adding Hadoop Dependencies for Hadoop '%s'".format(altStreamingVer.getOrElse(hadoopVersion)))
 
       val deps = if (altStreamingVer.isDefined || nextGen)
@@ -285,7 +306,7 @@ object MongoHadoopBuild extends Build {
         deps
 
 
-      }, hadoopVersion, pigDependency(pigVersion))
+      }, hadoopVersion, pigDependency(pigVersion), hiveDependency(hiveVersion))
   }
 
   def pigDependency(pigVersion: String): () => Seq[ModuleID] = {
@@ -298,6 +319,23 @@ object MongoHadoopBuild extends Build {
       )
     }
   }
+
+  def hiveDependency(hiveVersion: String): () => Seq[ModuleID] = {
+    () => {
+      if (hiveVersion == "") {
+        println("*** Sorry, no Hive support for cdh3")
+        Seq()
+      } else {
+        println("*** Adding Hive Dependency for Version '%s'".format(hiveVersion))
+
+        Seq(
+          "org.apache.hive" % "hive-serde" % hiveVersion, 
+          "org.apache.hive" % "hive-exec" % hiveVersion
+        )
+      }
+    }
+  }
+
 
   def streamingDependency(hadoopVersion: String): () => Seq[ModuleID] = {
     () => {
@@ -325,9 +363,10 @@ object Resolvers {
 
 object Dependencies {
   val mongoJavaDriver = "org.mongodb" % "mongo-java-driver" % "2.10.1"
+  val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.10.0"
+  val hiveExec = "org.apache.hive" % "hive-exec" % "0.10.0" 
   val junit = "junit" % "junit" % "4.10" % "test"
   val flume = "com.cloudera" % "flume-core" % "0.9.4-cdh3u3"
-  val hiveSerDe = "org.apache.hive" % "hive-serde" % "0.9.0"
   val casbah = "org.mongodb" %% "casbah" % "2.3.0"
   val scoobi = "com.nicta" %% "scoobi" % "0.4.0" % "provided"
 }

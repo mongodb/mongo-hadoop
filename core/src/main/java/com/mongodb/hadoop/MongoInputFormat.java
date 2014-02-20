@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 10gen Inc.
+ * Copyright 2010-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,14 @@ package com.mongodb.hadoop;
 import com.mongodb.*;
 import com.mongodb.hadoop.input.*;
 import com.mongodb.hadoop.util.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.bson.*;
 
 import java.util.*;
-
-// Commons
-// Hadoop
-// Java
+import java.io.*;
 
 public class MongoInputFormat extends InputFormat<Object, BSONObject> {
 
@@ -45,16 +43,20 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
     }
 
     @Override
-    public List<InputSplit> getSplits( JobContext context ){
-        final Configuration hadoopConfiguration = context.getConfiguration();
-        final MongoConfig conf = new MongoConfig( hadoopConfiguration );
-        return MongoSplitter.calculateSplits( conf );
+    public List<InputSplit> getSplits( JobContext context ) throws IOException{
+        final Configuration conf = context.getConfiguration();
+        try{
+            MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
+            log.info("Using " + splitterImpl.toString() + " to calculate splits.");
+            return splitterImpl.calculateSplits();
+        }catch(SplitFailedException spfe){
+            throw new IOException(spfe);
+        }
     }
-
 
     public boolean verifyConfiguration( Configuration conf ){
         return true;
     }
 
-    private static final Log LOG = LogFactory.getLog( MongoInputFormat.class );
+    private static final Log log = LogFactory.getLog( MongoInputFormat.class );
 }

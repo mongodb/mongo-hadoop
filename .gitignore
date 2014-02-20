@@ -28,6 +28,8 @@ flume/target/*/*
 flume/target/*
 pig/target/*/*
 pig/target/*
+hive/target/*/*
+hive/target/*
 mongo-*.jar
 project/target/*
 streaming/target/*
@@ -38,3 +40,8 @@ testing/*.pyc
 *.jar
 streaming/language_support/python/dist/
 streaming/language_support/python/pymongo_hadoop.egg-info/
+metastore_db/
+TempStatsStore/
+*.splits
+*.crc
+

@@ -1,19 +1,19 @@
-// MongoConfigUtil.java
 /*
- * Copyright 2010 10gen Inc.
- * 
+ * Copyright 2010-2013 10gen Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 package com.mongodb.hadoop.util;
 
@@ -22,10 +22,13 @@ import com.mongodb.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
+import com.mongodb.hadoop.splitter.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.fs.PathFilter;
 
 import java.util.*;
+import java.net.UnknownHostException;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -59,7 +62,11 @@ public class MongoConfigUtil {
     public static final String JOB_OUTPUT_VALUE = "mongo.job.output.value";
 
     public static final String INPUT_URI = "mongo.input.uri";
+    public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
+
+    public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
+
 
 
     /**
@@ -76,6 +83,15 @@ public class MongoConfigUtil {
     public static final String INPUT_SORT = "mongo.input.sort";
     public static final String INPUT_LIMIT = "mongo.input.limit";
     public static final String INPUT_SKIP = "mongo.input.skip";
+    public static final String INPUT_LAZY_BSON = "mongo.input.lazy_bson";
+
+
+    //Settings specific to bson reading/writing.
+    public static final String BSON_READ_SPLITS = "bson.split.read_splits";
+    public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
+    public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
+    public static final String BSON_PATHFILTER = "bson.pathfilter.class";
+ 
 
     /**
      * A username and password to use.
@@ -272,9 +288,9 @@ public class MongoConfigUtil {
                 result.add(new MongoURI(mongoURI));
             }
             return result;
-        }
-        else
+        } else {
             return Collections.emptyList();
+        }
     }
 
     public static MongoURI getMongoURI( Configuration conf, String key ){
@@ -293,33 +309,56 @@ public class MongoConfigUtil {
         return getMongoURI( conf, AUTH_URI );
     }
 
-    public static List<DBCollection> getCollections( List<MongoURI> uris ){
+    public static List<DBCollection> getCollections( List<MongoURI> uris, MongoURI authURI){
         List<DBCollection> dbCollections = new LinkedList<DBCollection>();
         for (MongoURI uri : uris) {
-            dbCollections.add(getCollection(uri));
+            if(authURI != null){
+                dbCollections.add(getCollectionWithAuth(uri, authURI));
+            }else{
+                dbCollections.add(getCollection(uri));
+            }
         }
         return dbCollections;
     }
 
     public static DBCollection getCollection( MongoURI uri ){
-        try {
-            Mongo mongo = _mongos.connect( uri );
-            DB myDb = mongo.getDB(uri.getDatabase());
-
-            //if there's a username and password
-            if(uri.getUsername() != null && uri.getPassword() != null && !myDb.isAuthenticated()) {
-                boolean auth = myDb.authenticate(uri.getUsername(), uri.getPassword());
-                if(auth) {
-                    log.info("Sucessfully authenticated with collection.");
-                }
-                else {
-                    throw new IllegalArgumentException( "Unable to connect to collection." );
-                }
+        DBCollection coll;
+        try{
+            Mongo mongo = new Mongo(uri);
+            if(!mongo.getDB(uri.getDatabase()).isAuthenticated() && 
+                uri.getUsername() != null && uri.getPassword() != null){
+                mongo.getDB(uri.getDatabase())
+                    .authenticate(uri.getUsername(), uri.getPassword());
             }
-            return uri.connectCollection(mongo);
+            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return coll;
+        }catch(Exception e){
+            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
-        catch ( final Exception e ) {
-            throw new IllegalArgumentException( "Unable to connect to collection." + e.getMessage(), e );
+    }
+
+    public static DBCollection getCollectionWithAuth( MongoURI uri, MongoURI authURI ){
+        //Make sure auth uri is valid and actually has a username/pw to use
+        if(authURI == null || authURI.getUsername() == null || authURI.getPassword() == null){
+            throw new IllegalArgumentException("auth URI is empty or does not contain a valid username/password combination.");
+        }
+
+        DBCollection coll;
+        try{
+            Mongo mongo = new Mongo(authURI);
+            mongo.getDB(authURI.getDatabase())
+                .authenticateCommand(
+                        authURI.getUsername(),
+                        authURI.getPassword());
+            if(!mongo.getDB(uri.getDatabase()).isAuthenticated() && 
+                uri.getUsername() != null && uri.getPassword() != null){
+                mongo.getDB(uri.getDatabase())
+                    .authenticate(uri.getUsername(), uri.getPassword());
+            }
+            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return coll;
+        }catch(Exception e){
+            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
     }
 
@@ -327,8 +366,7 @@ public class MongoConfigUtil {
         try {
             final MongoURI _uri = getOutputURI(conf);
             return getCollection(_uri);
-        }
-        catch ( final Exception e ) {
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
         }
     }
@@ -336,9 +374,9 @@ public class MongoConfigUtil {
     public static List<DBCollection> getOutputCollections( Configuration conf ){
         try {
             final List<MongoURI> _uris = getOutputURIs(conf);
-            return getCollections(_uris);
-        }
-        catch ( final Exception e ) {
+            MongoURI authURI = getAuthURI(conf);
+            return getCollections(_uris, authURI);
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException( "Unable to connect to MongoDB Output Collection.", e );
         }
     }
@@ -347,8 +385,7 @@ public class MongoConfigUtil {
         try {
             final MongoURI _uri = getInputURI(conf);
             return getCollection( _uri );
-        }
-        catch ( final Exception e ) {
+        } catch ( final Exception e ) {
             throw new IllegalArgumentException(
                     "Unable to connect to MongoDB Input Collection at '" + getInputURI( conf ) + "'", e );
         }
@@ -496,6 +533,14 @@ public class MongoConfigUtil {
         conf.setInt( INPUT_SKIP, skip );
     }
 
+    public static boolean getLazyBSON( Configuration conf ){
+        return conf.getBoolean(INPUT_LAZY_BSON, false);
+    }
+
+    public static void setLazyBSON( Configuration conf, boolean lazy ){
+        conf.setBoolean(INPUT_LAZY_BSON, lazy);
+    }
+
     public static int getSplitSize( Configuration conf ){
         return conf.getInt( INPUT_SPLIT_SIZE, DEFAULT_SPLIT_SIZE );
     }
@@ -608,4 +653,116 @@ public class MongoConfigUtil {
     public static boolean isNoTimeout( Configuration conf ) {
         return conf.getBoolean( INPUT_NOTIMEOUT, false );
     }
+
+    //BSON-specific config functions.
+    public static boolean getBSONReadSplits( Configuration conf){
+        return conf.getBoolean(BSON_READ_SPLITS, true);
+    }
+
+    public static void setBSONReadSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_READ_SPLITS, val);
+    }
+
+    public static boolean getBSONWriteSplits( Configuration conf){
+        return conf.getBoolean(BSON_WRITE_SPLITS, true);
+    }
+
+    public static void setBSONWriteSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_WRITE_SPLITS, val);
+    }
+
+    public static boolean getBSONOutputBuildSplits( Configuration conf){
+        return conf.getBoolean(BSON_OUTPUT_BUILDSPLITS, false);
+    }
+
+    public static void setBSONOutputBuildSplits( Configuration conf, boolean val){
+        conf.setBoolean(BSON_OUTPUT_BUILDSPLITS, val);
+    }
+
+    public static void setBSONPathFilter( Configuration conf, Class<? extends PathFilter> val ){
+        conf.setClass( BSON_PATHFILTER, val, PathFilter.class );
+    }
+
+    public static Class<?> getBSONPathFilter( Configuration conf ){
+        return conf.getClass( BSON_PATHFILTER, null );
+    }
+
+    public static Class<? extends MongoSplitter> getSplitterClass( Configuration conf ){
+        return conf.getClass( MONGO_SPLITTER_CLASS, null, MongoSplitter.class );
+    }
+
+    public static void setSplitterClass( Configuration conf, Class<? extends MongoSplitter> val ){
+        conf.setClass( MONGO_SPLITTER_CLASS, val, MongoSplitter.class );
+    }
+
+    public static List<String> getInputMongosHosts(Configuration conf){
+        String raw = conf.get(INPUT_MONGOS_HOSTS, null);
+
+        if(raw == null || raw.length() == 0){
+            return Collections.emptyList(); // empty list - no mongos specified
+        }
+
+        // List of hostnames delimited by whitespace
+        return Arrays.asList(StringUtils.split(raw));
+    }
+
+    public static void setInputMongosHosts(Configuration conf, List<String> hostnames){
+        String raw = "";
+        if(hostnames != null){
+            raw = StringUtils.join(hostnames, ' ');
+        }
+
+        conf.set(INPUT_MONGOS_HOSTS, raw);
+    }
+
+    /**
+     * Fetch a class by its actual class name, rather than by a key name in the
+     * configuration properties. We still need to pass in a Configuration
+     * object here, since the Configuration class maintains an internal cache
+     * of class names for performance on some hadoop versions. 
+     * It also ensures that the same classloader is used across all keys.
+     */
+    public static <U> Class<? extends U> getClassByName(Configuration conf,
+                                                        String className, 
+                                                        Class<U> xface){
+
+        if(className == null) return null;
+        try {
+            Class<?> theClass  = conf.getClassByName(className);
+            if (theClass != null && !xface.isAssignableFrom(theClass))
+                throw new RuntimeException(theClass+" not "+xface.getName());
+            else if (theClass != null)
+                return theClass.asSubclass(xface);
+            else
+                return null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+  }
+
+  public static Configuration buildConfiguration(Map<String,Object> data){
+      Configuration newConf = new Configuration();
+      for(Map.Entry<String,Object> entry : data.entrySet()){
+          String key = entry.getKey();
+          Object val = entry.getValue();
+          if(val instanceof String){
+              newConf.set(key, (String)val);
+          }else if(val instanceof Boolean){
+              newConf.setBoolean(key, (Boolean)val);
+          }else if(val instanceof Integer){
+              newConf.setInt(key, (Integer)val);
+          }else if(val instanceof Float){
+              newConf.setFloat(key, (Float)val);
+          }else if(val instanceof DBObject){
+              setDBObject(newConf, key, (DBObject)val );
+          }else{
+              throw new RuntimeException("can't convert "+val.getClass()+
+                                         " into any type for Configuration");
+          }
+      }
+      return newConf;
+  }
+
+
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 10gen Inc.
+ * Copyright 2010-2013 10gen Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,29 @@ package com.mongodb.hadoop;
 
 // Mongo
 
+import com.mongodb.MongoURI;
 import com.mongodb.hadoop.output.*;
 import com.mongodb.hadoop.util.*;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.mapreduce.*;
-
-// Commons
-// Hadoop
+import java.util.List;
+import java.io.IOException;
 
 public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
     
     private final String[] updateKeys;
     private final boolean multiUpdate;
 
-    public void checkOutputSpecs( final JobContext context ){ }
+    public void checkOutputSpecs( final JobContext context ) throws IOException{
+        List<MongoURI> outputUris; 
+        outputUris = MongoConfigUtil.getOutputURIs(context.getConfiguration());
+        if(outputUris == null || outputUris.size() == 0){
+            throw new IOException("No output URI is specified. You must set mongo.output.uri.");
+        }
+    }
 
     public OutputCommitter getOutputCommitter( final TaskAttemptContext context ){
-        return new MongoOutputCommiter();
+        return new MongoOutputCommitter();
     }
 
     /**
