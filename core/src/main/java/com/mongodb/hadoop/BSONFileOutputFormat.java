@@ -21,11 +21,9 @@ import com.mongodb.hadoop.splitter.BSONSplitter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -34,23 +32,11 @@ import java.io.IOException;
 
 public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
-    public void checkOutputSpecs(final JobContext context) {
-    }
-
     @Override
     public RecordWriter<K, V> getRecordWriter(final TaskAttemptContext context) throws IOException {
         // Open data output stream
 
-        Path outPath;
-
-        Configuration conf = context.getConfiguration();
-        if (conf.get("mapred.output.file") != null) {
-            outPath = new Path(conf.get("mapred.output.file"));
-            LOG.warn("WARNING: mapred.output.file is deprecated since it only allows one reducer. "
-                     + "Do not set mapred.output.file. Every reducer will generate data to its own output file.");
-        } else {
-            outPath = getDefaultWorkFile(context, ".bson");
-        }
+        Path outPath = getDefaultWorkFile(context, ".bson");
         LOG.info("output going into " + outPath);
 
         FileSystem fs = outPath.getFileSystem(context.getConfiguration());
