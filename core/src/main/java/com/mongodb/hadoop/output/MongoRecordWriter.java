@@ -48,11 +48,11 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     private int roundRobinCounter = 0;
 
-    public MongoRecordWriter(DBCollection c, TaskAttemptContext ctx) {
+    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
         this(Arrays.asList(c), ctx);
     }
 
-    public MongoRecordWriter(List<DBCollection> c, TaskAttemptContext ctx) {
+    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx) {
         collections = new ArrayList<DBCollection>(c);
         context = ctx;
         this.numberOfHosts = c.size();
@@ -92,7 +92,6 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
                                     muw.isMultiUpdate());
                 return;
             } catch (final MongoException e) {
-                e.printStackTrace();
                 throw new IOException("can't write to mongo", e);
             }
         }
@@ -119,7 +118,6 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             DBCollection dbCollection = getDbCollectionByRoundRobin();
             dbCollection.save(o);
         } catch (final MongoException e) {
-            e.printStackTrace();
             throw new IOException("can't write to mongo", e);
         }
     }
