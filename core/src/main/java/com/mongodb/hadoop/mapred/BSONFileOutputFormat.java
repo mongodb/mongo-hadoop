@@ -37,7 +37,8 @@ import java.io.IOException;
 
 public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOutputFormat<K, V> {
 
-    public RecordWriter<K, V> getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) throws IOException {
+    public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name,
+                                              final Progressable progress) throws IOException {
         Path outPath = getDefaultWorkFile(job, name, ".bson");
         LOG.info("output going into " + outPath);
 
@@ -52,11 +53,11 @@ public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOut
 
         long splitSize = BSONSplitter.getSplitSize(job, null);
 
-        BSONFileRecordWriter<K,V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
+        BSONFileRecordWriter<K, V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
         return recWriter;
     }
 
-    public static Path getDefaultWorkFile(JobConf conf, String name, String extension) {
+    public static Path getDefaultWorkFile(final JobConf conf, final String name, final String extension) {
         return new Path(getWorkOutputPath(conf), getUniqueName(conf, name) + extension);
     }
 
