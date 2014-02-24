@@ -111,12 +111,36 @@ configure(subprojects) {
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
+
+/*
+    gradle.taskGraph.whenReady { taskGraph ->
+        if (taskGraph.allTasks.any { it.name.contains('examples/') && (it instanceof Sign || it instanceof PublishArtifact) }) {
+            println "********** it = ${it}"
+            taskGraph.allTasks.remove(it)
+        }
+    }
+*/
 }
 
-configure(subprojects.findAll { it.name.contains('examples/') }) {
-    jar {
-        baseName = project.name.split('/')[1]
+/*
+afterEvaluate {
+    println "********** afterEvaluate"
+    subprojects.each {
+        if(it.name.contains('examples/')) {
+            println "********** it = ${it}"
+            gradle.taskGraph.allTasks.remove(it)
+        }
     }
+}
+*/
+
+configure(subprojects.findAll { it.name.contains('examples/') }) {
+    def exampleName = project.name.split('/')[1]
+    jar {
+        baseName = exampleName
+    }
+    group += ".mongo-hadoop-examples"
+   
 }
 
 project(":core") {
@@ -228,6 +252,9 @@ project(":examples/treasury_yield") {
 }
 
 project(":examples/enron") {
+    uploadArchives {
+        println "********** it = ${it}"
+    }
     dependencies {
         compile project(':core')
     }
