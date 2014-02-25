@@ -109,8 +109,8 @@ object MongoHadoopBuild extends Build {
 
       newDeps :+ scala
     },
-    javacOptions ++= Seq("-source", "1.5", "-target", "1.5"),
-    javacOptions in doc := Seq("-source", "1.5")
+    javacOptions ++= Seq("-source", "1.7", "-target", "1.7"),
+    javacOptions in doc := Seq("-source", "1.7")
   )
 
   /** Settings that are dependent on a hadoop version */
