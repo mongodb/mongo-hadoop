@@ -21,7 +21,7 @@ However, by creating a MongoLoader instance with a specific list of field names,
 
 `schema` - a schema (list of fields/datatypes) that will map fields in the document to fields in the Pig records. See section below on Datatype Mapping for details.
 
-`idAlias` - an alias to use for the `_id` field in documents retrieved from the collection. The string "_id" is not a legal pig variable name, so the contents of the field in `_id` will be mapped to a value in Pig accordingly by providing a value here. 
+`idAlias` - an alias to use for the `_id` field in documents retrieved from the collection. The string "\_id" is not a legal pig variable name, so the contents of the field in `_id` will be mapped to a value in Pig accordingly by providing a value here. 
 
 Example:
 
