@@ -38,6 +38,8 @@ import org.bson.LazyBSONDecoder;
 
 import java.io.IOException;
 
+import static java.lang.String.format;
+
 /**
  * Copyright (c) 2008 - 2013 10gen, Inc. <http://10gen.com>
  * <p/>
@@ -103,7 +105,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
             }
             return true;
         } catch (Exception e) {
-            LOG.warn("Error reading key/value from bson file: " + e.getMessage(), e);
+            LOG.error(format("Error reading key/value from bson file on line %d: %s", e.getMessage(), numDocsRead));
             try {
                 this.close();
             } catch (Exception e2) {

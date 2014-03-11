@@ -38,6 +38,8 @@ import org.bson.LazyBSONDecoder;
 
 import java.io.IOException;
 
+import static java.lang.String.*;
+
 public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
     
@@ -90,7 +92,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
             }
             return true;
         } catch (Exception e) {
-            LOG.error("Error reading key/value from bson file: " + e.getMessage());
+            LOG.error(format("Error reading key/value from bson file on line %d: %s", e.getMessage(), numDocsRead));
             try {
                 this.close();
             } catch (Exception e2) {
