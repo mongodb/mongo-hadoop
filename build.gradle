@@ -253,7 +253,6 @@ project(":examples/treasury_yield") {
 
 project(":examples/enron") {
     uploadArchives {
-        println "********** it = ${it}"
     }
     dependencies {
         compile project(':core')

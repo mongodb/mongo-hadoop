@@ -2,17 +2,17 @@
 
 ###########Environment settings#############
 # Modify these to match your setup.
-export HADOOP_HOME="/Users/mike/hadoop/hadoop-1.1.2" 
+#export HADOOP_HOME="/Users/mike/hadoop/hadoop-1.1.2" 
 INPUT_URI="mongodb://localhost:27017/mongo_hadoop.yield_historical.in"
-OUTPUT_URI="mongodb://localhost:27017/demo.yield_historical.out"
-JARNAME="treasury-example_1.1.2-1.1.0.jar"
+OUTPUT_URI="mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
+JARNAME="treasury_yield-1.2.1-SNAPSHOT-hadoop_2.2.jar"
 
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #Set the filename of the jar to match the jar you built depending
 #on your hadoop version.
 declare -a job_args
-job_args=("jar" "$HERE/target/$JARNAME")
+job_args=("jar" "$HERE/build/libs/$JARNAME")
 job_args=(${job_args[@]} "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
 job_args=(${job_args[@]} "-D" "mongo.job.verbose=true")
 
@@ -50,5 +50,5 @@ job_args=(${job_args[@]} "-D" "mongo.job.output.format=com.mongodb.hadoop.MongoO
 
 echo "${job_args[@]}" "$1" 
 
-$HADOOP_HOME/bin/hadoop "${job_args[@]}" "$1"
+$HADOOP_HOME/bin/hadoop "${job_args[@]}" "$1" 2>&1 | tee hadoop.out
 
