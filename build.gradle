@@ -296,17 +296,39 @@ task yieldHistorical() {
     }
 }
 
-task ufoSightings() {
+/*task ufoSightings() {
     doLast {
         exec() {
             commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "ufo_sightings.in", "--drop",
                         "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
         }
-    }
-}
+        
+//        $HADOOP_HOME/bin/hadoop jar ./target/ufo-example_cdh4.3.0-1.1.0.jar -Dmongo.input.uri=mongodb://localhost:27017/test.ufo 
+// -Dmongo.output.uri=mongodb://localhost:27017/test.ufo_out 
 
-task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
-}
+        hadoop("examples/ufo_sightings/build/libs/ufo_sightings-${project(':core').version}-hadoop_${hadoop_version}.jar",
+               "com.mongodb.hadoop.examples.ufos.UfoSightings",
+
+               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.ufo",
+                // "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat",
+                // "mapred.input.dir=file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson",
+
+//                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.ufo.out",
+//                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
+
+                "mongo.job.mapper=com.mongodb.hadoop.examples.ufos.UfoSightingsMapper",
+                "mongo.job.reducer=com.mongodb.hadoop.examples.ufos.UfoSightingsReducer",
+
+                "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
+                "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
+                "mongo.job.output.key=org.apache.hadoop.io.Text",
+                "mongo.job.output.value=com.mongodb.hadoop.io.IntWritable",
+
+               ])
+        
+    }
+}*/
 
 def hadoop(jar, className, args) {
     def line = ["${System.env.HADOOP_HOME}/bin/hadoop",
