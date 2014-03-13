@@ -239,11 +239,13 @@ project(":flume") {
     }
 }
 
+/*
 project(":examples/ufo_sightings") {
     dependencies {
         compile project(':core')
     }
 }
+*/
 
 project(":examples/treasury_yield") {
     dependencies {
@@ -252,8 +254,7 @@ project(":examples/treasury_yield") {
 }
 
 project(":examples/enron") {
-    uploadArchives {
-    }
+    uploadArchives.onlyIf false
     dependencies {
         compile project(':core')
     }
@@ -265,7 +266,7 @@ project(":examples/sensors") {
     }
 }
 
-task yieldHistorical() {
+task historicalYield() {
     doLast {
         exec() {
             commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
@@ -292,6 +293,35 @@ task yieldHistorical() {
                 "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
                 // "mapred.output.dir=file:///tmp/yield_historical_out.bson",
                 // "mongo.job.output.format=com.mongodb.hadoop.BSONFileOutputFormat"
+               ])
+    }
+}
+task sensorData() {
+    doLast {
+        exec() {
+            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                        "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+        }
+        exec() {
+            commandLine "mongo", "mongo_hadoop", "--eval",  "\"db.logs_aggregate.ensureIndex({devices:1})\""
+        }
+
+        hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+               "com.mongodb.hadoop.examples.sensors.Sensors",
+
+               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.devices",
+
+                "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.DeviceMapper",
+                "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.DeviceReducer",
+
+                "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
+                "mongo.job.mapper.output.value=org.apache.hadoop.io.Text",
+                "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
+                "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
+
+                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
+                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
                ])
     }
 }
