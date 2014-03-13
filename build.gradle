@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'download-task'
 
 def configDir = new File(rootDir, 'config')
 def cdh4rel = 'cdh4.3.0'
@@ -22,6 +23,7 @@ buildscript {
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
         classpath 'com.antwerkz.github:github-release-gradle-plugin:1.0.0-RC3'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.3'
+        classpath 'de.undercouch:gradle-download-task:0.5'
     }
 }
 
@@ -314,11 +316,53 @@ task sensorData() {
 
                 "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
                 "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-
                ])
     }
 }
 
+task enronEmails() {
+    doLast {
+        download {
+            src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
+            dest 'examples/data/'
+            onlyIfNewer true
+        }
+        if (!new File('examples/data/dump').exists()) {
+            println "extracting email data"
+            copy {
+                from(tarTree('examples/data/enron_mongo.tar.bz2'))
+                into 'examples/data'
+            }
+        }
+        
+        exec() {
+            commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "examples/data/dump/enron_mail"
+        }
+
+        hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
+               "com.mongodb.hadoop.examples.enron.EnronMail",
+
+               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.messages",
+
+                "mongo.input.split_size=64",
+
+                "mongo.job.mapper=com.mongodb.hadoop.examples.enron.EnronMailMapper",
+                "mongo.job.reducer=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+                //"mongo.job.combiner=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+
+                "mongo.job.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+                "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
+
+                "mongo.job.mapper.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+                "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
+
+                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
+                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+
+               ])
+    }
+}
 /*task ufoSightings() {
     doLast {
         exec() {
