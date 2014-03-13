@@ -296,9 +296,13 @@ task yieldHistorical() {
     }
 }
 
-task ufoSightings(type: Exec) {
-    commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "ufo_sightings.in", "--drop",
-                "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
+task ufoSightings() {
+    doLast {
+        exec() {
+            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "ufo_sightings.in", "--drop",
+                        "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
+        }
+    }
 }
 
 task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
@@ -306,13 +310,13 @@ task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
 
 def hadoop(jar, className, args) {
     def line = ["${System.env.HADOOP_HOME}/bin/hadoop",
-            "jar", jar, className,
-            //Split settings
-            "-Dmongo.input.split_size=8",
-            "-Dmongo.job.verbose=true",
+                "jar", jar, className,
+                //Split settings
+                "-Dmongo.input.split_size=8",
+                "-Dmongo.job.verbose=true",
     ]
     args.each {
-		 line << "-D${it}"
+        line << "-D${it}"
     }
     println "********** line = ${line}"
     exec() {
