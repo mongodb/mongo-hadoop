@@ -111,28 +111,7 @@ configure(subprojects) {
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
-
-/*
-    gradle.taskGraph.whenReady { taskGraph ->
-        if (taskGraph.allTasks.any { it.name.contains('examples/') && (it instanceof Sign || it instanceof PublishArtifact) }) {
-            println "********** it = ${it}"
-            taskGraph.allTasks.remove(it)
-        }
-    }
-*/
 }
-
-/*
-afterEvaluate {
-    println "********** afterEvaluate"
-    subprojects.each {
-        if(it.name.contains('examples/')) {
-            println "********** it = ${it}"
-            gradle.taskGraph.allTasks.remove(it)
-        }
-    }
-}
-*/
 
 configure(subprojects.findAll { it.name.contains('examples/') }) {
     def exampleName = project.name.split('/')[1]
@@ -298,16 +277,9 @@ task historicalYield() {
                ])
     }
 }
+
 task sensorData() {
     doLast {
-        exec() {
-            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
-                        "examples/treasury_yield/src/main/resources/yield_historical_in.json"
-        }
-        exec() {
-            commandLine "mongo", "mongo_hadoop", "--eval",  "\"db.logs_aggregate.ensureIndex({devices:1})\""
-        }
-
         hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
                "com.mongodb.hadoop.examples.sensors.Sensors",
 
@@ -324,6 +296,25 @@ task sensorData() {
 
                 "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
                 "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+               ])
+
+        hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+               "com.mongodb.hadoop.examples.sensors.Sensors",
+
+               ["mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.logs",
+                "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.LogMapper",
+                "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.LogReducer",
+                "mapreduce.combiner.class=com.mongodb.hadoop.examples.sensors.LogCombiner",
+                "mongo.job.combiner=com.mongodb.hadoop.examples.sensors.LogCombiner",
+                "io.sort.mb=100",
+
+                "mongo.job.output.key=org.apache.hadoop.io.Text",
+                "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
+
+                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
+                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+
                ])
     }
 }
@@ -372,7 +363,6 @@ def hadoop(jar, className, args) {
     args.each {
         line << "-D${it}"
     }
-    println "********** line = ${line}"
     exec() {
         commandLine line
     }

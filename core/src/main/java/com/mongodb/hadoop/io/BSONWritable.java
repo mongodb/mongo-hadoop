@@ -177,9 +177,6 @@ public class BSONWritable implements WritableComparable {
     }
 
     public int compareTo(final Object o) {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace(" ************ Compare: '" + this + "' to '" + o + "'");
-        }
         return new BSONWritableComparator().compare(this, o);
     }
 
