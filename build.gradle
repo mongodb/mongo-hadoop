@@ -266,47 +266,34 @@ project(":examples/sensors") {
 }
 
 task yieldHistorical() {
-    exec() {
-        commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
-                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+    doLast {
+        exec() {
+            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                        "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+        }
+
+        hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
+               "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
+
+               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
+                // "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat",
+                // "mapred.input.dir=file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson",
+
+                "mongo.job.mapper=com.mongodb.hadoop.examples.treasury.TreasuryYieldMapper",
+                "mongo.job.reducer=com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
+
+                "mongo.job.mapper.output.key=org.apache.hadoop.io.IntWritable",
+                "mongo.job.mapper.output.value=org.apache.hadoop.io.DoubleWritable",
+                "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
+                "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
+
+                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
+                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
+                // "mapred.output.dir=file:///tmp/yield_historical_out.bson",
+                // "mongo.job.output.format=com.mongodb.hadoop.BSONFileOutputFormat"
+               ])
     }
-
-    hadoop(["jar", "examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
-            "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-            "-D", "mongo.job.verbose=true",
-
-            // INPUT SOURCE -
-            // To use a mongo collection as input:
-            "-D", "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-            "-D", "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
-
-            //Split settings
-            "-D", "mongo.input.split_size=8",
-
-            // To use a BSON file as input, use these two lines instead:
-            //"-D", "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat",
-            //"-D", 'mapred.input.dir=file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson',
-
-            //Set the classes used for Mapper/Reducer
-            "-D", "mongo.job.mapper=com.mongodb.hadoop.examples.treasury.TreasuryYieldMapper",
-            "-D", "mongo.job.reducer=com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
-
-            //Set the values used for output keys + values.
-            "-D", "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
-            "-D", "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
-
-            "-D", "mongo.job.mapper.output.key=org.apache.hadoop.io.IntWritable",
-            "-D", "mongo.job.mapper.output.value=org.apache.hadoop.io.DoubleWritable",
-
-            // OUTPUT
-            // To send the output to a mongo collection:
-            "-D", "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
-            "-D", "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
-
-            // Alternatively, to write the output to a .BSON file use these two lines instead:
-            //"-D", "mapred.output.dir=file:///tmp/yield_historical_out.bson",
-            //"-D", "mongo.job.output.format=com.mongodb.hadoop.BSONFileOutputFormat",
-    ])
 }
 
 task ufoSightings(type: Exec) {
@@ -317,11 +304,17 @@ task ufoSightings(type: Exec) {
 task loadSampleDataTask(dependsOn: [":yieldHistorical", ":ufoSightings"]) {
 }
 
-def hadoop(args) {
-    def line = ["${System.env.HADOOP_HOME}/bin/hadoop"]
+def hadoop(jar, className, args) {
+    def line = ["${System.env.HADOOP_HOME}/bin/hadoop",
+            "jar", jar, className,
+            //Split settings
+            "-Dmongo.input.split_size=8",
+            "-Dmongo.job.verbose=true",
+    ]
     args.each {
-        line << it
+		 line << "-D${it}"
     }
+    println "********** line = ${line}"
     exec() {
         commandLine line
     }
