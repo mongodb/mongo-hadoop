@@ -248,19 +248,21 @@ project(":examples/ufo_sightings") {
 */
 
 project(":examples/treasury_yield") {
+    uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
     }
 }
 
 project(":examples/enron") {
-    uploadArchives.onlyIf false
+    uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
     }
 }
 
 project(":examples/sensors") {
+    uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
     }
