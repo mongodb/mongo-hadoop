@@ -7,6 +7,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.hadoop.util.MongoTool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.bson.types.ObjectId;
@@ -17,7 +19,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import static java.lang.String.format;
+
 public class Sensors extends MongoTool {
+
+    private static final Log LOG = LogFactory.getLog(Sensors.class);
 
     private static final int NUM_DEVICES = 1000;
     private static final int NUM_LOGS = NUM_DEVICES * 1000;
@@ -60,7 +66,7 @@ public class Sensors extends MongoTool {
         DBCollection logs = db.getCollection("logs");
 
         if ("true" .equals(System.getenv("SENSOR_DROP"))) {
-            System.out.println("Dropping sensor data");
+            LOG.info("Dropping sensor data");
             devices.drop();
             logs.drop();
             devices.createIndex(new BasicDBObject("devices", 1));
@@ -79,19 +85,19 @@ public class Sensors extends MongoTool {
             List<ObjectId> deviceIds = new ArrayList<ObjectId>();
             for (int i = 0; i < NUM_DEVICES; i++) {
                 DBObject device = new BasicDBObject("_id", new ObjectId())
-                                          .append("name", getRandomString(5) + getRandomInt(3, 5))
-                                          .append("type", choose(TYPES))
-                                          .append("owner", choose(owners))
-                                          .append("model", choose(models))
-                                          .append("created_at", randomDate(new Date(2000, 1, 1, 16, 49, 29), new Date()));
+                                      .append("name", getRandomString(5) + getRandomInt(3, 5))
+                                      .append("type", choose(TYPES))
+                                      .append("owner", choose(owners))
+                                      .append("model", choose(models))
+                                      .append("created_at", randomDate(new Date(2000, 1, 1, 16, 49, 29), new Date()));
                 deviceIds.add((ObjectId) device.get("_id"));
                 devices.insert(device);
             }
 
 
             for (int i = 0; i < NUM_LOGS; i++) {
-                if(i % 50000 == 0) {
-                    System.out.printf("Creating %d sensor log data entries: %d%n", NUM_LOGS, i);
+                if (i % 50000 == 0) {
+                    LOG.info(format("Creating %d sensor log data entries: %d%n", NUM_LOGS, i));
                 }
                 BasicDBList location = new BasicDBList();
                 location.add(getRandomInRange(-180, 180, 3));
