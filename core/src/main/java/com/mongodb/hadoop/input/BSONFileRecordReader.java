@@ -90,7 +90,7 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
             if (in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()) {
                 try {
                     this.close();
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     LOG.warn(e.getMessage(), e);
                 }
                 return false;
@@ -104,11 +104,11 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
                 LOG.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
             }
             return true;
-        } catch (Exception e) {
-            LOG.error(format("Error reading key/value from bson file on line %d: %s", e.getMessage(), numDocsRead));
+        } catch (final Exception e) {
+            LOG.error(format("Error reading key/value from bson file on line %d: %s", numDocsRead, e.getMessage()));
             try {
                 this.close();
-            } catch (Exception e2) {
+            } catch (final Exception e2) {
                 LOG.warn(e.getMessage(), e);
             }
             return false;
