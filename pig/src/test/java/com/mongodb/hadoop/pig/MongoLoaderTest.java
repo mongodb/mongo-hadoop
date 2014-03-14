@@ -2,6 +2,7 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.Tuple;
 import org.junit.Test;
@@ -14,8 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
-
-
+@SuppressWarnings("rawtypes")
 public class MongoLoaderTest {
     @Test
     public void testSimpleChararray() throws IOException {
@@ -226,4 +226,88 @@ public class MongoLoaderTest {
         assertEquals("t21 value", t2.get(0));
         */
     }
+    
+    @Test
+    public void mapWithMap_noSchema() throws Exception {
+        BasicDBObject v1 = new BasicDBObject()
+            .append("t1", "t11 value")
+            .append("t2", 12);
+        BasicDBObject v2 = new BasicDBObject()
+            .append("t1", "t21 value")
+            .append("t2", 22);
+        BasicDBObject obj = new BasicDBObject()
+            .append("v1", v1)
+            .append("v2", v2);
+        
+        Map m = (Map) BSONLoader.convertBSONtoPigType(obj);
+
+        assertEquals(2, m.size());
+        
+        Map m1 = (Map) m.get("v1");
+        assertEquals("t11 value", m1.get("t1"));
+        assertEquals(12, m1.get("t2"));
+        
+        Map m2 = (Map) m.get("v2");
+        assertEquals("t21 value", m2.get("t1"));
+    }
+    
+    @Test
+    public void mapWithList() throws Exception {
+        BasicDBObject v1 = new BasicDBObject()
+            .append("t1", "t1 value")
+            .append("t2", 12);
+        BasicDBObject v2 = new BasicDBObject()
+            .append("t1", "t1 value")
+            .append("t2", 22);
+        BasicDBList vl = new BasicDBList();
+        vl.add(v1);
+        vl.add(v2);
+        
+        BasicDBObject obj = new BasicDBObject()
+            .append("some_list", vl);
+
+
+        Map m = (Map) BSONLoader.convertBSONtoPigType(obj);
+        assertEquals(1, m.size());
+        
+        DataBag bag = (DataBag) m.get("some_list");
+        assertEquals(2, bag.size());
+        
+        Iterator<Tuple> bit = bag.iterator();
+        Tuple t = bit.next();
+        
+        assertEquals(1, t.size());
+        
+        Map innerMap = (Map) t.get(0);
+        assertEquals("t1 value", innerMap.get("t1"));
+    }
+    
+    @Test
+    public void testReadField_mapWithSimpleList_noSchema() throws Exception {
+        BasicDBList vl = new BasicDBList();
+        vl.add("v1");
+        vl.add("v2");
+        
+        BasicDBObject obj = new BasicDBObject()
+            .append("some_list", vl);
+
+        Map m = (Map) BSONLoader.convertBSONtoPigType(obj);
+
+        assertEquals(1, m.size());
+        
+        DataBag bag = (DataBag) m.get("some_list");
+        assertEquals(2, bag.size());
+        
+        Iterator<Tuple> bit = bag.iterator();
+        Tuple t = bit.next();
+        
+        assertEquals(1, t.size());
+        assertEquals("v1", t.get(0));
+        
+        t = bit.next();
+        assertEquals(1, t.size());
+        assertEquals("v2", t.get(0));
+    }
+    
+    
 }

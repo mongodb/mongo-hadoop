@@ -23,6 +23,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
+
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
@@ -38,11 +39,21 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
     private final List<DBCollection> collections;
 
     private final JobConf configuration;
-
+    
+    private final String[] updateKeys;
+    private final boolean multiUpdate;
+    
     public MongoRecordWriter(final List<DBCollection> c, final JobConf conf) {
+        this(c, conf, null, false);
+    }
+
+
+    public MongoRecordWriter(final List<DBCollection> c, final JobConf conf, String[] updateKeys, boolean multiUpdate) {
         collections = c;
         configuration = conf;
         numberOfHosts = c.size();
+        this.updateKeys = updateKeys;
+        this.multiUpdate = multiUpdate;
     }
 
 
@@ -75,7 +86,23 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
         try {
             DBCollection dbCollection = getDbCollectionByRoundRobin();
-            dbCollection.save(o);
+
+            if (updateKeys == null) {
+                dbCollection.save(o);
+            } else {
+                // Form the query fields
+                DBObject query = new BasicDBObject(updateKeys.length);
+                for (String updateKey : updateKeys) {
+                    query.put(updateKey, o.get(updateKey));
+                    o.removeField(updateKey);
+                }
+                // If _id is null remove it, we don't want to override with null _id
+                if (o.get("_id") == null) {
+                    o.removeField("_id");
+                }
+                DBObject set = new BasicDBObject().append("$set", o);
+                dbCollection.update(query, set, true, multiUpdate);
+            }
         } catch (final MongoException e) {
             throw new IOException("can't write to mongo", e);
         }

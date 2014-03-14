@@ -1,8 +1,10 @@
 package com.mongodb.hadoop.pig;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.hadoop.BSONFileInputFormat;
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -15,6 +17,7 @@ import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -24,10 +27,7 @@ import org.bson.BasicBSONObject;
 import org.bson.types.BasicBSONList;
 import org.bson.types.ObjectId;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import com.mongodb.hadoop.BSONFileInputFormat;
 
 public class BSONLoader extends LoadFunc {
 
@@ -112,9 +112,10 @@ public class BSONLoader extends LoadFunc {
 
         try {
             if (field == null) {
-                return obj;
+                //If we don't know the type we're using, try to convert it directly.
+                return convertBSONtoPigType(obj);
             }
-
+            
             switch (field.getType()) {
                 case DataType.INTEGER:
                     return Integer.parseInt(obj.toString());
@@ -125,7 +126,7 @@ public class BSONLoader extends LoadFunc {
                 case DataType.DOUBLE:
                     return Double.parseDouble(obj.toString());
                 case DataType.BYTEARRAY:
-                    return BSONLoader.convertBSONtoPigType(obj);
+                    return new DataByteArray(obj.toString());
                 case DataType.CHARARRAY:
                     return obj.toString();
                 case DataType.TUPLE:
@@ -133,7 +134,7 @@ public class BSONLoader extends LoadFunc {
                     ResourceFieldSchema[] fs = s.getFields();
                     Tuple t = tupleFactory.newTuple(fs.length);
 
-                    BasicDBObject val = (BasicDBObject) obj;
+                    BasicBSONObject val = (BasicBSONObject) obj;
 
                     for (int j = 0; j < fs.length; j++) {
                         t.set(j, readField(val.get(fs[j].getName()), fs[j]));
@@ -142,22 +143,34 @@ public class BSONLoader extends LoadFunc {
                     return t;
 
                 case DataType.BAG:
+                    //We already know the bag has a schema of length 1 which is
+                    //a tuple, so skip that schema and get the schema of the tuple.
                     s = field.getSchema();
-                    fs = s.getFields();
+                    ResourceFieldSchema[] bagFields = s.getFields();
 
-                    s = fs[0].getSchema();
-                    fs = s.getFields();
+                    s = bagFields[0].getSchema();
 
                     DataBag bag = bagFactory.newDefaultBag();
+                    BasicBSONList vals = (BasicBSONList) obj;
 
-                    BasicDBList vals = (BasicDBList) obj;
-
-                    for (Object val1 : vals) {
-                        t = tupleFactory.newTuple(fs.length);
-                        for (int k = 0; k < fs.length; k++) {
-                            t.set(k, readField(((BasicDBObject) val1).get(fs[k].getName()), fs[k]));
+                    if (s == null) {
+                        //Handle lack of schema - We'll create a separate tuple for each item in this bag.
+                        for(int j = 0; j < vals.size(); j++) {
+                            t = tupleFactory.newTuple(1);
+                            t.set(0, readField(vals.get(j), null));
+                            bag.add(t);
                         }
-                        bag.add(t);
+                    } else {
+                        fs = s.getFields();
+                        for (Object val1 : vals) {
+                            t = tupleFactory.newTuple(fs.length);
+
+                            for(int k = 0; k < fs.length; k++) {
+                                String fieldName = fs[k].getName();
+                                t.set(k, readField(((BasicBSONObject) val1).get(fieldName), fs[k]));
+                            }
+                            bag.add(t);
+                        }
                     }
 
                     return bag;
@@ -172,7 +185,7 @@ public class BSONLoader extends LoadFunc {
                         if (fs != null) {
                             outputMap.put(key, readField(inputMap.get(key), fs[0]));
                         } else {
-                            outputMap.put(key, readField(inputMap.get(key), null));
+                            outputMap.put(key, convertBSONtoPigType(inputMap.get(key)));
                         }
                     }
                     return outputMap;
@@ -187,9 +200,7 @@ public class BSONLoader extends LoadFunc {
             LOG.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.getClass().toString());
             return null;
         }
-
     }
-
 
     public static Object convertBSONtoPigType(final Object o) throws ExecException {
         if (o == null) {
@@ -202,11 +213,15 @@ public class BSONLoader extends LoadFunc {
             return o.toString();
         } else if (o instanceof BasicBSONList) {
             BasicBSONList bl = (BasicBSONList) o;
-            Tuple t = tupleFactory.newTuple(bl.size());
-            for (int i = 0; i < bl.size(); i++) {
-                t.set(i, convertBSONtoPigType(bl.get(i)));
+            DataBag bag = bagFactory.newDefaultBag();
+            
+            for(int i = 0; i < bl.size(); i++) {
+                Tuple t = tupleFactory.newTuple(1);
+                t.set(0, convertBSONtoPigType(bl.get(i)));
+                bag.add(t);
             }
-            return t;
+
+            return bag;
         } else if (o instanceof Map) {
             //TODO make this more efficient for lazy objects?
             Map<String, Object> fieldsMap = (Map<String, Object>) o;
