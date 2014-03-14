@@ -1,18 +1,22 @@
 apply plugin: 'java'
 apply plugin: 'download-task'
 
-def configDir = new File(rootDir, 'config')
-def cdh4rel = 'cdh4.3.0'
-def hadoop_version = project.getProperties().get('hadoop_version', '2.2')
-def versionMap = [
+ext.configDir = new File(rootDir, 'config')
+ext.cdh4rel = 'cdh4.3.0'
+ext.hadoop_version = project.getProperties().get('hadoop_version', '2.2')
+ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
         'cdh4': "2.0.0-${cdh4rel}",
-        '2.2' : '2.2.0'
+        '2.2' : '2.2.0',
+        '2.3' : '2.3.0'
 ].withDefault {
     throw new GradleException("Unknown hadoop version: ${hadoop_version}")
 }
+ext.hadoopVersion = versionMap[hadoop_version]
+ext.hadoopHome = "../hadoop-binaries/hadoop-${hadoopVersion}"
+
 buildscript {
     repositories {
         mavenLocal()
@@ -130,22 +134,26 @@ project(":core") {
     dependencies {
         switch (hadoop_version) {
             case ("0.23"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
+                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+                mapReduceDeps(it, hadoopVersion)
                 break
             case ("1.0"):
-                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
+                compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
                 break
             case ("1.1"):
-                compile "org.apache.hadoop:hadoop-core:${versionMap[hadoop_version]}"
+                compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
                 break
             case ("cdh4"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
+                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+                mapReduceDeps(it, hadoopVersion)
                 break
             case ("2.2"):
-                compile "org.apache.hadoop:hadoop-common:${versionMap[hadoop_version]}"
-                mapReduceDeps(it, versionMap[hadoop_version])
+                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+                mapReduceDeps(it, hadoopVersion)
+                break
+            case ("2.3"):
+                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+                mapReduceDeps(it, hadoopVersion)
                 break
         }
     }
@@ -196,7 +204,7 @@ project(":streaming") {
 
     dependencies {
         compile project(':core')
-        compile "org.apache.hadoop:hadoop-streaming:${versionMap[hadoop_version]}"
+        compile "org.apache.hadoop:hadoop-streaming:${hadoopVersion}"
     }
 
     jar {
@@ -249,7 +257,33 @@ project(":examples/sensors") {
     }
 }
 
-task historicalYield() {
+task installHadoop() {
+    doLast {
+        if (!hadoop_version.startsWith("cdh")) {
+            new File('../hadoop-binaries/').mkdirs()
+
+            if (!new File("${hadoopHome}").exists()) {
+                def url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
+
+                download {
+                    src url
+                    dest "../hadoop-binaries/"
+                    onlyIfNewer true
+                }
+
+                println "Extracting hadoop ${hadoopVersion} download"
+                copy {
+                    from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
+                    into '../hadoop-binaries'
+                }
+            }
+        } else {
+            println "\n*** ${hadoop_version} is not currently supported"
+        }
+    }
+}
+
+task historicalYield(dependsOn: 'installHadoop') {
     doLast {
         exec() {
             commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
@@ -280,7 +314,7 @@ task historicalYield() {
     }
 }
 
-task sensorData() {
+task sensorData(dependsOn: 'installHadoop') {
     doLast {
         hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
                "com.mongodb.hadoop.examples.sensors.Sensors",
@@ -320,7 +354,7 @@ task sensorData() {
     }
 }
 
-task enronEmails() {
+task enronEmails(dependsOn: 'installHadoop') {
     doLast {
         download {
             src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
@@ -334,7 +368,7 @@ task enronEmails() {
                 into 'examples/data'
             }
         }
-        
+
         exec() {
             commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "examples/data/dump/enron_mail"
         }
@@ -398,17 +432,39 @@ task enronEmails() {
 }*/
 
 def hadoop(jar, className, args) {
-    def line = ["${System.env.HADOOP_HOME}/bin/hadoop",
-                "jar", jar, className,
-                //Split settings
-                "-Dmongo.input.split_size=8",
-                "-Dmongo.job.verbose=true",
-    ]
-    args.each {
-        line << "-D${it}"
-    }
-    exec() {
-        commandLine line
+    if (!hadoop_version.startsWith("cdh")) {
+        def hadoopLib
+        if (hadoop_version.startsWith("1")) {
+            hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
+
+        } else {
+            hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
+        }
+        copy {
+            from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
+            into hadoopLib
+            rename { "mongo-hadoop-core.jar" }
+        }
+        download {
+            src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.11.4/mongo-java-driver-2.11.4.jar'
+            dest "${hadoopLib}/mongo-java-driver.jar"
+            onlyIfNewer true
+        }
+
+        def line = ["${hadoopHome}/bin/hadoop",
+                    "jar", jar, className,
+                    //Split settings
+                    "-Dmongo.input.split_size=8",
+                    "-Dmongo.job.verbose=true",
+        ]
+        args.each {
+            line << "-D${it}"
+        }
+        exec() {
+            commandLine line
+        }
+    } else {
+        println "\n*** ${hadoop_version} is not currently supported"
     }
 }
 
