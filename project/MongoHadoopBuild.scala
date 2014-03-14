@@ -120,8 +120,8 @@ object MongoHadoopBuild extends Build {
         mod
       else {
         val rel = coreHadoopMap.getOrElse(hr,
-                      sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
-                                " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                      sys.error(("Hadoop Release '%s' is an invalid/unsupported release. " +
+                                " Valid entries are in %s").format(hr, coreHadoopMap.keySet))
                       )._3
 
 
@@ -168,16 +168,16 @@ object MongoHadoopBuild extends Build {
     },
     skip in Compile <<= hadoopRelease.map(hr => {
       val skip = !coreHadoopMap.getOrElse(hr,
-                    sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
-                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet))
+                    sys.error(("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s").format(hr, coreHadoopMap.keySet))
                     )._1.isDefined
       if (skip) System.err.println("*** Will not compile Hadoop Streaming, which is unsupported in this build of Hadoop")
 
       skip
     }),
     publishArtifact <<= (hadoopRelease) (hr => {
-      !coreHadoopMap.getOrElse(hr, sys.error("Hadoop Release '%s' is an invalid/unsupported release. " +
-                              " Valid entries are in %s".format(hr, coreHadoopMap.keySet)))._1.isDefined
+      !coreHadoopMap.getOrElse(hr, sys.error(("Hadoop Release '%s' is an invalid/unsupported release. " +
+                              " Valid entries are in %s").format(hr, coreHadoopMap.keySet)))._1.isDefined
     }),
     assembly ~= { (jar) =>
       println("*** Constructed Assembly Jar: %s".format(jar))
