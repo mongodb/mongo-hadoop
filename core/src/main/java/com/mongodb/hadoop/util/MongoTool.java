@@ -30,37 +30,33 @@ import java.util.Map.Entry;
  * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a ToolRunner Primarily
  * useful in cases of XML Config files.
  *
+ * Main will be a necessary method to run the job - suggested implementation template:
+ * <p></p>
+ * 
+ * <pre>
+ * public static void main(String[] args) throws Exception {
+ *     System.exit(ToolRunner.run(new &lt;YourClass&gt;(), args));
+ * }
+ * </pre>
+ * 
  * @author Brendan W. McAdams <brendan@10gen.com>
  */
 public class MongoTool extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(MongoTool.class);
 
     /**
-     * Main will be a necessary method to run the job - suggested implementation
-     * template:
-     * public static void main(String[] args) throws Exception {
-     * int exitCode = ToolRunner.run(new <YourClass>(), args);
-     * System.exit(exitCode);
-     * }
-     *
+     * Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc.  Defaults to the
+     * getClass().getSimpleName()
      */
-
-    //CHECKSTYLE:OFF
-    /**
-     * Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc
-     * 
-     * @deprecated use setJobName(String)
-     */
-    protected String _jobName = "<unnamed MongoTool job>";
+    private String jobName = getClass().getSimpleName();
 
     public String getJobName() {
-        return _jobName;
+        return jobName;
     }
 
     public void setJobName(final String name) {
-        _jobName = name;
+        jobName = name;
     }
-    //CHECKSTYLE:ON
 
     public int run(final String[] args) throws Exception {
         /**

@@ -2,13 +2,12 @@ apply plugin: 'java'
 apply plugin: 'download-task'
 
 ext.configDir = new File(rootDir, 'config')
-ext.cdh4rel = 'cdh4.3.0'
-ext.hadoop_version = project.getProperties().get('hadoop_version', '2.2')
+ext.hadoop_version = project.getProperties().get('hadoop_version', 'cdh4')
 ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
-        'cdh4': "2.0.0-${cdh4rel}",
+        'cdh4': "2.0.0-cdh4.6.0",
         '2.2' : '2.2.0',
         '2.3' : '2.3.0'
 ].withDefault {
@@ -55,7 +54,7 @@ configure(subprojects) {
     targetCompatibility = JavaVersion.VERSION_1_6
 
     dependencies {
-        compile "org.mongodb:mongo-java-driver:2.11.3"
+        compile "org.mongodb:mongo-java-driver:2.11.4"
 
         testCompile 'junit:junit:4.11'
         testCompile 'org.hamcrest:hamcrest-all:1.3'
@@ -66,7 +65,7 @@ configure(subprojects) {
         options.encoding = 'ISO-8859-1'
         options.fork = true
         options.debug = true
-//        options.compilerArgs = ['-Xlint:all', '-Xlint:-options']
+        options.compilerArgs = [/*'-Xlint:all', */'-Xlint:-options']
     }
 
     project.ext.buildingWith = { n ->
@@ -114,6 +113,13 @@ configure(subprojects) {
         classifier = "hadoop_${hadoop_version}"
     }
 
+    javadoc {
+        options.version = true
+        options.links 'http://docs.oracle.com/javase/6/docs/api/'
+        options.links 'http://hadoop.apache.org/docs/r2.3.0/api'
+        options.links 'http://api.mongodb.org/java/2.11.4/'
+    }
+    
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
@@ -259,26 +265,29 @@ project(":examples/sensors") {
 
 task installHadoop() {
     doLast {
-        if (!hadoop_version.startsWith("cdh")) {
-            new File('../hadoop-binaries/').mkdirs()
+        new File('../hadoop-binaries/').mkdirs()
 
-            if (!new File("${hadoopHome}").exists()) {
-                def url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
-
-                download {
-                    src url
-                    dest "../hadoop-binaries/"
-                    onlyIfNewer true
-                }
-
-                println "Extracting hadoop ${hadoopVersion} download"
-                copy {
-                    from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
-                    into '../hadoop-binaries'
-                }
+        if (!new File("${hadoopHome}").exists()) {
+            def url
+            switch (hadoop_version) {
+                case ("cdh4"):
+                    url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${hadoopVersion}.tar.gz"
+                    break
+                default:
+                    url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
+                    break
             }
-        } else {
-            println "\n*** ${hadoop_version} is not currently supported"
+            download {
+                src url
+                dest "../hadoop-binaries/"
+                onlyIfNewer true
+            }
+
+            println "Extracting hadoop ${hadoopVersion} download"
+            copy {
+                from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
+                into '../hadoop-binaries'
+            }
         }
     }
 }
@@ -393,78 +402,48 @@ task enronEmails(dependsOn: 'installHadoop') {
 
                 "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
                 "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-
                ])
     }
 }
-/*task ufoSightings() {
-    doLast {
-        exec() {
-            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "ufo_sightings.in", "--drop",
-                        "examples/ufo_sightings/src/main/resources/ufo_awesome.json"
-        }
-        
-//        $HADOOP_HOME/bin/hadoop jar ./target/ufo-example_cdh4.3.0-1.1.0.jar -Dmongo.input.uri=mongodb://localhost:27017/test.ufo 
-// -Dmongo.output.uri=mongodb://localhost:27017/test.ufo_out 
-
-        hadoop("examples/ufo_sightings/build/libs/ufo_sightings-${project(':core').version}-hadoop_${hadoop_version}.jar",
-               "com.mongodb.hadoop.examples.ufos.UfoSightings",
-
-               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.ufo",
-                // "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat",
-                // "mapred.input.dir=file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson",
-
-//                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.ufo.out",
-//                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
-
-                "mongo.job.mapper=com.mongodb.hadoop.examples.ufos.UfoSightingsMapper",
-                "mongo.job.reducer=com.mongodb.hadoop.examples.ufos.UfoSightingsReducer",
-
-                "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
-                "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
-                "mongo.job.output.key=org.apache.hadoop.io.Text",
-                "mongo.job.output.value=com.mongodb.hadoop.io.IntWritable",
-
-               ])
-        
-    }
-}*/
 
 def hadoop(jar, className, args) {
-    if (!hadoop_version.startsWith("cdh")) {
-        def hadoopLib
-        if (hadoop_version.startsWith("1")) {
-            hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
-
-        } else {
-            hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
-        }
-        copy {
-            from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
-            into hadoopLib
-            rename { "mongo-hadoop-core.jar" }
-        }
-        download {
-            src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.11.4/mongo-java-driver-2.11.4.jar'
-            dest "${hadoopLib}/mongo-java-driver.jar"
-            onlyIfNewer true
-        }
-
-        def line = ["${hadoopHome}/bin/hadoop",
-                    "jar", jar, className,
-                    //Split settings
-                    "-Dmongo.input.split_size=8",
-                    "-Dmongo.job.verbose=true",
-        ]
-        args.each {
-            line << "-D${it}"
-        }
-        exec() {
-            commandLine line
-        }
+    def hadoopLib
+    if (hadoop_version.startsWith("1")) {
+        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
     } else {
-        println "\n*** ${hadoop_version} is not currently supported"
+        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
+    }
+    
+    copy {
+        from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
+        into hadoopLib
+        rename { "mongo-hadoop-core.jar" }
+    }
+    download {
+        src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.11.4/mongo-java-driver-2.11.4.jar'
+        dest "${hadoopLib}/mongo-java-driver.jar"
+        onlyIfNewer true
+    }
+
+    def line = ["${hadoopHome}/bin/hadoop",
+                "jar", jar, className,
+                //Split settings
+                "-Dmongo.input.split_size=8",
+                "-Dmongo.job.verbose=true",
+//                "-Dmapreduce.framework.name=yarn",
+    ]
+    args.each {
+        line << "-D${it}"
+    }
+    println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
+    def hadoopEnv = [:]
+    if (hadoop_version.startsWith("cdh")) {
+        hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
+    }
+    exec() {
+        environment << hadoopEnv
+        
+        commandLine line
     }
 }
 
