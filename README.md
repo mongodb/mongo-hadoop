@@ -20,7 +20,7 @@ See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
 
 ## Building
 
-The mongo-hadoop connector currently supports the following versions of hadoop:  '0.23, 1.0, 1.1, 2.2, 2.3, and CDH 4.  The default build
+The mongo-hadoop connector currently supports the following versions of hadoop:  0.23, 1.0, 1.1, 2.2, 2.3, and CDH 4.  The default build
 version will build against the last Apache Hadoop (currently 2.3).  If you would like to build against a specific version of Hadoop you 
 simply need to pass `-Phadoop_version=<your version>`.
 
