@@ -1,8 +1,12 @@
 ## Example 1 - Treasury Yield Calculation
 
-###Setup
+###Running
 
-Source code is in `examples/treasury_yield`. To prepare the sample data, first run `mongoimport` with the file in `examples/treasury_yield/src/main/resources/yield_historical_in.json` to load it into a local instance of MongoDB.
+This sample can be run from the root directory with `./gradlew historicalYield`.  If you have just checked out the repository, you will
+need to run `./gradlew jar` first.
+
+Source code is in `examples/treasury_yield`.  The data used in this example can be found in 
+`examples/treasury_yield/src/main/resources/yield_historical_in.json`.
 
 We end up with a test collection containing documents that look like this:
 
@@ -15,17 +19,14 @@ We end up with a test collection containing documents that look like this:
 
 ###Map/Reduce with Java
 
-The goal is to find the average of the bc10Year field, across each year that exists in the dataset. First we define a mapper, which is executed against each document in the collection. We extract the year from the `_id` field and use it as the output key, along with the value we want to use for averaging, `bc10Year`.
+The goal is to find the average of the bc10Year field, across each year that exists in the dataset. First we define a mapper, which is 
+executed against each document in the collection. We extract the year from the `_id` field and use it as the output key, along with the 
+value we want to use for averaging, `bc10Year`.
 
 ```java
-public class TreasuryYieldMapper 
-    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
-
+public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
     @Override
-    public void map( final Object pKey,
-                     final BSONObject pValue,
-                     final Context pContext )
-            throws IOException, InterruptedException{
+    public void map( final Object pKey, final BSONObject pValue, final Context pContext ) throws IOException, InterruptedException{
         final int year = ((Date)pValue.get("_id")).getYear() + 1900;
         double bid10Year = ( (Number) pValue.get( "bc10Year" ) ).doubleValue();
         pContext.write( new IntWritable( year ), new DoubleWritable( bid10Year ) );
@@ -33,15 +34,14 @@ public class TreasuryYieldMapper
 }
 ```
 
-Then we write a reducer, a function which takes the values collected for each key (the year)  and performs some aggregate computation of them to get a result.
+Then we write a reducer, a function which takes the values collected for each key (the year)  and performs some aggregate computation 
+of them to get a result.
 
 ```java
 public class TreasuryYieldReducer
         extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
     @Override
-    public void reduce( final IntWritable pKey,
-                        final Iterable<DoubleWritable> pValues,
-                        final Context pContext )
+    public void reduce( final IntWritable pKey, final Iterable<DoubleWritable> pValues, final Context pContext )
             throws IOException, InterruptedException{
         int count = 0;
         double sum = 0;
@@ -61,7 +61,8 @@ public class TreasuryYieldReducer
 
 ###Pig
 
-We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
+We can also easily accomplish the same task with just a few lines of Pig script. We also use some external UDFs provided by the 
+Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
 
     -- UDFs used for date parsing
     REGISTER /tmp/piggybank-0.3-amzn.jar
@@ -93,15 +94,23 @@ We can also easily accomplish the same task with just a few lines of Pig script.
 
 ## Example 2 - Enron E-mails
 
-###Setup
+###Running
 
-Download a copy of the data set [here](http://mongodb-enron-email.s3-website-us-east-1.amazonaws.com/). Each document in the data set contains a single e-mail, including headers containing sender and recipient information. In this example we will build a list of the unique sender/recipient pairs, counting how many times each pair occurs.
+This sample can be run from the root directory with `./gradlew enronEmails`.  This will download the Enron email corpus and import them
+automatically in to mongodb.  You can manually download a copy of the data set 
+[here](http://mongodb-enron-email.s3-website-us-east-1.amazonaws.com/). Each document in the data set contains a single e-mail, 
+including headers containing sender and recipient information. In this example we will build a list of the unique sender/recipient pairs, 
+counting how many times each pair occurs.
 
-Abbreviated code snippets shown below - to see the full source for this example, please see [here](http://github.com/mongodb/mongo-hadoop/examples/enron/src/) 
+Abbreviated code snippets shown below - to see the full source for this example, please see 
+[here](http://github.com/mongodb/mongo-hadoop/examples/enron/src/) 
 
 ####Map/Reduce with Java
 
-The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from the `To` field, and construct a `MailPair` object containing each pair which will act as the key. Then we emit the value `1` for each key. `MailPair` is just a simple "POJO" that contains Strings for the `from` and `to` values, and implements `WritableComparable` so that it can be serialized across Hadoop nodes and sorted.   
+The mapper class will get the `headers` field from each document, parse out the sender from the `From` field and the recipients from 
+the `To` field, and construct a `MailPair` object containing each pair which will act as the key. Then we emit the value `1` for each key. 
+`MailPair` is just a simple "POJO" that contains Strings for the `from` and `to` values, and implements `WritableComparable` so that it 
+can be serialized across Hadoop nodes and sorted.   
 
 ```java
 @Override
@@ -163,9 +172,12 @@ To accomplish the same with pig, but with much less work:
 
 ### Problem
 
-This example will deal with a basic example that does a "join" across two different collections, and will demonstrate using `MongoUpdateWritable` which lets you do complex updates when writing output records (instead of simple inserts).
+This sample can be run from the root directory with `./gradlew enronEmails`.  This will generate the data necessary for this example.
+This example will deal with a basic example that does a "join" across two different collections, and will demonstrate using 
+`MongoUpdateWritable` which lets you do complex updates when writing output records (instead of simple inserts).
 
-Assume we have a collection called `devices`, each document contains the description of a sensor which records a particular type of data, for example:
+Assume we have a collection called `devices`, each document contains the description of a sensor which records a particular type of data, 
+for example:
 
 ```javascript
 {
@@ -178,7 +190,9 @@ Assume we have a collection called `devices`, each document contains the descrip
 }
 ```
 
-A second collection called `logs` contains data recorded by these sensors. Each document records the `_id` of the device it came from in the `d_id` field, the value, the timestamp when it was recorded, and the device's location at the time. The `logs` collection will be much larger than the `devices` collection, since each device will record potentially thousands of data points.
+A second collection called `logs` contains data recorded by these sensors. Each document records the `_id` of the device it came from in 
+the `d_id` field, the value, the timestamp when it was recorded, and the device's location at the time. The `logs` collection will be 
+much larger than the `devices` collection, since each device will record potentially thousands of data points.
 
 ```javascript
 {
@@ -193,13 +207,17 @@ A second collection called `logs` contains data recorded by these sensors. Each 
 }
 ```
 
-As an example, let's solve an aggregation problem involving *both* of these collections - calculate the number of log entries for each owner, for each type of sensor (heat, pressure, etc).
+As an example, let's solve an aggregation problem involving *both* of these collections - calculate the number of log entries for each 
+owner, for each type of sensor (heat, pressure, etc).
 
-We will solve this by doing two passes of Map/Reduce. The first will operate over the `devices` collection and seed an output collection by building a list of all the devices belonging to each owner. Then we will do a second pass over the `logs` collection, computing the totals by using `$inc` on the pre-seeded output collection.
+We will solve this by doing two passes of Map/Reduce. The first will operate over the `devices` collection and seed an output collection 
+by building a list of all the devices belonging to each owner. Then we will do a second pass over the `logs` collection, computing the 
+totals by using `$inc` on the pre-seeded output collection.
 
 ####Phase One
 
-The `Mapper` code in phase one just produces the pair `<owner,_id>` for each device. The `Reducer` then takes the list of all `_id`s for each owner and creates a new document containing them. 
+The `Mapper` code in phase one just produces the pair `<owner,_id>` for each device. The `Reducer` then takes the list of all `_id`s for 
+each owner and creates a new document containing them. 
 
     public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>{
     
@@ -250,7 +268,9 @@ After phase one, the output collection documents each look like this:
  
 ####Phase Two
 
-In phase two, we map over the large collection `logs` and compute the totals for each device owner/type. The mapper emits the device id from each log item along, and the reducer uses `MongoUpdateWritable` to increment counts of these into the output collection by querying the record that contains the device's `_id` in its `devices` array which we populated in phase one. Between phase one and phase two, we create an index on `devices` to make sure this will be fast (see the script in `examples/sensors/run_job.sh` for details)
+In phase two, we map over the large collection `logs` and compute the totals for each device owner/type. The mapper emits the device id 
+from each log item along, and the reducer uses `MongoUpdateWritable` to increment counts of these into the output collection by querying 
+the record that contains the device's `_id` in its `devices` array which we populated in phase one. 
 
     public class LogMapper extends Mapper<Object, BSONObject, Text, IntWritable>{
         @Override

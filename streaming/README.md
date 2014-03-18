@@ -14,9 +14,8 @@ For the mainline Apache Hadoop distribution, these patches were merged for the 0
 Building Streaming
 ------------------
 
-`./sbt mongo-hadoop-streaming/assembly`
-
-This will create a new “fat” jar in: `streaming/target/mongo-hadoop-streaming-assembly-1.1.0.jar`
+The streaming will be automatically built as part of the general build cycle except when building against Hadoop 1.0.  No jar will be
+generated in this case as 1.0 lacks support for streaming.
 
 This jar file is runnable with hadoop jar, and contains all of the dependencies necessary to run the job.
 
