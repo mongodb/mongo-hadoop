@@ -135,8 +135,6 @@ configure(subprojects.findAll { it.name.contains('examples/') }) {
 }
 
 project(":core") {
-
-    println "********** project.getProperties().get('nexusUsername') = ${project.getProperties().get('nexusUsername')}"
     archivesBaseName = "mongo-hadoop-core"
 
     dependencies {
