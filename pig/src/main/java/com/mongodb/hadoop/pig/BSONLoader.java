@@ -10,9 +10,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.pig.Expression;
 import org.apache.pig.LoadFunc;
+import org.apache.pig.LoadMetadata;
 import org.apache.pig.ResourceSchema;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+import org.apache.pig.ResourceStatistics;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
@@ -29,7 +32,7 @@ import org.bson.types.ObjectId;
 
 import com.mongodb.hadoop.BSONFileInputFormat;
 
-public class BSONLoader extends LoadFunc {
+public class BSONLoader extends LoadFunc implements LoadMetadata {
 
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
@@ -236,4 +239,34 @@ public class BSONLoader extends LoadFunc {
 
     }
 
+    @Override
+    public ResourceSchema getSchema(String location, Job job)
+            throws IOException {
+        if (schema != null) {
+            return schema;
+        }
+        return null;
+    }
+
+    @Override
+    public ResourceStatistics getStatistics(String location, Job job)
+            throws IOException {
+        // No statistics available. In the future
+        // we could maybe construct something from db.collection.stats() here
+        // but the class/API for this is unstable anyway, so this is unlikely
+        // to be high priority.
+        return null;
+    }
+
+    @Override
+    public String[] getPartitionKeys(String location, Job job)
+            throws IOException {
+        // No partition keys. 
+        return null;
+    }
+
+    @Override
+    public void setPartitionFilter(Expression partitionFilter)
+            throws IOException {
+    }
 }
