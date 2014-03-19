@@ -225,6 +225,8 @@ project(":streaming") {
             from zipTree(it)
         }
     }
+    
+    uploadArchives.onlyIf { hadoop_version != "1.0" }    
 }
 
 project(":flume") {
