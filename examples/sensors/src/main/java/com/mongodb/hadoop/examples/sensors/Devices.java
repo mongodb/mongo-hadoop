@@ -5,8 +5,6 @@ import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.MongoTool;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -16,10 +14,7 @@ import java.net.UnknownHostException;
 
 public class Devices extends MongoTool {
 
-    private static final Log LOG = LogFactory.getLog(Devices.class);
-
     public Devices() throws UnknownHostException {
-        System.out.println("************  Sensor Data Stage 1");
         Configuration conf = new Configuration();
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);

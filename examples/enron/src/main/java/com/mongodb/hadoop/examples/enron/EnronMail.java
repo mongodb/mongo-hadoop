@@ -16,10 +16,51 @@
 package com.mongodb.hadoop.examples.enron;
 
 
+import com.mongodb.hadoop.MongoConfig;
+import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoTool;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
 
 public class EnronMail extends MongoTool {
+    public EnronMail() {
+        /*
+        "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+                    "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.messages",
+        
+                    ,
+        
+                    "mongo.job.mapper=com.mongodb.hadoop.examples.enron.EnronMailMapper",
+                    "mongo.job.reducer=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+                    //"mongo.job.combiner=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+        
+                    "mongo.job.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+                    "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
+        
+                    "mongo.job.mapper.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+                    "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
+        
+                    "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
+                    "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+         */
+        Configuration conf = new Configuration();
+        MongoConfig config = new MongoConfig(conf);
+        setConf(conf);
+     
+        config.setInputFormat(MongoInputFormat.class);
+        config.setInputURI("mongodb://localhost:27017/mongo_hadoop.messages");
+        config.setMapper(EnronMailMapper.class);
+        config.setReducer(EnronMailReducer.class);
+//        config.setCombiner(EnronMailReducer.class);
+        config.setMapperOutputKey(MailPair.class);
+        config.setMapperOutputValue(IntWritable.class);
+        config.setOutputKey(MailPair.class);
+        config.setOutputValue(IntWritable.class);
+        config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.message_pairs");
+        config.setOutputFormat(MongoOutputFormat.class);
+    }
 
     public static void main(final String[] pArgs) throws Exception {
         System.exit(ToolRunner.run(new EnronMail(), pArgs));

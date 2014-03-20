@@ -322,26 +322,7 @@ task enronEmails(dependsOn: 'installHadoop') << {
     }
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
-           "com.mongodb.hadoop.examples.enron.EnronMail",
-
-           ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.messages",
-
-            "mongo.input.split_size=64",
-
-            "mongo.job.mapper=com.mongodb.hadoop.examples.enron.EnronMailMapper",
-            "mongo.job.reducer=com.mongodb.hadoop.examples.enron.EnronMailReducer",
-            //"mongo.job.combiner=com.mongodb.hadoop.examples.enron.EnronMailReducer",
-
-            "mongo.job.output.key=com.mongodb.hadoop.examples.enron.MailPair",
-            "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
-
-            "mongo.job.mapper.output.key=com.mongodb.hadoop.examples.enron.MailPair",
-            "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
-
-            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
-            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-           ])
+           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
 def hadoop(jar, className, args) {
