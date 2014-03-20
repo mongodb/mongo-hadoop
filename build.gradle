@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'idea'
 apply plugin: 'download-task'
 
 ext.configDir = new File(rootDir, 'config')
@@ -7,7 +8,7 @@ ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
-        'cdh4': "2.0.0-cdh4.6.0",
+        'cdh4': '2.0.0-cdh4.6.0',
         '2.2' : '2.2.0',
         '2.3' : '2.3.0'
 ].withDefault {
@@ -65,7 +66,7 @@ configure(subprojects) {
         options.encoding = 'ISO-8859-1'
         options.fork = true
         options.debug = true
-        options.compilerArgs = [/*'-Xlint:all', */'-Xlint:-options']
+        options.compilerArgs = [/*'-Xlint:all', */ '-Xlint:-options']
     }
 
     project.ext.buildingWith = { n ->
@@ -119,7 +120,7 @@ configure(subprojects) {
         options.links 'http://hadoop.apache.org/docs/r2.3.0/api'
         options.links 'http://api.mongodb.org/java/2.11.4/'
     }
-    
+
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
@@ -225,8 +226,8 @@ project(":streaming") {
             from zipTree(it)
         }
     }
-    
-    uploadArchives.onlyIf { hadoop_version != "1.0" }    
+
+    uploadArchives.onlyIf { hadoop_version != "1.0" }
 }
 
 project(":flume") {
@@ -265,147 +266,120 @@ project(":examples/sensors") {
     }
 }
 
-task installHadoop() {
-    doLast {
-        new File('../hadoop-binaries/').mkdirs()
+task installHadoop() << {
+    new File('../hadoop-binaries/').mkdirs()
 
-        if (!new File("${hadoopHome}").exists()) {
-            def url
-            switch (hadoop_version) {
-                case ("cdh4"):
-                    url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${hadoopVersion}.tar.gz"
-                    break
-                default:
-                    url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
-                    break
-            }
-            download {
-                src url
-                dest "../hadoop-binaries/"
-                onlyIfNewer true
-            }
-
-            println "Extracting hadoop ${hadoopVersion} download"
-            copy {
-                from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
-                into '../hadoop-binaries'
-            }
+    if (!new File("${hadoopHome}").exists()) {
+        def url
+        switch (hadoop_version) {
+            case ("cdh4"):
+                url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${hadoopVersion}.tar.gz"
+                break
+            default:
+                url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
+                break
         }
-    }
-}
-
-task historicalYield(dependsOn: 'installHadoop') {
-    doLast {
-        exec() {
-            commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
-                        "examples/treasury_yield/src/main/resources/yield_historical_in.json"
-        }
-
-        hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
-               "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-
-               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
-                // "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat",
-                // "mapred.input.dir=file:///Users/mike/dump/mongo_hadoop/yield_historical.in.bson",
-
-                "mongo.job.mapper=com.mongodb.hadoop.examples.treasury.TreasuryYieldMapper",
-                "mongo.job.reducer=com.mongodb.hadoop.examples.treasury.TreasuryYieldReducer",
-
-                "mongo.job.mapper.output.key=org.apache.hadoop.io.IntWritable",
-                "mongo.job.mapper.output.value=org.apache.hadoop.io.DoubleWritable",
-                "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
-                "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
-
-                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
-                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat",
-                // "mapred.output.dir=file:///tmp/yield_historical_out.bson",
-                // "mongo.job.output.format=com.mongodb.hadoop.BSONFileOutputFormat"
-               ])
-    }
-}
-
-task sensorData(dependsOn: 'installHadoop') {
-    doLast {
-        hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
-               "com.mongodb.hadoop.examples.sensors.Sensors",
-
-               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.devices",
-
-                "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.DeviceMapper",
-                "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.DeviceReducer",
-
-                "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
-                "mongo.job.mapper.output.value=org.apache.hadoop.io.Text",
-                "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
-                "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
-
-                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
-                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-               ])
-
-        hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
-               "com.mongodb.hadoop.examples.sensors.Sensors",
-
-               ["mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.logs",
-                "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-                "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.LogMapper",
-                "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.LogReducer",
-                "mapreduce.combiner.class=com.mongodb.hadoop.examples.sensors.LogCombiner",
-                "mongo.job.combiner=com.mongodb.hadoop.examples.sensors.LogCombiner",
-                "io.sort.mb=100",
-
-                "mongo.job.output.key=org.apache.hadoop.io.Text",
-                "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
-
-                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
-                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-               ])
-    }
-}
-
-task enronEmails(dependsOn: 'installHadoop') {
-    doLast {
         download {
-            src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
-            dest 'examples/data/'
+            src url
+            dest "../hadoop-binaries/"
             onlyIfNewer true
         }
-        if (!new File('examples/data/dump').exists()) {
-            println "extracting email data"
-            copy {
-                from(tarTree('examples/data/enron_mongo.tar.bz2'))
-                into 'examples/data'
-            }
+
+        println "Extracting hadoop ${hadoopVersion} download"
+        copy {
+            from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
+            into '../hadoop-binaries'
         }
-
-        exec() {
-            commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "examples/data/dump/enron_mail"
-        }
-
-        hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
-               "com.mongodb.hadoop.examples.enron.EnronMail",
-
-               ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.messages",
-
-                "mongo.input.split_size=64",
-
-                "mongo.job.mapper=com.mongodb.hadoop.examples.enron.EnronMailMapper",
-                "mongo.job.reducer=com.mongodb.hadoop.examples.enron.EnronMailReducer",
-                //"mongo.job.combiner=com.mongodb.hadoop.examples.enron.EnronMailReducer",
-
-                "mongo.job.output.key=com.mongodb.hadoop.examples.enron.MailPair",
-                "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
-
-                "mongo.job.mapper.output.key=com.mongodb.hadoop.examples.enron.MailPair",
-                "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
-
-                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
-                "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-               ])
     }
+}
+
+task historicalYield(dependsOn: 'installHadoop') << {
+    exec() {
+        commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+    }
+
+    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
+           "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [])
+}
+
+task sensorData(dependsOn: [installHadoop]) << {
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Sensors",
+
+           ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.devices",
+
+            "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.DeviceMapper",
+            "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.DeviceReducer",
+
+            "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
+            "mongo.job.mapper.output.value=org.apache.hadoop.io.Text",
+            "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
+            "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
+
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
+            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+           ])
+
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Sensors",
+
+           ["mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.logs",
+            "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+            "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.LogMapper",
+            "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.LogReducer",
+            "mapreduce.combiner.class=com.mongodb.hadoop.examples.sensors.LogCombiner",
+            "mongo.job.combiner=com.mongodb.hadoop.examples.sensors.LogCombiner",
+            "io.sort.mb=100",
+
+            "mongo.job.output.key=org.apache.hadoop.io.Text",
+            "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
+
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
+            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+           ])
+}
+
+task enronEmails(dependsOn: 'installHadoop') << {
+    download {
+        src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
+        dest 'examples/data/'
+        onlyIfNewer true
+    }
+    if (!new File('examples/data/dump').exists()) {
+        println "extracting email data"
+        copy {
+            from(tarTree('examples/data/enron_mongo.tar.bz2'))
+            into 'examples/data'
+        }
+    }
+
+    exec() {
+        commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "examples/data/dump/enron_mail"
+    }
+
+    hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
+           "com.mongodb.hadoop.examples.enron.EnronMail",
+
+           ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
+            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.messages",
+
+            "mongo.input.split_size=64",
+
+            "mongo.job.mapper=com.mongodb.hadoop.examples.enron.EnronMailMapper",
+            "mongo.job.reducer=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+            //"mongo.job.combiner=com.mongodb.hadoop.examples.enron.EnronMailReducer",
+
+            "mongo.job.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+            "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
+
+            "mongo.job.mapper.output.key=com.mongodb.hadoop.examples.enron.MailPair",
+            "mongo.job.mapper.output.value=org.apache.hadoop.io.IntWritable",
+
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.message_pairs",
+            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
+           ])
 }
 
 def hadoop(jar, className, args) {
@@ -415,7 +389,7 @@ def hadoop(jar, className, args) {
     } else {
         hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
     }
-    
+
     copy {
         from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
         into hadoopLib
@@ -432,7 +406,6 @@ def hadoop(jar, className, args) {
                 //Split settings
                 "-Dmongo.input.split_size=8",
                 "-Dmongo.job.verbose=true",
-//                "-Dmapreduce.framework.name=yarn",
     ]
     args.each {
         line << "-D${it}"
@@ -444,7 +417,7 @@ def hadoop(jar, className, args) {
     }
     exec() {
         environment << hadoopEnv
-        
+
         commandLine line
     }
 }
@@ -458,3 +431,4 @@ def mapReduceDeps(it, version) {
 }
 
 apply from: 'gradle/maven-deployment.gradle'
+//apply from: 'testing/treasury-tests.gradle'

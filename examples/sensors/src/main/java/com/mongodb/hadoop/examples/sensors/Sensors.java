@@ -25,8 +25,8 @@ public class Sensors extends MongoTool {
 
     private static final Log LOG = LogFactory.getLog(Sensors.class);
 
-    private static final int NUM_DEVICES = 1000;
-    private static final int NUM_LOGS = NUM_DEVICES * 1000;
+    private static final int NUM_DEVICES = 100;
+    private static final int NUM_LOGS = NUM_DEVICES * 100;
     private static final List<String> TYPES = Arrays.asList("temp", "humidity", "pressure", "sound", "light");
 
     double getRandomInRange(final int from, final int to, final int fixed) {
