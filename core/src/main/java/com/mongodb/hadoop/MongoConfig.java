@@ -99,7 +99,7 @@ public class MongoConfig {
     }
 
     public void setMapperOutputValue(final Class<?> val) {
-        MongoConfigUtil.setMapperOutputKey(configuration, val);
+        MongoConfigUtil.setMapperOutputValue(configuration, val);
     }
 
     public Class<? extends Reducer> getCombiner() {
