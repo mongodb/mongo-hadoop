@@ -37,6 +37,8 @@ public class TreasuryYieldXMLConfig extends MongoTool {
     public TreasuryYieldXMLConfig() {
         Configuration conf = new Configuration();
         MongoConfig config = new MongoConfig(conf);
+        setConf(conf);
+        
         config.setInputFormat(com.mongodb.hadoop.MongoInputFormat.class);
         config.setInputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in");
         
@@ -50,7 +52,6 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.out");
         config.setOutputFormat(MongoOutputFormat.class);
         
-        setConf(conf);
     }
 
     public static void main(final String[] pArgs) throws Exception {

@@ -8,7 +8,7 @@ mongo demo --eval "db.logs_aggregate.drop()"
 #FIRST PASS - map all the devices into an output collection
 declare -a job1_args
 job1_args=("jar" "`pwd`/build/libs/sensors-1.2.1-SNAPSHOT-hadoop_2.2.jar")
-#job1_args=(${job1_args[@]} "com.mongodb.hadoop.examples.sensors.Sensors")
+#job1_args=(${job1_args[@]} "com.mongodb.hadoop.examples.sensors.Devices")
 job1_args=(${job1_args[@]} "-D" "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat")
 job1_args=(${job1_args[@]} "-D" "mongo.input.uri=mongodb://localhost:27017/demo.devices")
 job1_args=(${job1_args[@]} "-D" "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.DeviceMapper")
@@ -28,7 +28,7 @@ mongo demo --eval "db.logs_aggregate.ensureIndex({devices:1})"
 #Second PASS - map all the LOGS into the output collection
 declare -a job2_args
 job1_args=("jar" "`pwd`/build/libs/sensors-1.2.1-SNAPSHOT-hadoop_2.2.jar")
-#job2_args=(${job2_args[@]} "com.mongodb.hadoop.examples.sensors.Sensors")
+#job2_args=(${job2_args[@]} "com.mongodb.hadoop.examples.sensors.Devices")
 job2_args=(${job2_args[@]} "-D" "mongo.job.input.format=com.mongodb.hadoop.BSONFileInputFormat")
 job2_args=(${job2_args[@]} "-D" "mapred.input.dir=file:///Users/mike/dump/demo/logs.bson")
 job2_args=(${job2_args[@]} "-D" "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.LogMapper")

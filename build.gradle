@@ -237,14 +237,6 @@ project(":flume") {
     }
 }
 
-/*
-project(":examples/ufo_sightings") {
-    dependencies {
-        compile project(':core')
-    }
-}
-*/
-
 project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
@@ -305,40 +297,10 @@ task historicalYield(dependsOn: 'installHadoop') << {
 
 task sensorData(dependsOn: [installHadoop]) << {
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Sensors",
-
-           ["mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.devices",
-
-            "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.DeviceMapper",
-            "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.DeviceReducer",
-
-            "mongo.job.mapper.output.key=org.apache.hadoop.io.Text",
-            "mongo.job.mapper.output.value=org.apache.hadoop.io.Text",
-            "mongo.job.output.key=org.apache.hadoop.io.IntWritable",
-            "mongo.job.output.value=com.mongodb.hadoop.io.BSONWritable",
-
-            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
-            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-           ])
+           "com.mongodb.hadoop.examples.sensors.Devices", [])
 
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Sensors",
-
-           ["mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.logs",
-            "mongo.job.input.format=com.mongodb.hadoop.MongoInputFormat",
-            "mongo.job.mapper=com.mongodb.hadoop.examples.sensors.LogMapper",
-            "mongo.job.reducer=com.mongodb.hadoop.examples.sensors.LogReducer",
-            "mapreduce.combiner.class=com.mongodb.hadoop.examples.sensors.LogCombiner",
-            "mongo.job.combiner=com.mongodb.hadoop.examples.sensors.LogCombiner",
-            "io.sort.mb=100",
-
-            "mongo.job.output.key=org.apache.hadoop.io.Text",
-            "mongo.job.output.value=org.apache.hadoop.io.IntWritable",
-
-            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.logs_aggregate",
-            "mongo.job.output.format=com.mongodb.hadoop.MongoOutputFormat"
-           ])
+           "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
 }
 
 task enronEmails(dependsOn: 'installHadoop') << {

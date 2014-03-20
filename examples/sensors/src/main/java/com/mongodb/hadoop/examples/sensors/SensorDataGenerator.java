@@ -6,11 +6,8 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ToolRunner;
 import org.bson.types.ObjectId;
 
 import java.net.UnknownHostException;
@@ -21,13 +18,12 @@ import java.util.List;
 
 import static java.lang.String.format;
 
-public class Sensors extends MongoTool {
-
-    private static final Log LOG = LogFactory.getLog(Sensors.class);
-
+public class SensorDataGenerator {
     private static final int NUM_DEVICES = 100;
     private static final int NUM_LOGS = NUM_DEVICES * 100;
     private static final List<String> TYPES = Arrays.asList("temp", "humidity", "pressure", "sound", "light");
+    private static final Log LOG = LogFactory.getLog(SensorDataGenerator.class);
+
 
     double getRandomInRange(final int from, final int to, final int fixed) {
         return (Math.random() * (to - from) + from)/*.toFixed(fixed) * 1*/;
@@ -55,8 +51,7 @@ public class Sensors extends MongoTool {
         return (int) Math.floor(Math.random() * (max - min) + min);
     }
 
-    public Sensors() throws UnknownHostException {
-        setJobName("Sensors Aggregation");
+    public void run() throws UnknownHostException {
         final List<Integer> models = new ArrayList<Integer>();
         final List<String> owners = new ArrayList<String>();
         final MongoClient client = new MongoClient();
@@ -110,13 +105,6 @@ public class Sensors extends MongoTool {
                 logs.insert(log);
             }
         }
-    }
 
-    public static void main(final String[] pArgs) throws Exception {
-        Configuration conf = new Configuration();
-        System.exit(ToolRunner.run(conf, new Sensors(), pArgs));
     }
-
 }
-
-
