@@ -215,8 +215,6 @@ project(":streaming") {
     }
 
     jar {
-        onlyIf { hadoop_version != "1.0" }
-
         from project(':core').sourceSets.main.output
         from sourceSets.main.output
 
