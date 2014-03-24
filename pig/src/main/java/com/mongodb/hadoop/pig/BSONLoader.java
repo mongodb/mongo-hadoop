@@ -25,6 +25,7 @@ import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.Utils;
+import org.apache.pig.parser.ParserException;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.types.BasicBSONList;
@@ -244,8 +245,15 @@ public class BSONLoader extends LoadFunc implements LoadMetadata {
             throws IOException {
         if (schema != null) {
             return schema;
+        } else {
+            try {
+                //If we didn't have a schema, we loaded the document as a map.
+                return new ResourceSchema(Utils.getSchemaFromString("document:map[]"));
+            } catch (ParserException e) {
+                //Should never get here, but just return null to indicate lack of a schema.
+                return null;
+            }
         }
-        return null;
     }
 
     @Override
