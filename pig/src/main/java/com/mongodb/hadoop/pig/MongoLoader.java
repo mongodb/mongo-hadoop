@@ -80,6 +80,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     }
     
     private void initializeSchema(final String userSchema, final String idAlias) {
+        this.idAlias = idAlias;
         try {
             //Remove new lines from schema string.
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema.replaceAll("\\s|\\\\n","")));
