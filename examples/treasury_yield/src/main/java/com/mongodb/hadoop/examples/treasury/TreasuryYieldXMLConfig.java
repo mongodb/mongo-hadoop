@@ -15,19 +15,26 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
+import com.mongodb.MongoURI;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
 
+import java.util.List;
+
 /**
  * The treasury yield xml config object.
  */
 public class TreasuryYieldXMLConfig extends MongoTool {
+    private static final Log LOG = LogFactory.getLog(TreasuryYieldXMLConfig.class);
 
     static {
         Configuration.addDefaultResource("src/examples/hadoop-local.xml");
@@ -38,20 +45,19 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         Configuration conf = new Configuration();
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);
-        
+
         config.setInputFormat(com.mongodb.hadoop.MongoInputFormat.class);
         config.setInputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in");
-        
+
         config.setMapper(TreasuryYieldMapper.class);
         config.setMapperOutputKey(IntWritable.class);
         config.setMapperOutputValue(DoubleWritable.class);
-        
+
         config.setReducer(TreasuryYieldReducer.class);
         config.setOutputKey(IntWritable.class);
         config.setOutputValue(BSONWritable.class);
         config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.out");
         config.setOutputFormat(MongoOutputFormat.class);
-        
     }
 
     public static void main(final String[] pArgs) throws Exception {

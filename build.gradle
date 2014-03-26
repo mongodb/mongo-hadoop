@@ -59,6 +59,7 @@ configure(subprojects) {
 
         testCompile 'junit:junit:4.11'
         testCompile 'org.hamcrest:hamcrest-all:1.3'
+        testCompile 'org.zeroturnaround:zt-exec:1.5'
     }
 
     /* Compiling */
@@ -256,7 +257,16 @@ project(":examples/sensors") {
     }
 }
 
-task installHadoop() << {
+project(":testing") {
+    dependencies {
+        testCompile project(':core')
+        testCompile project(':examples/treasury_yield')
+        testCompile "commons-logging:commons-logging:1.1.3"
+        testCompile "com.fasterxml.jackson.core:jackson-core:2.3.2"
+    }
+}
+
+task installHadoop() {
     new File('../hadoop-binaries/').mkdirs()
 
     if (!new File("${hadoopHome}").exists()) {
@@ -281,6 +291,7 @@ task installHadoop() << {
             into '../hadoop-binaries'
         }
     }
+    copyJars()
 }
 
 task historicalYield(dependsOn: 'installHadoop') << {
@@ -323,24 +334,30 @@ task enronEmails(dependsOn: 'installHadoop') << {
            "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
-def hadoop(jar, className, args) {
-    def hadoopLib
-    if (hadoop_version.startsWith("1")) {
-        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
-    } else {
-        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
-    }
+task integrationTests(dependsOn: [installHadoop]) << {
+    copyJars()
 
-    copy {
-        from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
-        into hadoopLib
-        rename { "mongo-hadoop-core.jar" }
+    def hadoopHome = new File("../hadoop-binaries/hadoop-${hadoopVersion}")
+    def hadoopTmp = new File('/tmp/hadoop_tmp')
+    hadoopTmp.mkdirs()
+    
+    def hadoopEnv = [:]
+
+    hadoopEnv.HADOOP_HOME= hadoopHome.getCanonicalPath()
+    hadoopEnv.HADOOP_RELEASE=hadoop_version
+    hadoopEnv.TEMPDIR=hadoopTmp.getCanonicalPath()
+    hadoopEnv.HADOOP_CLIENT_OPTS="-Xmx1024m"
+
+    println "********** System.env.PATH = ${System.env.PATH}"
+    exec() {
+        environment << hadoopEnv
+        workingDir 'testing'
+        commandLine 'nosetests', '--nocapture', '-s', '-d', '-l', 'DEBUG', '-v', '--with-xunit', '--xunit-file=../output.xml', 
+'gradle_run_treasury'
     }
-    download {
-        src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.11.4/mongo-java-driver-2.11.4.jar'
-        dest "${hadoopLib}/mongo-java-driver.jar"
-        onlyIfNewer true
-    }
+}
+
+def hadoop(jar, className, args) {
 
     def line = ["${hadoopHome}/bin/hadoop",
                 "jar", jar, className,
@@ -360,6 +377,26 @@ def hadoop(jar, className, args) {
         environment << hadoopEnv
 
         commandLine line
+    }
+}
+
+def copyJars() {
+    def hadoopLib
+    if (hadoop_version.startsWith("1")) {
+        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
+    } else {
+        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
+    }
+
+    copy {
+        from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
+        into hadoopLib
+        rename { "mongo-hadoop-core.jar" }
+    }
+    download {
+        src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.11.4/mongo-java-driver-2.11.4.jar'
+        dest "${hadoopLib}/mongo-java-driver.jar"
+        onlyIfNewer true
     }
 }
 
