@@ -78,7 +78,7 @@ configure(subprojects) {
     tasks.withType(Test) {
         maxParallelForks = 1
         systemProperty 'HADOOP_VERSION', hadoop_version
-        systemProperty "mongodb_server", project.getProperties().get('mongodb_server')
+        systemProperty "mongodb_server", System.getProperties().get('mongodb_server')
 
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
