@@ -279,6 +279,7 @@ public class BaseHadoopTest {
     private static class HadoopVersionFilter implements FileFilter {
         @Override
         public boolean accept(final File pathname) {
+            System.out.println("HADOOP_VERSION = " + HADOOP_VERSION);
             System.out.println("pathname = " + pathname);
             boolean accept = pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
             System.out.println("accept = " + accept);
