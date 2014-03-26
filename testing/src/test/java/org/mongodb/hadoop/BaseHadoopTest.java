@@ -280,7 +280,9 @@ public class BaseHadoopTest {
         @Override
         public boolean accept(final File pathname) {
             System.out.println("pathname = " + pathname);
-            return pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
+            boolean accept = pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
+            System.out.println("accept = " + accept);
+            return accept;
         }
     }
 }
