@@ -37,10 +37,11 @@ public class BaseHadoopTest {
     private static final Log LOG = LogFactory.getLog(BaseHadoopTest.class);
 
     public static String HADOOP_HOME;
-    public static String HADOOP_VERSION = loadProperty("HADOOP_VERSION", "2.3");
+    public static String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
 
-    public static final File JSONFILE_PATH = new File("../examples/treasury_yield/src/main/resources/yield_historical_in.json");
-    protected static final File JOBJAR_PATH = new File("../examples/treasury_yield/build/libs").listFiles(new HadoopVersionFilter())[0];
+    public static File TREASURY_YIELD_HOME;
+    public static final File JSONFILE_PATH;
+    protected static final File JOBJAR_PATH;
 
     protected static final List<DBObject> reference = new ArrayList<DBObject>();
 
@@ -50,17 +51,12 @@ public class BaseHadoopTest {
     private MongoClient client;
 
     static {
-        String property = System.getProperty("mongodb_server");
-        String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
-        String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
-        MONGO_IMPORT = new File(path).exists() ? path : "/usr/local/bin/mongoimport";
-
-        try {
-            HADOOP_HOME = new File(loadProperty("HADOOP_HOME", "../../hadoop-binaries/hadoop-2.3.0")).getCanonicalPath();
-        } catch (IOException e) {
-            e.printStackTrace();
+/*
+        Map<Object, Object> map = new TreeMap<Object, Object>(System.getProperties());
+        for (Entry<Object, Object> entry : map.entrySet()) {
+            System.out.printf("%s:%s%n", entry.getKey(), entry.getValue());
         }
-
+*/
         reference.add(dbObject("_id", 1990, "count", 250, "avg", 8.552400000000002, "sum", 2138.1000000000004));
         reference.add(dbObject("_id", 1991, "count", 250, "avg", 7.8623600000000025, "sum", 1965.5900000000006));
         reference.add(dbObject("_id", 1992, "count", 251, "avg", 7.008844621513946, "sum", 1759.2200000000005));
@@ -82,6 +78,33 @@ public class BaseHadoopTest {
         reference.add(dbObject("_id", 2008, "count", 251, "avg", 3.6642629482071714, "sum", 919.73));
         reference.add(dbObject("_id", 2009, "count", 250, "avg", 3.2641200000000037, "sum", 816.0300000000009));
         reference.add(dbObject("_id", 2010, "count", 189, "avg", 3.3255026455026435, "sum", 628.5199999999996));
+
+        try {
+            String property = System.getProperty("mongodb_server");
+            String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
+            String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
+            MONGO_IMPORT = new File(path).exists() ? path : "/usr/local/bin/mongoimport";
+
+            HADOOP_HOME = new File(String.format("../hadoop-binaries/hadoop-%s", System.getProperty("hadoop.release.version")))
+                              .getCanonicalPath();
+
+            File current = new File(".").getCanonicalFile();
+            TREASURY_YIELD_HOME = new File(current, "examples/treasury_yield");
+            while (!TREASURY_YIELD_HOME.exists() && current.getParentFile().exists()) {
+                current = current.getParentFile();
+                TREASURY_YIELD_HOME = new File(current, "examples/treasury_yield");
+            }
+            JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
+
+            File file = new File(TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
+            File[] files = file.listFiles(new HadoopVersionFilter());
+            if (files.length == 0) {
+                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
+            }
+            JOBJAR_PATH = files[0];
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     private static String loadProperty(final String name, final String defaultValue) {
@@ -128,7 +151,7 @@ public class BaseHadoopTest {
     }
 
     public MongoClient getClient() {
-        if(client == null) {
+        if (client == null) {
             try {
                 client = new MongoClient();
             } catch (UnknownHostException e) {
@@ -221,7 +244,7 @@ public class BaseHadoopTest {
                 }
                 cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString().trim()));
             }
-            
+
             LOG.info("Executing hadoop job:");
 
             StringBuilder output = new StringBuilder();
@@ -254,9 +277,8 @@ public class BaseHadoopTest {
     }
 
     private void copyJars() {
-        String hadoopLib;
-        hadoopLib = format(HADOOP_VERSION.startsWith("1") ? "../../hadoop-binaries/hadoop-${hadoopVersion}/lib"
-                                                   : "../../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common");
+        String hadoopLib = format(HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
+                                                                 : HADOOP_HOME + "/share/hadoop/common");
         try {
             URLClassLoader classLoader = (URLClassLoader) getClass().getClassLoader();
             for (URL url : classLoader.getURLs()) {
@@ -268,7 +290,7 @@ public class BaseHadoopTest {
             }
             File coreJar = new File(format("../core/build/libs")).listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
-            
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (URISyntaxException e) {

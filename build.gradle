@@ -77,8 +77,8 @@ configure(subprojects) {
     /* Testing */
     tasks.withType(Test) {
         maxParallelForks = 1
-//        systemProperty 'HADOOP_VERSION', hadoop_version
-//        systemProperty "mongodb_server", System.getProperties().get('mongodb_server')
+        systemProperty 'hadoop.version', hadoop_version
+        systemProperty 'hadoop.release.version', hadoopVersion
         systemProperties << System.getProperties()
 
         beforeTest { descr ->
