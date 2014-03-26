@@ -77,6 +77,7 @@ configure(subprojects) {
     /* Testing */
     tasks.withType(Test) {
         maxParallelForks = 1
+        systemProperty 'HADOOP_VERSION', hadoop_version
 
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")

@@ -37,7 +37,7 @@ public class BaseHadoopTest {
     private static final Log LOG = LogFactory.getLog(BaseHadoopTest.class);
 
     public static String HADOOP_HOME;
-    public static String HADOOP_VERSION = loadProperty("hadoop_version", "2.3");
+    public static String HADOOP_VERSION = loadProperty("HADOOP_VERSION", "2.3");
 
     public static final File JSONFILE_PATH = new File("../examples/treasury_yield/src/main/resources/yield_historical_in.json");
     protected static final File JOBJAR_PATH = new File("../examples/treasury_yield/build/libs").listFiles(new HadoopVersionFilter())[0];
@@ -279,11 +279,7 @@ public class BaseHadoopTest {
     private static class HadoopVersionFilter implements FileFilter {
         @Override
         public boolean accept(final File pathname) {
-            System.out.println("HADOOP_VERSION = " + HADOOP_VERSION);
-            System.out.println("pathname = " + pathname);
-            boolean accept = pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
-            System.out.println("accept = " + accept);
-            return accept;
+            return pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
         }
     }
 }
