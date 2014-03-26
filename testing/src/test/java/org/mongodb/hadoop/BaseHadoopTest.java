@@ -51,6 +51,7 @@ public class BaseHadoopTest {
 
     static {
         String property = System.getProperty("mongodb_server");
+        System.out.println("*********** property = " + property);
         String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
         String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
         System.out.println("***********  test mongoimport path = " + path);
