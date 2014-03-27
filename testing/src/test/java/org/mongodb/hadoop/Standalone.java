@@ -28,7 +28,7 @@ public class Standalone extends BaseHadoopTest {
         Map<String, String> params = new LinkedHashMap<String, String>();
         params.put("mongo.input.notimeout", "true");
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), reference);
+        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
@@ -42,7 +42,7 @@ public class Standalone extends BaseHadoopTest {
 
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
-        System.out.println(asList(out.find()));
+        compareResults(out, getReference());
     }
 
     @Test
@@ -57,7 +57,7 @@ public class Standalone extends BaseHadoopTest {
                new String[] {"mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2"}, null);
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         List<DBObject> referenceDoubled = new ArrayList<DBObject>();
-        for (DBObject object : reference) {
+        for (DBObject object : getReference()) {
             DBObject doubled = new BasicDBObject();
             doubled.putAll(object);
             referenceDoubled.add(doubled);
@@ -70,12 +70,11 @@ public class Standalone extends BaseHadoopTest {
         }
         
         compareResults(out, referenceDoubled);
-        System.out.println(asList(out.find()));
     }
 
 
     private ArrayNode collectionSettings() {
-        ArrayNode collection_settings = new ArrayNode(JsonNodeFactory.instance);
+        ArrayNode settings = new ArrayNode(JsonNodeFactory.instance);
         ObjectNode node = new ObjectNode(JsonNodeFactory.instance);
         node.put("mongo.input.uri", "mongodb://localhost/mongo_hadoop.yield_historical.in");
         ObjectNode dow = new ObjectNode(JsonNodeFactory.instance);
@@ -84,13 +83,13 @@ public class Standalone extends BaseHadoopTest {
         node.put("mongo.splitter.class", "com.mongodb.hadoop.splitter.SingleMongoSplitter");
         node.put("mongo.input.split.use_range_queries", true);
         node.put("mongo.input.notimeout", true);
-        collection_settings.add(node);
+        settings.add(node);
 
         node = new ObjectNode(JsonNodeFactory.instance);
         node.put("mongo.input.uri", "mongodb://localhost/mongo_hadoop.yield_historical.in3");
         node.put("mongo.input.split.use_range_queries", true);
         node.put("mongo.input.notimeout", true);
-        collection_settings.add(node);
-        return collection_settings;
+        settings.add(node);
+        return settings;
     }
 }

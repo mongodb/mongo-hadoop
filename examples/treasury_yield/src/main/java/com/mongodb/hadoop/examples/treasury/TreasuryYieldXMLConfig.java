@@ -15,11 +15,9 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-import com.mongodb.MongoURI;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
-import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,8 +25,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
-
-import java.util.List;
 
 /**
  * The treasury yield xml config object.

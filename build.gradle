@@ -17,8 +17,8 @@ ext.versionMap = [
 ext.hadoopVersion = versionMap[hadoop_version]
 ext.hadoopHome = "../hadoop-binaries/hadoop-${hadoopVersion}"
 
-
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
+
 buildscript {
     repositories {
         mavenLocal()

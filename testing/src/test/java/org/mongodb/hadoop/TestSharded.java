@@ -16,7 +16,7 @@ public class TestSharded extends BaseShardedTest {
     public void testBasicInputSource() {
         assumeTrue(isSharded());
         runJob(new LinkedHashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), reference);
+        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
@@ -25,7 +25,7 @@ public class TestSharded extends BaseShardedTest {
         Map<String, String> params = new LinkedHashMap<String, String>();
         params.put("mongo.input.mongos_hosts", "localhost:27017 localhost:27018");
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), reference);
+        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
@@ -37,7 +37,7 @@ public class TestSharded extends BaseShardedTest {
                new String[]{"mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
                             "mongodb://localhost:27018/mongo_hadoop.yield_historical.out"}
               );
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), reference);
+        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
         DBObject opCounterAfter1 = (DBObject) getClient().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterAfter2 = (DBObject) getClient2().getDB("admin").command("serverStatus").get("opcounters");
 
