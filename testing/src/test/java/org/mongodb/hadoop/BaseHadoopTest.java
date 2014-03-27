@@ -63,8 +63,8 @@ public class BaseHadoopTest {
             String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
             MONGO_IMPORT = new File(path).exists() ? path : "/usr/local/bin/mongoimport";
             if (!new File(MONGO_IMPORT).exists()) {
-                throw new RuntimeException(format("Can not locate mongoimport.  Tried looking in '%s' and '%s' assuming a server " +
-                                                  "type of '%s'", path, "/usr/local/bin/mongoimport", property));
+                throw new RuntimeException(format("Can not locate mongoimport.  Tried looking in '%s' and '%s' assuming a server "
+                                                  + "type of '%s'", path, "/usr/local/bin/mongoimport", property));
             }
 
             HADOOP_HOME = new File(String.format("../hadoop-binaries/hadoop-%s", System.getProperty("hadoop.release.version")))
