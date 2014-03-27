@@ -15,7 +15,8 @@ ext.versionMap = [
     throw new GradleException("Unknown hadoop version: ${hadoop_version}")
 }
 ext.hadoopVersion = versionMap[hadoop_version]
-ext.hadoopHome = "../hadoop-binaries/hadoop-${hadoopVersion}"
+ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
+ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
 
@@ -273,7 +274,7 @@ project(":testing") {
 }
 
 task installHadoop() {
-    new File('../hadoop-binaries/').mkdirs()
+    new File(hadoopHome).getParentFile().mkdirs()
 
     if (!new File("${hadoopHome}").exists()) {
         def url
@@ -287,14 +288,14 @@ task installHadoop() {
         }
         download {
             src url
-            dest "../hadoop-binaries/"
+            dest hadoopBinaries
             onlyIfNewer true
         }
 
         println "Extracting hadoop ${hadoopVersion} download"
         copy {
-            from(tarTree("../hadoop-binaries/hadoop-${hadoopVersion}.tar.gz"))
-            into '../hadoop-binaries'
+            from(tarTree("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz"))
+            into hadoopBinaries
         }
     }
     copyJars()
@@ -340,29 +341,6 @@ task enronEmails(dependsOn: 'installHadoop') << {
            "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
-task integrationTests(dependsOn: [installHadoop]) << {
-    copyJars()
-
-    def hadoopHome = new File("../hadoop-binaries/hadoop-${hadoopVersion}")
-    def hadoopTmp = new File('/tmp/hadoop_tmp')
-    hadoopTmp.mkdirs()
-    
-    def hadoopEnv = [:]
-
-    hadoopEnv.HADOOP_HOME= hadoopHome.getCanonicalPath()
-    hadoopEnv.HADOOP_RELEASE=hadoop_version
-    hadoopEnv.TEMPDIR=hadoopTmp.getCanonicalPath()
-    hadoopEnv.HADOOP_CLIENT_OPTS="-Xmx1024m"
-
-    println "********** System.env.PATH = ${System.env.PATH}"
-    exec() {
-        environment << hadoopEnv
-        workingDir 'testing'
-        commandLine 'nosetests', '--nocapture', '-s', '-d', '-l', 'DEBUG', '-v', '--with-xunit', '--xunit-file=../output.xml', 
-'gradle_run_treasury'
-    }
-}
-
 def hadoop(jar, className, args) {
 
     def line = ["${hadoopHome}/bin/hadoop",
@@ -389,9 +367,9 @@ def hadoop(jar, className, args) {
 def copyJars() {
     def hadoopLib
     if (hadoop_version.startsWith("1")) {
-        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/lib"
+        hadoopLib = "${hadoopHome}/lib"
     } else {
-        hadoopLib = "../hadoop-binaries/hadoop-${hadoopVersion}/share/hadoop/common"
+        hadoopLib = "${hadoopHome}/share/hadoop/common"
     }
 
     copy {
