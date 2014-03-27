@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
@@ -244,6 +245,10 @@ public class BaseHadoopTest {
                 }
                 cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString().trim()));
             }
+            Map<String, String> env = new TreeMap<String, String>(System.getenv());
+            if (HADOOP_VERSION.startsWith("cdh")) {
+                env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
+            }
 
             LOG.info("Executing hadoop job:");
 
@@ -265,6 +270,7 @@ public class BaseHadoopTest {
 
             LOG.info(output);
             new ProcessExecutor().command(cmd)
+                                 .environment(env)
                                  .redirectError(System.out)
                                  .execute();
         } catch (IOException e) {
