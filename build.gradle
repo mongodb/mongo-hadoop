@@ -263,6 +263,7 @@ project(":examples/sensors") {
 }
 
 project(":testing") {
+    uploadArchives.onlyIf { false }
     dependencies {
         testCompile project(':core')
         testCompile project(':examples/treasury_yield')
