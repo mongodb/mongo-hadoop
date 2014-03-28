@@ -88,11 +88,10 @@ public class TestSharded extends BaseShardedTest {
 
         DBObject chunk = config.getCollection("chunks").findOne(new BasicDBObject("shard", "sh01"));
         DBObject query = new BasicDBObject("_id", new BasicDBObject("$gte", ((DBObject) chunk.get("min")).get("_id"))
-                                                            .append("$lt", ((DBObject) chunk.get("max")).get("_id")));
+                                                      .append("$lt", ((DBObject) chunk.get("max")).get("_id")));
         List<DBObject> data = asList(getClient().getDB("mongo_hadoop").getCollection("yield_historical.in").find(query));
         DBCollection destination = getClient2().getDB("mongo_hadoop").getCollection("yield_historical.in");
-        for (DBObject doc : data ) {
-            System.out.println("doc = " + doc);
+        for (DBObject doc : data) {
             destination.insert(doc, WriteConcern.ACKNOWLEDGED);
         }
 
@@ -100,8 +99,8 @@ public class TestSharded extends BaseShardedTest {
         params.put("mongo.input.split.allow_read_from_secondaries", "true");
         params.put("mongo.input.split.read_from_shards", "true");
         params.put("mongo.input.split.read_shard_chunks", "false");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", 
-               new String[] {"mongodb://localhost/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
+        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
+               new String[]{"mongodb://localhost/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
 
         compareResults(collection, getReference());
         collection.drop();
