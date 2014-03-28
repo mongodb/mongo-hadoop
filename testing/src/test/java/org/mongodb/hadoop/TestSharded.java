@@ -1,5 +1,7 @@
 package org.mongodb.hadoop;
 
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.junit.Test;
 
@@ -8,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -45,6 +49,26 @@ public class TestSharded extends BaseShardedTest {
         compare(opCounterBefore2, opCounterAfter2);
     }
 
+    @Test
+    public void testGteLt() {
+        assumeTrue(isSharded());
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("mongo.input.split.use_range_queries", "true");
+
+        DB shard1db = getClient().getDB("mongo_hadoop");
+        DB shard2db = getClient().getDB("mongo_hadoop");
+        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        DBCollection collection = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
+        compareResults(collection, getReference());
+
+        collection.drop();
+        params.put("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}");
+        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        // Make sure that this fails when rangequery is used with a query that conflicts
+        assertFalse("This collection shouldn't exist because of the failure", 
+                    getClient().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
+    }
+    
     private void compare(final DBObject before, final DBObject after) {
         compare("update", before, after);
         compare("command", before, after);

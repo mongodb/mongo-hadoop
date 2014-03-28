@@ -67,7 +67,7 @@ public class BaseHadoopTest {
                                                   + "type of '%s'", path, "/usr/local/bin/mongoimport", property));
             }
 
-            HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s", System.getProperty("user.home"), 
+            HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s", System.getProperty("user.home"),
                                                  System.getProperty("hadoop.release.version")))
                               .getCanonicalPath();
 
