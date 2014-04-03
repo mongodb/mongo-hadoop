@@ -6,7 +6,6 @@ import java.util.Date;
 
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
-import org.apache.pig.test.Util;
 import org.junit.AfterClass;
 import org.junit.Test;
 
