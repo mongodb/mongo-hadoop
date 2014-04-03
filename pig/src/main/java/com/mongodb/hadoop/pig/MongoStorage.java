@@ -244,4 +244,8 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     public void setStoreFuncUDFContextSignature(final String signature) {
         udfContextSignature = signature;
     }
+    
+    public void cleanupOnFailure(String location, Job job) throws IOException {
+        LOG.error("Store operation failed (see logged exception). Your Mongo collection will retain any records inserted or updated by MongoStorage before it failed.");
+    }
 }

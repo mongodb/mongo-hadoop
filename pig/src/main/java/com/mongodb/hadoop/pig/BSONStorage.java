@@ -18,6 +18,7 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.BSONFileOutputFormat;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +33,7 @@ import org.apache.pig.ResourceStatistics;
 import org.apache.pig.StoreFunc;
 import org.apache.pig.StoreMetadata;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.util.UDFContext;
@@ -99,6 +101,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
         if (dataType == DataType.BYTEARRAY && o instanceof Map) {
             dataType = DataType.MAP;
+        } else if (o instanceof DataByteArray) {
+            dataType = DataType.BYTEARRAY;
         }
 
         switch (dataType) {
@@ -153,13 +157,13 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 // <*> -> can be any string since the field name of the tuple in a bag should be ignored 
                 if (fs.length == 1 && fs[0].getName().equals(toIgnore)) {
                     for (Tuple t : (DataBag) o) {
-                        a.add(t.get(0));
+                        a.add(getTypeForBSON(t.get(0), fs[0], toIgnore));
                     }
                 } else {
                     for (Tuple t : (DataBag) o) {
                         Map<String, Object> ma = new LinkedHashMap<String, Object>();
                         for (int j = 0; j < fs.length; j++) {
-                            ma.put(fs[j].getName(), t.get(j));
+                            ma.put(fs[j].getName(), getTypeForBSON(t.get(j), fs[j], toIgnore));
                         }
                         a.add(ma);
                     }

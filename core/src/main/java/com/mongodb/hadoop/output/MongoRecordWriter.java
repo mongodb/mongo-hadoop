@@ -74,7 +74,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         collections = new ArrayList<DBCollection>(c);
         context = ctx;
         this.updateKeys = updateKeys;
-        this.multiUpdate = false;
+        this.multiUpdate = multi;
         this.numberOfHosts = c.size();
 
         //authenticate if necessary - but don't auth twice on same DB

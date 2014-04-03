@@ -20,6 +20,7 @@ import com.mongodb.MongoURI;
 import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
 import com.mongodb.hadoop.mapred.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCommitter;
@@ -33,7 +34,17 @@ import java.util.List;
 
 @SuppressWarnings("deprecation")
 public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
+
+    private final String[] updateKeys;
+    private final boolean multiUpdate;
+    
     public MongoOutputFormat() {
+        this(null, false);
+    }
+    
+    public MongoOutputFormat(String[] updateKeys, boolean multiUpdate) {
+        this.updateKeys = updateKeys;
+        this.multiUpdate = multiUpdate;
     }
 
     public void checkOutputSpecs(final FileSystem ignored, final JobConf job) throws IOException {
@@ -50,7 +61,7 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
 
     public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name,
                                               final Progressable progress) {
-        return new MongoRecordWriter<K, V>(MongoConfigUtil.getOutputCollections(job), job);
+        return new MongoRecordWriter<K, V>(MongoConfigUtil.getOutputCollections(job), job, updateKeys, multiUpdate);
     }
 
 }
