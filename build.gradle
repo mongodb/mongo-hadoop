@@ -273,7 +273,7 @@ project(":testing") {
     }
 }
 
-task installHadoop() {
+task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
     if (!new File("${hadoopHome}").exists()) {
