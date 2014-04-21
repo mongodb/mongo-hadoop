@@ -5,6 +5,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -17,20 +18,17 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testBasicInputSource() {
-        assumeTrue(isSharded());
         runJob(new LinkedHashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
     public void testMultiMongos() {
-        assumeTrue(isSharded());
         Map<String, String> params = new LinkedHashMap<String, String>();
         params.put("mongo.input.mongos_hosts", "localhost:27017 localhost:27018");
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
@@ -39,7 +37,6 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testMultiOutputs() {
-        assumeTrue(isSharded());
         DBObject opCounterBefore1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
         runJob(new HashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null,
@@ -56,7 +53,6 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testRangeQueries() {
-        assumeTrue(isSharded());
         Map<String, String> params = new HashMap<String, String>();
         params.put("mongo.input.split.use_range_queries", "true");
 
@@ -119,7 +115,6 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testShardedClusterWithGtLtQueryFormats() {
-        assumeTrue(isSharded());
         Map<String, String> params = new HashMap<String, String>();
         params.put("mongo.input.split.use_range_queries", "true");
 

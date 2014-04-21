@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
 
+import static org.junit.Assume.assumeTrue;
+
 public class BaseShardedTest extends BaseHadoopTest {
     private static final Log LOG = LogFactory.getLog(BaseShardedTest.class);
     private MongoClient shard1;
@@ -21,10 +23,8 @@ public class BaseShardedTest extends BaseHadoopTest {
 
     @Before
     public void shuffleChunks() throws IOException, InterruptedException, TimeoutException {
+        assumeTrue(isSharded());
         LOG.info("shuffling chunks across shards");
-        if (!isSharded()) {
-            return;
-        }
 
         DB adminDB = getClient().getDB("admin");
         adminDB.command(new BasicDBObject("enablesharding", "mongo_hadoop"));
