@@ -64,6 +64,7 @@ public class TreasuryYieldXMLConfig extends MongoTool {
     }
 
     public static void main(final String[] pArgs) throws Exception {
+        LOG.error("pArgs = " + Arrays.toString(pArgs));
         System.exit(ToolRunner.run(new TreasuryYieldXMLConfig(), pArgs));
     }
 }
