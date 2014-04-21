@@ -273,10 +273,10 @@ project(":testing") {
     }
 }
 
-task installHadoop() << {
+task installHadoop() {
     new File(hadoopHome).getParentFile().mkdirs()
 
-    println "Checking installation of ${hadoopVersion}"
+    println "Checking if ${hadoopHome}/bin exists"
     if (!new File("${hadoopHome}/bin").exists()) {
         def url
         switch (hadoop_version) {
