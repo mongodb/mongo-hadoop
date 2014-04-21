@@ -21,6 +21,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.util.JSON;
@@ -326,10 +328,25 @@ public final class MongoConfigUtil {
         return dbCollections;
     }
 
+    /**
+     * @deprecated use {@link #getCollection(MongoClientURI)}
+     */
+    @Deprecated
     public static DBCollection getCollection(final MongoURI uri) {
         DBCollection coll;
         try {
             Mongo mongo = new Mongo(uri);
+            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return coll;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
+        }
+    }
+    
+    public static DBCollection getCollection(final MongoClientURI uri) {
+        DBCollection coll;
+        try {
+            Mongo mongo = new MongoClient(uri);
             if (!mongo.getDB(uri.getDatabase()).isAuthenticated()
                 && uri.getUsername() != null && uri.getPassword() != null) {
                 mongo.getDB(uri.getDatabase())

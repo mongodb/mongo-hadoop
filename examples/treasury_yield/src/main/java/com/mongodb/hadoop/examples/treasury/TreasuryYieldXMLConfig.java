@@ -18,6 +18,7 @@ package com.mongodb.hadoop.examples.treasury;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,6 +26,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
+
+import java.util.Arrays;
 
 /**
  * The treasury yield xml config object.
@@ -43,7 +46,9 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         setConf(conf);
 
         config.setInputFormat(com.mongodb.hadoop.MongoInputFormat.class);
-        config.setInputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in");
+        if (System.getProperty(MongoConfigUtil.INPUT_URI) == null) {
+            config.setInputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in");
+        }
 
         config.setMapper(TreasuryYieldMapper.class);
         config.setMapperOutputKey(IntWritable.class);
@@ -52,7 +57,9 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         config.setReducer(TreasuryYieldReducer.class);
         config.setOutputKey(IntWritable.class);
         config.setOutputValue(BSONWritable.class);
-        config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.out");
+        if (System.getProperty(MongoConfigUtil.OUTPUT_URI) == null) {
+            config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.out");
+        }
         config.setOutputFormat(MongoOutputFormat.class);
     }
 

@@ -15,7 +15,9 @@ import java.util.concurrent.TimeoutException;
 
 public class BaseShardedTest extends BaseHadoopTest {
     private static final Log LOG = LogFactory.getLog(BaseShardedTest.class);
-    private MongoClient client2;
+    private MongoClient shard1;
+    private MongoClient shard2;
+    private MongoClient mongos;
 
     @Before
     public void shuffleChunks() throws IOException, InterruptedException, TimeoutException {
@@ -42,7 +44,7 @@ public class BaseShardedTest extends BaseHadoopTest {
                                 .append("middle", new BasicDBObject("_id", middle)));
         }
 
-        DB configDB = getClient().getDB("config");
+        DB configDB = getMongos().getDB("config");
         DBCollection shards = configDB.getCollection("shards");
         DBCollection chunks = configDB.getCollection("chunks");
 
@@ -66,15 +68,56 @@ public class BaseShardedTest extends BaseHadoopTest {
         }
     }
 
-    public MongoClient getClient2() {
-        if (client2 == null) {
+/*
+    @Override
+    public void runJob(final Map<String, String> params, final String className, final String[] inputCollections,
+                       final String[] outputUris) {
+        params.put(INPUT_URI, "mongodb://localhost:27217/mongo_hadoop.yield_historical.in");
+        super.runJob(params, className, inputCollections, outputUris);
+    }
+*/
+
+    public MongoClient getMongos() {
+        if (mongos == null) {
             try {
-                client2 = new MongoClient("localhost:27018");
+                mongos = new MongoClient("localhost", 27017);
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }
-        return client2;
+        return mongos;
+    }
+    public MongoClient getMongos2() {
+        if (mongos == null) {
+            try {
+                mongos = new MongoClient("localhost", 27018);
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
+        return mongos;
+    }
+
+    public MongoClient getShard1() {
+        if (shard2 == null) {
+            try {
+                shard2 = new MongoClient("localhost:27217");
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
+        return shard2;
+    }
+
+    public MongoClient getShard2() {
+        if (shard2 == null) {
+            try {
+                shard2 = new MongoClient("localhost:27218");
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
+        return shard2;
     }
 
 }

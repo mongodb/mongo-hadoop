@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -24,7 +25,7 @@ public class TestSharded extends BaseShardedTest {
     public void testBasicInputSource() {
         assumeTrue(isSharded());
         runJob(new LinkedHashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
@@ -33,21 +34,21 @@ public class TestSharded extends BaseShardedTest {
         Map<String, String> params = new LinkedHashMap<String, String>();
         params.put("mongo.input.mongos_hosts", "localhost:27017 localhost:27018");
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
     public void testMultiOutputs() {
         assumeTrue(isSharded());
-        DBObject opCounterBefore1 = (DBObject) getClient().getDB("admin").command("serverStatus").get("opcounters");
-        DBObject opCounterBefore2 = (DBObject) getClient2().getDB("admin").command("serverStatus").get("opcounters");
+        DBObject opCounterBefore1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
+        DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
         runJob(new HashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null,
                new String[]{"mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
                             "mongodb://localhost:27018/mongo_hadoop.yield_historical.out"}
               );
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
-        DBObject opCounterAfter1 = (DBObject) getClient().getDB("admin").command("serverStatus").get("opcounters");
-        DBObject opCounterAfter2 = (DBObject) getClient2().getDB("admin").command("serverStatus").get("opcounters");
+        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        DBObject opCounterAfter1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
+        DBObject opCounterAfter2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
 
         compare(opCounterBefore1, opCounterAfter1);
         compare(opCounterBefore2, opCounterAfter2);
@@ -59,8 +60,10 @@ public class TestSharded extends BaseShardedTest {
         Map<String, String> params = new HashMap<String, String>();
         params.put("mongo.input.split.use_range_queries", "true");
 
+        DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
+        collection.drop();
+        
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        DBCollection collection = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         compareResults(collection, getReference());
         collection.drop();
 
@@ -68,31 +71,31 @@ public class TestSharded extends BaseShardedTest {
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertFalse("This collection shouldn't exist because of the failure",
-                    getClient().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
+                    getMongos().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
     }
 
     @Test
     @Ignore
     public void testDirectAccess() {
         Map<String, String> params = new HashMap<String, String>();
-        params.put("mongo.input.split.read_shard_chunks", "true");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
-
-        DBCollection collection = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
+//        params.put("mongo.input.split.read_shard_chunks", "true");
+//        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+//        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+//
+        DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
 
         // HADOOP61 - simulate a failed migration by having some docs from one chunk
         // also exist on another shard who does not own that chunk(duplicates)
-        DB config = getClient().getDB("config");
+        DB config = getMongos().getDB("config");
 
         DBObject chunk = config.getCollection("chunks").findOne(new BasicDBObject("shard", "sh01"));
         DBObject query = new BasicDBObject("_id", new BasicDBObject("$gte", ((DBObject) chunk.get("min")).get("_id"))
                                                       .append("$lt", ((DBObject) chunk.get("max")).get("_id")));
-        List<DBObject> data = asList(getClient().getDB("mongo_hadoop").getCollection("yield_historical.in").find(query));
-        DBCollection destination = getClient2().getDB("mongo_hadoop").getCollection("yield_historical.in");
+        List<DBObject> data = asList(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.in").find(query));
+        DBCollection destination = getShard2().getDB("mongo_hadoop").getCollection("yield_historical.in");
         for (DBObject doc : data) {
-            destination.insert(doc, WriteConcern.ACKNOWLEDGED);
+            destination.insert(doc, WriteConcern.UNACKNOWLEDGED);
         }
 
         params = new HashMap<String, String>();
@@ -114,6 +117,29 @@ public class TestSharded extends BaseShardedTest {
         compareResults(collection, getReference());
     }
 
+    @Test
+    public void testShardedClusterWithGtLtQueryFormats() {
+        assumeTrue(isSharded());
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("mongo.input.split.use_range_queries", "true");
+
+        DB shard1db = getShard1().getDB("mongo_hadoop");
+
+        DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
+        collection.drop();
+
+        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
+               new String[]{"mongodb://localhost:27017/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
+        compareResults(collection, getReference());
+
+        params.put("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}");
+        collection.drop();
+        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
+               new String[]{"mongodb://localhost/mongo_hadoop.yield_historical.in"}, null);
+        // Make sure that this fails when rangequery is used with a query that conflicts
+        assertEquals(collection.count(), 0);
+
+    }
     private void compare(final DBObject before, final DBObject after) {
         compare("update", before, after);
         compare("command", before, after);

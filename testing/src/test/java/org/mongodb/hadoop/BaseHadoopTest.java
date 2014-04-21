@@ -68,7 +68,7 @@ public class BaseHadoopTest {
             }
 
             HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s", System.getProperty("user.home"),
-                                                 System.getProperty("hadoop.release.version")))
+                                                 loadProperty("hadoop.release.version", "2.3.0")))
                               .getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();
@@ -244,17 +244,23 @@ public class BaseHadoopTest {
             }
             if (inputCollections != null && inputCollections.length != 0) {
                 StringBuilder inputUri = new StringBuilder();
-                for (String inputCollection : inputCollections) {
-                    inputUri.append(format("mongodb://localhost/%s ", inputCollection));
+                for (String uri : inputCollections) {
+                    if(inputUri.length() != 0) {
+                        inputUri.append(" ");
+                      }
+                    inputUri.append(uri);
                 }
-                cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString().trim()));
+                cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
             }
             if (outputUris != null && outputUris.length != 0) {
                 StringBuilder outputUri = new StringBuilder();
                 for (String uri : outputUris) {
-                    outputUri.append(format("%s ", uri));
+                    if(outputUri.length() != 0) {
+                        outputUri.append(" ");
+                    }
+                    outputUri.append(uri);
                 }
-                cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString().trim()));
+                cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString()));
             }
             Map<String, String> env = new TreeMap<String, String>(System.getenv());
             if (HADOOP_VERSION.startsWith("cdh")) {
@@ -284,6 +290,8 @@ public class BaseHadoopTest {
                                  .environment(env)
                                  .redirectError(System.out)
                                  .execute();
+            
+            Thread.sleep(5000);  // let the system settle
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } catch (InterruptedException e) {
