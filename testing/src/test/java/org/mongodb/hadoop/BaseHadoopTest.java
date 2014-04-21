@@ -248,7 +248,7 @@ public class BaseHadoopTest {
                     if(inputUri.length() != 0) {
                         inputUri.append(" ");
                       }
-                    inputUri.append(input.startsWith("mongodb://") ? input : "mongodb://localhost:27017/mongo_hadoop." + input);
+                    inputUri.append(input.startsWith("mongodb://") ? input : "mongodb://localhost:27017/" + input);
                 }
                 cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
             }
