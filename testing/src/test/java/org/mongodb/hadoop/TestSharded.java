@@ -5,7 +5,6 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 

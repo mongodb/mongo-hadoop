@@ -18,8 +18,8 @@ import java.util.Map;
 
 import static org.junit.Assume.assumeFalse;
 
-public class Standalone extends BaseHadoopTest {
-    private static final Log LOG = LogFactory.getLog(Standalone.class);
+public class TestStandalone extends BaseHadoopTest {
+    private static final Log LOG = LogFactory.getLog(TestStandalone.class);
 
     @Test
     public void testBasicInputSource() {

@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -38,16 +37,18 @@ public class BaseHadoopTest {
 
     public static final String HADOOP_HOME;
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
+    public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.3.0");
 
     public static final File TREASURY_YIELD_HOME;
     public static final File JSONFILE_PATH;
+
     protected static final File JOBJAR_PATH;
 
     private final List<DBObject> reference = new ArrayList<DBObject>();
 
     private static final String MONGO_IMPORT;
-
     private boolean noAuth = true;
+
     private MongoClient client;
 
     static {
@@ -68,8 +69,7 @@ public class BaseHadoopTest {
             }
 
             HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s", System.getProperty("user.home"),
-                                                 loadProperty("hadoop.release.version", "2.3.0")))
-                              .getCanonicalPath();
+                                                 HADOOP_RELEASE_VERSION)).getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();
             File home = new File(current, "examples/treasury_yield");
@@ -323,10 +323,4 @@ public class BaseHadoopTest {
         }
     }
 
-    private static class HadoopVersionFilter implements FileFilter {
-        @Override
-        public boolean accept(final File pathname) {
-            return pathname.getName().endsWith(format("_%s.jar", HADOOP_VERSION));
-        }
-    }
 }
