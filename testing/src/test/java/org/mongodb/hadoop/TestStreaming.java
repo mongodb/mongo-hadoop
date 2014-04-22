@@ -4,7 +4,6 @@ import com.mongodb.DBCollection;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -14,7 +13,7 @@ import static org.junit.Assume.assumeFalse;
 public class TestStreaming extends BaseHadoopTest {
     @Before
     public void hadoopVersionCheck() {
-        assumeFalse(HADOOP_VERSION.startsWith("1.0") || HADOOP_VERSION.startsWith("0.20"));
+        assumeFalse(HADOOP_VERSION.startsWith("1.0") && !isSharded());
     }
 
     @Test
