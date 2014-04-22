@@ -13,7 +13,7 @@ import static org.junit.Assume.assumeFalse;
 public class TestStreaming extends BaseHadoopTest {
     @Before
     public void hadoopVersionCheck() {
-        assumeFalse(HADOOP_VERSION.startsWith("1.0") && !isSharded());
+        assumeFalse(HADOOP_VERSION.startsWith("1.0") && isSharded());
     }
 
     @Test
