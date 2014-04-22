@@ -245,9 +245,9 @@ public class BaseHadoopTest {
             if (inputCollections != null && inputCollections.length != 0) {
                 StringBuilder inputUri = new StringBuilder();
                 for (String input : inputCollections) {
-                    if(inputUri.length() != 0) {
+                    if (inputUri.length() != 0) {
                         inputUri.append(" ");
-                      }
+                    }
                     inputUri.append(input.startsWith("mongodb://") ? input : "mongodb://localhost:27017/" + input);
                 }
                 cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
@@ -255,7 +255,7 @@ public class BaseHadoopTest {
             if (outputUris != null && outputUris.length != 0) {
                 StringBuilder outputUri = new StringBuilder();
                 for (String uri : outputUris) {
-                    if(outputUri.length() != 0) {
+                    if (outputUri.length() != 0) {
                         outputUri.append(" ");
                     }
                     outputUri.append(uri);
@@ -290,7 +290,7 @@ public class BaseHadoopTest {
                                  .environment(env)
                                  .redirectError(System.out)
                                  .execute();
-            
+
             Thread.sleep(5000);  // let the system settle
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);

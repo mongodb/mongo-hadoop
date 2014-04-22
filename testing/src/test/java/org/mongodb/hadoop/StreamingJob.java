@@ -28,12 +28,11 @@ public class StreamingJob {
 
     private static final String STREAMING_REDUCER;
 
-    private static File STREAMING_HOME;
+    private static final File STREAMING_HOME;
 
     static {
-        File current = null;
         try {
-            current = new File(".").getCanonicalFile();
+            File current = new File(".").getCanonicalFile();
             File home = new File(current, "streaming");
             while (!home.exists() && current.getParentFile().exists()) {
                 current = current.getParentFile();
@@ -43,7 +42,7 @@ public class StreamingJob {
             STREAMING_JAR = new File(STREAMING_HOME, "build/libs").listFiles(new HadoopVersionFilter())[0].getAbsolutePath();
             STREAMING_MAPPER = new File(STREAMING_HOME, "examples/treasury/mapper.py").getAbsolutePath();
             STREAMING_REDUCER = new File(STREAMING_HOME, "examples/treasury/reducer.py").getAbsolutePath();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -85,57 +84,57 @@ public class StreamingJob {
         add("-reducer", STREAMING_REDUCER);
     }
 
-    public StreamingJob hostName(String hostName) {
+    public StreamingJob hostName(final String hostName) {
         this.hostName = hostName;
         return this;
     }
 
-    public StreamingJob readPreference(ReadPreference readPreference) {
+    public StreamingJob readPreference(final ReadPreference readPreference) {
         this.readPreference = readPreference;
         return this;
     }
 
-    public StreamingJob inputAuth(String inputAuth) {
+    public StreamingJob inputAuth(final String inputAuth) {
         this.inputAuth = inputAuth;
         return this;
     }
 
-    public StreamingJob inputCollection(String inputCollection) {
+    public StreamingJob inputCollection(final String inputCollection) {
         this.inputCollection = inputCollection;
         return this;
     }
 
-    public StreamingJob inputFormat(String format) {
+    public StreamingJob inputFormat(final String format) {
         inputFormat = format;
         return this;
     }
 
-    public StreamingJob inputPath(String path) {
+    public StreamingJob inputPath(final String path) {
         inputPath = path;
         return this;
     }
 
-    public StreamingJob outputAuth(String outputAuth) {
+    public StreamingJob outputAuth(final String outputAuth) {
         this.outputAuth = outputAuth;
         return this;
     }
 
-    public StreamingJob outputCollection(String outputCollection) {
+    public StreamingJob outputCollection(final String outputCollection) {
         this.outputCollection = outputCollection;
         return this;
     }
 
-    public StreamingJob outputFormat(String format) {
+    public StreamingJob outputFormat(final String format) {
         outputFormat = format;
         return this;
     }
 
-    public StreamingJob outputPath(String path) {
+    public StreamingJob outputPath(final String path) {
         outputPath = path;
         return this;
     }
 
-    public StreamingJob params(Map<String, String> params) {
+    public StreamingJob params(final Map<String, String> params) {
         this.params = params;
         return this;
     }
@@ -153,19 +152,19 @@ public class StreamingJob {
             add("-jobconf", format("%s=mongodb://%s%s/%s", OUTPUT_URI, outputAuth != null ? outputAuth + "@" : "", hostName,
                                    outputCollection));
 
-            for (Entry<String, String> entry : params.entrySet()) {
+            for (final Entry<String, String> entry : params.entrySet()) {
                 add("-jobconf", entry.getKey() + "=" + entry.getValue());
 
             }
-            Map<String, String> env = new TreeMap<String, String>(System.getenv());
+            final Map<String, String> env = new TreeMap<String, String>(System.getenv());
             if (BaseHadoopTest.HADOOP_VERSION.startsWith("cdh")) {
                 env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
             }
 
             LOG.info("Executing hadoop job:");
 
-            StringBuilder output = new StringBuilder();
-            Iterator<String> iterator = cmd.iterator();
+            final StringBuilder output = new StringBuilder();
+            final Iterator<String> iterator = cmd.iterator();
             while (iterator.hasNext()) {
                 final String s = iterator.next();
                 if (output.length() != 0) {
@@ -187,12 +186,12 @@ public class StreamingJob {
                                  .execute();
 
             Thread.sleep(5000);  // let the system settle
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (final IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (final InterruptedException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (final TimeoutException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
 
     }
