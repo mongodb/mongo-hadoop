@@ -52,7 +52,11 @@ public class TestStandalone extends BaseHadoopTest {
         mongoImport("yield_historical.in2", JSONFILE_PATH);
         Map<String, String> params = new LinkedHashMap<String, String>();
         params.put("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName());
-
+//        new MapReduceJob()
+//            .className(TreasuryYieldXMLConfig.class.getName())
+//            .inputCollections("mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2")
+//            .execute();
+//
         runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
                new String[] {"mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2"}, null);
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");

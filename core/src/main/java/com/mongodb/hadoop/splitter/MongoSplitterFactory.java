@@ -18,7 +18,7 @@ package com.mongodb.hadoop.splitter;
 
 import com.mongodb.CommandResult;
 import com.mongodb.DBCollection;
-import com.mongodb.MongoURI;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,7 +49,7 @@ public final class MongoSplitterFactory {
         }
     }
 
-    public static MongoCollectionSplitter getSplitterByStats(final MongoURI uri, final Configuration config) {
+    public static MongoCollectionSplitter getSplitterByStats(final MongoClientURI uri, final Configuration config) {
         /* Looks at the collection in mongo.input.uri
          * and choose an implementation based on what's in there.  */
 
@@ -60,7 +60,7 @@ public final class MongoSplitterFactory {
         if (!MongoConfigUtil.createInputSplits(config)) {
             returnVal = new SingleMongoSplitter(config);
         } else {
-            MongoURI authURI = MongoConfigUtil.getAuthURI(config);
+            MongoClientURI authURI = MongoConfigUtil.getAuthURI(config);
             CommandResult stats;
             DBCollection coll;
             if (authURI != null) {
@@ -104,7 +104,7 @@ public final class MongoSplitterFactory {
         if (customSplitter != null) {
             return customSplitter;
         } else {
-            MongoURI inputURI = MongoConfigUtil.getInputURI(config);
+            MongoClientURI inputURI = MongoConfigUtil.getInputURI(config);
             return getSplitterByStats(inputURI, config);
         }
     }

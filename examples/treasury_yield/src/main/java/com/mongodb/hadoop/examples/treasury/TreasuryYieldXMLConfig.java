@@ -46,7 +46,8 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         setConf(conf);
 
         config.setInputFormat(com.mongodb.hadoop.MongoInputFormat.class);
-        if (System.getProperty(MongoConfigUtil.INPUT_URI) == null) {
+        String property = System.getProperty(MongoConfigUtil.INPUT_URI);
+        if (property == null) {
             config.setInputURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in");
         }
 

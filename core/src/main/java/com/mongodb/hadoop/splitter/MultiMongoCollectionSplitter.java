@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2010-2013 10gen Inc.
  *
@@ -18,6 +17,7 @@
 package com.mongodb.hadoop.splitter;
 
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
@@ -44,7 +44,7 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
 
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        List<MongoURI> inputURIs = MongoConfigUtil.getMongoURIs(this.conf, MongoConfigUtil.INPUT_URI);
+        List<MongoClientURI> inputURIs = MongoConfigUtil.getMongoURIs(this.conf, MongoConfigUtil.INPUT_URI);
         List<InputSplit> returnVal = new LinkedList<InputSplit>();
         List<MongoSplitter> splitters = new LinkedList<MongoSplitter>();
 
@@ -59,13 +59,12 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
             //to MultiMongoCollectionSplitter here anyway. If the user needs
             //to customize the splitter class, they should use the JSON key for
             //the configuration instead.
-            for (MongoURI uri : inputURIs) {
+            for (MongoClientURI uri : inputURIs) {
                 MongoCollectionSplitter splitter;
                 Configuration confForThisUri = new Configuration(conf);
                 MongoConfigUtil.setInputURI(confForThisUri, uri);
                 confForThisUri.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "");
-                splitter = MongoSplitterFactory.getSplitterByStats(uri,
-                                                                   confForThisUri);
+                splitter = MongoSplitterFactory.getSplitterByStats(uri, confForThisUri);
                 splitters.add(splitter);
             }
         } else {
@@ -80,7 +79,7 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
             }
             for (Object obj : (List) multiUriConfig) {
                 Map<String, Object> configMap;
-                MongoURI inputURI;
+                MongoClientURI inputURI;
                 Configuration confForThisUri;
                 try {
                     configMap = (Map<String, Object>) obj;

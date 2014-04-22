@@ -16,9 +16,6 @@
 
 package com.mongodb.hadoop;
 
-// Mongo
-
-import com.mongodb.MongoURI;
 import com.mongodb.hadoop.output.MongoOutputCommitter;
 import com.mongodb.hadoop.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -31,17 +28,13 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.List;
 
 public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
-
     private final String[] updateKeys;
     private final boolean multiUpdate;
 
     public void checkOutputSpecs(final JobContext context) throws IOException {
-        List<MongoURI> outputUris;
-        outputUris = MongoConfigUtil.getOutputURIs(context.getConfiguration());
-        if (outputUris == null || outputUris.size() == 0) {
+        if (MongoConfigUtil.getOutputURIs(context.getConfiguration()).isEmpty()) {
             throw new IOException("No output URI is specified. You must set mongo.output.uri.");
         }
     }
@@ -66,7 +59,4 @@ public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
         this.updateKeys = updateKeys;
         this.multiUpdate = multiUpdate;
     }
-
-    private static final Log LOG = LogFactory.getLog(MongoOutputFormat.class);
 }
-

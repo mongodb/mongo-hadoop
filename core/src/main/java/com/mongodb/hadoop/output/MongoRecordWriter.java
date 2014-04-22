@@ -17,17 +17,12 @@
 package com.mongodb.hadoop.output;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.MongoURI;
-import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.bson.BSONObject;
@@ -39,8 +34,6 @@ import java.util.List;
 
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
-
-    private static final Log LOG = LogFactory.getLog(MongoRecordWriter.class);
 
     private final List<DBCollection> collections;
     private final int numberOfHosts;
@@ -76,26 +69,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         this.updateKeys = updateKeys;
         this.multiUpdate = false;
         this.numberOfHosts = c.size();
-
-        //authenticate if necessary - but don't auth twice on same DB
-        MongoConfig config = new MongoConfig(ctx.getConfiguration());
-        if (config.getAuthURI() != null) {
-            MongoURI authURI = config.getAuthURI();
-            if (authURI.getUsername() != null && authURI.getPassword() != null) {
-                // need to verify that it is not already one of the collections we are writing to.
-                DBCollection collection = collections.get(0);
-                DB targetAuthDB = collection.getDB().getSisterDB(authURI.getDatabase());
-                if (!targetAuthDB.isAuthenticated()) {
-                    targetAuthDB.authenticate(authURI.getUsername(), authURI.getPassword());
-                }
-            }
-        }
     }
 
     public void close(final TaskAttemptContext context) {
-        for (DBCollection collection : collections) {
-            collection.getDB().getLastError();
-        }
     }
 
     public void write(final K key, final V value) throws IOException {
@@ -106,9 +82,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             MongoUpdateWritable muw = (MongoUpdateWritable) value;
             try {
                 DBCollection dbCollection = getDbCollectionByRoundRobin();
-                dbCollection.update(new BasicDBObject(muw.getQuery()),
-                                    new BasicDBObject(muw.getModifiers()),
-                                    muw.isUpsert(),
+                dbCollection.update(new BasicDBObject(muw.getQuery()), new BasicDBObject(muw.getModifiers()), muw.isUpsert(),
                                     muw.isMultiUpdate());
                 return;
             } catch (final MongoException e) {
@@ -165,8 +139,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     public void ensureIndex(final DBObject index, final DBObject options) {
         // just do it on one mongod
-        DBCollection dbCollection = collections.get(0);
-        dbCollection.ensureIndex(index, options);
+        collections.get(0).createIndex(index, options);
     }
 
     public TaskAttemptContext getContext() {

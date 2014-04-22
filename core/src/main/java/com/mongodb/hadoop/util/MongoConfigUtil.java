@@ -285,13 +285,13 @@ public final class MongoConfigUtil {
         conf.setClass(JOB_INPUT_FORMAT, val, InputFormat.class);
     }
 
-    public static List<MongoURI> getMongoURIs(final Configuration conf, final String key) {
+    public static List<MongoClientURI> getMongoURIs(final Configuration conf, final String key) {
         final String raw = conf.get(key);
         if (raw != null && !raw.trim().isEmpty()) {
-            List<MongoURI> result = new LinkedList<MongoURI>();
+            List<MongoClientURI> result = new LinkedList<MongoClientURI>();
             String[] split = StringUtils.split(raw);
             for (String mongoURI : split) {
-                result.add(new MongoURI(mongoURI));
+                result.add(new MongoClientURI(mongoURI));
             }
             return result;
         } else {
@@ -299,6 +299,10 @@ public final class MongoConfigUtil {
         }
     }
 
+    /**
+     * @deprecated use {@link #getMongoClientURI(Configuration, String)} instead
+     */
+    @Deprecated
     public static MongoURI getMongoURI(final Configuration conf, final String key) {
         final String raw = conf.get(key);
         if (raw != null && !raw.trim().isEmpty()) {
@@ -307,18 +311,23 @@ public final class MongoConfigUtil {
             return null;
         }
     }
-
-    public static MongoURI getInputURI(final Configuration conf) {
-        return getMongoURI(conf, INPUT_URI);
+    
+    public static MongoClientURI getMongoClientURI(final Configuration conf, final String key) {
+        final String raw = conf.get(key);
+        return raw != null && !raw.trim().isEmpty() ? new MongoClientURI(raw) : null;
     }
 
-    public static MongoURI getAuthURI(final Configuration conf) {
-        return getMongoURI(conf, AUTH_URI);
+    public static MongoClientURI getInputURI(final Configuration conf) {
+        return getMongoClientURI(conf, INPUT_URI);
     }
 
-    public static List<DBCollection> getCollections(final List<MongoURI> uris, final MongoURI authURI) {
+    public static MongoClientURI getAuthURI(final Configuration conf) {
+        return getMongoClientURI(conf, AUTH_URI);
+    }
+
+    public static List<DBCollection> getCollections(final List<MongoClientURI> uris, final MongoClientURI authURI) {
         List<DBCollection> dbCollections = new LinkedList<DBCollection>();
-        for (MongoURI uri : uris) {
+        for (MongoClientURI uri : uris) {
             if (authURI != null) {
                 dbCollections.add(getCollectionWithAuth(uri, authURI));
             } else {
@@ -333,25 +342,14 @@ public final class MongoConfigUtil {
      */
     @Deprecated
     public static DBCollection getCollection(final MongoURI uri) {
-        DBCollection coll;
-        try {
-            Mongo mongo = new Mongo(uri);
-            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
-            return coll;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
-        }
+        return getCollection(new MongoClientURI(uri.toString()));
     }
     
     public static DBCollection getCollection(final MongoClientURI uri) {
         DBCollection coll;
         try {
+            LOG.error("*********** Trying to connect with a URI of " + uri);
             Mongo mongo = new MongoClient(uri);
-            if (!mongo.getDB(uri.getDatabase()).isAuthenticated()
-                && uri.getUsername() != null && uri.getPassword() != null) {
-                mongo.getDB(uri.getDatabase())
-                     .authenticate(uri.getUsername(), uri.getPassword());
-            }
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
             return coll;
         } catch (Exception e) {
@@ -359,7 +357,15 @@ public final class MongoConfigUtil {
         }
     }
 
+    /**
+     * @deprecated use {@link #getCollectionWithAuth(MongoClientURI, MongoClientURI)} instead
+     */
+    @Deprecated
     public static DBCollection getCollectionWithAuth(final MongoURI uri, final MongoURI authURI) {
+        return getCollectionWithAuth(new MongoClientURI(uri.toString()), new MongoClientURI(authURI.toString()));
+    }
+    
+    public static DBCollection getCollectionWithAuth(final MongoClientURI uri, final MongoClientURI authURI) {
         //Make sure auth uri is valid and actually has a username/pw to use
         if (authURI == null || authURI.getUsername() == null || authURI.getPassword() == null) {
             throw new IllegalArgumentException("auth URI is empty or does not contain a valid username/password combination.");
@@ -367,16 +373,7 @@ public final class MongoConfigUtil {
 
         DBCollection coll;
         try {
-            Mongo mongo = new Mongo(authURI);
-            mongo.getDB(authURI.getDatabase())
-                 .authenticateCommand(
-                                         authURI.getUsername(),
-                                         authURI.getPassword());
-            if (!mongo.getDB(uri.getDatabase()).isAuthenticated()
-                && uri.getUsername() != null && uri.getPassword() != null) {
-                mongo.getDB(uri.getDatabase())
-                     .authenticate(uri.getUsername(), uri.getPassword());
-            }
+            Mongo mongo = new MongoClient(authURI);
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
             return coll;
         } catch (Exception e) {
@@ -409,13 +406,22 @@ public final class MongoConfigUtil {
         }
     }
 
+    /**
+     * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead 
+     */
+    @Deprecated
     public static void setMongoURI(final Configuration conf, final String key, final MongoURI value) {
         conf.set(key, value.toString()); // todo - verify you can toString a
         // URI object
     }
 
+    public static void setMongoURI(final Configuration conf, final String key, final MongoClientURI value) {
+        conf.set(key, value.toString()); // todo - verify you can toString a
+        // URI object
+    }
+
     public static void setMongoURIString(final Configuration conf, final String key, final String value) {
-        setMongoURI(conf, key, new MongoURI(value));
+        setMongoURI(conf, key, new MongoClientURI(value));
     }
 
     public static void setAuthURI(final Configuration conf, final String uri) {
@@ -426,16 +432,24 @@ public final class MongoConfigUtil {
         setMongoURIString(conf, INPUT_URI, uri);
     }
 
+    /**
+     * @deprecated use {@link #setInputURI(Configuration, MongoClientURI)} instead
+     */
+    @Deprecated
     public static void setInputURI(final Configuration conf, final MongoURI uri) {
         setMongoURI(conf, INPUT_URI, uri);
     }
 
-    public static List<MongoURI> getOutputURIs(final Configuration conf) {
+    public static void setInputURI(final Configuration conf, final MongoClientURI uri) {
+        setMongoURI(conf, INPUT_URI, uri);
+    }
+
+    public static List<MongoClientURI> getOutputURIs(final Configuration conf) {
         return getMongoURIs(conf, OUTPUT_URI);
     }
 
-    public static MongoURI getOutputURI(final Configuration conf) {
-        return getMongoURI(conf, OUTPUT_URI);
+    public static MongoClientURI getOutputURI(final Configuration conf) {
+        return getMongoClientURI(conf, OUTPUT_URI);
     }
 
     public static void setOutputURI(final Configuration conf, final String uri) {

@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -56,7 +57,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
         DB configDB = this.mongo.getDB("config");
         DBCollection chunksCollection = configDB.getCollection("chunks");
 
-        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
         String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
 
         DBCursor cur = chunksCollection.find(new BasicDBObject("ns", inputNS));
@@ -102,7 +103,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
                     throw new SplitFailedException("Couldn't find shard ID: " + shard + " in config.shards.");
                 }
 
-                MongoURI newURI = rewriteURI(inputURI, shardHosts);
+                MongoClientURI newURI = rewriteURI(inputURI, shardHosts);
                 chunkSplit.setInputURI(newURI);
             } else if (mongosHostNames.size() > 0) {
                 //Multiple mongos hosts are specified, so
@@ -111,7 +112,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
                 //This evenly distributes the load to avoid
                 //pegging a single mongos instance.
                 String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
-                MongoURI newURI = rewriteURI(inputURI, roundRobinHost);
+                MongoClientURI newURI = rewriteURI(inputURI, roundRobinHost);
                 chunkSplit.setInputURI(newURI);
             }
             LinkedList<InputSplit> shardList = shardToSplits.get(shard);

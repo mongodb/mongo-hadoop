@@ -115,7 +115,7 @@ public class BaseHadoopTest {
         reference.add(dbObject("_id", 2010, "count", 189, "avg", 3.3255026455026435, "sum", 628.5199999999996));
     }
 
-    private static String loadProperty(final String name, final String defaultValue) {
+    protected static String loadProperty(final String name, final String defaultValue) {
         String property = System.getProperty(name, System.getenv(name.toUpperCase()));
         if (property == null) {
             property = defaultValue;

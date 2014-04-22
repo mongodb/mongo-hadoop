@@ -22,6 +22,7 @@ import com.mongodb.Bytes;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
@@ -43,8 +44,8 @@ import java.io.IOException;
 public class MongoInputSplit extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
     private static final Log LOG = LogFactory.getLog(MongoInputSplit.class);
     //CHECKSTYLE:OFF
-    protected MongoURI inputURI;
-    protected MongoURI authURI;
+    protected MongoClientURI inputURI;
+    protected MongoClientURI authURI;
     protected String keyField = "_id";
     protected DBObject fields;
     protected DBObject query;
@@ -61,19 +62,27 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     public MongoInputSplit() {
     }
 
-    public void setInputURI(final MongoURI inputURI) {
+    public void setInputURI(final MongoClientURI inputURI) {
         this.inputURI = inputURI;
     }
 
-    public MongoURI getInputURI() {
+    public MongoClientURI getInputURI() {
         return this.inputURI;
     }
 
+    /**
+     * @deprecated use {@link #setAuthURI(MongoClientURI)} instead
+     */
+    @Deprecated
     public void setAuthURI(final MongoURI authURI) {
+        setAuthURI(authURI != null ? new MongoClientURI(authURI.toString()) : null);
+    }
+
+    public void setAuthURI(final MongoClientURI authURI) {
         this.authURI = authURI;
     }
 
-    public MongoURI getAuthURI() {
+    public MongoClientURI getAuthURI() {
         return this.authURI;
     }
 
@@ -175,12 +184,12 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         in.readFully(data, 4, dataLen - 4);
         _bsonDecoder.decode(data, cb);
         spec = (BSONObject) cb.get();
-        setInputURI(new MongoURI((String) spec.get("inputURI")));
+        setInputURI(new MongoClientURI((String) spec.get("inputURI")));
 
         if (spec.get("authURI") != null) {
-            setAuthURI(new MongoURI((String) spec.get("authURI")));
+            setAuthURI(new MongoClientURI((String) spec.get("authURI")));
         } else {
-            setAuthURI(null);
+            setAuthURI((MongoClientURI) null);
         }
 
         setKeyField((String) spec.get("keyField"));

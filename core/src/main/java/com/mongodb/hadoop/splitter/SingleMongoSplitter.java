@@ -16,7 +16,7 @@
 
 package com.mongodb.hadoop.splitter;
 
-import com.mongodb.MongoURI;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
@@ -50,7 +50,7 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
     public List<InputSplit> calculateSplits() {
         init();
 
-        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
         LOG.info("SingleMongoSplitter calculating splits for " + inputURI);
         final List<InputSplit> splits = new ArrayList<InputSplit>();
         MongoInputSplit mongoSplit = new MongoInputSplit();

@@ -16,6 +16,7 @@
 
 package com.mongodb.hadoop.splitter;
 
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -44,7 +45,7 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
         this.init();
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
 
         Map<String, String> shardsMap;
         shardsMap = this.getShardsMap();
@@ -53,8 +54,7 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
             String shardHosts = entry.getValue();
 
             MongoInputSplit chunkSplit = createSplitFromBounds(null, null);
-            MongoURI newURI = rewriteURI(inputURI, shardHosts);
-            chunkSplit.setInputURI(newURI);
+            chunkSplit.setInputURI(rewriteURI(inputURI, shardHosts));
             returnVal.add(chunkSplit);
         }
         return returnVal;

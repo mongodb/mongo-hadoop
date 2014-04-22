@@ -18,6 +18,7 @@ package com.mongodb.hadoop;
 
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
@@ -166,15 +167,15 @@ public class MongoConfig {
         MongoConfigUtil.setInputFormat(configuration, val);
     }
 
-    public MongoURI getMongoURI(final String key) {
-        return MongoConfigUtil.getMongoURI(configuration, key);
+    public MongoClientURI getMongoURI(final String key) {
+        return MongoConfigUtil.getMongoClientURI(configuration, key);
     }
 
-    public MongoURI getInputURI() {
+    public MongoClientURI getInputURI() {
         return MongoConfigUtil.getInputURI(configuration);
     }
 
-    public MongoURI getAuthURI() {
+    public MongoClientURI getAuthURI() {
         return MongoConfigUtil.getAuthURI(configuration);
     }
 
@@ -187,6 +188,10 @@ public class MongoConfig {
     }
 
     public void setMongoURI(final String key, final MongoURI value) {
+        setMongoURI(key, new MongoClientURI(value.toString()));
+    }
+
+    public void setMongoURI(final String key, final MongoClientURI value) {
         MongoConfigUtil.setMongoURI(configuration, key, value);
     }
 
@@ -198,7 +203,15 @@ public class MongoConfig {
         MongoConfigUtil.setInputURI(configuration, uri);
     }
 
+    /**
+     * @deprecated use {@link #setInputURI(MongoClientURI)} instead
+     */
+    @Deprecated
     public void setInputURI(final MongoURI uri) {
+        setInputURI(new MongoClientURI(uri.toString()));
+    }
+
+    public void setInputURI(final MongoClientURI uri) {
         MongoConfigUtil.setInputURI(configuration, uri);
     }
 
@@ -206,7 +219,7 @@ public class MongoConfig {
         MongoConfigUtil.setAuthURI(configuration, uri);
     }
 
-    public MongoURI getOutputURI() {
+    public MongoClientURI getOutputURI() {
         return MongoConfigUtil.getOutputURI(configuration);
     }
 
@@ -219,7 +232,7 @@ public class MongoConfig {
     }
 
     /**
-     * Set JSON but first validate it's parseable into a BSON Object
+     * Set JSON but first validate it's parsable into a BSON Object
      */
     public void setJSON(final String key, final String value) {
         MongoConfigUtil.setJSON(configuration, key, value);

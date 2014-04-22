@@ -22,6 +22,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -121,18 +122,15 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     //     }
 
     protected void init() {
-        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
         this.inputCollection = MongoConfigUtil.getCollection(inputURI);
         DB db = this.inputCollection.getDB();
         this.mongo = db.getMongo();
-        MongoURI authURI = MongoConfigUtil.getAuthURI(conf);
+        MongoClientURI authURI = MongoConfigUtil.getAuthURI(conf);
         if (authURI != null) {
             if (authURI.getUsername() != null
-                && authURI.getPassword() != null
-                && !mongo.getDB(authURI.getDatabase()).isAuthenticated()) {
-                DB authTargetDB = mongo.getDB(authURI.getDatabase());
-                authDB = authTargetDB;
-                authTargetDB.authenticate(authURI.getUsername(), authURI.getPassword());
+                && authURI.getPassword() != null) {
+                authDB = mongo.getDB(authURI.getDatabase());
             }
         }
     }
@@ -166,15 +164,15 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     }
 
     /**
-     * Takes an existing {@link MongoURI} and returns a new modified URI which replaces the original's server host + port with a supplied
-     * new server host + port, but maintaining all the same original options. This is useful for generating distinct URIs for each mongos
-     * instance so that large batch reads can all target them separately, distributing the load more evenly. It can also be used to force a
-     * block of data to be read directly from the shard's servers directly, bypassing mongos entirely.
+     * Takes an existing {@link MongoClientURI} and returns a new modified URI which replaces the original's server host + port with a
+     * supplied new server host + port, but maintaining all the same original options. This is useful for generating distinct URIs for each
+     * mongos instance so that large batch reads can all target them separately, distributing the load more evenly. It can also be used to
+     * force a block of data to be read directly from the shard's servers directly, bypassing mongos entirely.
      *
      * @param originalUri  the URI to rewrite
      * @param newServerUri the new host(s) to target, e.g. server1:port1[,server2:port2,...]
      */
-    protected static MongoURI rewriteURI(final MongoURI originalUri, final String newServerUri) {
+    protected static MongoClientURI rewriteURI(final MongoClientURI originalUri, final String newServerUri) {
         String originalUriString = originalUri.toString();
         originalUriString = originalUriString.substring(MongoURI.MONGODB_PREFIX.length());
 
@@ -193,7 +191,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         StringBuilder sb = new StringBuilder(originalUriString);
         sb.replace(serverStart, serverEnd, newServerUri);
         String ans = MongoURI.MONGODB_PREFIX + sb.toString();
-        return new MongoURI(ans);
+        return new MongoClientURI(ans);
     }
 
     /**

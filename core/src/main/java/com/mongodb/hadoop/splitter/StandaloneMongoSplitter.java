@@ -21,6 +21,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.CommandResult;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -63,7 +64,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
         final String ns = this.inputCollection.getFullName();
 
-        MongoURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
 
         LOG.info("Running splitvector to check splits against " + inputURI);
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)
