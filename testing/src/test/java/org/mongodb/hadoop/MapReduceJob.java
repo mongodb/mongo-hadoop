@@ -182,12 +182,28 @@ public class MapReduceJob {
 
     }
 
+    public void executeInVM() throws Exception {
+        List<String> cmd = new ArrayList<String>();
+        for (Pair<String, String> entry : processSettings()) {
+            cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
+        }
+        Map<String, String> env = new TreeMap<String, String>(System.getenv());
+        if (HADOOP_VERSION.startsWith("cdh")) {
+            env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
+            System.setProperty("MAPRED_DIR", "share/hadoop/mapreduce2");
+        }
+
+        LOG.info("Executing hadoop job");
+
+        ToolRunner.run((org.apache.hadoop.util.Tool) Class.forName(className).newInstance(), cmd.toArray(new String[cmd.size()]));
+    }
+
     private List<Pair<String, String>> processSettings() {
         List<Pair<String, String>> entries = new ArrayList<Pair<String, String>>();
         for (Entry<String, String> entry : params.entrySet()) {
             entries.add(new Pair<String, String>(entry.getKey(), entry.getValue()));
         }
-        
+
         if (!inputCollections.isEmpty()) {
             StringBuilder inputUri = new StringBuilder();
             for (String collection : inputCollections) {
@@ -220,52 +236,8 @@ public class MapReduceJob {
             }
             entries.add(new Pair<String, String>(MongoConfigUtil.OUTPUT_URI, outputUri.toString()));
         }
-        
+
         return entries;
-    }
-
-    public void executeInVM() throws Exception {
-        for (Entry<String, String> entry : params.entrySet()) {
-            System.setProperty(entry.getKey(), entry.getValue());
-        }
-        if (!inputCollections.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String collection : inputCollections) {
-                if (inputUri.length() != 0) {
-                    inputUri.append(",");
-                }
-                inputUri.append(format("mongodb://" + host + ":" + port + "/%s", collection));
-            }
-            System.setProperty(MongoConfigUtil.INPUT_URI, inputUri.toString());
-        } else if (!inputUris.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String uri : inputUris) {
-                if (inputUri.length() != 0) {
-                    inputUri.append(",");
-                }
-                inputUri.append(uri);
-            }
-            System.setProperty(MongoConfigUtil.INPUT_URI, inputUri.toString());
-        }
-        if (!outputUris.isEmpty()) {
-            StringBuilder outputUri = new StringBuilder();
-            for (String uri : outputUris) {
-                if (outputUri.length() != 0) {
-                    outputUri.append(",");
-                }
-                outputUri.append(uri);
-            }
-            System.setProperty(MongoConfigUtil.OUTPUT_URI, outputUri.toString());
-        }
-        Map<String, String> env = new TreeMap<String, String>(System.getenv());
-        if (HADOOP_VERSION.startsWith("cdh")) {
-            env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
-            System.setProperty("MAPRED_DIR", "share/hadoop/mapreduce2");
-        }
-
-        LOG.info("Executing hadoop job");
-
-        ToolRunner.run((org.apache.hadoop.util.Tool) Class.forName(className).newInstance(), new String[0]);
     }
 
     private void copyJars() {
