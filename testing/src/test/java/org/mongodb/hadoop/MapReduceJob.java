@@ -147,41 +147,10 @@ public class MapReduceJob {
         cmd.add(JOBJAR_PATH.getAbsolutePath());
         cmd.add(className);
 
-        for (Entry<String, String> entry : params.entrySet()) {
+        for (Pair<String, String> entry : processSettings()) {
             cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
         }
-        if (!inputCollections.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String collection : inputCollections) {
-                if (inputUri.length() != 0) {
-                    inputUri.append(",");
-                }
-                inputUri.append(format("mongodb://%s:%d/%s?readPreference=%s", host, port, collection, readPreference));
-            }
-            cmd.add(format("-D%s=%s", MongoConfigUtil.INPUT_URI, inputUri.toString()));
-        } else if (!inputUris.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String uri : inputUris) {
-                if (inputUri.length() != 0) {
-                    inputUri.append(",");
-                }
-                inputUri.append(uri);
-            }
-            cmd.add(format("-D%s=%s", MongoConfigUtil.INPUT_URI, inputUri.toString()));
-        } else if (readPreference != ReadPreference.primary()) {
-            cmd.add(format("-D%s=mongodb://%s:%d/%s?readPreference=%s", MongoConfigUtil.INPUT_URI, host, port, "yield_historical.in",
-                           readPreference));
-        }
-        if (!outputUris.isEmpty()) {
-            StringBuilder outputUri = new StringBuilder();
-            for (String uri : outputUris) {
-                if (outputUri.length() != 0) {
-                    outputUri.append(",");
-                }
-                outputUri.append(uri);
-            }
-            cmd.add(format("-D%s=%s", MongoConfigUtil.OUTPUT_URI, outputUri.toString()));
-        }
+
         Map<String, String> env = new TreeMap<String, String>(System.getenv());
         if (HADOOP_VERSION.startsWith("cdh")) {
             env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
@@ -211,6 +180,48 @@ public class MapReduceJob {
                              .redirectError(System.out)
                              .execute();
 
+    }
+
+    private List<Pair<String, String>> processSettings() {
+        List<Pair<String, String>> entries = new ArrayList<Pair<String, String>>();
+        for (Entry<String, String> entry : params.entrySet()) {
+            entries.add(new Pair<String, String>(entry.getKey(), entry.getValue()));
+        }
+        
+        if (!inputCollections.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String collection : inputCollections) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(format("mongodb://%s:%d/%s?readPreference=%s", host, port, collection, readPreference));
+            }
+            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, inputUri.toString()));
+        } else if (!inputUris.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String uri : inputUris) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(uri);
+            }
+            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, inputUri.toString()));
+        } else if (readPreference != ReadPreference.primary()) {
+            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, format("mongodb://%s:%d/%s?readPreference=%s", host, port,
+                                                                                   "yield_historical.in", readPreference)));
+        }
+        if (!outputUris.isEmpty()) {
+            StringBuilder outputUri = new StringBuilder();
+            for (String uri : outputUris) {
+                if (outputUri.length() != 0) {
+                    outputUri.append(",");
+                }
+                outputUri.append(uri);
+            }
+            entries.add(new Pair<String, String>(MongoConfigUtil.OUTPUT_URI, outputUri.toString()));
+        }
+        
+        return entries;
     }
 
     public void executeInVM() throws Exception {
@@ -279,4 +290,21 @@ public class MapReduceJob {
         }
     }
 
+    private static class Pair<T, U> {
+        private T key;
+        private U value;
+
+        private Pair(final T key, final U value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public T getKey() {
+            return key;
+        }
+
+        public U getValue() {
+            return value;
+        }
+    }
 }
