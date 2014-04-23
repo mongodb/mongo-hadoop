@@ -13,8 +13,6 @@
  */
 package org.mongodb.hadoop;
 
-import com.google.common.base.Preconditions;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,8 +52,6 @@ public class JarFinder {
 
   public static void jarDir(File dir, String relativePath, ZipOutputStream zos)
     throws IOException {
-    Preconditions.checkNotNull(relativePath, "relativePath");
-    Preconditions.checkNotNull(zos, "zos");
 
     // by JAR spec, if there is a manifest, it must be the first entry in the
     // ZIP.
@@ -103,8 +99,6 @@ public class JarFinder {
   }
 
   private static void createJar(File dir, File jarFile) throws IOException {
-    Preconditions.checkNotNull(dir, "dir");
-    Preconditions.checkNotNull(jarFile, "jarFile");
     File jarDir = jarFile.getParentFile();
     if (!jarDir.exists()) {
       if (!jarDir.mkdirs()) {
@@ -125,7 +119,6 @@ public class JarFinder {
    * @return path to the Jar containing the class.
    */
   public static String getJar(Class klass) {
-    Preconditions.checkNotNull(klass, "klass");
     ClassLoader loader = klass.getClassLoader();
     if (loader != null) {
       String class_file = klass.getName().replaceAll("\\.", "/") + ".class";
