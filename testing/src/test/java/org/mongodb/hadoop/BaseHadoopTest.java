@@ -35,7 +35,7 @@ public class BaseHadoopTest {
     public static final File JSONFILE_PATH;
 
     protected static final File JOBJAR_PATH;
-    protected static final boolean inVM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
+    private final boolean runTestInVm = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
     private final List<DBObject> reference = new ArrayList<DBObject>();
 
@@ -196,5 +196,9 @@ public class BaseHadoopTest {
 
     private BigDecimal round(final Double value, final int precision) {
         return new BigDecimal(value).round(new MathContext(precision));
+    }
+
+    public boolean isRunTestInVm() {
+        return runTestInVm;
     }
 }

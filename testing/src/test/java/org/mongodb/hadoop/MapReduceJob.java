@@ -126,7 +126,7 @@ public class MapReduceJob {
         return this;
     }
 
-    public void execute(boolean inVM) {
+    public void execute(final boolean inVM) {
         try {
             copyJars();
             if (inVM) {
@@ -168,7 +168,7 @@ public class MapReduceJob {
                 inputUri.append(uri);
             }
             cmd.add(format("-D%s=%s", MongoConfigUtil.INPUT_URI, inputUri.toString()));
-        } else if(readPreference != ReadPreference.primary()) {
+        } else if (readPreference != ReadPreference.primary()) {
             cmd.add(format("-D%s=mongodb://%s:%d/%s?readPreference=%s", MongoConfigUtil.INPUT_URI, host, port, "yield_historical.in",
                            readPreference));
         }

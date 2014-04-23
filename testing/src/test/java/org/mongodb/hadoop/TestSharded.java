@@ -21,7 +21,7 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testBasicInputSource() {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
-            .execute(inVM);
+            .execute(isRunTestInVm());
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
@@ -29,7 +29,7 @@ public class TestSharded extends BaseShardedTest {
     public void testMultiMongos() {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .param("mongo.input.mongos_hosts", "localhost:27017 localhost:27018")
-            .execute(inVM);
+            .execute(isRunTestInVm());
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
@@ -41,7 +41,7 @@ public class TestSharded extends BaseShardedTest {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .outputUris("mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
                         "mongodb://localhost:27018/mongo_hadoop.yield_historical.out")
-            .execute(inVM);
+            .execute(isRunTestInVm());
 
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
 
@@ -60,12 +60,12 @@ public class TestSharded extends BaseShardedTest {
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
                                .param("mongo.input.split.use_range_queries", "true");
-        job.execute(inVM);
+        job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
-        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}").execute(inVM);
+        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}").execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertFalse("This collection shouldn't exist because of the failure",
                     getMongos().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
@@ -99,7 +99,7 @@ public class TestSharded extends BaseShardedTest {
             .param("mongo.input.split.read_shard_chunks", "false")
             .readPreference(ReadPreference.secondary())
             .inputCollections("mongo_hadoop.yield_historical.in")
-            .execute(inVM);
+            .execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
@@ -110,7 +110,7 @@ public class TestSharded extends BaseShardedTest {
             .param("mongo.input.split.read_from_shards", "true")
             .param("mongo.input.split.read_shard_chunks", "true")
             .readPreference(ReadPreference.secondary())
-            .execute(inVM);
+            .execute(isRunTestInVm());
         compareResults(collection, getReference());
     }
 
@@ -124,14 +124,14 @@ public class TestSharded extends BaseShardedTest {
                                .inputCollections("mongo_hadoop.yield_historical.in")
                                .param("mongo.input.split.use_range_queries", "true")
                                .readPreference(ReadPreference.secondary());
-        job.execute(inVM);
+        job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
         job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}")
            .readPreference(ReadPreference.primary())
-           .execute(inVM);
+           .execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertEquals(collection.count(), 0);
     }

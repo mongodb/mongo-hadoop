@@ -30,132 +30,127 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Finds the Jar for a class. If the class is in a directory in the
- * classpath, it creates a Jar on the fly with the contents of the directory
- * and returns the path to that Jar. If a Jar is created, it is created in
- * the system temporary directory.
+ * Finds the Jar for a class. If the class is in a directory in the classpath, it creates a Jar on the fly with the contents of the
+ * directory and returns the path to that Jar. If a Jar is created, it is created in the system temporary directory.
  */
-public class JarFinder {
-
-  private static void copyToZipStream(InputStream is, ZipEntry entry,
-                              ZipOutputStream zos) throws IOException {
-    zos.putNextEntry(entry);
-    byte[] arr = new byte[4096];
-    int read = is.read(arr);
-    while (read > -1) {
-      zos.write(arr, 0, read);
-      read = is.read(arr);
+public final class JarFinder {
+    private JarFinder() {
     }
-    is.close();
-    zos.closeEntry();
-  }
 
-  public static void jarDir(File dir, String relativePath, ZipOutputStream zos)
-    throws IOException {
-
-    // by JAR spec, if there is a manifest, it must be the first entry in the
-    // ZIP.
-    File manifestFile = new File(dir, JarFile.MANIFEST_NAME);
-    ZipEntry manifestEntry = new ZipEntry(JarFile.MANIFEST_NAME);
-    if (!manifestFile.exists()) {
-      zos.putNextEntry(manifestEntry);
-      new Manifest().write(new BufferedOutputStream(zos));
-      zos.closeEntry();
-    } else {
-      InputStream is = new FileInputStream(manifestFile);
-      copyToZipStream(is, manifestEntry, zos);
+    private static void copyToZipStream(final InputStream is, final ZipEntry entry,
+                                        final ZipOutputStream zos) throws IOException {
+        zos.putNextEntry(entry);
+        byte[] arr = new byte[4096];
+        int read = is.read(arr);
+        while (read > -1) {
+            zos.write(arr, 0, read);
+            read = is.read(arr);
+        }
+        is.close();
+        zos.closeEntry();
     }
-    zos.closeEntry();
-    zipDir(dir, relativePath, zos, true);
-    zos.close();
-  }
 
-  private static void zipDir(File dir, String relativePath, ZipOutputStream zos,
-                             boolean start) throws IOException {
-    String[] dirList = dir.list();
-    for (String aDirList : dirList) {
-      File f = new File(dir, aDirList);
-      if (!f.isHidden()) {
-        if (f.isDirectory()) {
-          if (!start) {
-            ZipEntry dirEntry = new ZipEntry(relativePath + f.getName() + "/");
-            zos.putNextEntry(dirEntry);
+    public static void jarDir(final File dir, final String relativePath, final ZipOutputStream zos)
+        throws IOException {
+
+        // by JAR spec, if there is a manifest, it must be the first entry in the
+        // ZIP.
+        File manifestFile = new File(dir, JarFile.MANIFEST_NAME);
+        ZipEntry manifestEntry = new ZipEntry(JarFile.MANIFEST_NAME);
+        if (!manifestFile.exists()) {
+            zos.putNextEntry(manifestEntry);
+            new Manifest().write(new BufferedOutputStream(zos));
             zos.closeEntry();
-          }
-          String filePath = f.getPath();
-          File file = new File(filePath);
-          zipDir(file, relativePath + f.getName() + "/", zos, false);
+        } else {
+            InputStream is = new FileInputStream(manifestFile);
+            copyToZipStream(is, manifestEntry, zos);
         }
-        else {
-          String path = relativePath + f.getName();
-          if (!path.equals(JarFile.MANIFEST_NAME)) {
-            ZipEntry anEntry = new ZipEntry(path);
-            InputStream is = new FileInputStream(f);
-            copyToZipStream(is, anEntry, zos);
-          }
-        }
-      }
+        zos.closeEntry();
+        zipDir(dir, relativePath, zos, true);
+        zos.close();
     }
-  }
 
-  private static void createJar(File dir, File jarFile) throws IOException {
-    File jarDir = jarFile.getParentFile();
-    if (!jarDir.exists()) {
-      if (!jarDir.mkdirs()) {
-        throw new IOException(MessageFormat.format("could not create dir [{0}]",
-                                                   jarDir));
-      }
-    }
-    JarOutputStream zos = new JarOutputStream(new FileOutputStream(jarFile));
-    jarDir(dir, "", zos);
-  }
-
-  /**
-   * Returns the full path to the Jar containing the class. It always return a
-   * JAR.
-   *
-   * @param klass class.
-   *
-   * @return path to the Jar containing the class.
-   */
-  public static String getJar(Class klass) {
-    ClassLoader loader = klass.getClassLoader();
-    if (loader != null) {
-      String class_file = klass.getName().replaceAll("\\.", "/") + ".class";
-      try {
-        for (Enumeration itr = loader.getResources(class_file);
-             itr.hasMoreElements(); ) {
-          URL url = (URL) itr.nextElement();
-          String path = url.getPath();
-          if (path.startsWith("file:")) {
-            path = path.substring("file:".length());
-          }
-          path = URLDecoder.decode(path, "UTF-8");
-          if ("jar".equals(url.getProtocol())) {
-            path = URLDecoder.decode(path, "UTF-8");
-            return path.replaceAll("!.*$", "");
-          }
-          else if ("file".equals(url.getProtocol())) {
-            String klassName = klass.getName();
-            klassName = klassName.replace(".", "/") + ".class";
-            path = path.substring(0, path.length() - klassName.length());
-            File baseDir = new File(path);
-            File testDir = new File(System.getProperty("test.build.dir", "target/test-dir"));
-            testDir = testDir.getAbsoluteFile();
-            if (!testDir.exists()) {
-              testDir.mkdirs();
+    private static void zipDir(final File dir, final String relativePath, final ZipOutputStream zos,
+                               final boolean start) throws IOException {
+        String[] dirList = dir.list();
+        for (String aDirList : dirList) {
+            File f = new File(dir, aDirList);
+            if (!f.isHidden()) {
+                if (f.isDirectory()) {
+                    if (!start) {
+                        ZipEntry dirEntry = new ZipEntry(relativePath + f.getName() + "/");
+                        zos.putNextEntry(dirEntry);
+                        zos.closeEntry();
+                    }
+                    String filePath = f.getPath();
+                    File file = new File(filePath);
+                    zipDir(file, relativePath + f.getName() + "/", zos, false);
+                } else {
+                    String path = relativePath + f.getName();
+                    if (!path.equals(JarFile.MANIFEST_NAME)) {
+                        ZipEntry anEntry = new ZipEntry(path);
+                        InputStream is = new FileInputStream(f);
+                        copyToZipStream(is, anEntry, zos);
+                    }
+                }
             }
-            File tempJar = File.createTempFile("hadoop-", "", testDir);
-            tempJar = new File(tempJar.getAbsolutePath() + ".jar");
-            createJar(baseDir, tempJar);
-            return tempJar.getAbsolutePath();
-          }
         }
-      }
-      catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
-    return null;
-  }
+
+    private static void createJar(final File dir, final File jarFile) throws IOException {
+        File jarDir = jarFile.getParentFile();
+        if (!jarDir.exists()) {
+            if (!jarDir.mkdirs()) {
+                throw new IOException(MessageFormat.format("could not create dir [{0}]",
+                                                           jarDir));
+            }
+        }
+        JarOutputStream zos = new JarOutputStream(new FileOutputStream(jarFile));
+        jarDir(dir, "", zos);
+    }
+
+    /**
+     * Returns the full path to the Jar containing the class. It always return a JAR.
+     *
+     * @param klass class.
+     * @return path to the Jar containing the class.
+     */
+    public static String getJar(final Class klass) {
+        ClassLoader loader = klass.getClassLoader();
+        if (loader != null) {
+            String classFile = klass.getName().replaceAll("\\.", "/") + ".class";
+            try {
+                Enumeration itr = loader.getResources(classFile);
+                while (itr.hasMoreElements()) {
+                    URL url = (URL) itr.nextElement();
+                    String path = url.getPath();
+                    if (path.startsWith("file:")) {
+                        path = path.substring("file:".length());
+                    }
+                    path = URLDecoder.decode(path, "UTF-8");
+                    if ("jar".equals(url.getProtocol())) {
+                        path = URLDecoder.decode(path, "UTF-8");
+                        return path.replaceAll("!.*$", "");
+                    } else if ("file".equals(url.getProtocol())) {
+                        String klassName = klass.getName();
+                        klassName = klassName.replace(".", "/") + ".class";
+                        path = path.substring(0, path.length() - klassName.length());
+                        File baseDir = new File(path);
+                        File testDir = new File(System.getProperty("test.build.dir", "target/test-dir"));
+                        testDir = testDir.getAbsoluteFile();
+                        if (!testDir.exists()) {
+                            testDir.mkdirs();
+                        }
+                        File tempJar = File.createTempFile("hadoop-", "", testDir);
+                        tempJar = new File(tempJar.getAbsolutePath() + ".jar");
+                        createJar(baseDir, tempJar);
+                        return tempJar.getAbsolutePath();
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
+    }
 }

@@ -26,7 +26,7 @@ public class TestStandalone extends BaseHadoopTest {
         LOG.info("testing basic input source");
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .param("mongo.input.notimeout", "true")
-            .execute(inVM);
+            .execute(isRunTestInVm());
         compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
@@ -37,7 +37,7 @@ public class TestStandalone extends BaseHadoopTest {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .param("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName())
             .param("mongo.input.multi_uri.json", "\"" + collectionSettings().toString().replace("\"", "\\\"") + '"')
-            .execute(inVM);
+            .execute(isRunTestInVm());
 
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         compareResults(out, getReference());
@@ -51,7 +51,7 @@ public class TestStandalone extends BaseHadoopTest {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .param("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName())
             .inputCollections("mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2")
-            .execute(inVM);
+            .execute(isRunTestInVm());
 
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         List<DBObject> referenceDoubled = new ArrayList<DBObject>();
