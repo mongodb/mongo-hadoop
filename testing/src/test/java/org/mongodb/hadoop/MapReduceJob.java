@@ -3,10 +3,10 @@ package org.mongodb.hadoop;
 import com.mongodb.ReadPreference;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
@@ -28,7 +28,7 @@ import static java.lang.String.format;
 import static org.mongodb.hadoop.BaseHadoopTest.loadProperty;
 
 public class MapReduceJob {
-    private static final Log LOG = LogFactory.getLog(MapReduceJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MapReduceJob.class);
 
     public static final String HADOOP_HOME;
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
@@ -174,7 +174,7 @@ public class MapReduceJob {
             output.append("\n");
         }
 
-        LOG.info(output);
+        LOG.info(output.toString());
         new ProcessExecutor().command(cmd)
                              .environment(env)
                              .redirectError(System.out)

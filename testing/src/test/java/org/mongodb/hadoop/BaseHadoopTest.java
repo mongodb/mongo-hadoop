@@ -6,9 +6,9 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class BaseHadoopTest {
-    private static final Log LOG = LogFactory.getLog(BaseHadoopTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
 
     public static final String HADOOP_HOME;
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
