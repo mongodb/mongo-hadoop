@@ -1,9 +1,12 @@
 package org.mongodb.hadoop;
 
 import com.mongodb.ReadPreference;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
@@ -12,6 +15,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,18 +65,29 @@ public class MapReduceJob {
     }
 
     private Map<String, String> params = new LinkedHashMap<String, String>();
-    private String className;
+    private final String className;
 
     private String inputAuth = null;
-    private String[] inputCollections;
-    private String[] inputUris;
+    private final List<String> inputCollections = new ArrayList<String>();
+    private final List<String> inputUris = new ArrayList<String>();
 
-    private String[] outputUris;
+    private final List<String> outputUris = new ArrayList<String>();
     private String outputAuth = null;
     private ReadPreference readPreference = ReadPreference.primary();
+    private String host = "localhost";
+    private int port = 27017;
 
-    public MapReduceJob className(final String className) {
-        this.className = className;
+    public MapReduceJob(final Class<? extends Tool> toolClass) {
+        this.className = toolClass.getName();
+    }
+
+    public MapReduceJob host(final String host) {
+        this.host = host;
+        return this;
+    }
+
+    public MapReduceJob port(final int port) {
+        this.port = port;
         return this;
     }
 
@@ -86,7 +101,6 @@ public class MapReduceJob {
         return this;
     }
 
-
     public MapReduceJob readPreference(final ReadPreference readPreference) {
         this.readPreference = readPreference;
         return this;
@@ -98,98 +112,149 @@ public class MapReduceJob {
     }
 
     public MapReduceJob inputCollections(final String... inputCollections) {
-        this.inputCollections = inputCollections;
+        this.inputCollections.addAll(Arrays.asList(inputCollections));
         return this;
     }
 
     public MapReduceJob inputUris(final String... inputUris) {
-        this.inputUris = inputUris;
+        this.inputUris.addAll(Arrays.asList(inputUris));
         return this;
     }
 
     public MapReduceJob outputUris(final String... outputUris) {
-        this.outputUris = outputUris;
+        this.outputUris.addAll(Arrays.asList(outputUris));
         return this;
     }
 
-    public void execute() {
+    public void execute(boolean inVM) {
         try {
             copyJars();
-            List<String> cmd = new ArrayList<String>();
-            cmd.add(new File(HADOOP_HOME, "bin/hadoop").getCanonicalPath());
-            cmd.add("jar");
-            cmd.add(JOBJAR_PATH.getAbsolutePath());
-            cmd.add(className);
-
-            for (Entry<String, String> entry : params.entrySet()) {
-                cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
+            if (inVM) {
+                executeInVM();
+            } else {
+                executeExternal();
             }
-            if (inputCollections != null && inputCollections.length != 0) {
-                StringBuilder inputUri = new StringBuilder();
-                for (String collection : inputCollections) {
-                    if (inputUri.length() != 0) {
-                        inputUri.append(" ");
-                    }
-                    inputUri.append(format("mongodb://localhost:27017/%s", collection));
-                }
-                cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
-            } else if (inputUris != null && inputUris.length != 0) {
-                StringBuilder inputUri = new StringBuilder();
-                for (String uri : inputUris) {
-                    if (inputUri.length() != 0) {
-                        inputUri.append(" ");
-                    }
-                    inputUri.append(uri);
-                }
-                cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
-            }
-            if (outputUris != null && outputUris.length != 0) {
-                StringBuilder outputUri = new StringBuilder();
-                for (String uri : outputUris) {
-                    if (outputUri.length() != 0) {
-                        outputUri.append(" ");
-                    }
-                    outputUri.append(uri);
-                }
-                cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString()));
-            }
-            Map<String, String> env = new TreeMap<String, String>(System.getenv());
-            if (HADOOP_VERSION.startsWith("cdh")) {
-                env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
-            }
-
-            LOG.info("Executing hadoop job:");
-
-            StringBuilder output = new StringBuilder();
-            Iterator<String> iterator = cmd.iterator();
-            while (iterator.hasNext()) {
-                final String s = iterator.next();
-                if (output.length() != 0) {
-                    output.append("\t");
-                } else {
-                    output.append("\n");
-                }
-                output.append(s);
-                if (iterator.hasNext()) {
-                    output.append(" \\");
-                }
-                output.append("\n");
-            }
-
-            LOG.info(output);
-            new ProcessExecutor().command(cmd)
-                                 .environment(env)
-                                 .redirectError(System.out)
-                                 .execute();
-
             Thread.sleep(5000);  // let the system settle
-        } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (TimeoutException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    public void executeExternal() throws IOException, TimeoutException, InterruptedException {
+        List<String> cmd = new ArrayList<String>();
+        cmd.add(new File(HADOOP_HOME, "bin/hadoop").getCanonicalPath());
+        cmd.add("jar");
+        cmd.add(JOBJAR_PATH.getAbsolutePath());
+        cmd.add(className);
+
+        for (Entry<String, String> entry : params.entrySet()) {
+            cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
+        }
+        if (!inputCollections.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String collection : inputCollections) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(format("mongodb://%s:%d/%s?readPreference=%s", host, port, collection, readPreference));
+            }
+            cmd.add(format("-D%s=%s", MongoConfigUtil.INPUT_URI, inputUri.toString()));
+        } else if (!inputUris.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String uri : inputUris) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(uri);
+            }
+            cmd.add(format("-D%s=%s", MongoConfigUtil.INPUT_URI, inputUri.toString()));
+        } else if(readPreference != ReadPreference.primary()) {
+            cmd.add(format("-D%s=mongodb://%s:%d/%s?readPreference=%s", MongoConfigUtil.INPUT_URI, host, port, "yield_historical.in",
+                           readPreference));
+        }
+        if (!outputUris.isEmpty()) {
+            StringBuilder outputUri = new StringBuilder();
+            for (String uri : outputUris) {
+                if (outputUri.length() != 0) {
+                    outputUri.append(",");
+                }
+                outputUri.append(uri);
+            }
+            cmd.add(format("-D%s=%s", MongoConfigUtil.OUTPUT_URI, outputUri.toString()));
+        }
+        Map<String, String> env = new TreeMap<String, String>(System.getenv());
+        if (HADOOP_VERSION.startsWith("cdh")) {
+            env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
+        }
+
+        LOG.info("Executing hadoop job:");
+
+        StringBuilder output = new StringBuilder();
+        Iterator<String> iterator = cmd.iterator();
+        while (iterator.hasNext()) {
+            final String s = iterator.next();
+            if (output.length() != 0) {
+                output.append("\t");
+            } else {
+                output.append("\n");
+            }
+            output.append(s);
+            if (iterator.hasNext()) {
+                output.append(" \\");
+            }
+            output.append("\n");
+        }
+
+        LOG.info(output);
+        new ProcessExecutor().command(cmd)
+                             .environment(env)
+                             .redirectError(System.out)
+                             .execute();
+
+    }
+
+    public void executeInVM() throws Exception {
+        for (Entry<String, String> entry : params.entrySet()) {
+            System.setProperty(entry.getKey(), entry.getValue());
+        }
+        if (!inputCollections.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String collection : inputCollections) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(format("mongodb://" + host + ":" + port + "/%s", collection));
+            }
+            System.setProperty(MongoConfigUtil.INPUT_URI, inputUri.toString());
+        } else if (!inputUris.isEmpty()) {
+            StringBuilder inputUri = new StringBuilder();
+            for (String uri : inputUris) {
+                if (inputUri.length() != 0) {
+                    inputUri.append(",");
+                }
+                inputUri.append(uri);
+            }
+            System.setProperty(MongoConfigUtil.INPUT_URI, inputUri.toString());
+        }
+        if (!outputUris.isEmpty()) {
+            StringBuilder outputUri = new StringBuilder();
+            for (String uri : outputUris) {
+                if (outputUri.length() != 0) {
+                    outputUri.append(",");
+                }
+                outputUri.append(uri);
+            }
+            System.setProperty(MongoConfigUtil.OUTPUT_URI, outputUri.toString());
+        }
+        Map<String, String> env = new TreeMap<String, String>(System.getenv());
+        if (HADOOP_VERSION.startsWith("cdh")) {
+            env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
+            System.setProperty("MAPRED_DIR", "share/hadoop/mapreduce2");
+        }
+
+        LOG.info("Executing hadoop job");
+
+        ToolRunner.run((org.apache.hadoop.util.Tool) Class.forName(className).newInstance(), new String[0]);
     }
 
     private void copyJars() {

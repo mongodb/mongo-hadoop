@@ -4,14 +4,12 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
-import org.junit.Ignore;
+import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -22,15 +20,16 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testBasicInputSource() {
-        runJob(new LinkedHashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .execute(inVM);
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
     public void testMultiMongos() {
-        Map<String, String> params = new LinkedHashMap<String, String>();
-        params.put("mongo.input.mongos_hosts", "localhost:27017 localhost:27018");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .param("mongo.input.mongos_hosts", "localhost:27017 localhost:27018")
+            .execute(inVM);
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
@@ -38,11 +37,14 @@ public class TestSharded extends BaseShardedTest {
     public void testMultiOutputs() {
         DBObject opCounterBefore1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
-        runJob(new HashMap<String, String>(), "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null,
-               new String[]{"mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
-                            "mongodb://localhost:27018/mongo_hadoop.yield_historical.out"}
-              );
+
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .outputUris("mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
+                        "mongodb://localhost:27018/mongo_hadoop.yield_historical.out")
+            .execute(inVM);
+
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+
         DBObject opCounterAfter1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterAfter2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
 
@@ -52,31 +54,29 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testRangeQueries() {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("mongo.input.split.use_range_queries", "true");
 
         DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
-        
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
+                               .param("mongo.input.split.use_range_queries", "true");
+        job.execute(inVM);
+
         compareResults(collection, getReference());
         collection.drop();
 
-        params.put("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}").execute(inVM);
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertFalse("This collection shouldn't exist because of the failure",
                     getMongos().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
     }
 
-    @Test
-    @Ignore
     public void testDirectAccess() {
-        Map<String, String> params = new HashMap<String, String>();
-//        params.put("mongo.input.split.read_shard_chunks", "true");
-//        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-//        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
-//
+        //        Map<String, String> params = new HashMap<String, String>();
+        //        params.put("mongo.input.split.read_shard_chunks", "true");
+        //        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        //        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        //
         DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
 
@@ -93,47 +93,49 @@ public class TestSharded extends BaseShardedTest {
             destination.insert(doc, WriteConcern.UNACKNOWLEDGED);
         }
 
-        params = new HashMap<String, String>();
-        params.put("mongo.input.split.allow_read_from_secondaries", "true");
-        params.put("mongo.input.split.read_from_shards", "true");
-        params.put("mongo.input.split.read_shard_chunks", "false");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-               new String[]{"mongodb://localhost/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .param("mongo.input.split.allow_read_from_secondaries", "true")
+            .param("mongo.input.split.read_from_shards", "true")
+            .param("mongo.input.split.read_shard_chunks", "false")
+            .readPreference(ReadPreference.secondary())
+            .inputCollections("mongo_hadoop.yield_historical.in")
+            .execute(inVM);
 
         compareResults(collection, getReference());
         collection.drop();
 
-        params = new HashMap<String, String>();
-        params.put("mongo.input.split.allow_read_from_secondaries", "true");
-        params.put("mongo.input.split.read_from_shards", "true");
-        params.put("mongo.input.split.read_shard_chunks", "true");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-               new String[]{"mongodb://localhost/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .inputCollections("mongo_hadoop.yield_historical.in")
+            .param("mongo.input.split.allow_read_from_secondaries", "true")
+            .param("mongo.input.split.read_from_shards", "true")
+            .param("mongo.input.split.read_shard_chunks", "true")
+            .readPreference(ReadPreference.secondary())
+            .execute(inVM);
         compareResults(collection, getReference());
     }
 
     @Test
     public void testShardedClusterWithGtLtQueryFormats() {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("mongo.input.split.use_range_queries", "true");
-
-        DB shard1db = getShard1().getDB("mongo_hadoop");
-
         DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
 
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-               new String[]{"mongodb://localhost:27017/mongo_hadoop.yield_historical.in?readPreference=secondary"}, null);
-        compareResults(collection, getReference());
 
-        params.put("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}");
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
+                               .inputCollections("mongo_hadoop.yield_historical.in")
+                               .param("mongo.input.split.use_range_queries", "true")
+                               .readPreference(ReadPreference.secondary());
+        job.execute(inVM);
+
+        compareResults(collection, getReference());
         collection.drop();
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-               new String[]{"mongodb://localhost/mongo_hadoop.yield_historical.in"}, null);
+
+        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}")
+           .readPreference(ReadPreference.primary())
+           .execute(inVM);
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertEquals(collection.count(), 0);
-
     }
+
     private void compare(final DBObject before, final DBObject after) {
         compare("update", before, after);
         compare("command", before, after);

@@ -54,7 +54,7 @@ public class MongoInputFormat extends InputFormat<Object, BSONObject> {
         final Configuration conf = context.getConfiguration();
         try {
             MongoSplitter splitterImpl = MongoSplitterFactory.getSplitter(conf);
-            LOG.info("Using " + splitterImpl.toString() + " to calculate splits.");
+            LOG.debug("Using " + splitterImpl.toString() + " to calculate splits.");
             return splitterImpl.calculateSplits();
         } catch (SplitFailedException spfe) {
             throw new IOException(spfe);

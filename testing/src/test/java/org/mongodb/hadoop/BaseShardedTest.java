@@ -20,6 +20,7 @@ public class BaseShardedTest extends BaseHadoopTest {
     private MongoClient shard1;
     private MongoClient shard2;
     private MongoClient mongos;
+    
 
     @Before
     public void shuffleChunks() throws IOException, InterruptedException, TimeoutException {
@@ -67,15 +68,6 @@ public class BaseShardedTest extends BaseHadoopTest {
             }
         }
     }
-
-/*
-    @Override
-    public void runJob(final Map<String, String> params, final String className, final String[] inputCollections,
-                       final String[] outputUris) {
-        params.put(INPUT_URI, "mongodb://localhost:27217/mongo_hadoop.yield_historical.in");
-        super.runJob(params, className, inputCollections, outputUris);
-    }
-*/
 
     public MongoClient getMongos() {
         if (mongos == null) {

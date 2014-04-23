@@ -18,7 +18,6 @@ package com.mongodb.hadoop.splitter;
 
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
-import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class MultiMongoCollectionSplitter extends MongoSplitter {
+public class 
+    MultiMongoCollectionSplitter extends MongoSplitter {
 
     public static final String MULTI_COLLECTION_CONF_KEY = "mongo.input.multi_uri.json";
     private static final Log LOG = LogFactory.getLog(MultiMongoCollectionSplitter.class);

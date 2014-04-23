@@ -19,8 +19,6 @@ package com.mongodb.hadoop;
 import com.mongodb.hadoop.output.MongoOutputCommitter;
 import com.mongodb.hadoop.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;

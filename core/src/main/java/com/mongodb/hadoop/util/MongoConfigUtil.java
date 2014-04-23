@@ -289,7 +289,7 @@ public final class MongoConfigUtil {
         final String raw = conf.get(key);
         if (raw != null && !raw.trim().isEmpty()) {
             List<MongoClientURI> result = new LinkedList<MongoClientURI>();
-            String[] split = StringUtils.split(raw);
+            String[] split = StringUtils.split(raw, ", ");
             for (String mongoURI : split) {
                 result.add(new MongoClientURI(mongoURI));
             }
@@ -348,9 +348,7 @@ public final class MongoConfigUtil {
     public static DBCollection getCollection(final MongoClientURI uri) {
         DBCollection coll;
         try {
-            LOG.error("*********** Trying to connect with a URI of " + uri);
-            Mongo mongo = new MongoClient(uri);
-            coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            coll = new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
             return coll;
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);

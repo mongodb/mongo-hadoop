@@ -3,6 +3,7 @@ package org.mongodb.hadoop;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -12,9 +13,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -25,9 +24,9 @@ public class TestStandalone extends BaseHadoopTest {
     public void testBasicInputSource() {
         assumeFalse(isSharded());
         LOG.info("testing basic input source");
-        Map<String, String> params = new LinkedHashMap<String, String>();
-        params.put("mongo.input.notimeout", "true");
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .param("mongo.input.notimeout", "true")
+            .execute(inVM);
         compareResults(getClient().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
@@ -35,12 +34,11 @@ public class TestStandalone extends BaseHadoopTest {
     public void testTreasuryJsonConfig() {
         assumeFalse(isSharded());
         mongoImport("yield_historical.in3", JSONFILE_PATH);
-        Map<String, String> params = new LinkedHashMap<String, String>();
-        params.put("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName());
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .param("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName())
+            .param("mongo.input.multi_uri.json", "\"" + collectionSettings().toString().replace("\"", "\\\"") + '"')
+            .execute(inVM);
 
-        params.put("mongo.input.multi_uri.json", "\"" + collectionSettings().toString().replace("\"", "\\\"") + '"');
-
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         compareResults(out, getReference());
     }
@@ -50,15 +48,11 @@ public class TestStandalone extends BaseHadoopTest {
         assumeFalse(isSharded());
         mongoImport("yield_historical.in", JSONFILE_PATH);
         mongoImport("yield_historical.in2", JSONFILE_PATH);
-        Map<String, String> params = new LinkedHashMap<String, String>();
-        params.put("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName());
-//        new MapReduceJob()
-//            .className(TreasuryYieldXMLConfig.class.getName())
-//            .inputCollections("mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2")
-//            .execute();
-//
-        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig",
-               new String[] {"mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2"}, null);
+        new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .param("mongo.splitter.class", MultiMongoCollectionSplitter.class.getName())
+            .inputCollections("mongo_hadoop.yield_historical.in", "mongo_hadoop.yield_historical.in2")
+            .execute(inVM);
+
         DBCollection out = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
         List<DBObject> referenceDoubled = new ArrayList<DBObject>();
         for (DBObject object : getReference()) {
@@ -67,15 +61,14 @@ public class TestStandalone extends BaseHadoopTest {
             referenceDoubled.add(doubled);
             Integer count = ((Integer) object.get("count")) * 2;
             Double sum = ((Double) object.get("sum")) * 2;
-            
+
             doubled.put("count", count);
             doubled.put("avg", sum / count);
             doubled.put("sum", sum);
         }
-        
+
         compareResults(out, referenceDoubled);
     }
-
 
     private ArrayNode collectionSettings() {
         ArrayNode settings = new ArrayNode(JsonNodeFactory.instance);

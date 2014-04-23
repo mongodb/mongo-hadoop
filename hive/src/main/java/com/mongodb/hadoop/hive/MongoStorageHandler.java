@@ -17,7 +17,7 @@
 package com.mongodb.hadoop.hive;
 
 import com.mongodb.DBCollection;
-import com.mongodb.MongoURI;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.hive.input.HiveMongoInputFormat;
 import com.mongodb.hadoop.hive.output.HiveMongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -105,7 +105,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
                 Map<String, String> tblParams = tbl.getParameters();
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
-                    DBCollection coll = MongoConfigUtil.getCollection(new MongoURI(mongoURIStr));
+                    DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
                     coll.drop();
                 } else {
                     throw new MetaException("No 'mongo.uri' property found. Collection not dropped.");

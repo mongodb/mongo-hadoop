@@ -80,7 +80,7 @@ public class MongoTool extends Configured implements Tool {
          * on the CLI will be picked up and set here
          * They override any XML level values
          * Note that -D<space> is important - no space will
-         * not work as it get spicked up by Java itself
+         * not work as it gets picked up by Java itself
          */
         // TODO - Do we need to set job name somehow more specifically?
         // This may or may not be correct/sane

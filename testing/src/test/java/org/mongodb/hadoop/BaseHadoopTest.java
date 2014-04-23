@@ -6,7 +6,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
@@ -16,16 +15,9 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
@@ -43,21 +35,15 @@ public class BaseHadoopTest {
     public static final File JSONFILE_PATH;
 
     protected static final File JOBJAR_PATH;
+    protected static final boolean inVM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
     private final List<DBObject> reference = new ArrayList<DBObject>();
 
     private static final String MONGO_IMPORT;
-    private boolean noAuth = true;
 
     private MongoClient client;
 
     static {
-/*
-        Map<Object, Object> map = new TreeMap<Object, Object>(System.getProperties());
-        for (Entry<Object, Object> entry : map.entrySet()) {
-            System.out.printf("%s:%s%n", entry.getKey(), entry.getValue());
-        }
-*/
         try {
             String property = System.getProperty("mongodb_server");
             String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
@@ -135,6 +121,7 @@ public class BaseHadoopTest {
     public void mongoImport(final String collection, final File file) {
         try {
             new ProcessExecutor().command(MONGO_IMPORT,
+                                          "--drop",
                                           "--db", "mongo_hadoop",
                                           "--collection", collection,
                                           "--file", file.getAbsolutePath())
@@ -153,7 +140,6 @@ public class BaseHadoopTest {
     @Before
     public void setUp() {
         getClient().getDB("mongo_hadoop").dropDatabase();
-
         mongoImport("yield_historical.in", JSONFILE_PATH);
     }
 
@@ -166,14 +152,6 @@ public class BaseHadoopTest {
             }
         }
         return client;
-    }
-
-    public boolean isNoAuth() {
-        return noAuth;
-    }
-
-    public void setNoAuth(final boolean noAuth) {
-        this.noAuth = noAuth;
     }
 
     public List<DBObject> getReference() {
@@ -189,15 +167,6 @@ public class BaseHadoopTest {
         return list;
     }
 
-
-    protected boolean isStandalone() {
-        return !isReplicaSet() && !isSharded();
-    }
-
-    protected boolean isReplicaSet() {
-        return runIsMaster().get("setName") != null;
-    }
-
     protected boolean isSharded() {
         CommandResult isMasterResult = runIsMaster();
         Object msg = isMasterResult.get("msg");
@@ -206,7 +175,7 @@ public class BaseHadoopTest {
 
     protected CommandResult runIsMaster() {
         // Check to see if this is a replica set... if not, get out of here.
-        return client.getDB("admin").command(new BasicDBObject("ismaster", 1));
+        return getClient().getDB("admin").command(new BasicDBObject("ismaster", 1));
     }
 
     protected void compareResults(final DBCollection collection, final List<DBObject> expected) {
@@ -220,7 +189,7 @@ public class BaseHadoopTest {
                 || !doc.get("count").equals(referenceDoc.get("count"))
                 || !round((Double) doc.get("avg"), 7).equals(round((Double) referenceDoc.get("avg"), 7))) {
 
-                fail(format("docs do not match: %s%n vs %s", doc, referenceDoc));
+                fail(format("docs[%s] do not match: %s%n vs %s", i, doc, referenceDoc));
             }
         }
     }
@@ -228,99 +197,4 @@ public class BaseHadoopTest {
     private BigDecimal round(final Double value, final int precision) {
         return new BigDecimal(value).round(new MathContext(precision));
     }
-
-    public void runJob(final Map<String, String> params, final String className, final String[] inputCollections,
-                       final String[] outputUris) {
-        try {
-            copyJars();
-            List<String> cmd = new ArrayList<String>();
-            cmd.add(new File(HADOOP_HOME, "bin/hadoop").getCanonicalPath());
-            cmd.add("jar");
-            cmd.add(JOBJAR_PATH.getAbsolutePath());
-            cmd.add(className);
-
-            for (Entry<String, String> entry : params.entrySet()) {
-                cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
-            }
-            if (inputCollections != null && inputCollections.length != 0) {
-                StringBuilder inputUri = new StringBuilder();
-                for (String input : inputCollections) {
-                    if (inputUri.length() != 0) {
-                        inputUri.append(" ");
-                    }
-                    inputUri.append(input.startsWith("mongodb://") ? input : "mongodb://localhost:27017/" + input);
-                }
-                cmd.add(format("-Dmongo.input.uri=%s", inputUri.toString()));
-            }
-            if (outputUris != null && outputUris.length != 0) {
-                StringBuilder outputUri = new StringBuilder();
-                for (String uri : outputUris) {
-                    if (outputUri.length() != 0) {
-                        outputUri.append(" ");
-                    }
-                    outputUri.append(uri);
-                }
-                cmd.add(format("-Dmongo.output.uri=%s", outputUri.toString()));
-            }
-            Map<String, String> env = new TreeMap<String, String>(System.getenv());
-            if (HADOOP_VERSION.startsWith("cdh")) {
-                env.put("MAPRED_DIR", "share/hadoop/mapreduce2");
-            }
-
-            LOG.info("Executing hadoop job:");
-
-            StringBuilder output = new StringBuilder();
-            Iterator<String> iterator = cmd.iterator();
-            while (iterator.hasNext()) {
-                final String s = iterator.next();
-                if (output.length() != 0) {
-                    output.append("\t");
-                } else {
-                    output.append("\n");
-                }
-                output.append(s);
-                if (iterator.hasNext()) {
-                    output.append(" \\");
-                }
-                output.append("\n");
-            }
-
-            LOG.info(output);
-            new ProcessExecutor().command(cmd)
-                                 .environment(env)
-                                 .redirectError(System.out)
-                                 .execute();
-
-            Thread.sleep(5000);  // let the system settle
-        } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
-
-    private void copyJars() {
-        String hadoopLib = format(HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
-                                                                 : HADOOP_HOME + "/share/hadoop/common");
-        try {
-            URLClassLoader classLoader = (URLClassLoader) getClass().getClassLoader();
-            for (URL url : classLoader.getURLs()) {
-                boolean contains = url.getPath().contains("mongo-java-driver");
-                if (contains) {
-                    File file = new File(url.toURI());
-                    FileUtils.copyFile(file, new File(hadoopLib, "mongo-java-driver.jar"));
-                }
-            }
-            File coreJar = new File(format("../core/build/libs")).listFiles(new HadoopVersionFilter())[0];
-            FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }
