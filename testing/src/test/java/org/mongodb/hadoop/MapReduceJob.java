@@ -134,7 +134,6 @@ public class MapReduceJob {
             } else {
                 executeExternal();
             }
-            Thread.sleep(5000);  // let the system settle
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

@@ -18,6 +18,7 @@ import java.util.List;
 
 import static java.lang.String.format;
 
+@SuppressWarnings("deprecation")
 public class SensorDataGenerator {
     private static final int NUM_DEVICES = 100;
     private static final int NUM_LOGS = NUM_DEVICES * 100;

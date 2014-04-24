@@ -193,7 +193,6 @@ public class StreamingJob {
                                  .redirectError(System.out)
                                  .execute();
 
-            Thread.sleep(5000);  // let the system settle
         } catch (final IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } catch (final InterruptedException e) {
@@ -230,7 +229,7 @@ public class StreamingJob {
 
             File hadoopStreamingJar;
             String streamingLibRoot;
-            if(HADOOP_VERSION.startsWith("1")) {
+            if (HADOOP_VERSION.startsWith("1")) {
                 streamingLibRoot = "/../contrib/streaming";
             } else {
                 streamingLibRoot = "/../tools/lib";
