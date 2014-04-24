@@ -84,7 +84,7 @@ public class StreamingJob {
                                   BaseHadoopTest.HADOOP_HOME,
                                   BaseHadoopTest.HADOOP_RELEASE_VERSION));
         }
-//        add("-libjars", STREAMING_JAR);
+        //        add("-libjars", STREAMING_JAR);
         add("-io", "mongodb");
         add("-jobconf", "stream.io.identifier.resolver.class=" + MongoIdentifierResolver.class.getName());
         add("-mapper", STREAMING_MAPPER);
@@ -208,10 +208,10 @@ public class StreamingJob {
         cmd.add(flag);
         cmd.add(value);
     }
-    
+
     private void copyJars() {
-        String hadoopLib = format(HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
-                                                                 : HADOOP_HOME + "/share/hadoop/common");
+        String hadoopLib = HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
+                                                          : HADOOP_HOME + "/share/hadoop/common";
         try {
             URLClassLoader classLoader = (URLClassLoader) getClass().getClassLoader();
             for (URL url : classLoader.getURLs()) {
@@ -221,14 +221,21 @@ public class StreamingJob {
                     FileUtils.copyFile(file, new File(hadoopLib, "mongo-java-driver.jar"));
                 }
             }
-            
+
             File coreJar = new File("../core/build/libs").listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
-            
+
             File mongoStreamingJar = new File("../streaming/build/libs").listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(mongoStreamingJar, new File(hadoopLib, "mongo-hadoop-streaming.jar"));
-            
-            File hadoopStreamingJar = new File(hadoopLib + "/../tools/lib").listFiles(new FilenameFilter() {
+
+            File hadoopStreamingJar;
+            String streamingLibRoot;
+            if(HADOOP_VERSION.startsWith("1")) {
+                streamingLibRoot = "/../contrib/streaming";
+            } else {
+                streamingLibRoot = "/../tools/lib";
+            }
+            hadoopStreamingJar = new File(hadoopLib + streamingLibRoot).listFiles(new FilenameFilter() {
                 @Override
                 public boolean accept(final File dir, final String name) {
                     return name.startsWith("hadoop-streaming-");
@@ -242,5 +249,5 @@ public class StreamingJob {
             throw new RuntimeException(e);
         }
     }
-    
+
 }
