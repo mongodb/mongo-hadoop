@@ -4,12 +4,17 @@ import com.mongodb.ReadPreference;
 import com.mongodb.hadoop.mapred.MongoInputFormat;
 import com.mongodb.hadoop.mapred.MongoOutputFormat;
 import com.mongodb.hadoop.streaming.io.MongoIdentifierResolver;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,6 +26,8 @@ import java.util.concurrent.TimeoutException;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
+import static org.mongodb.hadoop.MapReduceJob.HADOOP_HOME;
+import static org.mongodb.hadoop.MapReduceJob.HADOOP_VERSION;
 
 public class StreamingJob {
     private static final String STREAMING_JAR;
@@ -77,7 +84,7 @@ public class StreamingJob {
                                   BaseHadoopTest.HADOOP_HOME,
                                   BaseHadoopTest.HADOOP_RELEASE_VERSION));
         }
-        add("-libjars", STREAMING_JAR);
+//        add("-libjars", STREAMING_JAR);
         add("-io", "mongodb");
         add("-jobconf", "stream.io.identifier.resolver.class=" + MongoIdentifierResolver.class.getName());
         add("-mapper", STREAMING_MAPPER);
@@ -141,6 +148,7 @@ public class StreamingJob {
 
     public void execute() {
         try {
+            copyJars();
             add("-input", inputPath);
             add("-output", outputPath);
             add("-inputformat", inputFormat);
@@ -200,4 +208,39 @@ public class StreamingJob {
         cmd.add(flag);
         cmd.add(value);
     }
+    
+    private void copyJars() {
+        String hadoopLib = format(HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
+                                                                 : HADOOP_HOME + "/share/hadoop/common");
+        try {
+            URLClassLoader classLoader = (URLClassLoader) getClass().getClassLoader();
+            for (URL url : classLoader.getURLs()) {
+                boolean contains = url.getPath().contains("mongo-java-driver");
+                if (contains) {
+                    File file = new File(url.toURI());
+                    FileUtils.copyFile(file, new File(hadoopLib, "mongo-java-driver.jar"));
+                }
+            }
+            
+            File coreJar = new File("../core/build/libs").listFiles(new HadoopVersionFilter())[0];
+            FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
+            
+            File mongoStreamingJar = new File("../streaming/build/libs").listFiles(new HadoopVersionFilter())[0];
+            FileUtils.copyFile(mongoStreamingJar, new File(hadoopLib, "mongo-hadoop-streaming.jar"));
+            
+            File hadoopStreamingJar = new File(hadoopLib + "/../tools/lib").listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(final File dir, final String name) {
+                    return name.startsWith("hadoop-streaming-");
+                }
+            })[0];
+            FileUtils.copyFile(hadoopStreamingJar, new File(hadoopLib, hadoopStreamingJar.getName()));
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
 }

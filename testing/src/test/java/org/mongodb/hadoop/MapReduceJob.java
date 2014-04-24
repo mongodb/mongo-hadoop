@@ -262,7 +262,7 @@ public class MapReduceJob {
         }
     }
 
-    private static class Pair<T, U> {
+    private static final class Pair<T, U> {
         private T key;
         private U value;
 
