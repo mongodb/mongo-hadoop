@@ -107,7 +107,7 @@ public class TestStandalone extends BaseHadoopTest {
         settings.add(node);
 
         MongoClientURI inputUri3 = authCheck(new MongoClientURIBuilder()
-                                       .collection("mongo_hadoop", "yield_historical.in3")) 
+                                                 .collection("mongo_hadoop", "yield_historical.in3"))
                                        .build();
 
         node = new ObjectNode(JsonNodeFactory.instance);
@@ -116,7 +116,6 @@ public class TestStandalone extends BaseHadoopTest {
         node.put(INPUT_NOTIMEOUT, true);
         settings.add(node);
 
-        System.out.println("new MongoClientURI(getInputUri().toString()) = " + new MongoClientURI(getInputUri().toString()));
         return settings;
     }
 }

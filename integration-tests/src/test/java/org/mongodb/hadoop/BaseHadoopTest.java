@@ -70,10 +70,9 @@ public class BaseHadoopTest {
             JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
 
             File file = new File(TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
-            if(!file.exists()) {
+            if (!file.exists()) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
             }
-            System.out.println("Looking in " + file);
             File[] files = file.listFiles(new HadoopVersionFilter());
             if (files.length == 0) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
@@ -218,10 +217,10 @@ public class BaseHadoopTest {
             // round to account for slight changes due to precision in case ops are run in different order.
             DBObject referenceDoc = expected.get(i);
             assertEquals(format("IDs[%s] do not match: %s%n vs %s", i, doc, referenceDoc), doc.get("_id"), referenceDoc.get("_id"));
-            assertEquals(format("counts[%s] do not match: %s%n vs %s", i, doc, referenceDoc), doc.get("count"),referenceDoc.get("count"));
+            assertEquals(format("counts[%s] do not match: %s%n vs %s", i, doc, referenceDoc), doc.get("count"), referenceDoc.get("count"));
             assertEquals(format("averages[%s] do not match: %s%n vs %s", i, doc, referenceDoc),
                          round((Double) doc.get("avg"), 7),
-                         round((Double) referenceDoc.get("avg"), 7));       
+                         round((Double) referenceDoc.get("avg"), 7));
         }
     }
 

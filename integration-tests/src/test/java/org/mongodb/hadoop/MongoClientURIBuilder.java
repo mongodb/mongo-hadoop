@@ -49,7 +49,7 @@ public class MongoClientURIBuilder {
         }
         String uri = mongoClientURI.getURI();
         if (uri.contains("?")) {
-            String query = uri.substring(uri.indexOf('?') +1);
+            String query = uri.substring(uri.indexOf('?') + 1);
             String[] pairs = query.split("&");
             for (String pair : pairs) {
                 String[] split = pair.split("=");
@@ -58,35 +58,35 @@ public class MongoClientURIBuilder {
         }
     }
 
-    public MongoClientURIBuilder host(String host) {
+    public MongoClientURIBuilder host(final String host) {
         this.host = host;
         return this;
     }
 
-    public MongoClientURIBuilder collection(String database, String collection) {
+    public MongoClientURIBuilder collection(final String database, final String collection) {
         this.database = database;
         this.collection = collection;
         return this;
     }
 
-    public MongoClientURIBuilder auth(String userName, String password) {
+    public MongoClientURIBuilder auth(final String userName, final String password) {
         this.userName = userName;
         this.password = password;
         params.put("authSource", "admin");
         return this;
     }
 
-    public MongoClientURIBuilder port(Integer port) {
+    public MongoClientURIBuilder port(final Integer port) {
         this.port = port;
         return this;
     }
 
-    public MongoClientURIBuilder options(MongoClientOptions options) {
+    public MongoClientURIBuilder options(final MongoClientOptions options) {
         this.options = options;
         return this;
     }
 
-    public MongoClientURIBuilder param(String key, String value) {
+    public MongoClientURIBuilder param(final String key, final String value) {
         this.params.put(key, value);
         return this;
     }
