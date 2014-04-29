@@ -4,12 +4,13 @@ apply plugin: 'download-task'
 apply plugin: 'versions'
 
 ext.configDir = new File(rootDir, 'config')
-ext.hadoop_version = project.getProperties().get('hadoop_version', '2.3')
+ext.hadoop_version = project.getProperties().get('hadoop_version', 'cdh5')
 ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
         'cdh4': '2.0.0-cdh4.6.0',
+        'cdh5': '2.3.0-cdh5.0.0',
         '2.2' : '2.2.0',
         '2.3' : '2.3.0'
 ].withDefault {
@@ -165,6 +166,10 @@ project(":core") {
                 compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
                 mapReduceDeps(it, hadoopVersion)
                 break
+            case ("cdh5"):
+                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+                mapReduceDeps(it, hadoopVersion)
+                break
             case ("2.2"):
                 compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
                 mapReduceDeps(it, hadoopVersion)
@@ -185,6 +190,8 @@ project(":hive") {
         compile "org.apache.hive:hive-exec:0.10.0"
         if (hadoop_version == "cdh4") {
             compile "org.apache.hive:hive-serde:0.10.0-cdh4.2.0"
+        } else if (hadoop_version == "cdh5") {
+            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else {
             compile "org.apache.hive:hive-serde:0.10.0"
         }
@@ -199,6 +206,8 @@ project(":pig") {
 
         if (hadoop_version == "cdh4") {
             compile "org.apache.pig:pig:0.10.0-cdh4.2.0"
+        } else if (hadoop_version == "cdh5") {
+            compile "org.apache.pig:pig:0.12.0-cdh5.0.0"
         } else {
             compile "org.apache.pig:pig:0.9.2"
         }
@@ -286,6 +295,9 @@ task installHadoop() {
             case ("cdh4"):
                 url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${hadoopVersion}.tar.gz"
                 break
+            case ("cdh5"):
+                url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${hadoopVersion}.tar.gz"
+                break
             default:
                 url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
                 break
@@ -301,7 +313,7 @@ task installHadoop() {
         copy {
             from(tarTree("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz"))
             into hadoopBinaries
-        }   
+        }
     }
     copyJars()
 }
