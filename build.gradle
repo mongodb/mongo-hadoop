@@ -4,7 +4,7 @@ apply plugin: 'download-task'
 apply plugin: 'versions'
 
 ext.configDir = new File(rootDir, 'config')
-ext.hadoop_version = project.getProperties().get('hadoop_version', '2.3')
+ext.hadoop_version = project.getProperties().get('hadoop_version', '2.4')
 ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
@@ -12,7 +12,8 @@ ext.versionMap = [
         'cdh4': '2.0.0-cdh4.6.0',
         'cdh5': '2.3.0-cdh5.0.0',
         '2.2' : '2.2.0',
-        '2.3' : '2.3.0'
+        '2.3' : '2.3.0',
+        '2.4' : '2.4.0'
 ].withDefault {
     throw new GradleException("Unknown hadoop version: ${hadoop_version}")
 }
@@ -152,29 +153,13 @@ project(":core") {
 
     dependencies {
         switch (hadoop_version) {
-            case ("0.23"):
-                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-                mapReduceDeps(it, hadoopVersion)
-                break
             case ("1.0"):
                 compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
                 break
             case ("1.1"):
                 compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
                 break
-            case ("cdh4"):
-                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-                mapReduceDeps(it, hadoopVersion)
-                break
-            case ("cdh5"):
-                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-                mapReduceDeps(it, hadoopVersion)
-                break
-            case ("2.2"):
-                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-                mapReduceDeps(it, hadoopVersion)
-                break
-            case ("2.3"):
+            default:
                 compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
                 mapReduceDeps(it, hadoopVersion)
                 break
@@ -193,7 +178,7 @@ project(":hive") {
         } else if (hadoop_version == "cdh5") {
             compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else {
-            compile "org.apache.hive:hive-serde:0.10.0"
+            compile "org.apache.hive:hive-serde:0.13.0"
         }
     }
 }
@@ -209,7 +194,7 @@ project(":pig") {
         } else if (hadoop_version == "cdh5") {
             compile "org.apache.pig:pig:0.12.0-cdh5.0.0"
         } else {
-            compile "org.apache.pig:pig:0.9.2"
+            compile "org.apache.pig:pig:0.12.1"
         }
     }
 
