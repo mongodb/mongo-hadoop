@@ -4,7 +4,7 @@ apply plugin: 'download-task'
 apply plugin: 'versions'
 
 ext.configDir = new File(rootDir, 'config')
-ext.hadoop_version = project.getProperties().get('hadoop_version', 'cdh5')
+ext.hadoop_version = project.getProperties().get('hadoop_version', '2.3')
 ext.versionMap = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
