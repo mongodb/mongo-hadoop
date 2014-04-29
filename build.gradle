@@ -18,6 +18,7 @@ ext.versionMap = [
 ext.hadoopVersion = versionMap[hadoop_version]
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
+ext.javaDriverVersion = "2.12.1"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
 
@@ -61,7 +62,7 @@ configure(subprojects) {
     targetCompatibility = JavaVersion.VERSION_1_6
 
     dependencies {
-        compile "org.mongodb:mongo-java-driver:2.12.1"
+        compile "org.mongodb:mongo-java-driver:${javaDriverVersion}"
 
         testCompile 'junit:junit:4.11'
         testCompile 'org.hamcrest:hamcrest-all:1.3'
@@ -383,7 +384,7 @@ def copyJars() {
         rename { "mongo-hadoop-core.jar" }
     }
     download {
-        src 'http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.12.0/mongo-java-driver-2.12.0.jar'
+        src "http://central.maven.org/maven2/org/mongodb/mongo-java-driver/${javaDriverVersion}/mongo-java-driver-${javaDriverVersion}.jar"
         dest "${hadoopLib}/mongo-java-driver.jar"
         onlyIfNewer true
     }
