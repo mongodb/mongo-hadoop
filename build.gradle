@@ -236,7 +236,10 @@ project(":streaming") {
 project(":flume") {
     dependencies {
         compile project(':core')
-        compile "com.cloudera:flume-core:0.9.4-cdh3u3"
+        compile("com.cloudera:flume-core:0.9.4-cdh3u3") {
+            exclude group: 'org.apache.hadoop', module: 'hadoop-core'
+            exclude group: 'com.cloudera.cdh', module: 'hadoop-ant'
+        }
     }
 }
 
