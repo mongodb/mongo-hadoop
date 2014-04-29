@@ -71,8 +71,12 @@ public class MapReduceJob {
     private final List<MongoClientURI> inputUris = new ArrayList<MongoClientURI>();
     private final List<MongoClientURI> outputUris = new ArrayList<MongoClientURI>();
 
+    public MapReduceJob(final String className) {
+        this.className = className;
+    }
+
     public MapReduceJob(final Class<? extends Tool> toolClass) {
-        this.className = toolClass.getName();
+        this(toolClass.getName());
     }
 
     public MapReduceJob param(final String key, final String value) {

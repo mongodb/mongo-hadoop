@@ -7,7 +7,6 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
-import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import org.junit.Test;
 
 import java.util.List;
@@ -21,7 +20,7 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testBasicInputSource() {
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .inputUris(getInputUri())
             .outputUris(getOutputUri())
             .execute(isRunTestInVm());
@@ -31,7 +30,7 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testMultiMongos() {
         MongoClientURI outputUri = getOutputUri();
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param("mongo.input.mongos_hosts", "localhost:27017 localhost:27018")
             .inputUris(getInputUri())
             .outputUris(outputUri)
@@ -45,7 +44,7 @@ public class TestSharded extends BaseShardedTest {
         DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
         MongoClientURI outputUri = getOutputUri();
 
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .inputUris(getInputUri())
             .outputUris(outputUri, new MongoClientURIBuilder(outputUri).port(27018).build())
             .execute(isRunTestInVm());
@@ -65,7 +64,7 @@ public class TestSharded extends BaseShardedTest {
         DBCollection collection = getMongos().getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection());
         collection.drop();
 
-        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
+        MapReduceJob job = new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
                                .inputUris(getInputUri())
                                .outputUris(getOutputUri())
                                .param("mongo.input.split.use_range_queries", "true");
@@ -102,7 +101,7 @@ public class TestSharded extends BaseShardedTest {
             destination.insert(doc, WriteConcern.UNACKNOWLEDGED);
         }
 
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param("mongo.input.split.allow_read_from_secondaries", "true")
             .param("mongo.input.split.read_from_shards", "true")
             .param("mongo.input.split.read_shard_chunks", "false")
@@ -112,7 +111,7 @@ public class TestSharded extends BaseShardedTest {
         compareResults(collection, getReference());
         collection.drop();
 
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .param("mongo.input.split.allow_read_from_secondaries", "true")
             .param("mongo.input.split.read_from_shards", "true")
@@ -127,7 +126,7 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
 
-        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
+        MapReduceJob job = new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
                                .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
                                .outputUris(getOutputUri())
                                 .param("mongo.input.split.use_range_queries", "true");

@@ -70,6 +70,10 @@ public class BaseHadoopTest {
             JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
 
             File file = new File(TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
+            if(!file.exists()) {
+                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
+            }
+            System.out.println("Looking in " + file);
             File[] files = file.listFiles(new HadoopVersionFilter());
             if (files.length == 0) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));

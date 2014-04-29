@@ -4,7 +4,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
-import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import com.mongodb.hadoop.splitter.SingleMongoSplitter;
 import org.apache.commons.logging.Log;
@@ -44,7 +43,7 @@ public class TestStandalone extends BaseHadoopTest {
     @Test
     public void testBasicInputSource() {
         LOG.info("testing basic input source");
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param("mongo.input.notimeout", "true")
             .inputUris(getInputUri())
             .outputUris(getOutputUri())
@@ -56,7 +55,7 @@ public class TestStandalone extends BaseHadoopTest {
     @Test
     public void testTreasuryJsonConfig() {
         mongoImport("yield_historical.in3", JSONFILE_PATH);
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .param(MULTI_COLLECTION_CONF_KEY, collectionSettings().toString())
             .outputUris(getOutputUri())
@@ -69,7 +68,7 @@ public class TestStandalone extends BaseHadoopTest {
     public void testMultipleCollectionSupport() {
         mongoImport(getInputUri().getCollection(), JSONFILE_PATH);
         mongoImport(inputUri2.getCollection(), JSONFILE_PATH);
-        new MapReduceJob(TreasuryYieldXMLConfig.class)
+        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .inputUris(getInputUri(), inputUri2)
             .outputUris(getOutputUri())
