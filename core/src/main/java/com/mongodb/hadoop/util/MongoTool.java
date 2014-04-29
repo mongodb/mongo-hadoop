@@ -87,7 +87,8 @@ public class MongoTool extends Configured implements Tool {
         job.setJarByClass(this.getClass());
         final Class mapper = MongoConfigUtil.getMapper(conf);
 
-        LOG.info("Mapper Class: " + mapper);
+        LOG.debug("Mapper Class: " + mapper);
+        LOG.debug("Input URI: " + MongoConfigUtil.getInputURI(conf));
         job.setMapperClass(mapper);
         Class<? extends Reducer> combiner = MongoConfigUtil.getCombiner(conf);
         if (combiner != null) {

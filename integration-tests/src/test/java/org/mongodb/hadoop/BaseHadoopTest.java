@@ -6,6 +6,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,12 +18,12 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
@@ -35,6 +36,8 @@ public class BaseHadoopTest {
     public static final File JSONFILE_PATH;
 
     protected static final File JOBJAR_PATH;
+    private final MongoClientURI outputUri;
+    private final MongoClientURI inputUri;
     private final boolean runTestInVm = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
     private final List<DBObject> reference = new ArrayList<DBObject>();
@@ -99,6 +102,18 @@ public class BaseHadoopTest {
         reference.add(dbObject("_id", 2008, "count", 251, "avg", 3.6642629482071714, "sum", 919.73));
         reference.add(dbObject("_id", 2009, "count", 250, "avg", 3.2641200000000037, "sum", 816.0300000000009));
         reference.add(dbObject("_id", 2010, "count", 189, "avg", 3.3255026455026435, "sum", 628.5199999999996));
+        inputUri = authCheck(new MongoClientURIBuilder()
+                                 .collection("mongo_hadoop", "yield_historical.in")).build();
+        outputUri = authCheck(new MongoClientURIBuilder()
+                                  .collection("mongo_hadoop", "yield_historical.out")).build();
+    }
+
+    protected MongoClientURIBuilder authCheck(final MongoClientURIBuilder builder) {
+        if (Boolean.valueOf(System.getProperty("authEnabled", "false"))) {
+            builder.auth("bob", "pwd123");
+        }
+
+        return builder;
     }
 
     protected static String loadProperty(final String name, final String defaultValue) {
@@ -120,14 +135,22 @@ public class BaseHadoopTest {
 
     public void mongoImport(final String collection, final File file) {
         try {
-            new ProcessExecutor().command(MONGO_IMPORT,
-                                          "--drop",
-                                          "--db", "mongo_hadoop",
-                                          "--collection", collection,
-                                          "--file", file.getAbsolutePath())
-                                 .readOutput(true)
-                                 .redirectOutput(System.out)
-                                 .execute();
+            List<String> command = new ArrayList<String>();
+            command.addAll(Arrays.asList(MONGO_IMPORT,
+                                         "--drop",
+                                         "--db", "mongo_hadoop",
+                                         "--collection", collection,
+                                         "--file", file.getAbsolutePath()));
+            if (isAuthEnabled()) {
+                command.addAll(Arrays.asList("-u", "bob",
+                                             "-p", "pwd123",
+                                             "--authenticationDatabase", "admin"));
+            }
+            LOG.debug(command.toString());
+            ProcessExecutor executor = new ProcessExecutor().command(command)
+                                                            .readOutput(true)
+                                                            .redirectOutput(System.out);
+            executor.execute();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } catch (InterruptedException e) {
@@ -146,7 +169,8 @@ public class BaseHadoopTest {
     public MongoClient getClient() {
         if (client == null) {
             try {
-                client = new MongoClient();
+                MongoClientURI uri = getInputUri();
+                client = new MongoClient(uri);
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -167,6 +191,10 @@ public class BaseHadoopTest {
         return list;
     }
 
+    protected static boolean isAuthEnabled() {
+        return Boolean.valueOf(System.getProperty("authEnabled", "false"));
+    }
+
     protected boolean isSharded() {
         CommandResult isMasterResult = runIsMaster();
         Object msg = isMasterResult.get("msg");
@@ -185,12 +213,11 @@ public class BaseHadoopTest {
             final DBObject doc = output.get(i);
             // round to account for slight changes due to precision in case ops are run in different order.
             DBObject referenceDoc = expected.get(i);
-            if (!doc.get("_id").equals(referenceDoc.get("_id"))
-                || !doc.get("count").equals(referenceDoc.get("count"))
-                || !round((Double) doc.get("avg"), 7).equals(round((Double) referenceDoc.get("avg"), 7))) {
-
-                fail(format("docs[%s] do not match: %s%n vs %s", i, doc, referenceDoc));
-            }
+            assertEquals(format("IDs[%s] do not match: %s%n vs %s", i, doc, referenceDoc), doc.get("_id"), referenceDoc.get("_id"));
+            assertEquals(format("counts[%s] do not match: %s%n vs %s", i, doc, referenceDoc), doc.get("count"),referenceDoc.get("count"));
+            assertEquals(format("averages[%s] do not match: %s%n vs %s", i, doc, referenceDoc),
+                         round((Double) doc.get("avg"), 7),
+                         round((Double) referenceDoc.get("avg"), 7));       
         }
     }
 
@@ -200,5 +227,13 @@ public class BaseHadoopTest {
 
     public boolean isRunTestInVm() {
         return runTestInVm;
+    }
+
+    public MongoClientURI getOutputUri() {
+        return outputUri;
+    }
+
+    public MongoClientURI getInputUri() {
+        return inputUri;
     }
 }

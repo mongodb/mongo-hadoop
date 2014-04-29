@@ -1,7 +1,6 @@
 package org.mongodb.hadoop;
 
-import com.mongodb.ReadPreference;
-import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.MongoClientURI;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -24,6 +23,8 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 
+import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
+import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
 import static org.mongodb.hadoop.BaseHadoopTest.loadProperty;
 
@@ -67,43 +68,11 @@ public class MapReduceJob {
     private Map<String, String> params = new LinkedHashMap<String, String>();
     private final String className;
 
-    private String inputAuth = null;
-    private final List<String> inputCollections = new ArrayList<String>();
-    private final List<String> inputUris = new ArrayList<String>();
-
-    private final List<String> outputUris = new ArrayList<String>();
-    private String outputAuth = null;
-    private ReadPreference readPreference = ReadPreference.primary();
-    private String host = "localhost";
-    private int port = 27017;
+    private final List<MongoClientURI> inputUris = new ArrayList<MongoClientURI>();
+    private final List<MongoClientURI> outputUris = new ArrayList<MongoClientURI>();
 
     public MapReduceJob(final Class<? extends Tool> toolClass) {
         this.className = toolClass.getName();
-    }
-
-    public MapReduceJob host(final String host) {
-        this.host = host;
-        return this;
-    }
-
-    public MapReduceJob port(final int port) {
-        this.port = port;
-        return this;
-    }
-
-    public MapReduceJob inputAuth(final String inputAuth) {
-        this.inputAuth = inputAuth;
-        return this;
-    }
-
-    public MapReduceJob outputAuth(final String outputAuth) {
-        this.outputAuth = outputAuth;
-        return this;
-    }
-
-    public MapReduceJob readPreference(final ReadPreference readPreference) {
-        this.readPreference = readPreference;
-        return this;
     }
 
     public MapReduceJob param(final String key, final String value) {
@@ -111,17 +80,12 @@ public class MapReduceJob {
         return this;
     }
 
-    public MapReduceJob inputCollections(final String... inputCollections) {
-        this.inputCollections.addAll(Arrays.asList(inputCollections));
-        return this;
-    }
-
-    public MapReduceJob inputUris(final String... inputUris) {
+    public MapReduceJob inputUris(final MongoClientURI... inputUris) {
         this.inputUris.addAll(Arrays.asList(inputUris));
         return this;
     }
 
-    public MapReduceJob outputUris(final String... outputUris) {
+    public MapReduceJob outputUris(final MongoClientURI... outputUris) {
         this.outputUris.addAll(Arrays.asList(outputUris));
         return this;
     }
@@ -203,37 +167,26 @@ public class MapReduceJob {
             entries.add(new Pair<String, String>(entry.getKey(), entry.getValue()));
         }
 
-        if (!inputCollections.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String collection : inputCollections) {
-                if (inputUri.length() != 0) {
-                    inputUri.append(",");
-                }
-                inputUri.append(format("mongodb://%s:%d/%s?readPreference=%s", host, port, collection, readPreference));
-            }
-            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, inputUri.toString()));
-        } else if (!inputUris.isEmpty()) {
-            StringBuilder inputUri = new StringBuilder();
-            for (String uri : inputUris) {
+        StringBuilder inputUri = new StringBuilder();
+        if (!inputUris.isEmpty()) {
+            for (MongoClientURI uri : inputUris) {
                 if (inputUri.length() != 0) {
                     inputUri.append(",");
                 }
                 inputUri.append(uri);
             }
-            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, inputUri.toString()));
-        } else if (readPreference != ReadPreference.primary()) {
-            entries.add(new Pair<String, String>(MongoConfigUtil.INPUT_URI, format("mongodb://%s:%d/%s?readPreference=%s", host, port,
-                                                                                   "yield_historical.in", readPreference)));
+            entries.add(new Pair<String, String>(INPUT_URI, inputUri.toString()));
         }
+
         if (!outputUris.isEmpty()) {
             StringBuilder outputUri = new StringBuilder();
-            for (String uri : outputUris) {
+            for (MongoClientURI uri : outputUris) {
                 if (outputUri.length() != 0) {
                     outputUri.append(",");
                 }
                 outputUri.append(uri);
             }
-            entries.add(new Pair<String, String>(MongoConfigUtil.OUTPUT_URI, outputUri.toString()));
+            entries.add(new Pair<String, String>(OUTPUT_URI, outputUri.toString()));
         }
 
         return entries;
@@ -276,6 +229,15 @@ public class MapReduceJob {
 
         public U getValue() {
             return value;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Pair{");
+            sb.append("key=").append(key);
+            sb.append(", value=").append(value);
+            sb.append('}');
+            return sb.toString();
         }
     }
 }

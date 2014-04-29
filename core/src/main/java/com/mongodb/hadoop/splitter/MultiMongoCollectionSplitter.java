@@ -70,8 +70,7 @@ public class
         } else {
             //Otherwise the user has set options per-collection.
             LOG.info("Loading multiple input URIs from JSON stored in " + MULTI_COLLECTION_CONF_KEY);
-            DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.conf,
-                                                                  MULTI_COLLECTION_CONF_KEY);
+            DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.conf, MULTI_COLLECTION_CONF_KEY);
 
             if (!(multiUriConfig instanceof List)) {
                 throw new IllegalArgumentException("Invalid JSON format in multi uri config key: Must be an array where each element "
@@ -91,8 +90,7 @@ public class
                                                        + "object with keys/values describing options for each URI.");
                 }
                 MongoSplitter splitter;
-                Class<? extends MongoSplitter> splitterClass =
-                    MongoConfigUtil.getSplitterClass(confForThisUri);
+                Class<? extends MongoSplitter> splitterClass = MongoConfigUtil.getSplitterClass(confForThisUri);
 
                 if (splitterClass != null) {
                     LOG.info("Using custom splitter class for: " + inputURI + " " + splitterClass);

@@ -104,8 +104,7 @@ public final class MongoSplitterFactory {
         if (customSplitter != null) {
             return customSplitter;
         } else {
-            MongoClientURI inputURI = MongoConfigUtil.getInputURI(config);
-            return getSplitterByStats(inputURI, config);
+            return getSplitterByStats(MongoConfigUtil.getInputURI(config), config);
         }
     }
 

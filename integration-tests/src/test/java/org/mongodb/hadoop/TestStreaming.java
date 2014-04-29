@@ -23,6 +23,8 @@ public class TestStreaming extends BaseHadoopTest {
         params.put("mongo.input.query", "{_id:{$gt:{$date:883440000000}}}");
         new StreamingJob()
             .params(params)
+            .inputUris(getInputUri())
+            .outputUris(getOutputUri())
             .execute();
         
         DBCollection collection = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");

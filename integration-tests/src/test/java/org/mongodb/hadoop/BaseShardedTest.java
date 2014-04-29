@@ -20,7 +20,6 @@ public class BaseShardedTest extends BaseHadoopTest {
     private MongoClient shard1;
     private MongoClient shard2;
     private MongoClient mongos;
-    
 
     @Before
     public void shuffleChunks() throws IOException, InterruptedException, TimeoutException {
@@ -72,7 +71,7 @@ public class BaseShardedTest extends BaseHadoopTest {
     public MongoClient getMongos() {
         if (mongos == null) {
             try {
-                mongos = new MongoClient("localhost", 27017);
+                mongos = new MongoClient(getInputUri());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -82,7 +81,7 @@ public class BaseShardedTest extends BaseHadoopTest {
     public MongoClient getMongos2() {
         if (mongos == null) {
             try {
-                mongos = new MongoClient("localhost", 27018);
+                mongos = new MongoClient(new MongoClientURIBuilder(getInputUri()).port(27018).build());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -93,7 +92,7 @@ public class BaseShardedTest extends BaseHadoopTest {
     public MongoClient getShard1() {
         if (shard2 == null) {
             try {
-                shard2 = new MongoClient("localhost:27217");
+                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27217)).build());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -104,7 +103,7 @@ public class BaseShardedTest extends BaseHadoopTest {
     public MongoClient getShard2() {
         if (shard2 == null) {
             try {
-                shard2 = new MongoClient("localhost:27218");
+                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27218)).build());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }

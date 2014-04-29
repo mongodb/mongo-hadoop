@@ -346,10 +346,8 @@ public final class MongoConfigUtil {
     }
     
     public static DBCollection getCollection(final MongoClientURI uri) {
-        DBCollection coll;
         try {
-            coll = new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
-            return coll;
+            return new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }

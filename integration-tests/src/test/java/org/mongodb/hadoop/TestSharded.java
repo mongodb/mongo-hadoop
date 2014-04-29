@@ -4,6 +4,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
@@ -21,29 +22,35 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testBasicInputSource() {
         new MapReduceJob(TreasuryYieldXMLConfig.class)
+            .inputUris(getInputUri())
+            .outputUris(getOutputUri())
             .execute(isRunTestInVm());
         compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
     }
 
     @Test
     public void testMultiMongos() {
+        MongoClientURI outputUri = getOutputUri();
         new MapReduceJob(TreasuryYieldXMLConfig.class)
             .param("mongo.input.mongos_hosts", "localhost:27017 localhost:27018")
+            .inputUris(getInputUri())
+            .outputUris(outputUri)
             .execute(isRunTestInVm());
-        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        compareResults(getMongos().getDB(outputUri.getDatabase()).getCollection(outputUri.getCollection()), getReference());
     }
 
     @Test
     public void testMultiOutputs() {
         DBObject opCounterBefore1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
+        MongoClientURI outputUri = getOutputUri();
 
         new MapReduceJob(TreasuryYieldXMLConfig.class)
-            .outputUris("mongodb://localhost:27017/mongo_hadoop.yield_historical.out",
-                        "mongodb://localhost:27018/mongo_hadoop.yield_historical.out")
+            .inputUris(getInputUri())
+            .outputUris(outputUri, new MongoClientURIBuilder(outputUri).port(27018).build())
             .execute(isRunTestInVm());
 
-        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        compareResults(getMongos().getDB(outputUri.getDatabase()).getCollection(outputUri.getCollection()), getReference());
 
         DBObject opCounterAfter1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
         DBObject opCounterAfter2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
@@ -55,10 +62,12 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testRangeQueries() {
 
-        DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
+        DBCollection collection = getMongos().getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection());
         collection.drop();
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
+                               .inputUris(getInputUri())
+                               .outputUris(getOutputUri())
                                .param("mongo.input.split.use_range_queries", "true");
         job.execute(isRunTestInVm());
 
@@ -97,19 +106,17 @@ public class TestSharded extends BaseShardedTest {
             .param("mongo.input.split.allow_read_from_secondaries", "true")
             .param("mongo.input.split.read_from_shards", "true")
             .param("mongo.input.split.read_shard_chunks", "false")
-            .readPreference(ReadPreference.secondary())
-            .inputCollections("mongo_hadoop.yield_historical.in")
+            .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
         new MapReduceJob(TreasuryYieldXMLConfig.class)
-            .inputCollections("mongo_hadoop.yield_historical.in")
+            .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .param("mongo.input.split.allow_read_from_secondaries", "true")
             .param("mongo.input.split.read_from_shards", "true")
             .param("mongo.input.split.read_shard_chunks", "true")
-            .readPreference(ReadPreference.secondary())
             .execute(isRunTestInVm());
         compareResults(collection, getReference());
     }
@@ -121,16 +128,16 @@ public class TestSharded extends BaseShardedTest {
 
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class)
-                               .inputCollections("mongo_hadoop.yield_historical.in")
-                               .param("mongo.input.split.use_range_queries", "true")
-                               .readPreference(ReadPreference.secondary());
+                               .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
+                               .outputUris(getOutputUri())
+                                .param("mongo.input.split.use_range_queries", "true");
         job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
         job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}")
-           .readPreference(ReadPreference.primary())
+           .inputUris(getInputUri())
            .execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertEquals(collection.count(), 0);

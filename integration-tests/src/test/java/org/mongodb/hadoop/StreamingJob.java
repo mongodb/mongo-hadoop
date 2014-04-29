@@ -1,6 +1,6 @@
 package org.mongodb.hadoop;
 
-import com.mongodb.ReadPreference;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.mapred.MongoInputFormat;
 import com.mongodb.hadoop.mapred.MongoOutputFormat;
 import com.mongodb.hadoop.streaming.io.MongoIdentifierResolver;
@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,16 +59,12 @@ public class StreamingJob {
 
     private List<String> cmd = new ArrayList<String>();
 
-    private String hostName = "localhost:27017";
-    private ReadPreference readPreference = ReadPreference.primary();
+    private final List<MongoClientURI> inputUris = new ArrayList<MongoClientURI>();
+    private final List<MongoClientURI> outputUris = new ArrayList<MongoClientURI>();
 
-    private String inputAuth = null;
-    private String inputCollection = "mongo_hadoop.yield_historical.in";
     private String inputFormat = MongoInputFormat.class.getName();
     private String inputPath = format("file://%s/in", System.getProperty("java.io.tmpdir"));
 
-    private String outputAuth = null;
-    private String outputCollection = "mongo_hadoop.yield_historical.out";
     private String outputFormat = MongoOutputFormat.class.getName();
     private String outputPath = format("file://%s/out", System.getProperty("java.io.tmpdir"));
     private Map<String, String> params;
@@ -91,23 +88,13 @@ public class StreamingJob {
         add("-reducer", STREAMING_REDUCER);
     }
 
-    public StreamingJob hostName(final String hostName) {
-        this.hostName = hostName;
+    public StreamingJob inputUris(final MongoClientURI... inputUris) {
+        this.inputUris.addAll(Arrays.asList(inputUris));
         return this;
     }
 
-    public StreamingJob readPreference(final ReadPreference readPreference) {
-        this.readPreference = readPreference;
-        return this;
-    }
-
-    public StreamingJob inputAuth(final String inputAuth) {
-        this.inputAuth = inputAuth;
-        return this;
-    }
-
-    public StreamingJob inputCollection(final String inputCollection) {
-        this.inputCollection = inputCollection;
+    public StreamingJob outputUris(final MongoClientURI... outputUris) {
+        this.outputUris.addAll(Arrays.asList(outputUris));
         return this;
     }
 
@@ -118,16 +105,6 @@ public class StreamingJob {
 
     public StreamingJob inputPath(final String path) {
         inputPath = path;
-        return this;
-    }
-
-    public StreamingJob outputAuth(final String outputAuth) {
-        this.outputAuth = outputAuth;
-        return this;
-    }
-
-    public StreamingJob outputCollection(final String outputCollection) {
-        this.outputCollection = outputCollection;
         return this;
     }
 
@@ -154,11 +131,9 @@ public class StreamingJob {
             add("-inputformat", inputFormat);
             add("-outputformat", outputFormat);
 
-            add("-jobconf", format("%s=mongodb://%s%s/%s?readPreference=%s", INPUT_URI, inputAuth != null ? inputAuth + "@" : "",
-                                   hostName, inputCollection, readPreference));
+            add("-jobconf", format("%s=%s", INPUT_URI, inputUris.get(0)));
 
-            add("-jobconf", format("%s=mongodb://%s%s/%s", OUTPUT_URI, outputAuth != null ? outputAuth + "@" : "", hostName,
-                                   outputCollection));
+            add("-jobconf", format("%s=%s", OUTPUT_URI, outputUris.get(0)));
 
             for (final Entry<String, String> entry : params.entrySet()) {
                 add("-jobconf", entry.getKey() + "=" + entry.getValue());
