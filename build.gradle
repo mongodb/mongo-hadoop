@@ -90,6 +90,8 @@ configure(subprojects) {
         systemProperty 'hadoop.release.version', hadoopVersion
         systemProperties << System.getProperties()
 
+        dependsOn("jar")
+        
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
