@@ -101,7 +101,7 @@ public class BaseHadoopTest {
     }
 
     protected MongoClientURIBuilder authCheck(final MongoClientURIBuilder builder) {
-        if (Boolean.valueOf(System.getProperty("authEnabled", "false"))) {
+        if (isAuthEnabled()) {
             builder.auth("bob", "pwd123");
         }
 
@@ -184,7 +184,8 @@ public class BaseHadoopTest {
     }
 
     protected static boolean isAuthEnabled() {
-        return Boolean.valueOf(System.getProperty("authEnabled", "false"));
+        return Boolean.valueOf(System.getProperty("authEnabled", "false"))
+            || "auth".equals(System.getProperty("mongodb_option"));
     }
 
     protected boolean isSharded() {
