@@ -35,7 +35,6 @@ public class BaseHadoopTest {
     public static final File TREASURY_YIELD_HOME;
     public static final File JSONFILE_PATH;
 
-    protected static final File JOBJAR_PATH;
     private final MongoClientURI outputUri;
     private final MongoClientURI inputUri;
     private final boolean runTestInVm = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
@@ -68,16 +67,6 @@ public class BaseHadoopTest {
             }
             TREASURY_YIELD_HOME = home;
             JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
-
-            File file = new File(TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
-            if (!file.exists()) {
-                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
-            }
-            File[] files = file.listFiles(new HadoopVersionFilter());
-            if (files.length == 0) {
-                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
-            }
-            JOBJAR_PATH = files[0];
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }

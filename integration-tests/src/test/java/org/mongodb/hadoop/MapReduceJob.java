@@ -2,7 +2,6 @@ package org.mongodb.hadoop;
 
 import com.mongodb.MongoClientURI;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,10 +72,6 @@ public class MapReduceJob {
 
     public MapReduceJob(final String className) {
         this.className = className;
-    }
-
-    public MapReduceJob(final Class<? extends Tool> toolClass) {
-        this(toolClass.getName());
     }
 
     public MapReduceJob param(final String key, final String value) {
@@ -237,11 +232,7 @@ public class MapReduceJob {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Pair{");
-            sb.append("key=").append(key);
-            sb.append(", value=").append(value);
-            sb.append('}');
-            return sb.toString();
+            return String.format("Pair{key=%s, value=%s}", key, value);
         }
     }
 }

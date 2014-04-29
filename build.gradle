@@ -272,7 +272,6 @@ project(":integration-tests") {
     dependencies {
         testCompile project(':core')
         testCompile project(':streaming')
-//        testCompile project(':examples/treasury_yield')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
 }
