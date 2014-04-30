@@ -138,7 +138,7 @@ public class BaseHadoopTest {
                                              "-p", "pwd123",
                                              "--authenticationDatabase", "admin"));
             }
-            LOG.debug(command.toString());
+            LOG.info(command.toString());
             ProcessExecutor executor = new ProcessExecutor().command(command)
                                                             .readOutput(true)
                                                             .redirectOutput(System.out);
