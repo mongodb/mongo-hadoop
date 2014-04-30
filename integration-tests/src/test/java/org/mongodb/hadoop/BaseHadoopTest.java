@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -137,17 +139,38 @@ public class BaseHadoopTest {
                 List<String> list = new ArrayList<String>(asList("-u", "bob",
                                                                  "-p", "pwd123"));
                 String mongodb_server = System.getProperty("mongodb_server", "");
-                System.out.printf("************ mongodb_server = '%s'%n", mongodb_server);
+                LOG.info(format("************ mongodb_server = %s", mongodb_server));
                 if (!mongodb_server.equals("22-release")) {
                     list.addAll(asList("--authenticationDatabase", "admin"));
                 }
                 command.addAll(list);
             }
-            LOG.info(command.toString());
+            StringBuilder output = new StringBuilder();
+            Iterator<String> iterator = command.iterator();
+            while (iterator.hasNext()) {
+                final String s = iterator.next();
+                if (output.length() != 0) {
+                    output.append("\t");
+                } else {
+                    output.append("\n");
+                }
+                output.append(s);
+                if (iterator.hasNext()) {
+                    output.append(" \\");
+                }
+                output.append("\n");
+            }
+            LOG.info(output.toString());
+            
             ProcessExecutor executor = new ProcessExecutor().command(command)
                                                             .readOutput(true)
                                                             .redirectOutput(System.out);
-            executor.execute();
+            ProcessResult result = executor.execute();
+            if(result.getExitValue() != 0) {
+                LOG.error(result.getOutput().getString());
+                throw new RuntimeException("mongoimport failed.");
+            }
+            
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } catch (InterruptedException e) {
