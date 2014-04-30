@@ -456,6 +456,10 @@ public final class MongoConfigUtil {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
 
+    public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
+        setMongoURI(conf, OUTPUT_URI, uri);
+    }
+
     /**
      * Set JSON but first validate it's parseable into a DBObject
      */
