@@ -136,7 +136,7 @@ public class BaseHadoopTest {
             if (isAuthEnabled()) {
                 List<String> list = new ArrayList<String>(asList("-u", "bob",
                                                                  "-p", "pwd123"));
-                if(!System.getProperty("hadoop_version", "").equals("22-release")) {
+                if (!System.getProperty("hadoop_version", "").equals("22-release")) {
                     list.addAll(asList("--authenticationDatabase", "admin"));
                 }
                 command.addAll(list);
@@ -188,7 +188,7 @@ public class BaseHadoopTest {
 
     protected static boolean isAuthEnabled() {
         return Boolean.valueOf(System.getProperty("authEnabled", "false"))
-            || "auth".equals(System.getProperty("mongodb_option"));
+               || "auth".equals(System.getProperty("mongodb_option"));
     }
 
     protected boolean isSharded() {
