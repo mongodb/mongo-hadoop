@@ -161,16 +161,16 @@ public class BaseHadoopTest {
                 output.append("\n");
             }
             LOG.info(output.toString());
-            
+
             ProcessExecutor executor = new ProcessExecutor().command(command)
                                                             .readOutput(true)
                                                             .redirectOutput(System.out);
             ProcessResult result = executor.execute();
-            if(result.getExitValue() != 0) {
+            if (result.getExitValue() != 0) {
                 LOG.error(result.getOutput().getString());
                 throw new RuntimeException("mongoimport failed.");
             }
-            
+
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } catch (InterruptedException e) {
