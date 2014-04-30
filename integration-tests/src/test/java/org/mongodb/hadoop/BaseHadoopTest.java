@@ -136,7 +136,7 @@ public class BaseHadoopTest {
             if (isAuthEnabled()) {
                 List<String> list = new ArrayList<String>(asList("-u", "bob",
                                                                  "-p", "pwd123"));
-                if (!System.getProperty("hadoop_version", "").equals("22-release")) {
+                if (!System.getProperty("mongodb_server", "").equals("22-release")) {
                     list.addAll(asList("--authenticationDatabase", "admin"));
                 }
                 command.addAll(list);
