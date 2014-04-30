@@ -95,7 +95,7 @@ public class TestSharded extends BaseShardedTest {
         DBObject chunk = config.getCollection("chunks").findOne(new BasicDBObject("shard", "sh01"));
         DBObject query = new BasicDBObject("_id", new BasicDBObject("$gte", ((DBObject) chunk.get("min")).get("_id"))
                                                       .append("$lt", ((DBObject) chunk.get("max")).get("_id")));
-        List<DBObject> data = asList(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.in").find(query));
+        List<DBObject> data = toList(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.in").find(query));
         DBCollection destination = getShard2().getDB("mongo_hadoop").getCollection("yield_historical.in");
         for (DBObject doc : data) {
             destination.insert(doc, WriteConcern.UNACKNOWLEDGED);

@@ -18,11 +18,11 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 public class BaseHadoopTest {
@@ -128,15 +128,18 @@ public class BaseHadoopTest {
     public void mongoImport(final String collection, final File file) {
         try {
             List<String> command = new ArrayList<String>();
-            command.addAll(Arrays.asList(MONGO_IMPORT,
-                                         "--drop",
-                                         "--db", "mongo_hadoop",
-                                         "--collection", collection,
-                                         "--file", file.getAbsolutePath()));
+            command.addAll(asList(MONGO_IMPORT,
+                                  "--drop",
+                                  "--db", "mongo_hadoop",
+                                  "--collection", collection,
+                                  "--file", file.getAbsolutePath()));
             if (isAuthEnabled()) {
-                command.addAll(Arrays.asList("-u", "bob",
-                                             "-p", "pwd123",
-                                             "--authenticationDatabase", "admin"));
+                List<String> list = new ArrayList<String>(asList("-u", "bob",
+                                                                 "-p", "pwd123"));
+                if(!System.getProperty("hadoop_version", "").equals("22-release")) {
+                    list.addAll(asList("--authenticationDatabase", "admin"));
+                }
+                command.addAll(list);
             }
             LOG.info(command.toString());
             ProcessExecutor executor = new ProcessExecutor().command(command)
@@ -174,7 +177,7 @@ public class BaseHadoopTest {
         return reference;
     }
 
-    List<DBObject> asList(final DBCursor cursor) {
+    List<DBObject> toList(final DBCursor cursor) {
         List<DBObject> list = new ArrayList<DBObject>();
         while (cursor.hasNext()) {
             list.add(cursor.next());
@@ -200,7 +203,7 @@ public class BaseHadoopTest {
     }
 
     protected void compareResults(final DBCollection collection, final List<DBObject> expected) {
-        List<DBObject> output = asList(collection.find().sort(new BasicDBObject("_id", 1)));
+        List<DBObject> output = toList(collection.find().sort(new BasicDBObject("_id", 1)));
         assertEquals("count is not same: " + output, expected.size(), output.size());
         for (int i = 0; i < output.size(); i++) {
             final DBObject doc = output.get(i);
