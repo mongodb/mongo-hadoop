@@ -451,8 +451,15 @@ public final class MongoConfigUtil {
     public static void setOutputURI(final Configuration conf, final String uri) {
         setMongoURIString(conf, OUTPUT_URI, uri);
     }
-
+     /**
+     * @deprecated use {@link #setOutputURI(Configuration, MongoClientURI)} instead
+     */
+    @Deprecated
     public static void setOutputURI(final Configuration conf, final MongoURI uri) {
+        setMongoURI(conf, OUTPUT_URI, uri);
+    }
+
+    public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
 
