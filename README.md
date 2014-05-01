@@ -4,7 +4,7 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
-Current stable release: **1.2.0**
+Current stable release: **1.2.1**
 
 ## Features
 
@@ -20,11 +20,11 @@ See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
 
 ## Building
 
-The mongo-hadoop connector currently supports the following versions of hadoop:  0.23, 1.0, 1.1, 2.2, 2.3, and CDH 4.  The default build
-version will build against the last Apache Hadoop (currently 2.3).  If you would like to build against a specific version of Hadoop you 
-simply need to pass `-Phadoop_version=<your version>`.
+The mongo-hadoop connector currently supports the following versions of hadoop:  0.23, 1.0, 1.1, 2.2, 2.3, 2.4, 
+and CDH 4 abd 5.  The default build version will build against the last Apache Hadoop (currently 2.4).  If you would like to build 
+against a specific version of Hadoop you simply need to pass `-Phadoop_version=<your version>` to gradlew when building.
 
-Then run `./gradlew jar` to build the jars.  The jars will be placed in to `build/libs` for each module.  e.g. for the core module, 
+Run `./gradlew jar` to build the jars.  The jars will be placed in to `build/libs` for each module.  e.g. for the core module, 
 it will be generated in the `core/build/libs` directory.
 
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the
@@ -36,41 +36,16 @@ following locations, depending on which Hadoop release you are using:
 
 ## Supported Distributions of Hadoop
 
-###Apache Hadoop 1.0
-   Does **not** support Hadoop Streaming.
-
-   Build using `-Phadoop_version=1.0`
-
-###Apache Hadoop 1.1
-   Includes support for Hadoop Streaming.
-
-   Build using `-Phadoop_version=1.1`
-
-
-###Apache Hadoop 0.23
-   Includes support for Streaming
-
-   Build using `-Phadoop_version=0.23`
-
-###Cloudera Distribution for Hadoop Release 4
-
-   This is the newest release from Cloudera which is based on Apache Hadoop 2.0. The newer MR2/YARN APIs are not yet supported, but MR1
-   is still fully compatible.
-
-   Includes support for Streaming.
-
-   Build with `-Phadoop_version=cdh4`
-
-
-###Apache Hadoop 2.2
-   Includes support for Streaming
-
-   Build using `-Phadoop_version=2.2`
-
-###Apache Hadoop 2.3
-   Includes support for Streaming
-
-   Build using `-Phadoop_version=2.3`
+| Hadoop Version                       | Build Parameter         |
+| :----------------------------------: | :---------------------: |
+| Apache Hadoop 0.23                   | -Phadoop_version='0.23' |
+| Apache Hadoop 1.0                    | -Phadoop_version='1.0'  |
+| Apache Hadoop 1.1                    | -Phadoop_version='1.1'  |
+| Apache Hadoop 2.2                    | -Phadoop_version='2.2'  |
+| Apache Hadoop 2.3                    | -Phadoop_version='2.3'  |
+| Apache Hadoop 2.4                    | -Phadoop_version='2.4'  |
+| Cloudera Distribution for Hadoop 4   | -Phadoop_version='cdh4' |
+| Cloudera Distribution for Hadoop 5   | -Phadoop_version='cdh5' |
 
 ## Configuration
 
@@ -79,6 +54,14 @@ following locations, depending on which Hadoop release you are using:
 ## Streaming
 
 [Streaming](streaming/README.md)
+
+## Hive
+
+[Hive](hive/README.md)
+
+## Pig
+
+[Pig](pig/README.md)
 
 ## Examples
 
@@ -108,9 +91,9 @@ For examples on using Pig with the MongoDB Connector for Hadoop, also refer to t
 
 ## Notes for Contributors
 
-If your code introduces new features, please add tests that cover them if possible and make sure that `./gradlew check` still passes.
+If your code introduces new features, add tests that cover them if possible and make sure that `./gradlew check` still passes.
 If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details 
-and we will try to help.
+and we will try to help.  _Note_: Until findbugs updates its dependencies, running `./gradlew check` on Java 8 will fail.
 
 ### Maintainers
 Justin lee (justin.lee@mongodb.com)
