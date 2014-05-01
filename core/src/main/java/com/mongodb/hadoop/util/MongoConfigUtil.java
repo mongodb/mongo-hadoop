@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -344,10 +345,48 @@ public final class MongoConfigUtil {
     public static DBCollection getCollection(final MongoURI uri) {
         return getCollection(new MongoClientURI(uri.toString()));
     }
-    
+
+    private static Map<MongoClientUriMapkey, MongoClient> mongoClientCache = new ConcurrentHashMap<MongoClientUriMapkey, MongoClient>();
+
+    /** MongoClientURI does not implement hashCode() or equals() so we need to create our own key class */
+    private static final class MongoClientUriMapkey{
+        private final String str;
+        MongoClientUriMapkey(final MongoClientURI uri){
+            str = uri.toString() + "-" + uri.getOptions().toString();
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()){ return false; }
+            MongoClientUriMapkey that = (MongoClientUriMapkey) o;
+            return that.str.equals(str);
+        }
+
+        @Override
+        public int hashCode() {
+            return str.hashCode();
+        }
+    }
+
     public static DBCollection getCollection(final MongoClientURI uri) {
         try {
-            return new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            final MongoClientUriMapkey key = new MongoClientUriMapkey(uri);
+            MongoClient mongoClient = mongoClientCache.get(key);
+            if (mongoClient == null){
+                // On cache miss create a new MongoClient and put it in the cache.
+                MongoClient newMongoClient = new MongoClient(uri);
+                MongoClient oldMongoClient = mongoClientCache.putIfAbsent(key, newMongoClient);
+                // If race condition is detected close the new MongoClient we just created.
+                if (oldMongoClient != null && oldMongoClient != newMongoClient){
+                    newMongoClient.close();
+                    mongoClient = oldMongoClient;
+                } else {
+                    mongoClient = newMongoClient;
+                }
+            }
+
+            return mongoClient.getDB(uri.getDatabase()).getCollection(uri.getCollection());
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
