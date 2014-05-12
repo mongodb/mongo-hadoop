@@ -25,35 +25,24 @@ import java.util.concurrent.TimeoutException;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
-import static org.mongodb.hadoop.BaseHadoopTest.loadProperty;
+import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_HOME;
+import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_VERSION;
 
 public class MapReduceJob {
     private static final Logger LOG = LoggerFactory.getLogger(MapReduceJob.class);
-
-    public static final String HADOOP_HOME;
-    public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
-    public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.3.0");
-
-    public static final File TREASURY_YIELD_HOME;
-    public static final File JSONFILE_PATH;
 
     protected static final File JOBJAR_PATH;
 
     static {
         try {
-            HADOOP_HOME = new File(format("%s/hadoop-binaries/hadoop-%s", System.getProperty("user.home"),
-                                          HADOOP_RELEASE_VERSION)).getCanonicalPath();
-
             File current = new File(".").getCanonicalFile();
-            File home = new File(current, "examples/treasury_yield");
-            while (!home.exists() && current.getParentFile().exists()) {
+            File core = new File(current, "core");
+            while (!core.exists() && current.getParentFile().exists()) {
                 current = current.getParentFile();
-                home = new File(current, "examples/treasury_yield");
+                core = new File(current, "core");
             }
-            TREASURY_YIELD_HOME = home;
-            JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
 
-            File file = new File(TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
+            File file = new File(core, "build/libs").getCanonicalFile();
             File[] files = file.listFiles(new HadoopVersionFilter());
             if (files.length == 0) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));

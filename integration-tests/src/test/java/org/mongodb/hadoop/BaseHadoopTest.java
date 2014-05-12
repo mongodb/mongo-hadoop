@@ -31,11 +31,11 @@ public class BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
 
     public static final String HADOOP_HOME;
-    public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.3");
-    public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.3.0");
+    public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
+    public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.4.0");
 
     public static final File TREASURY_YIELD_HOME;
-    public static final File JSONFILE_PATH;
+    public static final File TREASURY_JSON_PATH;
 
     private final MongoClientURI outputUri;
     private final MongoClientURI inputUri;
@@ -68,7 +68,7 @@ public class BaseHadoopTest {
                 home = new File(current, "examples/treasury_yield");
             }
             TREASURY_YIELD_HOME = home;
-            JSONFILE_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
+            TREASURY_JSON_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -181,7 +181,7 @@ public class BaseHadoopTest {
     @Before
     public void setUp() {
         getClient().getDB("mongo_hadoop").dropDatabase();
-        mongoImport("yield_historical.in", JSONFILE_PATH);
+        mongoImport("yield_historical.in", TREASURY_JSON_PATH);
     }
 
     public MongoClient getClient() {

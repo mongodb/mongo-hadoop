@@ -54,7 +54,7 @@ public class TestStandalone extends BaseHadoopTest {
 
     @Test
     public void testTreasuryJsonConfig() {
-        mongoImport("yield_historical.in3", JSONFILE_PATH);
+        mongoImport("yield_historical.in3", TREASURY_JSON_PATH);
         new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .param(MULTI_COLLECTION_CONF_KEY, collectionSettings().toString())
@@ -66,8 +66,8 @@ public class TestStandalone extends BaseHadoopTest {
 
     @Test
     public void testMultipleCollectionSupport() {
-        mongoImport(getInputUri().getCollection(), JSONFILE_PATH);
-        mongoImport(inputUri2.getCollection(), JSONFILE_PATH);
+        mongoImport(getInputUri().getCollection(), TREASURY_JSON_PATH);
+        mongoImport(inputUri2.getCollection(), TREASURY_JSON_PATH);
         new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .inputUris(getInputUri(), inputUri2)

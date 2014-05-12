@@ -21,6 +21,7 @@ ext.hadoopVersion = versionMap[hadoop_version]
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.javaDriverVersion = "2.12.1"
+ext.dataHome = "examples/data"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
 
@@ -331,21 +332,22 @@ task sensorData(dependsOn: [installHadoop]) << {
 }
 
 task enronEmails(dependsOn: 'installHadoop') << {
+	new File(dataHome).mkdirs()
     download {
         src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
-        dest 'examples/data/'
+        dest dataHome
         onlyIfNewer true
     }
-    if (!new File('examples/data/dump').exists()) {
+    if (!new File("${dataHome}/dump").exists()) {
         println "extracting email data"
         copy {
-            from(tarTree('examples/data/enron_mongo.tar.bz2'))
-            into 'examples/data'
+            from(tarTree("${dataHome}/enron_mongo.tar.bz2"))
+            into dataHome
         }
     }
 
     exec() {
-        commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "examples/data/dump/enron_mail"
+        commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
     }
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
