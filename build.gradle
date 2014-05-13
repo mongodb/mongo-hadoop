@@ -254,6 +254,14 @@ project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
+        testCompile project(':streaming')
+        testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
+        testCompile 'com.jayway.awaitility:awaitility:1.6.0'
+        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
+        testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
     }
 }
 

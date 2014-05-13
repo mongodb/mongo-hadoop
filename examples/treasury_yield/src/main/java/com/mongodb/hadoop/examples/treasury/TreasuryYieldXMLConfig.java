@@ -34,13 +34,11 @@ import java.util.Arrays;
 public class TreasuryYieldXMLConfig extends MongoTool {
     private static final Log LOG = LogFactory.getLog(TreasuryYieldXMLConfig.class);
 
-    static {
-        Configuration.addDefaultResource("src/examples/hadoop-local.xml");
-        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
+    public TreasuryYieldXMLConfig() {
+        this(new Configuration());
     }
 
-    public TreasuryYieldXMLConfig() {
-        Configuration conf = new Configuration();
+    public TreasuryYieldXMLConfig(final Configuration conf) {
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);
 

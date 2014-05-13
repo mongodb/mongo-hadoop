@@ -1,5 +1,6 @@
 package org.mongodb.hadoop;
 
+import com.jayway.awaitility.Awaitility;
 import com.mongodb.BasicDBObject;
 import com.mongodb.CommandResult;
 import com.mongodb.DBCollection;
@@ -7,24 +8,40 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.server.MiniYARNCluster;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.ContainerManagerImpl;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class BaseHadoopTest {
@@ -34,12 +51,14 @@ public class BaseHadoopTest {
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
     public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.4.0");
 
+    public static final File PROJECT_HOME;
     public static final File TREASURY_YIELD_HOME;
     public static final File TREASURY_JSON_PATH;
 
     private final MongoClientURI outputUri;
     private final MongoClientURI inputUri;
-    private final boolean runTestInVm = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
+
+    private static final boolean runTestInVm = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
     private final List<DBObject> reference = new ArrayList<DBObject>();
 
@@ -67,12 +86,16 @@ public class BaseHadoopTest {
                 current = current.getParentFile();
                 home = new File(current, "examples/treasury_yield");
             }
+            PROJECT_HOME = current;
             TREASURY_YIELD_HOME = home;
             TREASURY_JSON_PATH = new File(TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
+
+    public static MiniYARNCluster yarnCluster;
+    private static MiniDFSCluster dfsCluster;
 
     public BaseHadoopTest() {
         reference.add(dbObject("_id", 1990, "count", 250, "avg", 8.552400000000002, "sum", 2138.1000000000004));
@@ -240,11 +263,73 @@ public class BaseHadoopTest {
         }
     }
 
+    @BeforeClass
+    public static void setupCluster() {
+        if (isRunTestInVm()) {
+            try {
+                System.setProperty("hadoop.log.dir", "/tmp/hadoop-test-logs");
+
+                Configuration config = new Configuration();
+                config.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 128);
+                config.setClass(YarnConfiguration.RM_SCHEDULER,
+                                FifoScheduler.class, ResourceScheduler.class);
+                config.set("yarn.log.dir", "/tmp/yarn-logs");
+                dfsCluster = new MiniDFSCluster.Builder(config)
+                                 .numDataNodes(1)
+                                 .startupOption(StartupOption.FORMAT)
+                                 .build();
+                yarnCluster = new MiniYARNCluster("mongo-hadoop", 1, 1, 1, 1);
+                yarnCluster.init(config);
+
+                final ContainerManagerImpl cm = (ContainerManagerImpl) yarnCluster.getNodeManager(0).getNMContext().getContainerManager();
+                Awaitility.await()
+                          .atMost(2, MINUTES)
+                          .until(new Callable<Boolean>() {
+                              @Override
+                              public Boolean call() throws Exception {
+                                  return !cm.getBlockNewContainerRequestsStatus();
+                              }
+                          });
+
+                URL url = Thread.currentThread().getContextClassLoader().getResource("yarn-site.xml");
+                if (url == null) {
+                    throw new RuntimeException("Could not find 'yarn-site.xml' dummy file in classpath");
+                }
+                Configuration yarnClusterConfig = yarnCluster.getConfig();
+                yarnClusterConfig.set("yarn.application.classpath", new File(url.getPath()).getParent());
+                //write the document to a buffer (not directly to the file, as that
+                //can cause the file being written to get read -which will then fail.
+                ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+                yarnClusterConfig.writeXml(bytesOut);
+                bytesOut.close();
+                //write the bytes to the file in the classpath
+                OutputStream os = new FileOutputStream(new File(url.getPath()));
+                os.write(bytesOut.toByteArray());
+                os.close();
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @AfterClass
+    public static void stopCluster() {
+        if (isRunTestInVm()) {
+            if (yarnCluster != null) {
+                yarnCluster.stop();
+            }
+            if (dfsCluster != null) {
+                dfsCluster.shutdown();
+            }
+        }
+    }
+
     private BigDecimal round(final Double value, final int precision) {
         return new BigDecimal(value).round(new MathContext(precision));
     }
 
-    public boolean isRunTestInVm() {
+    public static boolean isRunTestInVm() {
         return runTestInVm;
     }
 

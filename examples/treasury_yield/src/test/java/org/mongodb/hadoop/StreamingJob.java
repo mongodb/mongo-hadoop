@@ -197,10 +197,10 @@ public class StreamingJob {
                 }
             }
 
-            File coreJar = new File("../core/build/libs").listFiles(new HadoopVersionFilter())[0];
+            File coreJar = new File(BaseHadoopTest.PROJECT_HOME, "core/build/libs").listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
 
-            File mongoStreamingJar = new File("../streaming/build/libs").listFiles(new HadoopVersionFilter())[0];
+            File mongoStreamingJar = new File(BaseHadoopTest.PROJECT_HOME, "streaming/build/libs").listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(mongoStreamingJar, new File(hadoopLib, "mongo-hadoop-streaming.jar"));
 
             File hadoopStreamingJar;

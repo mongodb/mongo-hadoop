@@ -32,9 +32,7 @@ import java.util.Date;
 public class TreasuryYieldMulti extends MongoTool {
 
     static {
-        // Load the XML config defined in hadoop-local.xml
-        Configuration.addDefaultResource("src/examples/hadoop-local.xml");
-        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
+//        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
     }
 
     public static void main(final String[] pArgs) throws Exception {

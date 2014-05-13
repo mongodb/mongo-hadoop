@@ -1,7 +1,9 @@
 package org.mongodb.hadoop;
 
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,7 @@ import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
 import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_HOME;
 import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_VERSION;
+import static org.mongodb.hadoop.BaseHadoopTest.PROJECT_HOME;
 
 public class MapReduceJob {
     private static final Logger LOG = LoggerFactory.getLogger(MapReduceJob.class);
@@ -42,7 +45,7 @@ public class MapReduceJob {
                 core = new File(current, "core");
             }
 
-            File file = new File(core, "build/libs").getCanonicalFile();
+            File file = new File(BaseHadoopTest.TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
             File[] files = file.listFiles(new HadoopVersionFilter());
             if (files.length == 0) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
@@ -134,6 +137,7 @@ public class MapReduceJob {
     }
 
     public void executeInVM() throws Exception {
+        
         List<String> cmd = new ArrayList<String>();
         for (Pair<String, String> entry : processSettings()) {
             cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
@@ -146,7 +150,12 @@ public class MapReduceJob {
 
         LOG.info("Executing hadoop job");
 
-        ToolRunner.run((org.apache.hadoop.util.Tool) Class.forName(className).newInstance(), cmd.toArray(new String[cmd.size()]));
+        Class<? extends MongoTool> jobClass = (Class<? extends MongoTool>) Class.forName(className);
+        Configuration conf = new Configuration(BaseHadoopTest.yarnCluster.getConfig());
+        MongoTool app = jobClass.getConstructor(new Class[]{Configuration.class})
+                                .newInstance(conf);
+        
+        ToolRunner.run(conf, app, cmd.toArray(new String[cmd.size()]));
     }
 
     private List<Pair<String, String>> processSettings() {
@@ -192,7 +201,7 @@ public class MapReduceJob {
                     FileUtils.copyFile(file, new File(hadoopLib, "mongo-java-driver.jar"));
                 }
             }
-            File coreJar = new File(format("../core/build/libs")).listFiles(new HadoopVersionFilter())[0];
+            File coreJar = new File(PROJECT_HOME, "core/build/libs").listFiles(new HadoopVersionFilter())[0];
             FileUtils.copyFile(coreJar, new File(hadoopLib, "mongo-hadoop-core.jar"));
 
         } catch (IOException e) {
