@@ -10,7 +10,7 @@
 ## * mongo-hadoop-hive-*.jar
 
 # test directory -- CHANGE ME --
-export TEST_DIR="/<path>/<to>/<testing or current>/<directory>/hive_tests"
+export TEST_DIR="/Users/jlee/dev/mongo-hadoop/integration-tests/hive_tests"
 
 # location of data file used in testing
 export TEXT_TEST_PATH="$TEST_DIR/text_test_files/test_data.txt"
@@ -29,7 +29,7 @@ export HDFS_TEST_FILE_TYPE="TEXTFILE"
 
 # path (absolute or relative) where MongoStorageHandler, BSONStorageHandler reside 
 # -- CHANGE ME --
-export PACKAGE_PATH="/<path>/<to>/mongo-hadoop-hive_1.1.2-1.1.0.jar"
+export PACKAGE_PATH="/Users/jlee/dev/mongo-hadoop/hive/build/libs/mongo-hadoop-hive-1.2.1-SNAPSHOT-hadoop_2.4.jar"
 
 # Class name of MongoStorageHandler (prefixed by package name)
 export MSH_PACKAGE_NAME="com.mongodb.hadoop.hive.MongoStorageHandler"
@@ -50,21 +50,21 @@ export VERBOSE_TESTS=1
 export MONGOD="mongod"
 
 # <dbpath> of mongod --- CHANGE ME ---
-export DB_PATH="/<path>/<to>/bin/mongodb"
+export DB_PATH="/usr/local/opt/mongodb/bin/"
 
 # logpath of mongod
 export LOG_PATH="$DB_PATH/mongodb.log"
 
 # port of mongod --- CHANGE ME ---
-export MONGOD_PORT=<Unsharded port 17000>
+export MONGOD_PORT=27017
 
 # add python Thrift libraries for using HiveClient --- CHANGE ME ---
-export PYTHONPATH=$PYTHONPATH:/<path>/<to>/hive-0.10.0/lib/py
+export PYTHONPATH=$PYTHONPATH:/Users/jlee/Downloads/hive-0.12.0/lib/py
 
 # make sure that hadoop daemons are running
-check_hadoop=$(jps | grep -iE 'namenode|datanode|tasktracker|jobtracker' | wc -l)
+check_hadoop=$(jps | grep -iE 'namenode|datanode|nodemanager|resourcemanager' | wc -l)
 if [ "$check_hadoop" -lt "4" ]; then
-    echo "Make sure you've started the Hadoop daemons: namenode, datanode, tasktracker, and jobtracker"
+    echo "Make sure you've started the Hadoop daemons: namenode, datanode, nodemanager, and resourcemanager"
     exit 1
 else
     echo "Hadoop daemons already running"
@@ -80,5 +80,5 @@ else
 fi
 
 # run the python unit tests
-python $TEST_DIR/mongo_hive_tests.py
+python mongo_hive_tests.py
 

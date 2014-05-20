@@ -1,11 +1,9 @@
 package org.mongodb.hadoop;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import com.mongodb.hadoop.splitter.SingleMongoSplitter;
+import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.JsonNode;
@@ -15,9 +13,6 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter.MULTI_COLLECTION_CONF_KEY;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_NOTIMEOUT;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
@@ -25,9 +20,10 @@ import static com.mongodb.hadoop.util.MongoConfigUtil.MONGO_SPLITTER_CLASS;
 import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_RANGEQUERY;
 import static org.junit.Assume.assumeFalse;
 
-public class TestStandalone extends BaseHadoopTest {
+public class TestStandalone extends TreasuryTest {
     private static final Log LOG = LogFactory.getLog(TestStandalone.class);
-    private final MongoClientURI inputUri2;
+    protected final MongoClientURI inputUri2;
+
 
     public TestStandalone() {
         inputUri2 = authCheck(new MongoClientURIBuilder()
@@ -77,23 +73,6 @@ public class TestStandalone extends BaseHadoopTest {
         compareDoubled(getClient().getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection()));
     }
 
-    private void compareDoubled(final DBCollection out) {
-        List<DBObject> referenceDoubled = new ArrayList<DBObject>();
-        for (DBObject object : getReference()) {
-            DBObject doubled = new BasicDBObject();
-            doubled.putAll(object);
-            referenceDoubled.add(doubled);
-            Integer count = ((Integer) object.get("count")) * 2;
-            Double sum = ((Double) object.get("sum")) * 2;
-
-            doubled.put("count", count);
-            doubled.put("avg", sum / count);
-            doubled.put("sum", sum);
-        }
-
-        compareResults(out, referenceDoubled);
-    }
-
     private JsonNode collectionSettings() {
         ArrayNode settings = new ArrayNode(JsonNodeFactory.instance);
         ObjectNode node = new ObjectNode(JsonNodeFactory.instance);
@@ -118,4 +97,5 @@ public class TestStandalone extends BaseHadoopTest {
 
         return settings;
     }
+
 }

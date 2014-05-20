@@ -1,5 +1,7 @@
 package org.mongodb.hadoop;
 
+import com.mongodb.hadoop.testutils.BaseHadoopTest;
+
 import java.io.File;
 import java.io.FileFilter;
 

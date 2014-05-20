@@ -1,0 +1,16 @@
+<configuration>
+<!--
+    <property>
+        <name>dfs.datanode.address</name>
+        <value>50010</value>
+    </property>
+    <property>
+        <name>dfs.namenode.rpc-address</name>
+        <value>8020</value>
+    </property>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:8020</value>
+    </property>
+-->
+</configuration>

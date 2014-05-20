@@ -1,4 +1,4 @@
-package org.mongodb.hadoop;
+package com.mongodb.hadoop.testutils;
 
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;

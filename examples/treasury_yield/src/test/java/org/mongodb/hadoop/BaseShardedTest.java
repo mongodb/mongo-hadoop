@@ -5,6 +5,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assume.assumeTrue;
 
-public class BaseShardedTest extends BaseHadoopTest {
+public class BaseShardedTest extends TreasuryTest {
     private static final Log LOG = LogFactory.getLog(BaseShardedTest.class);
     private MongoClient shard1;
     private MongoClient shard2;

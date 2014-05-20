@@ -1,6 +1,7 @@
 package org.mongodb.hadoop;
 
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -27,9 +28,9 @@ import java.util.concurrent.TimeoutException;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
-import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_HOME;
-import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_VERSION;
-import static org.mongodb.hadoop.BaseHadoopTest.PROJECT_HOME;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.PROJECT_HOME;
 
 public class MapReduceJob {
     private static final Logger LOG = LoggerFactory.getLogger(MapReduceJob.class);
@@ -45,7 +46,7 @@ public class MapReduceJob {
                 core = new File(current, "core");
             }
 
-            File file = new File(BaseHadoopTest.TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
+            File file = new File(TreasuryTest.TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
             File[] files = file.listFiles(new HadoopVersionFilter());
             if (files.length == 0) {
                 throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
@@ -151,7 +152,7 @@ public class MapReduceJob {
         LOG.info("Executing hadoop job");
 
         Class<? extends MongoTool> jobClass = (Class<? extends MongoTool>) Class.forName(className);
-        Configuration conf = new Configuration(BaseHadoopTest.yarnCluster.getConfig());
+        Configuration conf = new Configuration(BaseHadoopTest.getYarnCluster().getConfig());
         MongoTool app = jobClass.getConstructor(new Class[]{Configuration.class})
                                 .newInstance(conf);
         

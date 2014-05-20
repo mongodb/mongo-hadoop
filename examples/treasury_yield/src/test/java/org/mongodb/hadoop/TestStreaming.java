@@ -10,7 +10,7 @@ import java.util.TreeMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
-public class TestStreaming extends BaseHadoopTest {
+public class TestStreaming extends TreasuryTest {
     @Before
     public void hadoopVersionCheck() {
         assumeFalse(HADOOP_VERSION.startsWith("1.0"));

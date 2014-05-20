@@ -4,6 +4,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.mapred.MongoInputFormat;
 import com.mongodb.hadoop.mapred.MongoOutputFormat;
 import com.mongodb.hadoop.streaming.io.MongoIdentifierResolver;
+import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,9 +28,9 @@ import java.util.concurrent.TimeoutException;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
-import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_HOME;
-import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_RELEASE_VERSION;
-import static org.mongodb.hadoop.BaseHadoopTest.HADOOP_VERSION;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_RELEASE_VERSION;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 
 public class StreamingJob {
     private static final String STREAMING_JAR;
