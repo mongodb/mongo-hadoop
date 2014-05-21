@@ -45,18 +45,18 @@ public class Hive2Test extends BaseHadoopTest {
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         HiveClient client = new HiveClient(protocol);
         transport.open();
-        client.execute(format("DROP TABLE %s", TestHDFSToMongoDBTable.HIVE_TEST_TABLE));
+        client.execute(format("DROP TABLE %s", HiveTest.HIVE_TEST_TABLE));
 
         client.execute(format("CREATE TABLE %s %s\n"
                               + "ROW FORMAT DELIMITED\n"
                               + "FIELDS TERMINATED BY '\\t'\n"
                               + "STORED AS %s",
-                              TestHDFSToMongoDBTable.HIVE_TEST_TABLE,
-                              TestHDFSToMongoDBTable.TEST_SCHEMA,
-                              TestHDFSToMongoDBTable.HIVE_TABLE_TYPE
+                              HiveTest.HIVE_TEST_TABLE,
+                              HiveTest.TEST_SCHEMA,
+                              HiveTest.HIVE_TABLE_TYPE
                              ));
 
-        client.execute(format("DESCRIBE %s", TestHDFSToMongoDBTable.HIVE_TEST_TABLE));
+        client.execute(format("DESCRIBE %s", HiveTest.HIVE_TEST_TABLE));
         Schema schema = client.getSchema();
         for (FieldSchema fieldSchema : schema.getFieldSchemas()) {
             System.out.printf("%15s", fieldSchema.getName());

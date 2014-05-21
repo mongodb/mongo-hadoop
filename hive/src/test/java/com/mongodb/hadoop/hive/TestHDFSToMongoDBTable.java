@@ -1,22 +1,23 @@
 package com.mongodb.hadoop.hive;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Random;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHDFSToMongoDBTable extends HiveTest {
 
-    public static final String HIVE_TEST_TABLE = "hive_test";
-    public static final String MONGO_TEST_TABLE = "mongo_test";
-    public static final String MONGO_TEST_COLLECTION = "hive_test";
-    public static final String TEST_SCHEMA = "(id INT, name STRING, age INT)";
-    public static final String HIVE_TABLE_TYPE = "textfile";
     private final String serdeProperties = "'mongo.columns.mapping'='{\"id\":\"_id\"}'";
     private MongoClientURI mongoTestURI;
 
@@ -45,25 +46,25 @@ public class TestHDFSToMongoDBTable extends HiveTest {
     public void createMongoDBHiveTable(final boolean withSerDeProps) {
         dropTable(MONGO_TEST_TABLE);
         execute(format("CREATE TABLE %s %s\n"
-                              + "STORED BY '%s'\n"
-                              + "WITH SERDEPROPERTIES(%s)\n"
-                              + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_TEST_TABLE, TEST_SCHEMA
-                                 , MongoStorageHandler.class.getName(),
-                              withSerDeProps ? serdeProperties : "''=''",
-                              mongoTestURI
-                             ));
+                       + "STORED BY '%s'\n"
+                       + "WITH SERDEPROPERTIES(%s)\n"
+                       + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_TEST_TABLE, TEST_SCHEMA
+                          , MongoStorageHandler.class.getName(),
+                       withSerDeProps ? serdeProperties : "''=''",
+                       mongoTestURI
+                      ));
     }
 
     private void loadDataIntoHDFSHiveTable() {
         createEmptyHDFSHiveTable();
         execute(format("LOAD DATA LOCAL INPATH '%s'\n" +
-                              "INTO TABLE %s", getPath("test_data.txt"), HIVE_TEST_TABLE));
+                       "INTO TABLE %s", getPath("test_data.txt"), HIVE_TEST_TABLE));
     }
 
     private void loadDataIntoMongoDBHiveTable(final boolean withSerDeProps) {
         createMongoDBHiveTable(withSerDeProps);
         execute(format("INSERT OVERWRITE TABLE %s "
-                              + "SELECT * FROM %s", MONGO_TEST_TABLE, HIVE_TEST_TABLE));
+                       + "SELECT * FROM %s", MONGO_TEST_TABLE, HIVE_TEST_TABLE));
     }
 
 
@@ -72,41 +73,51 @@ public class TestHDFSToMongoDBTable extends HiveTest {
     }
 
     @Test
-    public void  testSameDataHDFSAndMongoHiveTables() {
+    public void testSameDataHDFSAndMongoHiveTables() {
         Results hivedata = getAllDataFromTable(HIVE_TEST_TABLE);
         Results mongoData = getAllDataFromTable(MONGO_TEST_COLLECTION);
 
         assertEquals(hivedata, mongoData);
     }
 
-/*
+    @Test
     public void testDeleteReflectData() {
-    mongoSchema, mongoTblData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
-    mongoSchema = mongoSchema.fieldSchemas
+        Results results = getAllDataFromTable(MONGO_TEST_TABLE);
 
-    l = len(mongoTblData)
-    assertTrue(l > 0)
+        int size = results.size();
+        assertTrue(size > 0);
 
-    t = mongoTblData[random.randint(0, l - 1)]
-    toDelete = {}
-    for i in range(len(mongoSchema)):
-    #add more types as necessary
-    if mongoSchema[i].type == "int":
-    toDelete[mongoSchema[i].name] =int(t[i])
-    elif mongoSchema[ i].type == "string":
-    toDelete[mongoSchema[i].name] = str(t[i])
-    else:
-    toDelete[mongoSchema[i].name] = t[i]
+        List<String> t = results.get(new Random().nextInt(size));
+        DBObject toDelete = new BasicDBObject();
+        int i = 0;
+        for (FieldSchema schema : results.getFields()) {
+            // add more types as necessary
+            if (schema.getType().equals("int")) {
+                toDelete.put(schema.getName(), Integer.valueOf(t.get(i)));
+            }else if (schema.getType().equals("string")) {
+                toDelete.put(schema.getName(), t.get(i));
+            }else{
+                toDelete.put(schema.getName(),t.get(i));
+            }
+            i++;
+        }
+        
+        deleteFromCollection(toDelete);
 
-    Helpers.deleteFromCollection(self.mongoc, toDelete)
+        // get data from table now that the first row has been removed
+        Results newResults = getAllDataFromTable(MONGO_TEST_TABLE);
+        
 
-    #get data from table now that the first row has been removed
-    mongoSchema, mongoTblData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
+        // now make sure that 'toDelete' doesn't exist anymore
+        for (List<String> newResult : newResults) {
+            assertNotEquals(newResult, t);
+        }
+    }
 
-    #now make sure that 'toDelete' doesn 't exist anymore
-    for line in mongoTblData:
-    assertNotEqual(line, t)
-}
+    private void deleteFromCollection(final DBObject toDelete) {
+        getMongoClient().getDB("mongo_hadoop").getCollection(MONGO_TEST_COLLECTION).remove(toDelete);
+    }
+/*
 public void testDropReflectData() {
     mongoSchema, mongoTblData = Helpers.getAllDataFromTable(self.client, testMongoTblName)
     assertTrue(len(mongoTblData) > 0)
