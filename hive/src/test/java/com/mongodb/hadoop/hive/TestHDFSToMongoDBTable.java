@@ -5,7 +5,10 @@ import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
 
 public class TestHDFSToMongoDBTable extends HiveTest {
 
@@ -26,35 +29,22 @@ public class TestHDFSToMongoDBTable extends HiveTest {
     @Before
     public void setUp() {
         loadDataIntoHDFSHiveTable();
-//        loadDataIntoMongoDBHiveTable(false);
+        loadDataIntoMongoDBHiveTable(false);
+    }
+
+    public void tearDown() {
+        dropTable(MONGO_TEST_COLLECTION);
+        dropTable(HIVE_TEST_TABLE);
     }
 
     public void createEmptyHDFSHiveTable() {
-/*
-        try {
-            getHiveClient().drop_table("default", HIVE_TEST_TABLE, true);
-        } catch (TException e) {
-            e.printStackTrace();
-        }
-        try {
-            Table tbl = new Table();
-            tbl.setTableName(HIVE_TEST_TABLE);
-            tbl.setTableType(HIVE_TABLE_TYPE);
-            tbl.setSd();
-            getHiveClient().create_table(tbl);
-        } catch (TException e) {
-            e.printStackTrace();
-        }
-*/
-        //        execute(
         dropTable(HIVE_TEST_TABLE);
         createHDFSHiveTable(HIVE_TEST_TABLE, TEST_SCHEMA, "\\t", HIVE_TABLE_TYPE);
-        //               );
     }
 
     public void createMongoDBHiveTable(final boolean withSerDeProps) {
         dropTable(MONGO_TEST_TABLE);
-        executeCommand(format("CREATE TABLE %s %s\n"
+        execute(format("CREATE TABLE %s %s\n"
                               + "STORED BY '%s'\n"
                               + "WITH SERDEPROPERTIES(%s)\n"
                               + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_TEST_TABLE, TEST_SCHEMA
@@ -66,37 +56,27 @@ public class TestHDFSToMongoDBTable extends HiveTest {
 
     private void loadDataIntoHDFSHiveTable() {
         createEmptyHDFSHiveTable();
-//        executeCommand(format("LOAD DATA LOCAL INPATH '%s'\n" +
-//                              "INTO TABLE %s", getPath("test_data.txt"), HIVE_TEST_TABLE));
+        execute(format("LOAD DATA LOCAL INPATH '%s'\n" +
+                              "INTO TABLE %s", getPath("test_data.txt"), HIVE_TEST_TABLE));
     }
 
     private void loadDataIntoMongoDBHiveTable(final boolean withSerDeProps) {
         createMongoDBHiveTable(withSerDeProps);
-        executeCommand(format("INSERT OVERWRITE TABLE %s\n"
+        execute(format("INSERT OVERWRITE TABLE %s "
                               + "SELECT * FROM %s", MONGO_TEST_TABLE, HIVE_TEST_TABLE));
     }
 
-    public void tearDown() {
-        dropTable(MONGO_TEST_COLLECTION);
-        dropTable(HIVE_TEST_TABLE);
-    }
 
+    private Results getAllDataFromTable(final String table) {
+        return execute("SELECT * FROM " + table);
+    }
 
     @Test
     public void  testSameDataHDFSAndMongoHiveTables() {
-//        getAllDataFromTable(HIVE_TEST_TABLE);
-//        getAllDataFromTable(MONGO_TEST_COLLECTION);
+        Results hivedata = getAllDataFromTable(HIVE_TEST_TABLE);
+        Results mongoData = getAllDataFromTable(MONGO_TEST_COLLECTION);
 
-        //    assertEqual(hiveSchema, mongoSchema)
-        //    assertEqual(len(hiveData), len(mongoData))
-        //
-        //    for i in range(len(hiveData)):
-        //    assertEqual(hiveData[i], mongoData[i])
-    }
-
-    private void getAllDataFromTable(final String table) {
-        //        meta
-        executeCommand("SELECT * FROM " + table);
+        assertEquals(hivedata, mongoData);
     }
 
 /*

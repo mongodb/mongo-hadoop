@@ -49,7 +49,7 @@ public abstract class BaseHadoopTest {
     public static final String HIVE_VERSION = "0.12.0";
     public static final File PROJECT_HOME;
 
-    private static final boolean TEST_IN_VM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "true"));
+    private static final boolean TEST_IN_VM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
     private static MiniYARNCluster yarnCluster;
 

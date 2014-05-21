@@ -13,7 +13,7 @@
 export TEST_DIR="/Users/jlee/dev/mongo-hadoop/integration-tests/hive_tests"
 
 # location of data file used in testing
-export TEXT_TEST_PATH="$TEST_DIR/text_test_files/test_data.txt"
+export TEXT_TEST_PATH="$TEST_DIR/../../hive/src/test/resources/test_data.txt"
 
 # Path containing BSON file to be used for testing
 export BSON_LOCAL_TEST_PATH="$TEST_DIR/bson_test_files/users.bson"
@@ -57,15 +57,17 @@ export LOG_PATH="$DB_PATH/mongodb.log"
 
 # port of mongod --- CHANGE ME ---
 export MONGOD_PORT=27017
+export HIVE_HOME=/Users/jlee/hadoop-binaries/hive-0.12.0
 
 # add python Thrift libraries for using HiveClient --- CHANGE ME ---
-export PYTHONPATH=$PYTHONPATH:/Users/jlee/Downloads/hive-0.12.0/lib/py
+export PYTHONPATH=$PYTHONPATH:$HIVE_HOME/lib/py
+export PATH=$PATH:$HIVE_HOME/bin
 
 # make sure that hadoop daemons are running
 check_hadoop=$(jps | grep -iE 'namenode|datanode|nodemanager|resourcemanager' | wc -l)
 if [ "$check_hadoop" -lt "4" ]; then
     echo "Make sure you've started the Hadoop daemons: namenode, datanode, nodemanager, and resourcemanager"
-    exit 1
+    #exit 1
 else
     echo "Hadoop daemons already running"
 fi
