@@ -174,9 +174,7 @@ public class BSONSerDeTest {
 
 
     @Test
-    @Ignore("https://jira.mongodb.org/browse/HADOOP-108")
     public void testDates() throws SerDeException {
-
         String columnNames = "d";
         String columnTypes = "timestamp";
         Date d = new Date();
@@ -198,12 +196,12 @@ public class BSONSerDeTest {
         ObjectInspector innerInspector =
             PrimitiveObjectInspectorFactory.getPrimitiveObjectInspectorFromClass(TimestampWritable.class);
         BasicBSONObject bObject = new BasicBSONObject();
-        Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
+        BSONWritable serialized = (BSONWritable) helpSerialize(columnNames, innerInspector, bObject, new TimestampWritable(value), serde);
 
         // The time going in to serialize is Timestamp but it comes out as BSONTimestamp
         BasicBSONObject bsonWithTimestamp = new BasicBSONObject();
         bsonWithTimestamp.put(columnNames, bts);
-        assertThat(new BSONWritable(bsonWithTimestamp), equalTo(serialized));
+        assertThat(value.getTime(), equalTo(((Date) serialized.getDoc().get(columnNames)).getTime()));
     }
 
 
