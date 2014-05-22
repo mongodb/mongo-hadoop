@@ -363,7 +363,8 @@ task historicalYield(dependsOn: 'installHadoop') << {
 
     hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
            "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
-                "mongo.output.uri", "mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
+                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
+                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
            ])
 }
 
