@@ -1,10 +1,7 @@
 package com.mongodb.hadoop.hive;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClientURI;
-import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.junit.After;
 import org.junit.Before;

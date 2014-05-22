@@ -281,5 +281,4 @@ public abstract class BaseHadoopTest {
     public static boolean isRunTestInVm() {
         return TEST_IN_VM;
     }
-
 }
