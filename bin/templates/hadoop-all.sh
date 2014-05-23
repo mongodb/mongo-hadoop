@@ -3,12 +3,11 @@
 stopService() {
     SERVICE=$1
     shift
-    PID_PATH=@HADOOP_HOME@/${SERVICE}.pid
-    if [ -f ${PID_PATH} ]
+    PID=`jps | grep ${SERVICE} | cut -d' ' -f1`
+    if [ "${PID}" ]
     then
         echo Shutting down $*
-        kill `cat ${PID_PATH}`
-        rm ${PID_PATH}
+        kill ${PID}
     fi
 }
 
@@ -35,18 +34,11 @@ start() {
 }
 
 shutdown() {
-    stopService nodemanager node manager
-    stopService resourcemanager resource manager
-    stopService datanode data node
-    stopService namenode name node
-    
-    PID_PATH=@HIVE_HOME@/hiveserver.pid
-    if [ -f ${PID_PATH} ]
-    then
-        echo Shutting down hive server
-        kill `cat ${PID_PATH}`
-        rm ${PID_PATH}
-    fi
+    stopService NodeManager node manager
+    stopService ResourceManager resource manager
+    stopService DataNode data node
+    stopService NameNode name node
+    stopService RunJar hive server
 }
 
 CMD=$1
