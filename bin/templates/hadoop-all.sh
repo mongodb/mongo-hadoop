@@ -41,7 +41,7 @@ shutdown() {
     stopService namenode name node
     
     PID_PATH=@HIVE_HOME@/hiveserver.pid
-    if [ -f  ]
+    if [ -f ${PID_PATH} ]
     then
         echo Shutting down hive server
         kill `cat ${PID_PATH}`
