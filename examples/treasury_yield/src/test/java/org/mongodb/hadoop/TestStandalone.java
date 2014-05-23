@@ -22,7 +22,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class TestStandalone extends TreasuryTest {
     private static final Log LOG = LogFactory.getLog(TestStandalone.class);
-    protected final MongoClientURI inputUri2;
+    private final MongoClientURI inputUri2;
 
 
     public TestStandalone() {

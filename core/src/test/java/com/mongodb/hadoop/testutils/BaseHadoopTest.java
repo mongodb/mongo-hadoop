@@ -73,7 +73,7 @@ public abstract class BaseHadoopTest {
             HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s/", System.getProperty("user.home"),
                                                  HADOOP_RELEASE_VERSION)).getCanonicalPath();
             HIVE_HOME = new File(String.format("%s/hadoop-binaries/hive-%s/", System.getProperty("user.home"),
-                                                 HIVE_VERSION)).getCanonicalPath();
+                                               HIVE_VERSION)).getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();
             while (!new File(current, "build.gradle").exists() && current.getParentFile().exists()) {
@@ -86,14 +86,14 @@ public abstract class BaseHadoopTest {
     }
 
     public static MiniYARNCluster getYarnCluster() {
-        if(yarnCluster == null) {
+        if (yarnCluster == null) {
             setupCluster();
         }
         return yarnCluster;
     }
 
     public static MiniDFSCluster getDfsCluster() {
-        if(dfsCluster == null) {
+        if (dfsCluster == null) {
             setupCluster();
         }
         return dfsCluster;
@@ -146,6 +146,7 @@ public abstract class BaseHadoopTest {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+
         }
     }
 
@@ -160,7 +161,6 @@ public abstract class BaseHadoopTest {
             }
         }
     }
-
 
     protected MongoClientURIBuilder authCheck(final MongoClientURIBuilder builder) {
         if (isAuthEnabled()) {

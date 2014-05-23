@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Random;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;

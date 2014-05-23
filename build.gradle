@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
@@ -149,6 +151,19 @@ configure(subprojects) {
     task listDependencies << {
         configurations.compile.each { File file -> println file }
     }
+    
+    task testJar(type: Jar, dependsOn: testClasses) {
+        baseName = "test-${project.archivesBaseName}"
+        from sourceSets.test.output
+    }
+    
+    configurations {
+        tests
+    }
+    
+    artifacts {
+        tests testJar
+    }
 }
 
 configure(subprojects.findAll { it.name.contains('examples/') }) {
@@ -187,8 +202,10 @@ project(":hive") {
         compile "org.apache.hive:hive-exec:0.12.0"
         testCompile "org.apache.hive:hive-cli:0.12.0"
         testCompile "org.apache.hive:hive-service:0.12.0"
+        testCompile project(path: ':core', configuration: 'tests')
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0") {
             exclude group: 'org.apache.derby', module: 'derby'
+            exclude group: 'org.apache.hadoop', module: 'hadoop-core'
         }
         if (hadoop_version == "cdh4") {
             compile "org.apache.hive:hive-serde:0.10.0-cdh4.6.0"
@@ -268,6 +285,7 @@ project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
+        testCompile project(path: ':core', configuration: 'tests')
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
@@ -399,6 +417,19 @@ task enronEmails(dependsOn: 'installHadoop') << {
            "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
+task generateScripts() {
+    copy {
+        from 'bin/templates'
+        into 'bin'
+        filter ReplaceTokens, tokens: [
+                HADOOP_HOME: hadoopHome.toString(),
+                HADOOP_BINARIES: hadoopBinaries.toString(),
+                HIVE_HOME: hiveHome.toString(),
+                BIN_PATH   : project.rootDir.getAbsolutePath() + '/bin'
+        ]
+    }
+}
+
 def hadoop(jar, className, args) {
     def line = ["${hadoopHome}/bin/hadoop",
                 "jar", jar, className,
@@ -449,4 +480,3 @@ def mapReduceDeps(it, version) {
 }
 
 apply from: 'gradle/maven-deployment.gradle'
-//apply from: 'testing/treasury-tests.gradle'

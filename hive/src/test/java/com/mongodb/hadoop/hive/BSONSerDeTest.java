@@ -15,7 +15,6 @@ import org.bson.BasicBSONObject;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.BasicBSONList;
 import org.bson.types.ObjectId;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Timestamp;
@@ -171,7 +170,6 @@ public class BSONSerDeTest {
         Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
-
 
     @Test
     public void testDates() throws SerDeException {

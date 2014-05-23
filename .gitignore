@@ -24,4 +24,4 @@ TempStatsStore/
 *.splits
 *.crc
 tags
-
+bin/hadoop-all.sh

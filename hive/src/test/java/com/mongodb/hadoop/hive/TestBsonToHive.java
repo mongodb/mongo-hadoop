@@ -27,7 +27,7 @@ public class TestBsonToHive extends HiveTest {
     }
 
 
-    private Results loadDataIntoBSONHiveTable(boolean withLocation) {
+    private Results loadDataIntoBSONHiveTable(final boolean withLocation) {
         dropTable(BSON_TEST_TABLE);
         loadIntoHDFS(getPath("users.bson"), BSON_HDFS_TEST_PATH);
 
