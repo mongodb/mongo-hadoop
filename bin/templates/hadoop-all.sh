@@ -55,7 +55,7 @@ if [ "$2" == "-format" ]
 then
     shutdown
     sleep 1
-    rm -r @HADOOP_BINARIES@/tmpdir/
+    rm -rf @HADOOP_BINARIES@/tmpdir/
     @HADOOP_HOME@/bin/hdfs namenode -format -force &> @HADOOP_HOME@/namenode-format.log
 fi
 
