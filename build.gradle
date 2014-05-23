@@ -102,7 +102,7 @@ configure(subprojects) {
         systemProperty 'hadoop.release.version', hadoopVersion
         systemProperties << System.getProperties()
 
-        dependsOn("jar")
+        dependsOn(["jar"])
 
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
@@ -110,6 +110,8 @@ configure(subprojects) {
     }
 
     task testAll(dependsOn: tasks.withType(Test))
+    test.dependsOn ':configureCluster'
+    compileJava.dependsOn ':generateScripts'
     check.dependsOn testAll
 
     /* Code quality */
@@ -314,7 +316,7 @@ project(":integration-tests") {
     }
 }
 
-task installHadoop << {
+task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
     println "Checking if ${hadoopHome}/bin exists"
@@ -344,11 +346,10 @@ task installHadoop << {
             into hadoopBinaries
         }
     }
-    copyJars()
 }
 
 
-task installHive(dependsOn: 'installHadoop') << {
+task installHive() << {
     println "Checking if ${hiveHome}/bin exists"
     if (!new File("${hiveHome}/bin").exists()) {
         def url = 'http://apache.mirrors.tds.net/hive/hive-0.12.0/hive-0.12.0.tar.gz'
@@ -369,11 +370,7 @@ task installHive(dependsOn: 'installHadoop') << {
     
 }
 
-task setUpHiveTests(dependsOn: 'installHive') << {
-    println "hey"
-}
-
-task historicalYield(dependsOn: 'installHadoop') << {
+task historicalYield(dependsOn: 'configureCluster') << {
     exec() {
         commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
@@ -386,7 +383,7 @@ task historicalYield(dependsOn: 'installHadoop') << {
            ])
 }
 
-task sensorData(dependsOn: [installHadoop]) << {
+task sensorData(dependsOn: 'configureCluster') << {
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
            "com.mongodb.hadoop.examples.sensors.Devices", [])
 
@@ -394,7 +391,7 @@ task sensorData(dependsOn: [installHadoop]) << {
            "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
 }
 
-task enronEmails(dependsOn: 'installHadoop') << {
+task enronEmails(dependsOn: 'configureCluster') << {
     new File(dataHome).mkdirs()
     download {
         src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
@@ -451,24 +448,41 @@ def hadoop(jar, className, args) {
     }
 }
 
-def copyJars() {
+task copyFiles(dependsOn: 'jar') << {
+    def hadoopEtc
     def hadoopLib
     if (hadoop_version.startsWith("1")) {
         hadoopLib = "${hadoopHome}/lib"
+        hadoopEtc = "${hadoopHome}/conf"
     } else {
         hadoopLib = "${hadoopHome}/share/hadoop/common"
+        hadoopEtc = "${hadoopHome}/etc/hadoop"
     }
 
+    println "Updating mongo jars"
     copy {
         from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
         into hadoopLib
         rename { "mongo-hadoop-core.jar" }
+    }
+    copy {
+        from "hive/build/libs/mongo-hadoop-hive-${project(':core').version}-hadoop_${hadoop_version}.jar"
+        into hiveHome + '/lib'
+        rename { "mongo-hadoop-hive.jar" }
     }
     download {
         src "http://central.maven.org/maven2/org/mongodb/mongo-java-driver/${javaDriverVersion}/mongo-java-driver-${javaDriverVersion}.jar"
         dest "${hadoopLib}/mongo-java-driver.jar"
         onlyIfNewer true
     }
+    println "Updating cluster configuration"
+    copy {
+        from 'clusterConfigs'
+        into hadoopEtc
+    }
+}
+
+task configureCluster(dependsOn: ['installHadoop', 'installHive', 'copyFiles']) << {
 }
 
 def mapReduceDeps(it, version) {

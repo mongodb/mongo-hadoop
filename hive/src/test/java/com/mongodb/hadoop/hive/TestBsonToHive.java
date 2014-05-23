@@ -14,6 +14,7 @@ import static org.junit.Assert.assertNotEquals;
 public class TestBsonToHive extends HiveTest {
     @Before
     public void setUp() {
+        tearDown();
         loadDataIntoBSONHiveTable(true);
         createMongoDBHiveTable(false);
         createEmptyHDFSHiveTable();

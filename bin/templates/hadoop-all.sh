@@ -3,39 +3,50 @@
 stopService() {
     SERVICE=$1
     shift
-    if [ -f @BIN_PATH@/${SERVICE}.pid ]
+    PID_PATH=@HADOOP_HOME@/${SERVICE}.pid
+    if [ -f ${PID_PATH} ]
     then
         echo Shutting down $*
-        kill `cat @BIN_PATH@/${SERVICE}.pid`
-        rm @BIN_PATH@/${SERVICE}.pid
-	fi
+        kill `cat ${PID_PATH}`
+        rm ${PID_PATH}
+    fi
 }
 
 startService() {
     BIN=$1
     SERVICE=$2
     echo Starting ${SERVICE}
-    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> @BIN_PATH@/${SERVICE}.log &
-    echo $! > @BIN_PATH@/${SERVICE}.pid
-    sleep 3
+    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> @HADOOP_HOME@/${SERVICE}.log &
+    echo $! > @HADOOP_HOME@/${SERVICE}.pid
 }
 
 start() {
+    ./gradlew copyFiles
     startService hdfs namenode
+    sleep 3
     startService hdfs datanode
     startService yarn resourcemanager
     startService yarn nodemanager
+    
+    echo Starting hiveserver
     export HADOOP_HOME=@HADOOP_HOME@
-    @HIVE_HOME@/bin/hive --service hiveserver &> @BIN_PATH@/hiveserver.log &
-    echo $! > @BIN_PATH@/hiveserver.pid
+    @HIVE_HOME@/bin/hive --service hiveserver &> @HIVE_HOME@/hiveserver.log &
+    echo $! > @HIVE_HOME@/hiveserver.pid
 }
 
 shutdown() {
-	stopService nodemanager node manager
-	stopService resourcemanager resource manager
-	stopService datanode data node
-	stopService namenode name node
-	stopService hiveserver hive server
+    stopService nodemanager node manager
+    stopService resourcemanager resource manager
+    stopService datanode data node
+    stopService namenode name node
+    
+    PID_PATH=@HIVE_HOME@/hiveserver.pid
+    if [ -f  ]
+    then
+        echo Shutting down hive server
+        kill `cat ${PID_PATH}`
+        rm ${PID_PATH}
+    fi
 }
 
 CMD=$1
@@ -45,7 +56,7 @@ then
     shutdown
     sleep 1
     rm -r @HADOOP_BINARIES@/tmpdir/
-    @HADOOP_HOME@/bin/hdfs namenode -format -force 1> /dev/null
+    @HADOOP_HOME@/bin/hdfs namenode -format -force &> @HADOOP_HOME@/namenode-format.log
 fi
 
 if [ "$CMD" == "shutdown" ]
