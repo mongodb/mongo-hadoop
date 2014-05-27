@@ -19,7 +19,20 @@ startService() {
 }
 
 start() {
-    ./gradlew copyFiles -Phadoop_version=@HADOOP_VERSION@
+    shutdown
+    ./gradlew configureCluster -Phadoop_version=@HADOOP_VERSION@
+    
+    if [ "$1" == "-format" ]
+    then
+        sleep 1
+        rm -rf @HADOOP_BINARIES@/tmpdir/
+        if [ "@HADOOP_VERSION@" != "0.23" ]
+        then
+            FORCE=-force
+        fi
+        @HADOOP_HOME@/bin/hdfs namenode -format ${FORCE} &> @HADOOP_HOME@/namenode-format.out
+    fi
+    
     startService hdfs namenode
     sleep 5
     startService hdfs datanode
@@ -44,23 +57,14 @@ shutdown() {
     stopService RunJar hive server
 }
 
-CMD=$1
 
-if [ "$2" == "-format" ]
-then
-    shutdown
-    sleep 1
-    rm -rf @HADOOP_BINARIES@/tmpdir/
-    if [ "@HADOOP_VERSION@" != "0.23" ]
-    then
-        FORCE=-force
-    fi
-    @HADOOP_HOME@/bin/hdfs namenode -format ${FORCE} &> @HADOOP_HOME@/namenode-format.out
-fi
-
-if [ "$CMD" == "shutdown" ]
+if [ "$1" == "shutdown" ]
 then
     shutdown
 else
-    start
+    if [ "$1" == "start" ]
+    then
+        shift
+    fi
+    start $*
 fi

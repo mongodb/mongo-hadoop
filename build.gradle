@@ -453,7 +453,7 @@ def hadoop(jar, className, args) {
     }
 }
 
-task copyFiles() << {
+task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
     def hadoopEtc
     def hadoopLib
     if (hadoop_version.startsWith("1")) {
@@ -487,7 +487,7 @@ task copyFiles() << {
     }
 }
 
-task configureCluster(dependsOn: ['installHadoop', 'installHive', 'copyFiles']) << {
+task configureCluster(dependsOn: ['copyFiles']) << {
 }
 
 def mapReduceDeps(it, version) {
