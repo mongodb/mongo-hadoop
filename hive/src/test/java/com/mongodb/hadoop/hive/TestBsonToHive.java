@@ -1,5 +1,6 @@
 package com.mongodb.hadoop.hive;
 
+import com.jayway.awaitility.Awaitility;
 import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
 import com.mongodb.hadoop.mapred.BSONFileInputFormat;
 import org.junit.After;
@@ -7,7 +8,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
+import java.util.concurrent.Callable;
+
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -16,27 +22,26 @@ public class TestBsonToHive extends HiveTest {
     public void setUp() {
         tearDown();
         loadDataIntoBSONHiveTable(true);
-        createMongoDBHiveTable(false);
+        createMongoBackedTable(false);
         createEmptyHDFSHiveTable();
     }
 
     @After
     public void tearDown() {
-        dropTable(BSON_TEST_TABLE);
-        dropTable(MONGO_TEST_TABLE);
-        dropTable(HIVE_TEST_TABLE);
+        dropTable(BSON_BACKED_TABLE);
+        dropTable(MONGO_BACKED_TABLE);
+        dropTable(HDFS_BACKED_TABLE);
     }
 
 
     private Results loadDataIntoBSONHiveTable(final boolean withLocation) {
-        dropTable(BSON_TEST_TABLE);
         loadIntoHDFS(getPath("users.bson"), BSON_HDFS_TEST_PATH);
 
         String cmd = format("CREATE TABLE %s %s\n"
                             + "ROW FORMAT SERDE '%s'\n"
                             + "STORED AS INPUTFORMAT '%s'\n"
                             + "OUTPUTFORMAT '%s'",
-                            BSON_TEST_TABLE, TEST_SCHEMA, BSONSerDe.class.getName(), BSONFileInputFormat.class.getName(),
+                            BSON_BACKED_TABLE, TEST_SCHEMA, BSONSerDe.class.getName(), BSONFileInputFormat.class.getName(),
                             HiveBSONFileOutputFormat.class.getName()
                            );
         if (withLocation) {
@@ -47,7 +52,7 @@ public class TestBsonToHive extends HiveTest {
 
     private void loadIntoHDFS(final String localPath, final String hdfsPath) {
         try {
-            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-mkdir", hdfsPath)
+            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-mkdir", "-p", hdfsPath)
                 .redirectOutput(System.out)
                 .execute();
             new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-put", localPath, hdfsPath)
@@ -60,21 +65,29 @@ public class TestBsonToHive extends HiveTest {
 
     @Test
     public void testSameDataMongoAndBSONHiveTables() {
-        testTransfer(BSON_TEST_TABLE, MONGO_TEST_TABLE);
+        testTransfer(BSON_BACKED_TABLE, MONGO_BACKED_TABLE);
     }
 
     @Test
     public void testSameDataHDFSAndBSONHiveTables() {
-        testTransfer(BSON_TEST_TABLE, MONGO_TEST_TABLE);
+        testTransfer(BSON_BACKED_TABLE, MONGO_BACKED_TABLE);
     }
 
     private void testTransfer(final String from, final String to) {
         transferData(from, to);
-
-        Results toData = getAllDataFromTable(to);
-        Results fromData = getAllDataFromTable(from);
-
-        assertNotEquals(fromData.size(), 0);
-        assertEquals(toData, fromData);
+        Awaitility
+            .await()
+            .atMost(1, MINUTES)
+            .pollDelay(1, MILLISECONDS)
+            .pollInterval(3, SECONDS)
+            .until(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    new Exception("from = [" + from + "], to = [" + to + "]").printStackTrace();
+                    
+                    return getAllDataFromTable(to).size() > 0;
+                }
+            });
+        assertEquals(getAllDataFromTable(to), getAllDataFromTable(from));
     }
 }

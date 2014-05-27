@@ -1,6 +1,5 @@
 package com.mongodb.hadoop.testutils;
 
-import com.jayway.awaitility.Awaitility;
 import com.mongodb.BasicDBObject;
 import com.mongodb.CommandResult;
 import com.mongodb.DBCursor;
@@ -12,7 +11,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.ContainerManagerImpl;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
 import org.junit.AfterClass;
@@ -32,12 +30,10 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public abstract class BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
@@ -114,18 +110,8 @@ public abstract class BaseHadoopTest {
                                  .numDataNodes(1)
                                  .startupOption(StartupOption.FORMAT)
                                  .build();
-                yarnCluster = new MiniYARNCluster("mongo-hadoop", 1, 1, 1, 1);
+                yarnCluster = new MiniYARNCluster("mongo-hadoop", 1, 1, 1);
                 yarnCluster.init(config);
-
-                final ContainerManagerImpl cm = (ContainerManagerImpl) yarnCluster.getNodeManager(0).getNMContext().getContainerManager();
-                Awaitility.await()
-                          .atMost(2, MINUTES)
-                          .until(new Callable<Boolean>() {
-                              @Override
-                              public Boolean call() throws Exception {
-                                  return !cm.getBlockNewContainerRequestsStatus();
-                              }
-                          });
 
                 URL url = Thread.currentThread().getContextClassLoader().getResource("yarn-site.xml");
                 if (url == null) {

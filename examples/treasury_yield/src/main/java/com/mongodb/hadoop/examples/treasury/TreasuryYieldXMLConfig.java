@@ -16,6 +16,7 @@
 package com.mongodb.hadoop.examples.treasury;
 
 import com.mongodb.hadoop.MongoConfig;
+import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.MongoTool;
@@ -42,7 +43,7 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);
 
-        config.setInputFormat(com.mongodb.hadoop.MongoInputFormat.class);
+        config.setInputFormat(MongoInputFormat.class);
 
         config.setMapper(TreasuryYieldMapper.class);
         config.setMapperOutputKey(IntWritable.class);

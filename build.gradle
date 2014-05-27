@@ -24,7 +24,7 @@ ext.hiveVersion = '0.12.0'
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
-ext.javaDriverVersion = "2.12.1"
+ext.javaDriverVersion = "2.12.2"
 ext.dataHome = "examples/data"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
@@ -75,12 +75,15 @@ configure(subprojects) {
         testCompile 'org.hamcrest:hamcrest-all:1.3'
         testCompile 'org.zeroturnaround:zt-exec:1.6'
         testCompile 'com.jayway.awaitility:awaitility:1.6.0'
-
-        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
-        testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
+        testCompile 'commons-daemon:commons-daemon:1.0.15'
+        
+        if(!hadoop_version.startsWith('1.')) {
+            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
+            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
+        }
     }
 
     /* Compiling */
@@ -210,7 +213,8 @@ project(":hive") {
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
         }
         if (hadoop_version == "cdh4") {
-            compile "org.apache.hive:hive-serde:0.10.0-cdh4.6.0"
+//            compile "org.apache.hive:hive-serde:0.10.0-cdh4.6.0"
+            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else if (hadoop_version == "cdh5") {
             compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else {
@@ -421,6 +425,7 @@ task generateScripts() {
         filter ReplaceTokens, tokens: [
                 HADOOP_HOME: hadoopHome.toString(),
                 HADOOP_BINARIES: hadoopBinaries.toString(),
+                HADOOP_VERSION: hadoop_version,
                 HIVE_HOME: hiveHome.toString(),
                 BIN_PATH   : project.rootDir.getAbsolutePath() + '/bin'
         ]
@@ -448,7 +453,7 @@ def hadoop(jar, className, args) {
     }
 }
 
-task copyFiles(dependsOn: 'jar') << {
+task copyFiles() << {
     def hadoopEtc
     def hadoopLib
     if (hadoop_version.startsWith("1")) {

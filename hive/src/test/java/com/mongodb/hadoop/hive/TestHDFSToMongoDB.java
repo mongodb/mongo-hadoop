@@ -24,15 +24,15 @@ public class TestHDFSToMongoDB extends HiveTest {
 
     @After
     public void tearDown() {
-        dropTable(MONGO_TEST_COLLECTION);
-        dropTable(HIVE_TEST_TABLE);
+        dropTable(MONGO_BACKED_TABLE);
+        dropTable(HDFS_BACKED_TABLE);
     }
 
 
     @Test
     public void testSameDataHDFSAndMongoHiveTables() {
-        Results hiveData = getAllDataFromTable(HIVE_TEST_TABLE);
-        Results mongoData = getAllDataFromTable(MONGO_TEST_COLLECTION);
+        Results hiveData = getAllDataFromTable(HDFS_BACKED_TABLE);
+        Results mongoData = getAllDataFromTable(MONGO_BACKED_TABLE);
         assertNotEquals(hiveData.size(), 0);
         assertNotEquals(mongoData.size(), 0);
 
@@ -41,7 +41,7 @@ public class TestHDFSToMongoDB extends HiveTest {
 
     @Test
     public void testDeleteReflectData() {
-        Results results = getAllDataFromTable(MONGO_TEST_TABLE);
+        Results results = getAllDataFromTable(MONGO_BACKED_TABLE);
 
         int size = results.size();
         assertTrue(size > 0);
@@ -64,7 +64,7 @@ public class TestHDFSToMongoDB extends HiveTest {
         deleteFromCollection(toDelete);
 
         // get data from table now that the first row has been removed
-        Results newResults = getAllDataFromTable(MONGO_TEST_TABLE);
+        Results newResults = getAllDataFromTable(MONGO_BACKED_TABLE);
 
         // now make sure that 'toDelete' doesn't exist anymore
         for (List<String> newResult : newResults) {
@@ -78,19 +78,19 @@ public class TestHDFSToMongoDB extends HiveTest {
 
     @Test
     public void testDropReflectData() {
-        assertTrue(getAllDataFromTable(MONGO_TEST_TABLE).size() > 0);
+        assertTrue(getAllDataFromTable(MONGO_BACKED_TABLE).size() > 0);
         getCollection().drop();
-        assertEquals(0, getAllDataFromTable(MONGO_TEST_TABLE).size());
+        assertEquals(0, getAllDataFromTable(MONGO_BACKED_TABLE).size());
     }
 
     @Test
     public void testJOINHDFSMongoDB() {
-        Results mongoTblData = getAllDataFromTable(MONGO_TEST_TABLE);
-        Results hiveTblData = getAllDataFromTable(HIVE_TEST_TABLE);
+        Results mongoTblData = getAllDataFromTable(MONGO_BACKED_TABLE);
+        Results hiveTblData = getAllDataFromTable(HDFS_BACKED_TABLE);
         assertNotEquals(hiveTblData.size(), 0);
         assertNotEquals(mongoTblData.size(), 0);
 
-        Results joinedData = performTwoTableJOIN(MONGO_TEST_TABLE, HIVE_TEST_TABLE);
+        Results joinedData = performTwoTableJOIN(MONGO_BACKED_TABLE, HDFS_BACKED_TABLE);
 
         assertEquals(hiveTblData.size() * mongoTblData.size(), joinedData.size());
     }

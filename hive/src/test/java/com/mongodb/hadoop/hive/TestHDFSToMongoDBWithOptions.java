@@ -23,8 +23,8 @@ public class TestHDFSToMongoDBWithOptions extends HiveTest {
 
     @After
     public void tearDown() {
-        dropTable(MONGO_TEST_COLLECTION);
-        dropTable(HIVE_TEST_TABLE);
+        dropTable(MONGO_BACKED_TABLE);
+        dropTable(HDFS_BACKED_TABLE);
     }
 
     @Test
@@ -56,8 +56,8 @@ public class TestHDFSToMongoDBWithOptions extends HiveTest {
 
     @Test
     public void testCountSameTable() {
-        Results hiveData = getAllDataFromTable(HIVE_TEST_TABLE);
-        Results mongoData = getAllDataFromTable(MONGO_TEST_COLLECTION);
+        Results hiveData = getAllDataFromTable(HDFS_BACKED_TABLE);
+        Results mongoData = getAllDataFromTable(MONGO_BACKED_TABLE);
         assertNotEquals(hiveData.size(), 0);
         assertNotEquals(mongoData.size(), 0);
 
