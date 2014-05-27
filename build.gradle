@@ -204,9 +204,9 @@ project(":hive") {
     dependencies {
         compile project(':core')
 
-        compile "org.apache.hive:hive-exec:0.12.0"
-        testCompile "org.apache.hive:hive-cli:0.12.0"
-        testCompile "org.apache.hive:hive-service:0.12.0"
+        compile "org.apache.hive:hive-exec:${hiveVersion}"
+        testCompile "org.apache.hive:hive-cli:${hiveVersion}"
+        testCompile "org.apache.hive:hive-service:${hiveVersion}"
         testCompile project(path: ':core', configuration: 'tests')
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0") {
             exclude group: 'org.apache.derby', module: 'derby'
@@ -218,7 +218,7 @@ project(":hive") {
         } else if (hadoop_version == "cdh5") {
             compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else {
-            compile "org.apache.hive:hive-serde:0.12.0"
+            compile "org.apache.hive:hive-serde:${hiveVersion}"
         }
     }
 }
@@ -356,7 +356,7 @@ task installHadoop() << {
 task installHive() << {
     println "Checking if ${hiveHome}/bin exists"
     if (!new File("${hiveHome}/bin").exists()) {
-        def url = 'http://apache.mirrors.tds.net/hive/hive-0.12.0/hive-0.12.0.tar.gz'
+        def url = "http://apache.mirrors.tds.net/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
         
         println "No hive installation found.  Downloading ${hiveVersion}"
         download {
@@ -453,6 +453,14 @@ def hadoop(jar, className, args) {
     }
 }
 
+def mapReduceDeps(it, version) {
+    ["core", "common", "shuffle", "app", "jobclient"].each { module ->
+        it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
+            exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
+        }
+    }
+}
+
 task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
     def hadoopEtc
     def hadoopLib
@@ -488,14 +496,6 @@ task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
 }
 
 task configureCluster(dependsOn: ['copyFiles']) << {
-}
-
-def mapReduceDeps(it, version) {
-    ["core", "common", "shuffle", "app", "jobclient"].each { module ->
-        it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
-            exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
-        }
-    }
 }
 
 apply from: 'gradle/maven-deployment.gradle'
