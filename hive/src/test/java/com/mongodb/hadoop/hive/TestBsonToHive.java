@@ -11,11 +11,10 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class TestBsonToHive extends HiveTest {
     @Before
@@ -83,8 +82,6 @@ public class TestBsonToHive extends HiveTest {
             .until(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
-                    new Exception("from = [" + from + "], to = [" + to + "]").printStackTrace();
-                    
                     return getAllDataFromTable(to).size() > 0;
                 }
             });
