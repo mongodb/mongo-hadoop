@@ -16,5 +16,5 @@ fi
 ./bin/hadoop-all.sh shutdown
 g clean jar -Phadoop_version=${HV}
 ./bin/hadoop-all.sh start -format
-g :hive:test -Phadoop_version=${HV} 2>&1 | tee test-${HV}.out
+g test -Phadoop_version=${HV} 2>&1 | tee test-${HV}.out
 ./bin/hadoop-all.sh shutdown
