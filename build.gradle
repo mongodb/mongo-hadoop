@@ -427,6 +427,7 @@ task generateScripts() {
                 HADOOP_BINARIES: hadoopBinaries.toString(),
                 HADOOP_VERSION: hadoop_version,
                 HIVE_HOME: hiveHome.toString(),
+                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
                 BIN_PATH   : project.rootDir.getAbsolutePath() + '/bin'
         ]
     }
