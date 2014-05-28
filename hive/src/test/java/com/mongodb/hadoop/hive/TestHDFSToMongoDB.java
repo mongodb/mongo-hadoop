@@ -73,13 +73,13 @@ public class TestHDFSToMongoDB extends HiveTest {
     }
 
     private void deleteFromCollection(final DBObject toDelete) {
-        getCollection().remove(toDelete);
+        getCollection(MONGO_COLLECTION).remove(toDelete);
     }
 
     @Test
     public void testDropReflectData() {
         assertTrue(getAllDataFromTable(MONGO_BACKED_TABLE).size() > 0);
-        getCollection().drop();
+        getCollection(MONGO_COLLECTION).drop();
         assertEquals(0, getAllDataFromTable(MONGO_BACKED_TABLE).size());
     }
 

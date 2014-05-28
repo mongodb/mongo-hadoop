@@ -140,12 +140,14 @@ public class HiveTest extends BaseHadoopTest {
 
     public void createMongoBackedTable(final boolean withSerDeProps) {
         dropTable(MONGO_BACKED_TABLE);
+        MongoClientURI uri = authCheck(new MongoClientURIBuilder()
+                                           .collection("mongo_hadoop", MONGO_COLLECTION)
+                                      ).build();
         String format = format("CREATE TABLE %s %s\n"
                                + "STORED BY '%s'\n"
                                + (withSerDeProps ? format("WITH SERDEPROPERTIES(%s)\n", SERDE_PROPERTIES) : "")
-                               + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_BACKED_TABLE, TEST_SCHEMA
-                                  , MongoStorageHandler.class.getName(),
-                               mongoTestURI
+                               + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_BACKED_TABLE, TEST_SCHEMA, MongoStorageHandler.class.getName(),
+                               uri
                               );
         execute(format);
     }
@@ -155,7 +157,7 @@ public class HiveTest extends BaseHadoopTest {
                        + "SELECT * FROM %s", to, from));
     }
 
-    protected DBCollection getCollection() {
-        return getMongoClient().getDB("mongo_hadoop").getCollection(MONGO_COLLECTION);
+    protected DBCollection getCollection(final String collection) {
+        return getMongoClient().getDB("mongo_hadoop").getCollection(collection);
     }
 }

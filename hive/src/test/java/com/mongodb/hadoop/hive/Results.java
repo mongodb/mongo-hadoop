@@ -8,7 +8,9 @@ import org.apache.thrift.TException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -57,15 +59,17 @@ public class Results implements Iterable<List<String>> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        for (FieldSchema fieldSchema : fields) {
-            sb.append(format(" %15s   |", fieldSchema.getName()));
-        }
-        sb.append("\n");
-        for (List<String> row : data) {
-            for (String s1 : row) {
-                sb.append(format(" %-15s   |", s1.trim()));
+        if (fields != null) {
+            for (FieldSchema fieldSchema : fields) {
+                sb.append(format(" %15s   |", fieldSchema.getName()));
             }
             sb.append("\n");
+            for (List<String> row : data) {
+                for (String s1 : row) {
+                    sb.append(format(" %-15s   |", s1.trim()));
+                }
+                sb.append("\n");
+            }
         }
         return sb.toString();
     }
@@ -101,5 +105,16 @@ public class Results implements Iterable<List<String>> {
     @Override
     public Iterator<List<String>> iterator() {
         return data.iterator();
+    }
+
+    public Map<String, String> getRow(final int row) {
+        Map<String, String> map = new LinkedHashMap<String, String>();
+        List<String> strings = get(row);
+        for (int i = 0; i < fields.size(); i++) {
+            final FieldSchema field = fields.get(i);
+            map.put(field.getName(), strings.get(i));
+        }
+
+        return map;
     }
 }

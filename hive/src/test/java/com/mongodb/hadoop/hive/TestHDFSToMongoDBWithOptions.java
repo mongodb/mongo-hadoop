@@ -29,7 +29,7 @@ public class TestHDFSToMongoDBWithOptions extends HiveTest {
 
     @Test
     public void testMongoMapping() {
-        DBObject doc = getCollection().findOne();
+        DBObject doc = getCollection(MONGO_COLLECTION).findOne();
         String[] propsSplit = SERDE_PROPERTIES.split("=");
 
         int propsSplitLen = propsSplit.length;

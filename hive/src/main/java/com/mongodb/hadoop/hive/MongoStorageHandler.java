@@ -30,6 +30,8 @@ import org.apache.hadoop.hive.ql.plan.TableDesc;
 import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +42,8 @@ import java.util.Properties;
  * rows in a Hive table
  */
 public class MongoStorageHandler extends DefaultStorageHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(MongoStorageHandler.class);
+    
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
@@ -74,9 +78,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
      */
     private class MongoHiveMetaHook implements HiveMetaHook {
         @Override
-        //CHECKSTYLE:OFF
         public void preCreateTable(final Table tbl) throws MetaException {
-        //CHECKSTYLE:ON
             Map<String, String> tblParams = tbl.getParameters();
             if (!tblParams.containsKey(MONGO_URI)) {
                 throw new MetaException("You must specify 'mongo.uri' in TBLPROPERTIES");

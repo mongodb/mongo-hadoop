@@ -93,7 +93,7 @@ public class BSONSerDe implements SerDe {
     @Override
     //CHECKSTYLE:OFF
     public void initialize(final Configuration conf, final Properties tblProps) throws SerDeException {
-    //CHECKSTYLE:ON
+        //CHECKSTYLE:ON
         // regex used to split column names between commas
         String splitCols = "\\s*,\\s*";
 
@@ -131,9 +131,7 @@ public class BSONSerDe implements SerDe {
      * Takes in the object represented by JSON for Hive to Mongo/BSON mapping. Records these mappings and infers upper level mappings from
      * lower level declarations.
      */
-    //CHECKSTYLE:OFF
     private void registerMappings(final Map<String, String> rules) throws SerDeException {
-        //CHECKSTYLE:ON
         // explode/infer shorter mappings
         for (Entry e : rules.entrySet()) {
             String key = (String) e.getKey();
@@ -142,7 +140,7 @@ public class BSONSerDe implements SerDe {
             if (this.hiveToMongo.containsKey(key) && !this.hiveToMongo.get(key).equals(value)) {
                 throw new SerDeException("Ambiguous rule definition for " + key);
             } else {
-                this.hiveToMongo.put(key, value);
+                this.hiveToMongo.put(key.toLowerCase(), value);
             }
 
             if (key.contains(".")) {
@@ -163,7 +161,7 @@ public class BSONSerDe implements SerDe {
                     if (this.hiveToMongo.containsKey(curKey) && !this.hiveToMongo.get(curKey).equals(curValue)) {
                         throw new SerDeException("Ambiguous rule definition for " + curKey);
                     } else {
-                        this.hiveToMongo.put(curKey, curValue);
+                        this.hiveToMongo.put(curKey.toLowerCase(), curValue);
                     }
 
                     curKey += ".";
@@ -208,7 +206,7 @@ public class BSONSerDe implements SerDe {
                                    ? this.hiveToMongo.get(fieldName)
                                    : fieldName;
                 }
-                value = deserializeField(doc.get(mongoMapping), fieldTypeInfo, fieldName);
+                value = deserializeField(getValue(doc, mongoMapping), fieldTypeInfo, fieldName);
             } catch (Exception e) {
                 LOG.warn("Could not find the appropriate field for name " + fieldName);
                 value = null;
@@ -217,6 +215,15 @@ public class BSONSerDe implements SerDe {
         }
 
         return this.row;
+    }
+
+    private Object getValue(final BSONObject doc, final String mongoMapping) {
+        if (mongoMapping.contains(".")) {
+            int index = mongoMapping.indexOf('.');
+            BSONObject object = (BSONObject) doc.get(mongoMapping.substring(0, index));
+            return getValue(object, mongoMapping.substring(index + 1));
+        }
+        return doc.get(mongoMapping);
     }
 
 
@@ -428,7 +435,7 @@ public class BSONSerDe implements SerDe {
     @Override
     //CHECKSTYLE:OFF
     public ObjectInspector getObjectInspector() throws SerDeException {
-    //CHECKSTYLE:ON
+        //CHECKSTYLE:ON
         return this.docOI;
     }
 
