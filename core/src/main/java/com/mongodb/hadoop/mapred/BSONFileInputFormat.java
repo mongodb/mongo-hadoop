@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 public class BSONFileInputFormat extends FileInputFormat {
 
@@ -75,7 +75,8 @@ public class BSONFileInputFormat extends FileInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, BSONWritable> getRecordReader(final InputSplit split, final JobConf job, final Reporter reporter) throws IOException {
+    public RecordReader<NullWritable, BSONWritable> getRecordReader(final InputSplit split, final JobConf job, final Reporter reporter)
+        throws IOException {
         BSONFileRecordReader reader = new BSONFileRecordReader();
         reader.initialize(split, job);
         return reader;
