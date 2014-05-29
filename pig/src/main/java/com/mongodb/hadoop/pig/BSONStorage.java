@@ -73,7 +73,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
      * @param field    field to place o in
      * @param toIgnore name of field in Object o to ignore
      */
-    public static Object getTypeForBSON(final Object o, final ResourceSchema.ResourceFieldSchema field, final String toIgnore)
+    public static Object getTypeForBSON(final Object o, final ResourceFieldSchema field, final String toIgnore)
         throws IOException {
         byte dataType = field != null ? field.getType() : DataType.UNKNOWN;
         ResourceSchema s = null;
@@ -120,7 +120,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                     throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
                                           + field.getName());
                 }
-                ResourceSchema.ResourceFieldSchema[] fs = s.getFields();
+                ResourceFieldSchema[] fs = s.getFields();
                 Map<String, Object> m = new LinkedHashMap<String, Object>();
                 for (int j = 0; j < fs.length; j++) {
                     m.put(fs[j].getName(), getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
@@ -181,15 +181,14 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
         }
     }
 
-    protected void writeField(final BasicDBObjectBuilder builder,
-                              final ResourceSchema.ResourceFieldSchema field,
-                              final Object d) throws IOException {
+    @SuppressWarnings("unchecked")
+    protected void writeField(final BasicDBObjectBuilder builder, final ResourceFieldSchema field, final Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field, null);
         String fieldName = field != null ? field.getName() : "value";
 
         if (convertedType instanceof Map) {
             for (Map.Entry<String, Object> mapentry : ((Map<String, Object>) convertedType).entrySet()) {
-                String addKey = mapentry.getKey().equals(this.idField) ? "_id" : mapentry.getKey();
+                String addKey = mapentry.getKey().equals(idField) ? "_id" : mapentry.getKey();
                 builder.add(addKey, mapentry.getValue());
             }
         } else {
@@ -202,7 +201,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
         this.schema = schema;
         UDFContext context = UDFContext.getUDFContext();
 
-        Properties p = context.getUDFProperties(this.getClass(), new String[]{udfcSignature});
+        Properties p = context.getUDFProperties(getClass(), new String[]{udfcSignature});
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
@@ -219,8 +218,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
         try {
             final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
             ResourceFieldSchema[] fields = null;
-            if (this.schema != null) {
-                fields = this.schema.getFields();
+            if (schema != null) {
+                fields = schema.getFields();
             }
             if (fields != null) {
                 for (int i = 0; i < fields.length; i++) {
@@ -239,13 +238,13 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     }
 
     public void prepareToWrite(final RecordWriter writer) throws IOException {
-        this.out = writer;
-        if (this.out == null) {
+        out = writer;
+        if (out == null) {
             throw new IOException("Invalid Record Writer");
         }
 
         UDFContext udfc = UDFContext.getUDFContext();
-        Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
+        Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
         String strSchema = p.getProperty(SCHEMA_SIGNATURE);
         if (strSchema == null) {
             LOG.warn("Could not find schema in UDF context!");
@@ -254,16 +253,16 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
         try {
             // Parse the schema from the string stored in the properties object.
-            this.schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+            schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
         } catch (Exception e) {
-            this.schema = null;
+            schema = null;
             LOG.warn(e.getMessage());
         }
 
     }
 
     public OutputFormat getOutputFormat() throws IOException {
-        return this.outputFormat;
+        return outputFormat;
     }
 
     public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {

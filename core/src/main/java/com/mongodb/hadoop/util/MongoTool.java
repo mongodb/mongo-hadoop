@@ -58,6 +58,7 @@ public class MongoTool extends Configured implements Tool {
         jobName = name;
     }
 
+    @SuppressWarnings("deprecation")
     public int run(final String[] args) throws Exception {
         /**
          * ToolRunner will configure/process/setup the config

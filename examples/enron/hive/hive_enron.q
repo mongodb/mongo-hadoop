@@ -5,6 +5,8 @@
 
 -- Get the headers struct, which contains the "from" and "to".
 -- except the words "from", "to", and "date" are reserved in Hive 
+DROP TABLE raw;
+
 CREATE TABLE raw(
     h STRUCT<hivefrom:STRING,hiveto:STRING>
 )
@@ -16,6 +18,7 @@ OUTPUTFORMAT "com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat"
 LOCATION '${INPUT}';
 
 
+DROP TABLE send_recip;
 CREATE TABLE send_recip (
     f STRING,
     t_array ARRAY<STRING>
@@ -33,6 +36,7 @@ WHERE h IS NOT NULL
     AND h.hiveto IS NOT NULL;
 
 
+DROP TABLE send_recip_explode;
 CREATE TABLE send_recip_explode (
     f STRING, 
     t STRING,
@@ -52,6 +56,7 @@ FROM send_recip
 GROUP BY f, t;
 
 
+DROP TABLE send_recip_counted;
 CREATE TABLE send_recip_counted (
     id STRUCT<
         t : STRING, 

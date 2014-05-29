@@ -25,9 +25,9 @@ import com.google.common.base.Preconditions;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBCollection;
-import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoException;
-import com.mongodb.MongoURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,29 +42,27 @@ public class MongoDBSink extends EventSink.Base {
 
     private static final Logger LOG = LoggerFactory.getLogger(MongoDBSink.class);
 
-    //CHECKSTYLE:OFF
-    final MongoURI _uri;
-    Mongo _mongoConn;
-    DBCollection _collection;
-    //CHECKSTYLE:ON
+    private final MongoClientURI uri;
+    private MongoClient mongo;
+    private DBCollection collection;
 
     /**
      * Constructs a new instance against the given URI
      */
     public MongoDBSink(final String uriString) {
-        _uri = new MongoURI(uriString);
+        uri = new MongoClientURI(uriString);
     }
 
     @Override
     public void open() {
         try {
-            _mongoConn = new Mongo(_uri);
+            mongo = new MongoClient(uri);
         } catch (final Exception e) {
             LOG.error("Connecting to MongoDB failed.", e);
             throw new MongoException("Failed to connect to MongoDB. ", e);
         }
         try {
-            _collection = _uri.connectCollection(_mongoConn);
+            collection = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
         } catch (final Exception e) {
             LOG.error("Connected to MongoDB but failed in acquiring collection.", e);
             throw new MongoException("Could not acquire specified collection.", e);
@@ -86,14 +84,14 @@ public class MongoDBSink extends EventSink.Base {
         b.append("priority", e.getPriority().name());
         b.append("message", new String(e.getBody()));
         b.append("metadata", new BasicDBObject(e.getAttrs()));
-        _collection.insert(b.get());
+        collection.insert(b.get());
     }
 
     @Override
     public void close() throws IOException {
         // TODO - Flume docs specify all blocking must be kicked during
         // disconnect. Verify we do. No hanging!
-        _mongoConn.close();
+        mongo.close();
     }
 
     public static SinkBuilder builder() {
@@ -105,7 +103,7 @@ public class MongoDBSink extends EventSink.Base {
                     .checkArgument(argv.length == 1,
                                    "usage: mongoDBSink(\"mongodb://[username:password@]host1[:port1][,host2[:port2],...[,"
                                    + "hostN[:portN]]][/[database][?options]]\")\n ... See "
-                                   + "http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB Connection" 
+                                   + "http://www.mongodb.org/display/DOCS/Connections for information on the MongoDB Connection"
                                    + " URI Format."
                                    + "\n\t Note that using [?options] you can specify Write Concern related settings: "
                                    + "\n\t\t safe={true|false} (default: false) Whether or not the driver should send getLastError to "
@@ -116,11 +114,24 @@ public class MongoDBSink extends EventSink.Base {
                                    + "replications to complete.  When non-zero, implies safe=true."
                                    + "\n\t\t fsync={true|false} (default: false) When enabled, "
                                    + "forces an fsync after each write operation to increase durability.  You probably *don't* want to "
-                                   + "do this; see the MongoDB docs for info.  When 'true', implies safe=true");
+                                   + "do this; see the MongoDB docs for info.  When 'true', implies safe=true"
+                                  );
 
                 return new MongoDBSink(argv[0]);
             }
         };
+    }
+
+    public com.mongodb.MongoClientURI getUri() {
+        return uri;
+    }
+
+    public com.mongodb.MongoClient getMongo() {
+        return mongo;
+    }
+
+    public com.mongodb.DBCollection getCollection() {
+        return collection;
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.mongodb.hadoop.util;
 
+import com.mongodb.LazyDBList;
 import com.mongodb.LazyDBObject;
 import org.apache.hadoop.io.RawComparator;
 import org.bson.BSONObject;
@@ -24,7 +25,6 @@ import org.bson.LazyBSONCallback;
 import org.bson.LazyBSONDecoder;
 import org.bson.LazyBSONList;
 import org.bson.LazyBSONObject;
-import org.bson.LazyDBList;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.BasicBSONList;
 import org.bson.types.Binary;
@@ -117,8 +117,7 @@ public class BSONComparator implements RawComparator<BSONObject> {
         if (one instanceof Number) {
             // Need to be comparing all numeric values to one another, 
             // so cast all of them to Double
-            diff = (Double.valueOf(one.toString())).
-                                                       compareTo(Double.valueOf(two.toString()));
+            diff = Double.valueOf(one.toString()).compareTo(Double.valueOf(two.toString()));
         } else if (one instanceof String) {
             diff = ((String) one).compareTo((String) two);
         } else if (one instanceof BSONObject) {

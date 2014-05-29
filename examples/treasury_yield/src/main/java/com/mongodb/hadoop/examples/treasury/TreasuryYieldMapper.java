@@ -15,8 +15,6 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -28,21 +26,16 @@ import java.util.Date;
 /**
  * The treasury yield mapper.
  */
-public class TreasuryYieldMapper
-    extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
+public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
 
     @Override
-    public void map(final Object pKey,
-                    final BSONObject pValue,
-                    final Context pContext)
-        throws IOException, InterruptedException {
+    @SuppressWarnings("deprecation")
+    public void map(final Object pKey, final BSONObject pValue, final Context pContext) throws IOException, InterruptedException {
 
         final int year = ((Date) pValue.get("_id")).getYear() + 1900;
         double bid10Year = ((Number) pValue.get("bc10Year")).doubleValue();
 
         pContext.write(new IntWritable(year), new DoubleWritable(bid10Year));
     }
-
-    private static final Log LOG = LogFactory.getLog(TreasuryYieldMapper.class);
 }
 

@@ -28,6 +28,7 @@ public class TestHDFSToMongoDBWithOptions extends HiveTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testMongoMapping() {
         DBObject doc = getCollection(MONGO_COLLECTION).findOne();
         String[] propsSplit = SERDE_PROPERTIES.split("=");

@@ -41,9 +41,10 @@ import java.util.Properties;
  * Used to sync documents in some MongoDB collection with
  * rows in a Hive table
  */
+@SuppressWarnings("deprecation")
 public class MongoStorageHandler extends DefaultStorageHandler {
     private static final Logger LOG = LoggerFactory.getLogger(MongoStorageHandler.class);
-    
+
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
@@ -100,7 +101,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
 
         @Override
         public void commitDropTable(final Table tbl, final boolean deleteData) throws MetaException {
-        //CHECKSTYLE:ON
+            //CHECKSTYLE:ON
             boolean isExternal = MetaStoreUtils.isExternalTable(tbl);
 
             if (deleteData && !isExternal) {
@@ -118,7 +119,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         @Override
         //CHECKSTYLE:OFF
         public void rollbackDropTable(final Table tbl) throws MetaException {
-        //CHECKSTYLE:ON
+            //CHECKSTYLE:ON
         }
     }
 

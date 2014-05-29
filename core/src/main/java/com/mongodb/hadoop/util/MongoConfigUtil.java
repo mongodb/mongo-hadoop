@@ -303,6 +303,7 @@ public final class MongoConfigUtil {
      * @deprecated use {@link #getMongoClientURI(Configuration, String)} instead
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public static MongoURI getMongoURI(final Configuration conf, final String key) {
         final String raw = conf.get(key);
         if (raw != null && !raw.trim().isEmpty()) {
@@ -432,6 +433,7 @@ public final class MongoConfigUtil {
      * @deprecated use {@link #setInputURI(Configuration, MongoClientURI)} instead
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public static void setInputURI(final Configuration conf, final MongoURI uri) {
         setMongoURI(conf, INPUT_URI, uri);
     }
@@ -455,6 +457,7 @@ public final class MongoConfigUtil {
      * @deprecated use {@link #setOutputURI(Configuration, MongoClientURI)} instead
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public static void setOutputURI(final Configuration conf, final MongoURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
@@ -464,7 +467,7 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * Set JSON but first validate it's parseable into a DBObject
+     * Set JSON but first validate it's parsable into a DBObject
      */
     public static void setJSON(final Configuration conf, final String key, final String value) {
         try {

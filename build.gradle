@@ -91,7 +91,7 @@ configure(subprojects) {
         options.encoding = 'ISO-8859-1'
         options.fork = true
         options.debug = true
-        options.compilerArgs = [/*'-Xlint:all', */ '-Xlint:-options']
+        options.compilerArgs = [/*'-Xlint:deprecation',*/  '-Xlint:-options']
     }
 
     project.ext.buildingWith = { n ->

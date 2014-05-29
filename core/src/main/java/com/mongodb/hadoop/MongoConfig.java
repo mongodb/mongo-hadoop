@@ -207,8 +207,9 @@ public class MongoConfig {
      * @deprecated use {@link #setInputURI(MongoClientURI)} instead
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public void setInputURI(final MongoURI uri) {
-        setInputURI(new MongoClientURI(uri.toString()));
+        MongoConfigUtil.setInputURI(configuration, uri);
     }
 
     public void setInputURI(final MongoClientURI uri) {
@@ -227,7 +228,12 @@ public class MongoConfig {
         MongoConfigUtil.setOutputURI(configuration, uri);
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecation")    
     public void setOutputURI(final MongoURI uri) {
+        MongoConfigUtil.setOutputURI(configuration, uri);
+    }
+    public void setOutputURI(final MongoClientURI uri) {
         MongoConfigUtil.setOutputURI(configuration, uri);
     }
 

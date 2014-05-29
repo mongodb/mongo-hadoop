@@ -47,9 +47,6 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
 
     public void close(final Reporter reporter) {
-        for (DBCollection collection : collections) {
-            collection.getDB().getLastError();
-        }
     }
 
     public void write(final K key, final V value) throws IOException {

@@ -25,7 +25,7 @@ public class BSONFileInputFormatTest {
         int count = 0;
         for (FileSplit split : splits) {
             RecordReader<NullWritable, BSONWritable> recordReader = inputFormat.getRecordReader(split, job, null);
-            while(recordReader.next(null, new BSONWritable())) {
+            while (recordReader.next(null, new BSONWritable())) {
                 count++;
             }
         }

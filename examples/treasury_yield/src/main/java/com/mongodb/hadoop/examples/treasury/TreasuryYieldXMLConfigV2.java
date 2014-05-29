@@ -16,6 +16,8 @@
 package com.mongodb.hadoop.examples.treasury;
 
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.mapred.MongoInputFormat;
+import com.mongodb.hadoop.mapred.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,6 +50,7 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool {
     static class TreasuryYieldMapperV2 extends MapReduceBase implements Mapper<BSONWritable, BSONWritable, IntWritable, DoubleWritable> {
 
         @Override
+        @SuppressWarnings("deprecation")
         public void map(final BSONWritable key, final BSONWritable value, final OutputCollector<IntWritable, DoubleWritable> output,
                         final Reporter reporter)
             throws IOException {
@@ -88,12 +91,12 @@ public class TreasuryYieldXMLConfigV2 extends Configured implements Tool {
         final JobConf job = new JobConf(conf);
         job.setReducerClass(TreasuryYieldReducerV2.class);
         job.setMapperClass(TreasuryYieldMapperV2.class);
-        job.setOutputFormat(com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+        job.setOutputFormat(MongoOutputFormat.class);
         job.setOutputKeyClass(MongoConfigUtil.getOutputKey(conf));
         job.setOutputValueClass(MongoConfigUtil.getOutputValue(conf));
         job.setMapOutputKeyClass(MongoConfigUtil.getMapperOutputKey(conf));
         job.setMapOutputValueClass(MongoConfigUtil.getMapperOutputValue(conf));
-        job.setInputFormat(com.mongodb.hadoop.mapred.MongoInputFormat.class);
+        job.setInputFormat(MongoInputFormat.class);
         JobClient.runJob(job);
         return 0;
     }

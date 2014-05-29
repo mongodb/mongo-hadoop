@@ -300,8 +300,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
 
         //Now, check that the lower and upper bounds don't have any keys
         //which overlap with the query.
-        if ((minKey != null && query.containsKey(minKey.getKey()))
-            || (maxKey != null && query.containsKey(maxKey.getKey()))) {
+        if (minKey != null && query.containsField(minKey.getKey()) || maxKey != null && query.containsField(maxKey.getKey())) {
             throw new IllegalArgumentException("Range query is enabled but split key conflicts with query filter:\n"
                                                + "min:  " + chunkLowerBound + "\nmax:  " + chunkUpperBound + "\nquery:  " + query);
         }

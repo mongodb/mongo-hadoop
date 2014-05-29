@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.File;
@@ -143,13 +144,12 @@ public class HiveTest extends BaseHadoopTest {
         MongoClientURI uri = authCheck(new MongoClientURIBuilder()
                                            .collection("mongo_hadoop", MONGO_COLLECTION)
                                       ).build();
-        String format = format("CREATE TABLE %s %s\n"
-                               + "STORED BY '%s'\n"
-                               + (withSerDeProps ? format("WITH SERDEPROPERTIES(%s)\n", SERDE_PROPERTIES) : "")
-                               + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_BACKED_TABLE, TEST_SCHEMA, MongoStorageHandler.class.getName(),
-                               uri
-                              );
-        execute(format);
+        execute(format("CREATE TABLE %s %s\n"
+                       + "STORED BY '%s'\n"
+                       + (withSerDeProps ? format("WITH SERDEPROPERTIES(%s)\n", SERDE_PROPERTIES) : "")
+                       + "TBLPROPERTIES ('mongo.uri'='%s')", MONGO_BACKED_TABLE, TEST_SCHEMA, MongoStorageHandler.class.getName(),
+                       uri
+                      ));
     }
 
     protected void transferData(final String from, final String to) {
@@ -159,5 +159,19 @@ public class HiveTest extends BaseHadoopTest {
 
     protected DBCollection getCollection(final String collection) {
         return getMongoClient().getDB("mongo_hadoop").getCollection(collection);
+    }
+
+    protected void loadIntoHDFS(final String localPath, final String hdfsPath) {
+        try {
+            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-mkdir", "-p", hdfsPath)
+                .redirectOutput(System.out)
+                .execute();
+            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-put", localPath, hdfsPath)
+                .directory(PROJECT_HOME)
+                .redirectOutput(System.out)
+                .execute();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 }

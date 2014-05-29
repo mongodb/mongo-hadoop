@@ -30,10 +30,6 @@ public class MongoOutputCommitter extends OutputCommitter {
         LOG.info("Aborting task.");
     }
 
-    public void cleanupJob(final JobContext jobContext) {
-        LOG.info("Cleaning up job.");
-    }
-
     public void commitTask(final TaskAttemptContext taskContext) {
         LOG.info("Committing task.");
     }

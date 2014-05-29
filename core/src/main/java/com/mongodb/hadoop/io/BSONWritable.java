@@ -32,7 +32,6 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.UTF8;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -180,7 +179,7 @@ public class BSONWritable implements WritableComparable {
         if (x == null) {
             return null;
         }
-        if (x instanceof Text || x instanceof UTF8) {
+        if (x instanceof Text) {
             return x.toString();
         }
         if (x instanceof BSONWritable) {

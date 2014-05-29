@@ -137,6 +137,7 @@ public class MapReduceJob {
 
     }
 
+    @SuppressWarnings("unchecked")
     public void executeInVM() throws Exception {
         
         List<String> cmd = new ArrayList<String>();

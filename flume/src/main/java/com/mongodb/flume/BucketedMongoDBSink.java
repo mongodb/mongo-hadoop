@@ -32,7 +32,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
                     try {
                         closeWriter(obj);
                     } catch (IOException e) {
-                        LOG.warn("Failed to close weriter: " + obj._uri);
+                        LOG.warn("Failed to close writer: " + obj.getUri());
                     }
                 }
             });
@@ -75,7 +75,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
     }
 
     protected void closeWriter(final MongoDBSink writer) throws IOException {
-        LOG.info("Closing writer " + writer._uri);
+        LOG.info("Closing writer " + writer.getUri());
         writer.close();
     }
 
@@ -129,7 +129,7 @@ public class BucketedMongoDBSink extends EventSink.Base {
         private final OnRemove<V> removeCallback;
 
         public SimpleLRUMap(final int capacity, final OnRemove<V> removeCallback) {
-            this.dataMap = new HashMap<K, KeyValueWithUsage<K, V>>();
+            dataMap = new HashMap<K, KeyValueWithUsage<K, V>>();
             this.capacity = capacity;
             this.removeCallback = removeCallback;
         }
@@ -193,11 +193,15 @@ public class BucketedMongoDBSink extends EventSink.Base {
             public KeyValueWithUsage(final K key, final V value) {
                 this.key = key;
                 this.value = value;
-                this.timestamp = System.currentTimeMillis();
+                timestamp = System.currentTimeMillis();
             }
 
             public int compareTo(final KeyValueWithUsage other) {
-                return timestamp >= other.timestamp ? (timestamp != other.timestamp ? 1 : 0) : -1;
+                if (timestamp != other.timestamp) {
+                    return timestamp >= other.timestamp ? 1 : -1;
+                } else {
+                    return 0;
+                }
             }
         }
     }

@@ -30,11 +30,6 @@ public class MongoOutputCommitter extends OutputCommitter {
         LOG.info("should abort task");
     }
 
-    @Deprecated
-    public void cleanupJob(final JobContext jobContext) {
-        LOG.info("should cleanup job");
-    }
-
     public void commitTask(final TaskAttemptContext taskContext) {
         LOG.info("should commit task");
     }

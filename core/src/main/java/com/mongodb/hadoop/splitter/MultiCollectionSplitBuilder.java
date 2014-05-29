@@ -19,6 +19,7 @@ package com.mongodb.hadoop.splitter;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.util.JSON;
@@ -39,43 +40,53 @@ public class MultiCollectionSplitBuilder {
         return this;
     }
 
-    public MultiCollectionSplitBuilder add(final MongoURI inputURI,
-                                           final MongoURI authURI,
-                                           final boolean noTimeout,
-                                           final DBObject fields,
-                                           final DBObject sort,
-                                           final DBObject query,
-                                           final boolean useRangeQuery,
+    /**
+     * @deprecated Use {@link #add(MongoClientURI, MongoClientURI, boolean, DBObject, DBObject, DBObject, boolean, Class)}
+     */
+    @Deprecated
+    public MultiCollectionSplitBuilder add(final MongoURI inputURI, final MongoURI authURI, final boolean noTimeout, final DBObject fields,
+                                           final DBObject sort, final DBObject query, final boolean useRangeQuery,
                                            final Class<? extends MongoSplitter> splitClass) {
-        CollectionSplitterConf conf = new CollectionSplitterConf();
-        conf.inputURI = inputURI;
-        conf.authURI = authURI;
-        conf.noTimeout = noTimeout;
-        conf.fields = fields;
-        conf.sort = sort;
-        conf.query = query;
-        conf.useRangeQuery = useRangeQuery;
-        conf.splitClass = splitClass;
-        return addConf(conf);
+        return add(new MongoClientURI(inputURI.toString()), new MongoClientURI(authURI.toString()),
+                   noTimeout, fields, sort, query, useRangeQuery, splitClass);
+    }
+
+    public MultiCollectionSplitBuilder add(final MongoClientURI inputURI, final MongoClientURI authURI, final boolean noTimeout,
+                                           final DBObject fields, final DBObject sort, final DBObject query, final boolean useRangeQuery,
+                                           final Class<? extends MongoSplitter> splitClass) {
+        return addConf(new CollectionSplitterConf(inputURI, authURI, noTimeout, fields, sort, query, useRangeQuery, splitClass));
     }
 
     public String toJSON() {
         BasicDBList returnVal = new BasicDBList();
-        for (CollectionSplitterConf conf : this.collectionSplitters) {
+        for (CollectionSplitterConf conf : collectionSplitters) {
             returnVal.add(new BasicDBObject(conf.toConfigMap()));
         }
         return JSON.serialize(returnVal);
     }
 
     public static class CollectionSplitterConf {
-        private MongoURI inputURI = null;
-        private MongoURI authURI = null;
+        private MongoClientURI inputURI = null;
+        private MongoClientURI authURI = null;
         private boolean noTimeout = false;
         private DBObject fields = null;
         private DBObject sort = null;
         private DBObject query = null;
         private boolean useRangeQuery = false;
         private Class<? extends MongoSplitter> splitClass;
+
+        public CollectionSplitterConf(final MongoClientURI inputURI, final MongoClientURI authURI, final boolean noTimeout,
+                                      final DBObject fields, final DBObject sort, final DBObject query, final boolean useRangeQuery,
+                                      final Class<? extends MongoSplitter> splitClass) {
+            this.inputURI = inputURI;
+            this.authURI = authURI;
+            this.noTimeout = noTimeout;
+            this.fields = fields;
+            this.sort = sort;
+            this.query = query;
+            this.useRangeQuery = useRangeQuery;
+            this.splitClass = splitClass;
+        }
 
         public Map<String, String> toConfigMap() {
             HashMap<String, String> outMap = new HashMap<String, String>();

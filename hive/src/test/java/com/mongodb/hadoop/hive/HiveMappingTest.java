@@ -4,6 +4,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
+import com.mongodb.hadoop.mapred.BSONFileInputFormat;
 import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
 import org.junit.Test;
 
@@ -60,6 +62,36 @@ public class HiveMappingTest extends HiveTest {
                                .append("state", state)
                           );
     }
+
+    public void loadMailBson() {
+        String name = "messages";
+        DBCollection collection = getCollection(name);
+        collection.drop();
+        dropTable(name);
+
+        loadIntoHDFS("examples/data/dump/enron_mail/messages.bson", "/user/hive/warehouse/enron");
+        
+        ColumnMapping map = new ColumnMapping()
+                                .map("id", "_id")
+                                .map("subFolder", "subFolder");
+        MongoClientURI uri = authCheck(new MongoClientURIBuilder()
+                                           .collection("mongo_hadoop", collection.getName())
+                                      ).build();
+        execute(format("CREATE EXTERNAL TABLE %s (body STRING, subFolder STRING, mailbox STRING, filename STRING)\n"
+                       + "ROW FORMAT SERDE '%s'\n"
+                       + "WITH SERDEPROPERTIES('mongo.columns.mapping'='%s')\n"
+                       + "STORED AS INPUTFORMAT '%s'\n"
+                       + "OUTPUTFORMAT '%s'\n"
+                       + "LOCATION '%s'", name, BSONSerDe.class.getName(), map, BSONFileInputFormat.class.getName(),
+                       HiveBSONFileOutputFormat.class.getName(), "/user/hive/warehouse/enron/"
+                      ));
+        //        execute(format("LOAD DATA LOCAL INPATH '%s' INTO TABLE %s",
+        //                       new File(PROJECT_HOME, "examples/data/dump/enron_mail/messages.bson").getAbsolutePath(), 
+        // "enron_messages"));
+
+        Results execute = execute(String.format("SELECT COUNT(*) from %s", name));
+    }
+
 
     private static class ColumnMapping {
         private final Map<String, String> columns = new LinkedHashMap<String, String>();

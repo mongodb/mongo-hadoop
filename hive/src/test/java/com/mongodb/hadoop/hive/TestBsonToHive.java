@@ -6,7 +6,6 @@ import com.mongodb.hadoop.mapred.BSONFileInputFormat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.util.concurrent.Callable;
 
@@ -47,19 +46,6 @@ public class TestBsonToHive extends HiveTest {
             cmd += format("\nLOCATION '%s'", BSON_HDFS_TEST_PATH);
         }
         return execute(cmd);
-    }
-
-    private void loadIntoHDFS(final String localPath, final String hdfsPath) {
-        try {
-            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-mkdir", "-p", hdfsPath)
-                .redirectOutput(System.out)
-                .execute();
-            new ProcessExecutor(HADOOP_HOME + "/bin/hadoop", "fs", "-put", localPath, hdfsPath)
-                .redirectOutput(System.out)
-                .execute();
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
     }
 
     @Test
