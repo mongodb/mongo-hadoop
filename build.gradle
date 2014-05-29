@@ -114,6 +114,8 @@ configure(subprojects) {
 
     task testAll(dependsOn: tasks.withType(Test))
     test.dependsOn ':configureCluster'
+    test.dependsOn ':downloadEnronEmails'
+            
     compileJava.dependsOn ':generateScripts'
     check.dependsOn testAll
 
@@ -320,6 +322,10 @@ project(":integration-tests") {
     }
 }
 
+
+task configureCluster(dependsOn: ['copyFiles']) << {
+}
+
 task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
@@ -395,24 +401,27 @@ task sensorData(dependsOn: 'configureCluster') << {
            "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
 }
 
-task enronEmails(dependsOn: 'configureCluster') << {
-    new File(dataHome).mkdirs()
-    download {
-        src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
-        dest dataHome
-        onlyIfNewer true
-    }
+task downloadEnronEmails() {
     if (!new File("${dataHome}/dump").exists()) {
+        println "Downloading Enron email test data"
+        new File(dataHome).mkdirs()
+        download {
+            src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
+            dest dataHome
+            onlyIfNewer true
+        }
         println "extracting email data"
         copy {
             from(tarTree("${dataHome}/enron_mongo.tar.bz2"))
             into dataHome
         }
     }
+}
 
+task enronEmails(dependsOn: [ downloadEnronEmails, configureCluster ] ) << {
     exec() {
         commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
-    }
+    }    
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
            "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
@@ -494,9 +503,6 @@ task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
         from 'clusterConfigs'
         into hadoopEtc
     }
-}
-
-task configureCluster(dependsOn: ['copyFiles']) << {
 }
 
 apply from: 'gradle/maven-deployment.gradle'
