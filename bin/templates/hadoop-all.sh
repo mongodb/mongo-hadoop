@@ -34,7 +34,6 @@ start() {
     fi
     
     startService hdfs namenode
-    sleep 5
     startService hdfs datanode
     startService yarn resourcemanager
     startService yarn nodemanager
