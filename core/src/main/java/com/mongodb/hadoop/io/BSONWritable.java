@@ -50,34 +50,22 @@ import org.bson.io.Bits;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Map;
-
-/**
- * This is <em>not</em> reusable.
- */
 
 @SuppressWarnings("deprecation")
 public class BSONWritable implements WritableComparable {
 
-    private static final byte[] HEX_CHAR = new byte[]{
-                                                         '0', '1', '2', '3', '4', '5', '6', '7', '8',
-                                                         '9', 'A', 'B', 'C', 'D', 'E', 'F'
-    };
-
+    private static final byte[] HEX_CHAR = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     private static final Log LOG = LogFactory.getLog(BSONWritable.class);
 
     static {
-        // register this comparator
         WritableComparator.define(BSONWritable.class, new BSONWritableComparator());
     }
 
-    //CHECKSTYLE:OFF
-    protected BSONObject _doc;
-    //CHECKSTYLE:ON
+    private BSONObject doc;
 
     public BSONWritable() {
-        _doc = new BasicBSONObject();
+        doc = new BasicBSONObject();
     }
 
     public BSONWritable(final BSONObject doc) {
@@ -86,15 +74,11 @@ public class BSONWritable implements WritableComparable {
     }
 
     public void setDoc(final BSONObject doc) {
-        this._doc = doc;
+        this.doc = doc;
     }
 
     public BSONObject getDoc() {
-        return this._doc;
-    }
-
-    public Map toMap() {
-        return _doc.toMap();
+        return doc;
     }
 
     /**
@@ -106,7 +90,7 @@ public class BSONWritable implements WritableComparable {
         BSONEncoder enc = new BasicBSONEncoder();
         BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set(buf);
-        enc.putObject(_doc);
+        enc.putObject(doc);
         enc.done();
         buf.pipe(out);
     }
@@ -132,15 +116,15 @@ public class BSONWritable implements WritableComparable {
             System.arraycopy(l, 0, data, 0, 4);
             in.readFully(data, 4, dataLen - 4);
             dec.decode(data, cb);
-            _doc = (BSONObject) cb.get();
+            doc = (BSONObject) cb.get();
             if (LOG.isTraceEnabled()) {
-                LOG.trace("Decoded a BSON Object: " + _doc);
+                LOG.trace("Decoded a BSON Object: " + doc);
             }
         } catch (Exception e) {
             /* If we can't read another length it's not an error, just return quietly. */
             // TODO - Figure out how to gracefully mark this as an empty
             LOG.info("No Length Header available." + e);
-            _doc = new BasicDBObject();
+            doc = new BasicDBObject();
         }
 
     }
@@ -150,13 +134,11 @@ public class BSONWritable implements WritableComparable {
      */
     @Override
     public String toString() {
-        return "<BSONWritable:" + this._doc.toString() + ">";
+        return "<BSONWritable:" + doc + ">";
     }
 
     /**
      * Used by child copy constructors.
-     *
-     * @param other
      */
     protected synchronized void copy(final Writable other) {
         if (other != null) {
@@ -185,14 +167,13 @@ public class BSONWritable implements WritableComparable {
     }
 
     protected static void dumpBytes(final byte[] buffer) {
-        StringBuilder sb = new StringBuilder(2 + (3 * buffer.length));
+        StringBuilder sb = new StringBuilder(2 + 3 * buffer.length);
 
         for (byte b : buffer) {
-            sb.append("0x").append((char) (HEX_CHAR[(b & 0x00F0) >> 4])).append(
-                                                                                   (char) (HEX_CHAR[b & 0x000F])).append(" ");
+            sb.append("0x").append((char) HEX_CHAR[(b & 0x00F0) >> 4]).append((char) HEX_CHAR[b & 0x000F]).append(" ");
         }
 
-        LOG.info("Byte Dump: " + sb.toString());
+        LOG.info("Byte Dump: " + sb);
     }
 
     public static Object toBSON(final Object x) {
@@ -253,12 +234,12 @@ public class BSONWritable implements WritableComparable {
             return false;
         }
         final BSONWritable other = (BSONWritable) obj;
-        return !(this._doc != other._doc && (this._doc == null || !this._doc.equals(other._doc)));
+        return !(doc != other.doc && (doc == null || !doc.equals(other.doc)));
     }
 
     @Override
     public int hashCode() {
-        return (this._doc != null ? this._doc.hashCode() : 0);
+        return doc != null ? doc.hashCode() : 0;
     }
 
 }

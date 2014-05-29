@@ -166,20 +166,20 @@ public class BSONSplitter extends Configured implements Tool {
                     numDocsRead++;
                     if (numDocsRead % 1000 == 0) {
                         float splitProgress = 100f * ((float) fsDataStream.getPos() / length);
-                        LOG.info("Read " + numDocsRead + " docs calculating splits for " + file.toString() + "; " + splitProgress
-                                 + "% complete.");
+                        LOG.info(String.format("Read %d docs calculating splits for %s; %3.3f%% complete.",
+                                               numDocsRead, file.getPath(), splitProgress));
                     }
                 }
                 if (curSplitLen > 0) {
                     FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
                     splits.add(split);
-                    LOG.info("Final split (" + splits.size() + ") " + split.toString());
+                    LOG.info(String.format("Final split (%d) %s", splits.size(), split.getPath()));
                 }
                 this.splitsList = splits;
-                LOG.info("Completed splits calculation for " + file.toString());
+                LOG.info("Completed splits calculation for " + file.getPath());
                 writeSplits();
             } catch (IOException e) {
-                LOG.warn("IOException: " + e.toString());
+                LOG.warn("IOException: " + e);
             } finally {
                 fsDataStream.close();
             }
