@@ -55,7 +55,7 @@ import static java.lang.String.format;
 
 public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
-    
+
     private FileSplit fileSplit;
     private BSONObject value;
     private FSDataInputStream in;
@@ -67,9 +67,11 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
 
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext context) throws IOException, InterruptedException {
-        this.fileSplit = (FileSplit) inputSplit;
+        fileSplit = (FileSplit) inputSplit;
         final Configuration configuration = context.getConfiguration();
-        LOG.info("reading split " + this.fileSplit.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("reading split " + fileSplit);
+        }
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(configuration);
         in = fs.open(file, 16 * 1024 * 1024);
@@ -87,9 +89,9 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         try {
-            if (in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()) {
+            if (in.getPos() >= fileSplit.getStart() + fileSplit.getLength()) {
                 try {
-                    this.close();
+                    close();
                 } catch (final Exception e) {
                     LOG.warn(e.getMessage(), e);
                 }
@@ -101,13 +103,15 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
             value = (BSONObject) callback.get();
             numDocsRead++;
             if (numDocsRead % 10000 == 0) {
-                LOG.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format("read %d docs from %s at %d", numDocsRead, fileSplit, in.getPos()));
+                }
             }
             return true;
         } catch (final Exception e) {
             LOG.error(format("Error reading key/value from bson file on line %d: %s", numDocsRead, e.getMessage()));
             try {
-                this.close();
+                close();
             } catch (final Exception e2) {
                 LOG.warn(e.getMessage(), e);
             }
@@ -127,19 +131,19 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
 
     @Override
     public float getProgress() throws IOException, InterruptedException {
-        if (this.finished) {
+        if (finished) {
             return 1f;
         }
         if (in != null) {
-            return (float) (in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
+            return (float) (in.getPos() - fileSplit.getStart()) / fileSplit.getLength();
         }
         return 0f;
     }
 
     @Override
     public void close() throws IOException {
-        this.finished = true;
-        if (this.in != null) {
+        finished = true;
+        if (in != null) {
             in.close();
         }
     }

@@ -42,7 +42,7 @@ import static java.lang.String.format;
 
 public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
-    
+
     private FileSplit fileSplit;
     private FSDataInputStream in;
     private int numDocsRead = 0;
@@ -52,7 +52,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     private BSONDecoder decoder;
 
     public void initialize(final InputSplit inputSplit, final Configuration conf) throws IOException {
-        this.fileSplit = (FileSplit) inputSplit;
+        fileSplit = (FileSplit) inputSplit;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
         in = fs.open(file, 16 * 1024 * 1024);
@@ -69,9 +69,9 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     @Override
     public boolean next(final NullWritable key, final BSONWritable value) throws IOException {
         try {
-            if (in.getPos() >= this.fileSplit.getStart() + this.fileSplit.getLength()) {
+            if (in.getPos() >= fileSplit.getStart() + fileSplit.getLength()) {
                 try {
-                    this.close();
+                    close();
                 } catch (final Exception e) {
                     LOG.warn(e.getMessage(), e);
                 }
@@ -85,13 +85,13 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
 
             numDocsRead++;
             if (numDocsRead % 5000 == 0) {
-                LOG.debug("read " + numDocsRead + " docs from " + this.fileSplit.toString() + " at " + in.getPos());
+                LOG.debug(String.format("read %d docs from %s at %d", numDocsRead, fileSplit, in.getPos()));
             }
             return true;
         } catch (final Exception e) {
             LOG.error(format("Error reading key/value from bson file on line %d: %s", numDocsRead, e.getMessage()));
             try {
-                this.close();
+                close();
             } catch (final Exception e2) {
                 LOG.warn(e2.getMessage(), e2);
             }
@@ -100,23 +100,23 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
     }
 
     public float getProgress() throws IOException {
-        if (this.finished) {
+        if (finished) {
             return 1f;
         }
         if (in != null) {
-            return (float) (in.getPos() - this.fileSplit.getStart()) / this.fileSplit.getLength();
+            return (float) (in.getPos() - fileSplit.getStart()) / fileSplit.getLength();
         }
         return 0f;
     }
 
     public long getPos() throws IOException {
-        if (this.finished) {
-            return this.fileSplit.getStart() + this.fileSplit.getLength();
+        if (finished) {
+            return fileSplit.getStart() + fileSplit.getLength();
         }
         if (in != null) {
             return in.getPos();
         }
-        return this.fileSplit.getStart();
+        return fileSplit.getStart();
     }
 
     @Override
@@ -131,9 +131,11 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
 
     @Override
     public void close() throws IOException {
-        LOG.info("closing bson file split.");
-        this.finished = true;
-        if (this.in != null) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("closing bson file split.");
+        }
+        finished = true;
+        if (in != null) {
             in.close();
         }
     }
