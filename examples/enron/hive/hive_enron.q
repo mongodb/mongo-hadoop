@@ -7,7 +7,7 @@
 -- except the words "from", "to", and "date" are reserved in Hive 
 DROP TABLE raw;
 
-CREATE TABLE raw(
+CREATE EXTERNAL TABLE raw(
     h STRUCT<hivefrom:STRING,hiveto:STRING>
 )
 ROW FORMAT SERDE "com.mongodb.hadoop.hive.BSONSerDe"

@@ -4,7 +4,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
-import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.hadoop.hive.service.HiveClient;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;

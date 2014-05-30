@@ -3,7 +3,7 @@ package org.mongodb.hadoop;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import com.mongodb.hadoop.splitter.SingleMongoSplitter;
-import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.JsonNode;

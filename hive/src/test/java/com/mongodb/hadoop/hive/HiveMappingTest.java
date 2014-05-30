@@ -6,7 +6,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
 import com.mongodb.hadoop.mapred.BSONFileInputFormat;
-import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;

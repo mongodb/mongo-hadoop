@@ -5,7 +5,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
-import com.mongodb.hadoop.testutils.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.junit.Before;
 
 import java.io.File;

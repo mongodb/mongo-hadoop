@@ -6,6 +6,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
@@ -148,14 +149,6 @@ public abstract class BaseHadoopTest {
         }
     }
 
-    protected MongoClientURIBuilder authCheck(final MongoClientURIBuilder builder) {
-        if (isAuthEnabled()) {
-            builder.auth("bob", "pwd123");
-        }
-
-        return builder;
-    }
-
     protected static String loadProperty(final String name, final String defaultValue) {
         String property = System.getProperty(name, System.getenv(name.toUpperCase()));
         if (property == null) {
@@ -171,6 +164,14 @@ public abstract class BaseHadoopTest {
             object.append(values[i].toString(), values[i + 1]);
         }
         return object;
+    }
+
+    public static MongoClientURIBuilder authCheck(final MongoClientURIBuilder builder) {
+        if (isAuthEnabled()) {
+            builder.auth("bob", "pwd123");
+        }
+
+        return builder;
     }
 
     public void mongoImport(final String collection, final File file) {

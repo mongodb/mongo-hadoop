@@ -78,7 +78,8 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
         } catch (SplitFailedException spfe) {
             // split failed because no namespace found 
             // (so the corresponding collection doesn't exist)
-            return new MongoHiveInputSplit[0];
+            LOG.error(spfe.getMessage(), spfe);
+            throw new IOException(spfe.getMessage(), spfe);
         } catch (Exception e) {
             throw new IOException(e);
         }

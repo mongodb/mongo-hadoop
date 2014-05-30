@@ -1,4 +1,4 @@
-package com.mongodb.hadoop.testutils;
+package com.mongodb.hadoop.util;
 
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
@@ -59,7 +59,18 @@ public class MongoClientURIBuilder {
     }
 
     public MongoClientURIBuilder host(final String host) {
-        this.host = host;
+        if (host.contains(":")) {
+            String[] split = host.split(":");
+            this.host = split[0];
+            port = Integer.valueOf(split[1]);
+        } else {
+            this.host = host;
+        }
+        return this;
+    }
+
+    public MongoClientURIBuilder port(final Integer port) {
+        this.port = port;
         return this;
     }
 
@@ -73,11 +84,6 @@ public class MongoClientURIBuilder {
         this.userName = userName;
         this.password = password;
         params.put("authSource", "admin");
-        return this;
-    }
-
-    public MongoClientURIBuilder port(final Integer port) {
-        this.port = port;
         return this;
     }
 

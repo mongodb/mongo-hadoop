@@ -20,15 +20,19 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.CommandResult;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,15 +57,14 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         super(conf);
     }
 
-    // Generate one split per chunk.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        this.init();
+        init();
         final DBObject splitKey = MongoConfigUtil.getInputSplitKey(conf);
         final int splitSize = MongoConfigUtil.getSplitSize(conf);
 
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
-        final String ns = this.inputCollection.getFullName();
+        final String ns = inputCollection.getFullName();
 
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
 
@@ -74,16 +77,45 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                                  .get();
 
         CommandResult data;
-        if (this.authDB == null) {
-            data = this.inputCollection.getDB().getSisterDB("admin").command(cmd);
+        if (authDB == null) {
+            data = inputCollection.getDB().getSisterDB("admin").command(cmd);
         } else {
-            data = this.authDB.command(cmd);
+            data = authDB.command(cmd);
         }
 
         if (data.containsField("$err")) {
             throw new SplitFailedException("Error calculating splits: " + data);
         } else if (!data.get("ok").equals(1.0)) {
-            throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
+            CommandResult stats = inputCollection.getStats();
+            if (stats.containsField("primary")) {
+                DBCursor shards = inputCollection.getDB().getSisterDB("config")
+                                                 .getCollection("shards")
+                                                 .find(new BasicDBObject("_id", stats.getString("primary")));
+                try {
+                    if (shards.hasNext()) {
+                        DBObject shard = shards.next();
+                        MongoClientURI shardHost = new MongoClientURIBuilder(inputURI)
+                                                       .host((String) shard.get("host"))
+                                                       .build();
+                        MongoClient shardClient = null;
+                        try {
+                            shardClient = new MongoClient(shardHost);
+                            data = shardClient.getDB("admin").command(cmd);
+                        } catch (UnknownHostException e) {
+                            LOG.error(e.getMessage(), e);
+                        } finally {
+                            if (shardClient != null) {
+                                shardClient.close();
+                            }
+                        }
+                    }
+                } finally {
+                    shards.close();
+                }
+            }
+            if (!data.get("ok").equals(1.0)) {
+                throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
+            }
         }
 
         // Comes in a format where "min" and "max" are implicit

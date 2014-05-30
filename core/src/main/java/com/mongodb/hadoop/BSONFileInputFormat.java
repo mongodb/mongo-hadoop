@@ -43,7 +43,7 @@ public class BSONFileInputFormat extends FileInputFormat {
     @Override
     public RecordReader createRecordReader(final InputSplit split, final TaskAttemptContext context)
         throws IOException, InterruptedException {
-        
+
         BSONFileRecordReader reader = new BSONFileRecordReader();
         reader.initialize(split, context);
         return reader;
@@ -51,8 +51,7 @@ public class BSONFileInputFormat extends FileInputFormat {
 
     public static PathFilter getInputPathFilter(final JobContext context) {
         Configuration conf = context.getConfiguration();
-        Class<?> filterClass = conf.getClass("bson.pathfilter.class", null,
-                                             PathFilter.class);
+        Class<?> filterClass = conf.getClass("bson.pathfilter.class", null, PathFilter.class);
         return filterClass != null ? (PathFilter) ReflectionUtils.newInstance(filterClass, conf) : null;
     }
 
@@ -64,10 +63,14 @@ public class BSONFileInputFormat extends FileInputFormat {
         List<FileStatus> inputFiles = listStatus(context);
         for (FileStatus file : inputFiles) {
             if (pf != null && !pf.accept(file.getPath())) {
-                LOG.info("skipping file " + file.getPath() + " not matched path filter.");
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format("skipping file %s not matched path filter.", file.getPath()));
+                }
                 continue;
             } else {
-                LOG.info("processing file " + file.getPath());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("processing file " + file.getPath());
+                }
             }
 
             BSONSplitter splitter = new BSONSplitter();
@@ -77,13 +80,19 @@ public class BSONFileInputFormat extends FileInputFormat {
             try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
             } catch (BSONSplitter.NoSplitFileException nsfe) {
-                LOG.info("No split file for " + file + "; building split file");
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format("No split file for %s; building split file", file.getPath()));
+                }
                 splitter.readSplitsForFile(file);
             }
-            LOG.info("BSONSplitter found " + splitter.getAllSplits().size() + " splits.");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(String.format("BSONSplitter found %d splits.", splitter.getAllSplits().size()));
+            }
             splits.addAll(splitter.getAllSplits());
         }
-        LOG.info("Total of " + splits.size() + " found.");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format("Total of %d found.", splits.size()));
+        }
         return splits;
     }
 

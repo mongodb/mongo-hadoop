@@ -1,13 +1,44 @@
 package com.mongodb.hadoop.splitter;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.util.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.InputSplit;
 import org.junit.Test;
 
+import java.net.UnknownHostException;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class StandaloneMongoSplitterTest {
+
+    @Test
+    //CHECKSTYLE:OFF
+    public void unshardedCollection() throws UnknownHostException, SplitFailedException {
+        //CHECKSTYLE:ON
+        MongoClient client = new MongoClient("localhost", 27017);
+        MongoClientURI uri = new MongoClientURIBuilder()
+                                 .collection("mongo_hadoop", "splitter_test")
+                                 .build();
+        DBCollection collection = client.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+        collection.drop();
+        for (int i = 0; i < 10000; i++) {
+            collection.insert(new BasicDBObject("value", i));
+        }
+        Configuration config = new Configuration();
+        StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
+        MongoConfigUtil.setInputURI(config, uri);
+        List<InputSplit> inputSplits = splitter.calculateSplits();
+        assertFalse("Should find at least one split", inputSplits.isEmpty());
+
+    }
 
     @Test
     public void testNullBounds() throws Exception {

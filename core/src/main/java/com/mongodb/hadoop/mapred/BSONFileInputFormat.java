@@ -56,10 +56,14 @@ public class BSONFileInputFormat extends FileInputFormat {
             try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
             } catch (BSONSplitter.NoSplitFileException nsfe) {
-                LOG.info("No split file for " + file + "; building split file");
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format("No split file for %s; building split file", file.getPath()));
+                }
                 splitter.readSplitsForFile(file);
             }
-            LOG.info(format("BSONSplitter found %d splits.", splitter.getAllSplits().size()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(format("BSONSplitter found %d splits.", splitter.getAllSplits().size()));
+            }
 
             for (org.apache.hadoop.mapreduce.lib.input.FileSplit split : splitter.getAllSplits()) {
                 FileSplit fsplit =
@@ -70,7 +74,9 @@ public class BSONFileInputFormat extends FileInputFormat {
                 results.add(fsplit);
             }
         }
-        LOG.info(format("Total of %d found.", results.size()));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(format("Total of %d found.", results.size()));
+        }
         return results.toArray(new FileSplit[results.size()]);
     }
 

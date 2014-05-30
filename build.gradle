@@ -25,7 +25,7 @@ ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
 ext.javaDriverVersion = "2.12.2"
-ext.dataHome = "examples/data"
+ext.dataHome = "${rootDir}/examples/data"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
 
@@ -126,6 +126,7 @@ configure(subprojects) {
 
     checkstyleTest {
         classpath += configurations.compile
+        classpath += configurations.testCompile
     }
 
     checkstyleMain {
@@ -403,7 +404,7 @@ task sensorData(dependsOn: 'configureCluster') << {
 
 task downloadEnronEmails() {
     if (!new File("${dataHome}/dump").exists()) {
-        println "Downloading Enron email test data"
+        println "Downloading Enron email test data to ${dataHome}"
         new File(dataHome).mkdirs()
         download {
             src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
