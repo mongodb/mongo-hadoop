@@ -9,6 +9,7 @@ import com.mongodb.hadoop.mapred.BSONFileInputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,7 +70,7 @@ public class HiveMappingTest extends HiveTest {
         collection.drop();
         dropTable(name);
 
-        loadIntoHDFS("examples/data/dump/enron_mail/messages.bson", "/user/hive/warehouse/enron");
+        loadIntoHDFS(new File(EXAMPLE_DATA_HOME, "dump/enron_mail/messages.bson").getAbsolutePath(), "/user/hive/warehouse/enron");
         
         ColumnMapping map = new ColumnMapping()
                                 .map("id", "_id")

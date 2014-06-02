@@ -42,9 +42,12 @@ public abstract class BaseHadoopTest {
     public static final String HADOOP_HOME;
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
     public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.4.0");
-    public static final String HIVE_HOME;
     public static final String HIVE_VERSION = "0.12.0";
+    
+    public static final String HIVE_HOME;
     public static final File PROJECT_HOME;
+    public static final String HADOOP_BINARIES;
+    public static final String EXAMPLE_DATA_HOME;
 
     private static final boolean TEST_IN_VM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
@@ -67,10 +70,10 @@ public abstract class BaseHadoopTest {
                                                   + "type of '%s'", path, "/usr/local/bin/mongoimport", property));
             }
 
-            HADOOP_HOME = new File(String.format("%s/hadoop-binaries/hadoop-%s/", System.getProperty("user.home"),
-                                                 HADOOP_RELEASE_VERSION)).getCanonicalPath();
-            HIVE_HOME = new File(String.format("%s/hadoop-binaries/hive-%s/", System.getProperty("user.home"),
-                                               HIVE_VERSION)).getCanonicalPath();
+            HADOOP_BINARIES = new File(String.format("%s/hadoop-binaries/", System.getProperty("user.home"))).getCanonicalPath();
+            EXAMPLE_DATA_HOME = new File(HADOOP_BINARIES, "examples/data").getCanonicalPath();
+            HADOOP_HOME = new File(HADOOP_BINARIES, String.format("hadoop-%s/", HADOOP_RELEASE_VERSION)).getCanonicalPath();
+            HIVE_HOME = new File(HADOOP_BINARIES, String.format("hive-%s/", HIVE_VERSION)).getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();
             while (!new File(current, "build.gradle").exists() && current.getParentFile().exists()) {

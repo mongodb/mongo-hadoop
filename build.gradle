@@ -25,7 +25,7 @@ ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
 ext.javaDriverVersion = "2.12.2"
-ext.dataHome = "${rootDir}/examples/data"
+ext.dataHome = "${hadoopBinaries}/examples/data"
 
 println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
 
