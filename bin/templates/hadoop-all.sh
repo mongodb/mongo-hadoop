@@ -15,7 +15,7 @@ startService() {
     BIN=$1
     SERVICE=$2
     echo Starting ${SERVICE}
-    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> @PROJECT_HOME@/logs/${SERVICE}.log &
+    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
 start() {
@@ -30,7 +30,7 @@ start() {
         then
             FORCE=-force
         fi
-        @HADOOP_HOME@/bin/hdfs namenode -format ${FORCE} &> @PROJECT_HOME@/logs/namenode-format.out
+        @HADOOP_HOME@/bin/hdfs namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
     fi
     
     startService hdfs namenode
@@ -45,7 +45,7 @@ start() {
         echo CDH found.  setting MAPRED_DIR
         export MAPRED_DIR=share/hadoop/mapreduce2
     fi
-    @HIVE_HOME@/bin/hive --service hiveserver &> @PROJECT_HOME@/logs/hiveserver.log &
+    @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }
 
 shutdown() {
