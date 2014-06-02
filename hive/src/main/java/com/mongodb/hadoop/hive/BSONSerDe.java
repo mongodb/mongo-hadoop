@@ -482,6 +482,11 @@ public class BSONSerDe extends AbstractSerDe {
     private Object serializeList(final Object obj, final ListObjectInspector oi, final String ext) {
         BasicBSONList list = new BasicBSONList();
         List<?> field = oi.getList(obj);
+
+        if (field == null) {
+            return list;
+        }
+
         ObjectInspector elemOI = oi.getListElementObjectInspector();
 
         for (Object elem : field) {
@@ -595,6 +600,9 @@ public class BSONSerDe extends AbstractSerDe {
         switch (oi.getPrimitiveCategory()) {
             case TIMESTAMP:
                 Timestamp ts = (Timestamp) oi.getPrimitiveJavaObject(obj);
+                if (ts == null) {
+                    return null;
+                }
                 return new Date(ts.getTime());
             default:
                 return oi.getPrimitiveJavaObject(obj);
