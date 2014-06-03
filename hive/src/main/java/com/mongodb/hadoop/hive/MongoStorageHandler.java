@@ -27,31 +27,25 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
-import org.apache.hadoop.hive.serde2.SerDe;
+import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-/*
+import static java.lang.String.format;
+
+/**
  * Used to sync documents in some MongoDB collection with
  * rows in a Hive table
  */
-@SuppressWarnings("deprecation")
 public class MongoStorageHandler extends DefaultStorageHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(MongoStorageHandler.class);
-
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
     public static final String TABLE_LOCATION = "location";
-
-    public MongoStorageHandler() {
-    }
 
     @Override
     public Class<? extends InputFormat<?, ?>> getInputFormatClass() {
@@ -69,11 +63,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
     }
 
     @Override
-    public Class<? extends SerDe> getSerDeClass() {
+    public Class<? extends AbstractSerDe> getSerDeClass() {
         return BSONSerDe.class;
     }
 
-    /*
+    /**
      * HiveMetaHook used to define events triggered when a hive table is
      * created and when a hive table is dropped.
      */
@@ -82,12 +76,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         public void preCreateTable(final Table tbl) throws MetaException {
             Map<String, String> tblParams = tbl.getParameters();
             if (!tblParams.containsKey(MONGO_URI)) {
-                throw new MetaException("You must specify 'mongo.uri' in TBLPROPERTIES");
+                throw new MetaException(format("You must specify '%s' in TBLPROPERTIES", MONGO_URI));
             }
         }
 
         @Override
-        //CHECKSTYLE:OFF
         public void commitCreateTable(final Table tbl) throws MetaException {
         }
 
@@ -101,7 +94,6 @@ public class MongoStorageHandler extends DefaultStorageHandler {
 
         @Override
         public void commitDropTable(final Table tbl, final boolean deleteData) throws MetaException {
-            //CHECKSTYLE:ON
             boolean isExternal = MetaStoreUtils.isExternalTable(tbl);
 
             if (deleteData && !isExternal) {
@@ -111,15 +103,13 @@ public class MongoStorageHandler extends DefaultStorageHandler {
                     DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
                     coll.drop();
                 } else {
-                    throw new MetaException("No 'mongo.uri' property found. Collection not dropped.");
+                    throw new MetaException(format("No '%s' property found. Collection not dropped.", MONGO_URI));
                 }
             }
         }
 
         @Override
-        //CHECKSTYLE:OFF
         public void rollbackDropTable(final Table tbl) throws MetaException {
-            //CHECKSTYLE:ON
         }
     }
 
@@ -135,7 +125,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         copyJobProperties(properties, jobProperties);
     }
 
-    /*
+    /**
      * Helper function to copy properties
      */
     private void copyJobProperties(final Properties from, final Map<String, String> to) {

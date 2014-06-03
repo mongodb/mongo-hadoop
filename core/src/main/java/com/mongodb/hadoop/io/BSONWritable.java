@@ -224,7 +224,7 @@ public class BSONWritable implements WritableComparable {
             // TODO - Support counters
 
         }
-        throw new RuntimeException("can't convert: " + x.getClass().getName() + " to BSON");
+        return x;
     }
 
     @Override
