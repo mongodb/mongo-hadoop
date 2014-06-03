@@ -7,7 +7,7 @@ stopService() {
     if [ "${PID}" ]
     then
         echo Shutting down $*
-        kill ${PID}
+        kill -s ${KILL_SIGNAL-TERM} ${PID}
     fi
 }
 
@@ -49,6 +49,13 @@ start() {
 }
 
 shutdown() {
+    stopService NodeManager node manager
+    stopService ResourceManager resource manager
+    stopService DataNode data node
+    stopService NameNode name node
+    stopService RunJar hive server
+    
+    KILL_SIGNAL=KILL
     stopService NodeManager node manager
     stopService ResourceManager resource manager
     stopService DataNode data node
