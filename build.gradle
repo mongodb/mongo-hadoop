@@ -327,11 +327,8 @@ project(":integration-tests") {
 task configureCluster(dependsOn: ['copyFiles']) << {
 }
 
-task installHadoop() << {
-    new File(hadoopHome).getParentFile().mkdirs()
-
-    println "Checking if ${hadoopHome}/bin exists"
-    if (!new File("${hadoopHome}/bin").exists()) {
+def download() {
+    try {
         def url
         switch (hadoop_version) {
             case ("cdh4"):
@@ -356,6 +353,21 @@ task installHadoop() << {
             from(tarTree("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz"))
             into hadoopBinaries
         }
+    } catch (Exception e) {
+        println e
+        new File("${hadoopHome}").deleteDir()
+        new File("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz").delete()
+        download()
+    }
+    
+}
+
+task installHadoop() << {
+    new File(hadoopHome).getParentFile().mkdirs()
+
+    println "Checking if ${hadoopHome}/bin exists"
+    if (!new File("${hadoopHome}/bin").exists()) {
+        download()
     }
 }
 
