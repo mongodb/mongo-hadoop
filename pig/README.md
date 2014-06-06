@@ -96,12 +96,12 @@ file, you will also need to set `fs.s3.awsAccessKeyId` and `fs.s3.awsSecretAcces
 
 To make each output record be used as an insert into a MongoDB collection, use the `MongoInsertStorage` class supplying the output URI. 
 For example:
+```
+STORE <aliasname> INTO 'mongodb://localhost:27017/<db>.<collection>' 
+                  USING com.mongodb.hadoop.pig.MongoInsertStorage('<idAlias>');
+```
 
-    STORE dates_averages INTO 'mongodb://localhost:27017/demo.yield_aggregated' USING com.mongodb.hadoop.pig.MongoInsertStorage('', '' );
-
-The `MongoInsertStorage` class also takes two args: an `idAlias` and a `schema` as described above. If `schema` is left blank, it will 
-attempt to infer the output schema from the data using the strategy described above. If `idAlias` is left blank, an `ObjectId` will be 
-generated for the value of the `_id` field in each output document.
+The `MongoInsertStorage` class takes an argument: `idAlias` as described above. If `idAlias` is left blank, an `ObjectId` will be generated for the value of the `_id` field in each output document.
 
 
 ### Updating a MongoDB collection
