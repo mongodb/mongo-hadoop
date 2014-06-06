@@ -46,7 +46,7 @@ public class TreasuryYieldMulti extends MongoTool {
         Configuration conf = new Configuration();
         conf.set(MultiMongoCollectionSplitter.MULTI_COLLECTION_CONF_KEY, builder.toJSON());
 
-        System.exit(ToolRunner.run(conf, new TreasuryYieldXMLConfig(), pArgs));
+        System.exit(ToolRunner.run(conf, new TreasuryYieldXMLConfig(conf), pArgs));
     }
 }
 
