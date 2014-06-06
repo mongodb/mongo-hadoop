@@ -1,6 +1,7 @@
 package org.mongodb.hadoop;
 
 import com.mongodb.DBCollection;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +21,7 @@ public class TestStreaming extends TreasuryTest {
     @Test
     public void testBasicStreamingJob() {
         Map<String, String> params = new TreeMap<String, String>();
-        params.put("mongo.input.query", "{_id:{$gt:{$date:883440000000}}}");
+        params.put(MongoConfigUtil.INPUT_QUERY, "{_id:{$gt:{$date:883440000000}}}");
         new StreamingJob()
             .params(params)
             .inputUris(getInputUri())

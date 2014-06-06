@@ -7,11 +7,18 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
-import org.junit.Test;
+import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
+import org.junit.Test;
 
 import java.util.List;
 
+import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_MONGOS_HOSTS;
+import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_QUERY;
+import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_SLAVE_OK;
+import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_CHUNKS;
+import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_RANGEQUERY;
+import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_SHARDS;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -21,7 +28,7 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testBasicInputSource() {
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .inputUris(getInputUri())
             .outputUris(getOutputUri())
             .execute(isRunTestInVm());
@@ -31,8 +38,8 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testMultiMongos() {
         MongoClientURI outputUri = getOutputUri();
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
-            .param("mongo.input.mongos_hosts", "localhost:27017 localhost:27018")
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .param(INPUT_MONGOS_HOSTS, "localhost:27017 localhost:27018")
             .inputUris(getInputUri())
             .outputUris(outputUri)
             .execute(isRunTestInVm());
@@ -45,7 +52,7 @@ public class TestSharded extends BaseShardedTest {
         DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
         MongoClientURI outputUri = getOutputUri();
 
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .inputUris(getInputUri())
             .outputUris(outputUri, new MongoClientURIBuilder(outputUri).port(27018).build())
             .execute(isRunTestInVm());
@@ -65,16 +72,16 @@ public class TestSharded extends BaseShardedTest {
         DBCollection collection = getMongos().getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection());
         collection.drop();
 
-        MapReduceJob job = new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
                                .inputUris(getInputUri())
                                .outputUris(getOutputUri())
-                               .param("mongo.input.split.use_range_queries", "true");
+                               .param(SPLITS_USE_RANGEQUERY, "true");
         job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
-        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}").execute(isRunTestInVm());
+        job.param(INPUT_QUERY, "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}").execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertFalse("This collection shouldn't exist because of the failure",
                     getMongos().getDB("mongo_hadoop").getCollectionNames().contains("yield_historical.out"));
@@ -82,7 +89,7 @@ public class TestSharded extends BaseShardedTest {
 
     public void testDirectAccess() {
         //        Map<String, String> params = new HashMap<String, String>();
-        //        params.put("mongo.input.split.read_shard_chunks", "true");
+        //        params.put(com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_CHUNKS, "true");
         //        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
         //        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
         //
@@ -102,21 +109,21 @@ public class TestSharded extends BaseShardedTest {
             destination.insert(doc, WriteConcern.UNACKNOWLEDGED);
         }
 
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
-            .param("mongo.input.split.allow_read_from_secondaries", "true")
-            .param("mongo.input.split.read_from_shards", "true")
-            .param("mongo.input.split.read_shard_chunks", "false")
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .param(SPLITS_SLAVE_OK, "true")
+            .param(SPLITS_USE_SHARDS, "true")
+            .param(SPLITS_USE_CHUNKS, "false")
             .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
-            .param("mongo.input.split.allow_read_from_secondaries", "true")
-            .param("mongo.input.split.read_from_shards", "true")
-            .param("mongo.input.split.read_shard_chunks", "true")
+            .param(SPLITS_SLAVE_OK, "true")
+            .param(SPLITS_USE_SHARDS, "true")
+            .param(SPLITS_USE_CHUNKS, "true")
             .execute(isRunTestInVm());
         compareResults(collection, getReference());
     }
@@ -127,16 +134,16 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
 
-        MapReduceJob job = new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
                                .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
                                .outputUris(getOutputUri())
-                                .param("mongo.input.split.use_range_queries", "true");
+                               .param(SPLITS_USE_RANGEQUERY, "true");
         job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
-        job.param("mongo.input.query", "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}")
+        job.param(INPUT_QUERY, "{\"_id\":{\"$gt\":{\"$date\":1182470400000}}}")
            .inputUris(getInputUri())
            .execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
