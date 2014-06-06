@@ -58,6 +58,11 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     public MongoInsertStorage() {
     }
 
+    public MongoInsertStorage(final String idField) {
+        this.idField = idField;
+    }
+
+    @Deprecated
     public MongoInsertStorage(final String idField, final String useUpsert) {
         this.idField = idField;
     }
