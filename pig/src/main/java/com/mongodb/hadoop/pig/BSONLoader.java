@@ -83,7 +83,7 @@ public class BSONLoader extends LoadFunc {
 
             Tuple t;
             if (this.fields == null) {
-                // Schemaless mode - just output a tuple with a single element,
+                // dynamic schema mode - just output a tuple with a single element,
                 // which is a map storing the keys/vals in the document
                 t = tupleFactory.newTuple(1);
                 t.set(0, BSONLoader.convertBSONtoPigType(val));
