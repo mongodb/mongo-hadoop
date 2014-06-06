@@ -26,9 +26,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     private static final Log LOG = LogFactory.getLog(MongoStorage.class);
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     // Pig specific settings
-    //CHECKSTYLE:OFF
-    protected ResourceSchema schema = null;
-    //CHECKSTYLE:ON
+    private ResourceSchema schema = null;
     private RecordReader in = null;
     private final MongoInputFormat inputFormat = new MongoInputFormat();
     private ResourceFieldSchema[] fields;
@@ -40,12 +38,12 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
     public MongoLoader() {
         LOG.info("Initializing MongoLoader in dynamic schema mode.");
-        this.schema = null;
-        this.fields = null;
+        schema = null;
+        fields = null;
     }
 
     public ResourceFieldSchema[] getFields() {
-        return this.fields;
+        return fields;
     }
 
     public MongoLoader(final String userSchema, final String idAlias) {
@@ -70,12 +68,12 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
     @Override
     public InputFormat getInputFormat() throws IOException {
-        return this.inputFormat;
+        return inputFormat;
     }
 
     @Override
     public void prepareToRead(final RecordReader reader, final PigSplit split) throws IOException {
-        this.in = reader;
+        in = reader;
         if (in == null) {
             throw new IOException("Invalid Record Reader");
         }
@@ -94,7 +92,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         }
 
         Tuple t;
-        if (this.fields == null) {
+        if (fields == null) {
             // dynamic schema mode - just output a tuple with a single element,
             // which is a map storing the keys/values in the document
             t = tupleFactory.newTuple(1);
@@ -103,7 +101,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             t = tupleFactory.newTuple(fields.length);
             for (int i = 0; i < fields.length; i++) {
                 String fieldTemp = fields[i].getName();
-                if (this.idAlias != null && this.idAlias.equals(fieldTemp)) {
+                if (idAlias != null && idAlias.equals(fieldTemp)) {
                     fieldTemp = "_id";
                 }
                 t.set(i, BSONLoader.readField(val.get(fieldTemp), fields[i]));
