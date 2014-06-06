@@ -84,11 +84,11 @@ Amazon Piggybank jar: http://aws.amazon.com/code/Elastic-MapReduce/2730
     by_year = GROUP parsed_year BY (chararray)year;
     year_10yearavg = FOREACH by_year GENERATE group, AVG(parsed_year.bc) as tenyear_avg;
     
-    -- Args to MongoInsertStorage are: schema for output doc, field to use as '_id'.
+    -- Arg to MongoInsertStorage: field to use as '_id'.
     STORE year_10yearavg 
      INTO 'mongodb://localhost:27017/demo.asfkjabfa' 
      USING      
-     com.mongodb.hadoop.pig.MongoInsertStorage('group:chararray,tenyear_avg:float', 'group');
+     com.mongodb.hadoop.pig.MongoInsertStorage('group');
 
 
 
