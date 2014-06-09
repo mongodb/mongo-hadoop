@@ -9,7 +9,6 @@ import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
-import com.mongodb.hadoop.TreasuryTest;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -80,6 +79,7 @@ public class BaseShardedTest extends TreasuryTest {
         }
         return mongos;
     }
+
     public MongoClient getMongos2() {
         if (mongos == null) {
             try {
