@@ -63,11 +63,8 @@ public class TreasuryTest extends BaseHadoopTest {
 
     @Before
     public void setUp() {
-        LOG.info("************  setting up data");
 //        dropMongoHadoop();
-        LOG.info("************  calling mongo import");
         mongoImport("yield_historical.in", TreasuryTest.TREASURY_JSON_PATH);
-        LOG.info("************  done calling mongo import");
     }
 
 //    @After
@@ -80,9 +77,7 @@ public class TreasuryTest extends BaseHadoopTest {
                     @Override
                     public Boolean call() throws Exception {
                         try {
-                            LOG.info("************  dropping mongo_hadoop");
                             getClient().getDB("mongo_hadoop").dropDatabase();
-                            LOG.info("************  done dropping mongo_hadoop");
                             return true;
                         } catch (Exception e) {
                             LOG.error(e.getMessage(), e);
@@ -93,7 +88,6 @@ public class TreasuryTest extends BaseHadoopTest {
         } catch (Exception e) {
             LOG.info(e.getMessage(), e);
         }
-        LOG.info("************  leaving dropMongoHadoop()");
     }
 
     protected void compareDoubled(final DBCollection out) {
