@@ -7,6 +7,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
+import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,11 +64,11 @@ public class TreasuryTest extends BaseHadoopTest {
 
     @Before
     public void setUp() {
-//        dropMongoHadoop();
+        dropMongoHadoop();
         mongoImport("yield_historical.in", TreasuryTest.TREASURY_JSON_PATH);
     }
 
-//    @After
+    @After
     public void dropMongoHadoop() {
         try {
             Awaitility
