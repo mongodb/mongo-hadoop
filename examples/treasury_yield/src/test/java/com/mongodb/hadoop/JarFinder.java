@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License. See accompanying LICENSE file.
  */
-package org.mongodb.hadoop;
+package com.mongodb.hadoop;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

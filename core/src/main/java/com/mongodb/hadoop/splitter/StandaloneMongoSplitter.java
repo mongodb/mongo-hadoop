@@ -24,6 +24,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoException;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -77,15 +78,32 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                                  .get();
 
         CommandResult data;
+        boolean ok = true;
         if (authDB == null) {
-            data = inputCollection.getDB().getSisterDB("admin").command(cmd);
+            try {
+                data = inputCollection.getDB().getSisterDB("admin").command(cmd);
+            } catch (MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
+                data = null;
+                LOG.info(e.getMessage(), e);
+                if (e.getMessage().contains("unrecognized command: splitVector")) {
+                    ok = false;
+                } else {
+                    throw e;
+                }
+            }
         } else {
             data = authDB.command(cmd);
         }
 
-        if (data.containsField("$err")) {
-            throw new SplitFailedException("Error calculating splits: " + data);
-        } else if (!data.get("ok").equals(1.0)) {
+        if (data != null) {
+            if (data.containsField("$err")) {
+                throw new SplitFailedException("Error calculating splits: " + data);
+            } else if (!data.get("ok").equals(1.0)) {
+                ok = false;
+            }
+        }
+
+        if (!ok) {
             CommandResult stats = inputCollection.getStats();
             if (stats.containsField("primary")) {
                 DBCursor shards = inputCollection.getDB().getSisterDB("config")
@@ -116,6 +134,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             if (!data.get("ok").equals(1.0)) {
                 throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
             }
+
         }
 
         // Comes in a format where "min" and "max" are implicit

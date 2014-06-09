@@ -20,9 +20,7 @@ import static org.junit.Assert.assertFalse;
 public class StandaloneMongoSplitterTest {
 
     @Test
-    //CHECKSTYLE:OFF
     public void unshardedCollection() throws UnknownHostException, SplitFailedException {
-        //CHECKSTYLE:ON
         MongoClient client = new MongoClient("localhost", 27017);
         MongoClientURI uri = new MongoClientURIBuilder()
                                  .collection("mongo_hadoop", "splitter_test")
@@ -30,7 +28,9 @@ public class StandaloneMongoSplitterTest {
         DBCollection collection = client.getDB(uri.getDatabase()).getCollection(uri.getCollection());
         collection.drop();
         for (int i = 0; i < 10000; i++) {
-            collection.insert(new BasicDBObject("value", i));
+            collection.insert(new BasicDBObject("_id", i)
+                                  .append("value", i)
+                             );
         }
         Configuration config = new Configuration();
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);

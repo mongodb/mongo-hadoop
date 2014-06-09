@@ -1,4 +1,4 @@
-package org.mongodb.hadoop;
+package com.mongodb.hadoop;
 
 import com.mongodb.DBCollection;
 import com.mongodb.hadoop.util.MongoConfigUtil;

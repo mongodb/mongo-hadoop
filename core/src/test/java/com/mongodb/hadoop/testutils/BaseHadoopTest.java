@@ -43,7 +43,7 @@ public abstract class BaseHadoopTest {
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
     public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.4.0");
     public static final String HIVE_VERSION = "0.12.0";
-    
+
     public static final String HIVE_HOME;
     public static final File PROJECT_HOME;
     public static final String HADOOP_BINARIES;
@@ -210,13 +210,17 @@ public abstract class BaseHadoopTest {
             }
             LOG.info(output.toString());
 
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            ByteArrayOutputStream errStream = new ByteArrayOutputStream();
             ProcessExecutor executor = new ProcessExecutor().command(command)
                                                             .readOutput(true)
-                                                            .redirectOutput(System.out);
+                                                            .redirectOutput(outStream)
+                                                            .redirectError(errStream);
             ProcessResult result = executor.execute();
             if (result.getExitValue() != 0) {
                 LOG.error(result.getOutput().getString());
-                throw new RuntimeException("mongoimport failed.");
+                throw new RuntimeException(String.format("mongoimport failed with exit code %d: %s", result.getExitValue(), 
+                                                         result.getOutput().getString()));
             }
 
         } catch (IOException e) {

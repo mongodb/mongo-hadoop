@@ -1,4 +1,4 @@
-package org.mongodb.hadoop;
+package com.mongodb.hadoop;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -9,6 +9,7 @@ import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
+import com.mongodb.hadoop.TreasuryTest;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
