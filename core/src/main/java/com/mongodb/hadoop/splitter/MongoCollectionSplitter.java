@@ -38,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.String.format;
+
 public abstract class MongoCollectionSplitter extends MongoSplitter {
 
     private static final Log LOG = LogFactory.getLog(MongoCollectionSplitter.class);

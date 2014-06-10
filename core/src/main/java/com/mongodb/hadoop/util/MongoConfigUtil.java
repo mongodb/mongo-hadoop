@@ -650,7 +650,7 @@ public final class MongoConfigUtil {
                 return obj;
             }
         } catch (final Exception e) {
-            throw new IllegalArgumentException("Provided JSON String is not representable/parseable as a DBObject.", e);
+            throw new IllegalArgumentException("Provided JSON String is not representable/parsable as a DBObject.", e);
         }
     }
 
