@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+
 public class TreasuryTest extends BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(TreasuryTest.class);
     
@@ -28,10 +31,12 @@ public class TreasuryTest extends BaseHadoopTest {
     private final MongoClientURI outputUri;
     private final MongoClientURI inputUri;
     private final List<DBObject> reference = new ArrayList<DBObject>();
+    protected static final File JOBJAR_PATH;
 
     static {
         TREASURY_YIELD_HOME = new File(PROJECT_HOME, "examples/treasury_yield");
         TREASURY_JSON_PATH = new File(TreasuryTest.TREASURY_YIELD_HOME, "/src/main/resources/yield_historical_in.json");
+        JOBJAR_PATH = findProjectJar(TreasuryTest.TREASURY_YIELD_HOME);
     }
 
     public TreasuryTest() {
@@ -78,7 +83,7 @@ public class TreasuryTest extends BaseHadoopTest {
                     @Override
                     public Boolean call() throws Exception {
                         try {
-                            getClient().getDB("mongo_hadoop").dropDatabase();
+                            getClient(getInputUri()).getDB("mongo_hadoop").dropDatabase();
                             return true;
                         } catch (Exception e) {
                             LOG.error(e.getMessage(), e);
@@ -109,7 +114,6 @@ public class TreasuryTest extends BaseHadoopTest {
     }
 
     protected void compareResults(final DBCollection collection, final List<DBObject> expected) {
-/*
         List<DBObject> output = toList(collection.find().sort(new BasicDBObject("_id", 1)));
         assertEquals("count is not same: " + output, expected.size(), output.size());
         for (int i = 0; i < output.size(); i++) {
@@ -122,7 +126,6 @@ public class TreasuryTest extends BaseHadoopTest {
                          round((Double) doc.get("avg"), 7),
                          round((Double) referenceDoc.get("avg"), 7));
         }
-*/
     }
 
     private BigDecimal round(final Double value, final int precision) {

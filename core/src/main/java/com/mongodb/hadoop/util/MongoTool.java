@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 
@@ -86,10 +87,10 @@ public class MongoTool extends Configured implements Tool {
         // TODO - Do we need to set job name somehow more specifically?
         // This may or may not be correct/sane
         job.setJarByClass(this.getClass());
-        final Class mapper = MongoConfigUtil.getMapper(conf);
+        final Class<? extends Mapper> mapper = MongoConfigUtil.getMapper(conf);
 
         LOG.debug("Mapper Class: " + mapper);
-        LOG.debug("Input URI: " + MongoConfigUtil.getInputURI(conf));
+        LOG.debug("Input URI: " + conf.get(MongoConfigUtil.INPUT_URI));
         job.setMapperClass(mapper);
         Class<? extends Reducer> combiner = MongoConfigUtil.getCombiner(conf);
         if (combiner != null) {

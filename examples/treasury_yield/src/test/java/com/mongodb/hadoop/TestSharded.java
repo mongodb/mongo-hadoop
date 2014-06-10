@@ -8,6 +8,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
+import com.mongodb.hadoop.testutils.MapReduceJob;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.junit.Test;
 
@@ -73,6 +74,7 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+                               .jar(JOBJAR_PATH)
                                .inputUris(getInputUri())
                                .outputUris(getOutputUri())
                                .param(SPLITS_USE_RANGEQUERY, "true");
@@ -110,6 +112,7 @@ public class TestSharded extends BaseShardedTest {
         }
 
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .jar(JOBJAR_PATH)
             .param(SPLITS_SLAVE_OK, "true")
             .param(SPLITS_USE_SHARDS, "true")
             .param(SPLITS_USE_CHUNKS, "false")
@@ -120,6 +123,7 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .jar(JOBJAR_PATH)
             .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .param(SPLITS_SLAVE_OK, "true")
             .param(SPLITS_USE_SHARDS, "true")
@@ -135,6 +139,7 @@ public class TestSharded extends BaseShardedTest {
 
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+                               .jar(JOBJAR_PATH)
                                .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
                                .outputUris(getOutputUri())
                                .param(SPLITS_USE_RANGEQUERY, "true");

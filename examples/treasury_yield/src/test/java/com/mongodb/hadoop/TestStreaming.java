@@ -15,7 +15,7 @@ public class TestStreaming extends TreasuryTest {
     @Before
     public void hadoopVersionCheck() {
         assumeFalse(HADOOP_VERSION.startsWith("1.0"));
-        assumeFalse(isSharded());
+        assumeFalse(isSharded(getInputUri()));
     }
 
     @Test
@@ -28,7 +28,7 @@ public class TestStreaming extends TreasuryTest {
             .outputUris(getOutputUri())
             .execute();
         
-        DBCollection collection = getClient().getDB("mongo_hadoop").getCollection("yield_historical.out");
+        DBCollection collection = getClient(getInputUri()).getDB("mongo_hadoop").getCollection("yield_historical.out");
         assertEquals(14, collection.count());
     }
 }

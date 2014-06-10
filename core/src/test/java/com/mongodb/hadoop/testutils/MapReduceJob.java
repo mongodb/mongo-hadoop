@@ -1,10 +1,12 @@
-package com.mongodb.hadoop;
+package com.mongodb.hadoop.testutils;
 
 import com.mongodb.MongoClientURI;
-import com.mongodb.hadoop.testutils.BaseHadoopTest;
+import com.mongodb.hadoop.HadoopVersionFilter;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +14,11 @@ import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,43 +27,26 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 
-import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
-import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
-import static java.lang.String.format;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.PROJECT_HOME;
+import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
+import static com.mongodb.hadoop.util.MongoConfigUtil.JOB_INPUT_FORMAT;
+import static com.mongodb.hadoop.util.MongoConfigUtil.JOB_OUTPUT_FORMAT;
+import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
+import static java.lang.String.format;
 
 public class MapReduceJob {
     private static final Logger LOG = LoggerFactory.getLogger(MapReduceJob.class);
 
-    protected static final File JOBJAR_PATH;
-
-    static {
-        try {
-            File current = new File(".").getCanonicalFile();
-            File core = new File(current, "core");
-            while (!core.exists() && current.getParentFile().exists()) {
-                current = current.getParentFile();
-                core = new File(current, "core");
-            }
-
-            File file = new File(TreasuryTest.TREASURY_YIELD_HOME, "build/libs").getCanonicalFile();
-            File[] files = file.listFiles(new HadoopVersionFilter());
-            if (files.length == 0) {
-                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s", HADOOP_VERSION, file));
-            }
-            JOBJAR_PATH = files[0];
-        } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-    }
-
     private Map<String, String> params = new LinkedHashMap<String, String>();
     private final String className;
 
-    private final List<MongoClientURI> inputUris = new ArrayList<MongoClientURI>();
-    private final List<MongoClientURI> outputUris = new ArrayList<MongoClientURI>();
+    private final List<String> inputUris = new ArrayList<String>();
+    private final List<String> outputUris = new ArrayList<String>();
+    private File jarPath;
+    private Class<? extends FileInputFormat> inputFormat;
+    private Class<? extends FileOutputFormat> outputFormat;
 
     public MapReduceJob(final String className) {
         this.className = className;
@@ -73,12 +58,35 @@ public class MapReduceJob {
     }
 
     public MapReduceJob inputUris(final MongoClientURI... inputUris) {
-        this.inputUris.addAll(Arrays.asList(inputUris));
+        for (MongoClientURI inputUri : inputUris) {
+            this.inputUris.add(inputUri.getURI());
+        }
         return this;
     }
 
     public MapReduceJob outputUris(final MongoClientURI... outputUris) {
-        this.outputUris.addAll(Arrays.asList(outputUris));
+        for (MongoClientURI outputUri : outputUris) {
+            this.outputUris.add(outputUri.getURI());
+        }
+        return this;
+    }
+
+    public MapReduceJob inputUris(final URI... inputUris) {
+        for (URI inputUri : inputUris) {
+            this.inputUris.add(inputUri.toString());
+        }
+        return this;
+    }
+
+    public MapReduceJob outputUris(final URI... outputUris) {
+        for (URI outputUri : outputUris) {
+            this.outputUris.add(outputUri.toString());
+        }
+        return this;
+    }
+
+    public MapReduceJob jar(final File path) {
+        jarPath = path;
         return this;
     }
 
@@ -99,7 +107,7 @@ public class MapReduceJob {
         List<String> cmd = new ArrayList<String>();
         cmd.add(new File(HADOOP_HOME, "bin/hadoop").getCanonicalPath());
         cmd.add("jar");
-        cmd.add(JOBJAR_PATH.getAbsolutePath());
+        cmd.add(jarPath.getAbsolutePath());
         cmd.add(className);
 
         for (Pair<String, String> entry : processSettings()) {
@@ -139,7 +147,7 @@ public class MapReduceJob {
 
     @SuppressWarnings("unchecked")
     public void executeInVM() throws Exception {
-        
+
         List<String> cmd = new ArrayList<String>();
         for (Pair<String, String> entry : processSettings()) {
             cmd.add(format("-D%s=%s", entry.getKey(), entry.getValue()));
@@ -153,10 +161,12 @@ public class MapReduceJob {
         LOG.info("Executing hadoop job");
 
         Class<? extends MongoTool> jobClass = (Class<? extends MongoTool>) Class.forName(className);
-        Configuration conf = new Configuration(BaseHadoopTest.getYarnCluster().getConfig());
+        Configuration conf = BaseHadoopTest.getYarnCluster() != null
+                             ? new Configuration(BaseHadoopTest.getYarnCluster().getConfig())
+                             : new Configuration();
         MongoTool app = jobClass.getConstructor(new Class[]{Configuration.class})
                                 .newInstance(conf);
-        
+
         ToolRunner.run(conf, app, cmd.toArray(new String[cmd.size()]));
     }
 
@@ -168,7 +178,7 @@ public class MapReduceJob {
 
         StringBuilder inputUri = new StringBuilder();
         if (!inputUris.isEmpty()) {
-            for (MongoClientURI uri : inputUris) {
+            for (String uri : inputUris) {
                 if (inputUri.length() != 0) {
                     inputUri.append(",");
                 }
@@ -179,13 +189,21 @@ public class MapReduceJob {
 
         if (!outputUris.isEmpty()) {
             StringBuilder outputUri = new StringBuilder();
-            for (MongoClientURI uri : outputUris) {
+            for (String uri : outputUris) {
                 if (outputUri.length() != 0) {
                     outputUri.append(",");
                 }
                 outputUri.append(uri);
             }
             entries.add(new Pair<String, String>(OUTPUT_URI, outputUri.toString()));
+        }
+        
+        if (inputFormat != null) {
+            entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, inputFormat.getName()));
+        }
+
+        if (outputFormat != null) {
+            entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, outputFormat.getName()));
         }
 
         return entries;
@@ -211,6 +229,16 @@ public class MapReduceJob {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public MapReduceJob inputFormat(final Class<? extends FileInputFormat> inputFormat) {
+        this.inputFormat = inputFormat;
+        return this;
+    }
+
+    public MapReduceJob outputFormat(final Class<? extends FileOutputFormat> outputFormat) {
+        this.outputFormat = outputFormat;
+        return this;
     }
 
     private static final class Pair<T, U> {

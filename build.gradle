@@ -105,7 +105,7 @@ configure(subprojects) {
         systemProperty 'hadoop.release.version', hadoopVersion
         systemProperties << System.getProperties()
 
-        dependsOn(["jar"])
+        dependsOn(['jar', 'testJar'])
 
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
@@ -161,8 +161,12 @@ configure(subprojects) {
     }
     
     task testJar(type: Jar, dependsOn: testClasses) {
-        baseName = "test-${project.archivesBaseName}"
         from sourceSets.test.output
+    }
+    gradle.taskGraph.whenReady { taskGraph ->
+        testJar {
+            baseName = "${archivesBaseName}-test"
+        }
     }
     
     configurations {
@@ -365,7 +369,7 @@ def download() {
 task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
-    println "Checking if ${hadoopHome}/bin exists"
+    println "Checking that ${hadoopHome}/bin exists"
     if (!new File("${hadoopHome}/bin").exists()) {
         download()
     }
@@ -373,7 +377,7 @@ task installHadoop() << {
 
 
 task installHive() << {
-    println "Checking if ${hiveHome}/bin exists"
+    println "Checking that ${hiveHome}/bin exists"
     if (!new File("${hiveHome}/bin").exists()) {
         def url = "http://apache.mirrors.tds.net/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
         

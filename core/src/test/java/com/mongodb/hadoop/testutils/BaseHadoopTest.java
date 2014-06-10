@@ -6,6 +6,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.HadoopVersionFilter;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -177,6 +178,31 @@ public abstract class BaseHadoopTest {
         return builder;
     }
 
+    protected static File findProjectJar(final File root) {
+        return findProjectJar(root, false);
+    }
+
+    protected static File findProjectJar(final File root, final boolean findTestJar) {
+        try {
+            File current = new File(".").getCanonicalFile();
+            File core = new File(current, "core");
+            while (!core.exists() && current.getParentFile().exists()) {
+                current = current.getParentFile();
+                core = new File(current, "core");
+            }
+
+            File file = new File(root, "build/libs").getCanonicalFile();
+            File[] files = file.listFiles(new HadoopVersionFilter(findTestJar));
+            if (files.length == 0) {
+                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s, findTestJar = %s",
+                                                  HADOOP_VERSION, file, findTestJar));
+            }
+            return files[0];
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
     public void mongoImport(final String collection, final File file) {
         try {
             List<String> command = new ArrayList<String>();
@@ -219,7 +245,7 @@ public abstract class BaseHadoopTest {
             ProcessResult result = executor.execute();
             if (result.getExitValue() != 0) {
                 LOG.error(result.getOutput().getString());
-                throw new RuntimeException(String.format("mongoimport failed with exit code %d: %s", result.getExitValue(), 
+                throw new RuntimeException(String.format("mongoimport failed with exit code %d: %s", result.getExitValue(),
                                                          result.getOutput().getString()));
             }
 
@@ -232,13 +258,9 @@ public abstract class BaseHadoopTest {
         }
     }
 
-
-    protected abstract MongoClientURI getInputUri();
-
-    public MongoClient getClient() {
+    public MongoClient getClient(final MongoClientURI uri) {
         if (client == null) {
             try {
-                MongoClientURI uri = getInputUri();
                 client = new MongoClient(uri);
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
@@ -261,15 +283,15 @@ public abstract class BaseHadoopTest {
                || "auth".equals(System.getProperty("mongodb_option"));
     }
 
-    protected boolean isSharded() {
-        CommandResult isMasterResult = runIsMaster();
+    protected boolean isSharded(final MongoClientURI uri) {
+        CommandResult isMasterResult = runIsMaster(uri);
         Object msg = isMasterResult.get("msg");
         return msg != null && msg.equals("isdbgrid");
     }
 
-    protected CommandResult runIsMaster() {
+    protected CommandResult runIsMaster(final MongoClientURI uri) {
         // Check to see if this is a replica set... if not, get out of here.
-        return getClient().getDB("admin").command(new BasicDBObject("ismaster", 1));
+        return getClient(uri).getDB("admin").command(new BasicDBObject("ismaster", 1));
     }
 
     public static boolean isRunTestInVm() {

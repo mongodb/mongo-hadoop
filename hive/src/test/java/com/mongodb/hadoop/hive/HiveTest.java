@@ -14,7 +14,6 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +36,6 @@ public class HiveTest extends BaseHadoopTest {
     private static HiveClient client;
     private MongoClientURI mongoTestURI;
     private MongoClient mongoClient;
-    private static StartedProcess hiveServer;
 
     public HiveTest() {
         mongoTestURI = authCheck(new MongoClientURIBuilder()
@@ -59,9 +57,6 @@ public class HiveTest extends BaseHadoopTest {
         if (client != null) {
             client.shutdown();
         }
-        if (hiveServer != null) {
-            hiveServer.future().cancel(true);
-        }
     }
 
     protected MongoClient getMongoClient() {
@@ -75,10 +70,8 @@ public class HiveTest extends BaseHadoopTest {
         return mongoClient;
     }
 
-    @Override
     protected MongoClientURI getInputUri() {
-        return authCheck(new MongoClientURIBuilder()
-                             .collection("mongo_hadoop", MONGO_COLLECTION)).build();
+        return mongoTestURI;
     }
 
     protected void createHDFSHiveTable(final String name, final String schema, final String delimiter, final String type) {

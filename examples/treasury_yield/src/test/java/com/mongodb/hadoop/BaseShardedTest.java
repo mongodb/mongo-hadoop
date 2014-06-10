@@ -24,20 +24,20 @@ public class BaseShardedTest extends TreasuryTest {
 
     @Before
     public void shuffleChunks() throws IOException, InterruptedException, TimeoutException {
-        assumeTrue(isSharded());
+        assumeTrue(isSharded(getInputUri()));
         LOG.info("shuffling chunks across shards");
 
-        DB adminDB = getClient().getDB("admin");
+        DB adminDB = getClient(getInputUri()).getDB("admin");
         adminDB.command(new BasicDBObject("enablesharding", "mongo_hadoop"));
 
-        getClient().getDB("config").getCollection("settings").update(new BasicDBObject("_id", "balancer"),
+        getClient(getInputUri()).getDB("config").getCollection("settings").update(new BasicDBObject("_id", "balancer"),
                                                                      new BasicDBObject("$set", new BasicDBObject("stopped", true)),
                                                                      false,
                                                                      true);
         adminDB.command(new BasicDBObject("shardCollection", "mongo_hadoop.yield_historical.in")
                             .append("key", new BasicDBObject("_id", 1)));
 
-        DBCollection historicalIn = getClient().getDB("mongo_hadoop").getCollection("yield_historical.in");
+        DBCollection historicalIn = getClient(getInputUri()).getDB("mongo_hadoop").getCollection("yield_historical.in");
 
         for (int chunkpos : new int[]{2000, 3000, 1000, 500, 4000, 750, 250, 100, 3500, 2500, 2250, 1750}) {
             Object middle = historicalIn.find().sort(new BasicDBObject("_id", 1)).skip(chunkpos).iterator().next().get("_id");

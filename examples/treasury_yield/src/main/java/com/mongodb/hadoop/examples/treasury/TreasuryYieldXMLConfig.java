@@ -27,8 +27,6 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
 
-import java.util.Arrays;
-
 /**
  * The treasury yield xml config object.
  */
@@ -56,7 +54,6 @@ public class TreasuryYieldXMLConfig extends MongoTool {
     }
 
     public static void main(final String[] pArgs) throws Exception {
-        LOG.debug("pArgs = " + Arrays.toString(pArgs));
         System.exit(ToolRunner.run(new TreasuryYieldXMLConfig(), pArgs));
     }
 }

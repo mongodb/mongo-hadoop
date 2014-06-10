@@ -90,13 +90,11 @@ public class HiveMappingTest extends HiveTest {
                                        .tableProperty(MongoConfigUtil.INPUT_QUERY, "{_id : {\"$gte\" : 900 }}");
         Results results = execute(builder.toString());
 
-        System.out.println("results = \n" + results);
         if (results.hasError()) {
             fail(results.getError().getMessage());
         }
-        Results execute = execute("SELECT count(*) as count from " + tableName);
         assertEquals("Should find 1000 items", collection.count(), 1000);
-        assertEquals("Should find only 100 items", execute.iterator().next().get(0), "100");
+        assertEquals("Should find only 100 items", execute("SELECT count(*) as count from " + tableName).iterator().next().get(0), "100");
     }
 
     private DBObject user(final int id, final String first, final String last, final String city, final String state) {
@@ -189,27 +187,27 @@ public class HiveMappingTest extends HiveTest {
         private MongoClientURI uri;
         private Map<String, String> tableProperties = new TreeMap<String, String>();
 
-        public HiveTableBuilder name(String name) {
+        public HiveTableBuilder name(final String name) {
             tableName = name;
             return this;
         }
 
-        public HiveTableBuilder mapping(ColumnMapping mapping) {
+        public HiveTableBuilder mapping(final ColumnMapping mapping) {
             this.mapping = mapping;
             return this;
         }
 
-        public HiveTableBuilder storageHandler(String storageHandler) {
+        public HiveTableBuilder storageHandler(final String storageHandler) {
             this.storageHandler = storageHandler;
             return this;
         }
 
-        public HiveTableBuilder uri(MongoClientURI uri) {
+        public HiveTableBuilder uri(final MongoClientURI uri) {
             this.uri = uri;
             return this;
         }
 
-        public HiveTableBuilder tableProperty(String key, String value) {
+        public HiveTableBuilder tableProperty(final String key, final String value) {
             tableProperties.put(key, value);
             return this;
         }
