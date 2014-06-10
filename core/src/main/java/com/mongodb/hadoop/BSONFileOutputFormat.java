@@ -49,11 +49,7 @@ public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
         }
 
         long splitSize = BSONSplitter.getSplitSize(context.getConfiguration(), null);
-        BSONFileRecordWriter<K, V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
-        return recWriter;
-    }
-
-    public BSONFileOutputFormat() {
+        return new BSONFileRecordWriter<K, V>(outFile, splitFile, splitSize);
     }
 
     private static final Log LOG = LogFactory.getLog(BSONFileOutputFormat.class);

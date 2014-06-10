@@ -16,8 +16,6 @@
 
 package com.mongodb.hadoop.mapred;
 
-// Mongo
-
 import com.mongodb.hadoop.mapred.output.BSONFileRecordWriter;
 import com.mongodb.hadoop.splitter.BSONSplitter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -26,16 +24,14 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
 
-// Commons
-// Hadoop
-
-public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOutputFormat<K, V> {
+public class BSONFileOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
     public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name,
                                               final Progressable progress) throws IOException {
@@ -53,8 +49,7 @@ public class BSONFileOutputFormat<K, V> extends org.apache.hadoop.mapred.FileOut
 
         long splitSize = BSONSplitter.getSplitSize(job, null);
 
-        BSONFileRecordWriter<K, V> recWriter = new BSONFileRecordWriter(outFile, splitFile, splitSize);
-        return recWriter;
+        return new BSONFileRecordWriter<K, V>(outFile, splitFile, splitSize);
     }
 
     public static Path getDefaultWorkFile(final JobConf conf, final String name, final String extension) {
