@@ -30,6 +30,7 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testBasicInputSource() {
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .jar(JOBJAR_PATH)
             .inputUris(getInputUri())
             .outputUris(getOutputUri())
             .execute(isRunTestInVm());
@@ -40,6 +41,7 @@ public class TestSharded extends BaseShardedTest {
     public void testMultiMongos() {
         MongoClientURI outputUri = getOutputUri();
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .jar(JOBJAR_PATH)
             .param(INPUT_MONGOS_HOSTS, "localhost:27017 localhost:27018")
             .inputUris(getInputUri())
             .outputUris(outputUri)
@@ -54,6 +56,7 @@ public class TestSharded extends BaseShardedTest {
         MongoClientURI outputUri = getOutputUri();
 
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+            .jar(JOBJAR_PATH)
             .inputUris(getInputUri())
             .outputUris(outputUri, new MongoClientURIBuilder(outputUri).port(27018).build())
             .execute(isRunTestInVm());
