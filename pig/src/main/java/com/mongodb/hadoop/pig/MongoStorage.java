@@ -134,6 +134,8 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             builder.add(field.getName(), d);
         } else if (i == DataType.DOUBLE) {
             builder.add(field.getName(), d);
+        } else if (i == DataType.DATETIME) {
+            builder.add(field.getName(), d);
         } else if (i == DataType.BYTEARRAY) {
             builder.add(field.getName(), d.toString());
         } else if (i == DataType.CHARARRAY) {

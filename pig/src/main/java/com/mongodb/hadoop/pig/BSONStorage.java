@@ -37,6 +37,9 @@ import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
 
+import org.joda.time.DateTime;
+
+import java.util.Date;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -113,6 +116,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 return o.toString();
             case DataType.CHARARRAY:
                 return o;
+            case DataType.DATETIME:
+            	return ((DateTime) o).toDate();
 
             //Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
