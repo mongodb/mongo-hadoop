@@ -72,7 +72,6 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testRangeQueries() {
-
         DBCollection collection = getMongos().getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection());
         collection.drop();
 
