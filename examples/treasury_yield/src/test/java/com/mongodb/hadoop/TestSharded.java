@@ -139,7 +139,6 @@ public class TestSharded extends BaseShardedTest {
         DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
 
-
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
                                .jar(JOBJAR_PATH)
                                .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())

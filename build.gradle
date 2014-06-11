@@ -112,12 +112,10 @@ configure(subprojects) {
         }
     }
 
-    task testAll(dependsOn: tasks.withType(Test))
     test.dependsOn ':configureCluster'
     test.dependsOn ':downloadEnronEmails'
             
     compileJava.dependsOn ':generateScripts'
-    check.dependsOn testAll
 
     /* Code quality */
     checkstyle {
@@ -220,7 +218,6 @@ project(":hive") {
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
         }
         if (hadoop_version == "cdh4") {
-//            compile "org.apache.hive:hive-serde:0.10.0-cdh4.6.0"
             compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
         } else if (hadoop_version == "cdh5") {
             compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
@@ -328,7 +325,7 @@ project(":integration-tests") {
 }
 
 
-task configureCluster(dependsOn: ['copyFiles']) << {
+task configureCluster(dependsOn: ['jar', 'copyFiles']) << {
 }
 
 def download() {
