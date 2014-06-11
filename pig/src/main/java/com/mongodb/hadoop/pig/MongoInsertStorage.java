@@ -74,7 +74,8 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         if (field.getName() != null && field.getName().equals(this.idField)) {
             builder.add("_id", convertedType);
         } else {
-            builder.add(field.getName(), convertedType);
+        	String fieldName = FieldUtils.getEscFieldName(field.getName());
+            builder.add(fieldName, convertedType);
         }
 
     }

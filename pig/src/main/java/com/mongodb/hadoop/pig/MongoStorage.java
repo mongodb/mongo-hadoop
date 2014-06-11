@@ -59,9 +59,6 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
     private String udfContextSignature = null;
     private MongoRecordWriter recordWriter = null;
-    
-    // Escape name that starts with _
-    public static final String ESC_PREFIX = "esc_";
 
     public MongoStorage() {
         this.options = null;
@@ -119,11 +116,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                               final ResourceSchema.ResourceFieldSchema field,
                               final Object d) throws IOException {
 
-    	String fieldName = field.getName();
-    	
-    	if (fieldName.startsWith(ESC_PREFIX)) {
-    		fieldName = fieldName.replace(ESC_PREFIX, "");
-    	}
+    	String fieldName = FieldUtils.getEscFieldName(field.getName());
     	
         // If the field is missing or the value is null, write a null
         if (d == null) {

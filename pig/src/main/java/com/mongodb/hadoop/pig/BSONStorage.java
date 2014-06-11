@@ -61,9 +61,6 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     private String idField = null;
 
     private final BSONFileOutputFormat outputFormat = new BSONFileOutputFormat();
-
-    // Escape name that starts with _
-    static final String ESC_PREFIX = "esc_";
     
     public BSONStorage() {
     }
@@ -131,7 +128,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 ResourceFieldSchema[] fs = s.getFields();
                 Map<String, Object> m = new LinkedHashMap<String, Object>();
                 for (int j = 0; j < fs.length; j++) {
-                    m.put(fs[j].getName(), getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
+                	String fn = FieldUtils.getEscFieldName(fs[j].getName());
+                    m.put(fn, getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
                 }
                 return m;
 
@@ -167,7 +165,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                     for (Tuple t : (DataBag) o) {
                         Map<String, Object> ma = new LinkedHashMap<String, Object>();
                         for (int j = 0; j < fs.length; j++) {
-                            ma.put(fs[j].getName(), t.get(j));
+                        	String fn = FieldUtils.getEscFieldName(fs[j].getName());
+                            ma.put(fn, t.get(j));
                         }
                         a.add(ma);
                     }
@@ -192,11 +191,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     @SuppressWarnings("unchecked")
     protected void writeField(final BasicDBObjectBuilder builder, final ResourceFieldSchema field, final Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field, null);
-        String fieldName = field != null ? field.getName() : "value";
-        
-    	if (fieldName.startsWith(MongoStorage.ESC_PREFIX)) {
-    		fieldName = fieldName.replace(MongoStorage.ESC_PREFIX, "");
-    	}
+        String fieldName = field != null ? FieldUtils.getEscFieldName(field.getName()) : "value";
 
         if (convertedType instanceof Map) {
             for (Map.Entry<String, Object> mapentry : ((Map<String, Object>) convertedType).entrySet()) {
