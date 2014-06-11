@@ -62,6 +62,9 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
     private final BSONFileOutputFormat outputFormat = new BSONFileOutputFormat();
 
+    // Escape name that starts with _
+    static final String ESC_PREFIX = "esc_";
+    
     public BSONStorage() {
     }
 
@@ -190,6 +193,10 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     protected void writeField(final BasicDBObjectBuilder builder, final ResourceFieldSchema field, final Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field, null);
         String fieldName = field != null ? field.getName() : "value";
+        
+    	if (fieldName.startsWith(MongoStorage.ESC_PREFIX)) {
+    		fieldName = fieldName.replace(MongoStorage.ESC_PREFIX, "");
+    	}
 
         if (convertedType instanceof Map) {
             for (Map.Entry<String, Object> mapentry : ((Map<String, Object>) convertedType).entrySet()) {
