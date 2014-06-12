@@ -20,7 +20,7 @@ startService() {
 
 start() {
     shutdown
-    ./gradlew configureCluster -Phadoop_version=@HADOOP_VERSION@
+    ./gradlew jar configureCluster -Phadoop_version=@HADOOP_VERSION@
     
     if [ "$1" == "-format" ]
     then
@@ -34,6 +34,7 @@ start() {
     fi
     
     startService hdfs namenode
+    sleep 5
     startService hdfs datanode
     startService yarn resourcemanager
     startService yarn nodemanager
@@ -42,8 +43,12 @@ start() {
     export HADOOP_HOME=@HADOOP_HOME@
     if [[ "@HADOOP_VERSION@" == cdh* ]]
     then
-        echo CDH found.  setting MAPRED_DIR
-        export MAPRED_DIR=share/hadoop/mapreduce2
+        export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
+        if [[ "@HADOOP_VERSION@" == 'cdh4' ]]
+        then 
+            @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
+            @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
+        fi
     fi
     @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }

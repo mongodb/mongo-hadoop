@@ -19,8 +19,16 @@ ext.versionMap = [
 ].withDefault {
     throw new GradleException("Unknown hadoop version: ${hadoop_version}")
 }
+ext.hiveVersionMap = [
+        'cdh4': '0.10.0-cdh4.6.0',
+        'cdh5': '0.12.0-cdh5.0.0'
+].withDefault {
+    '0.12.0'
+}
+
+
 ext.hadoopVersion = versionMap[hadoop_version]
-ext.hiveVersion = '0.12.0'
+ext.hiveVersion = hiveVersionMap[hadoop_version]
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
@@ -209,20 +217,19 @@ project(":hive") {
     dependencies {
         compile project(':core')
 
-        compile "org.apache.hive:hive-exec:${hiveVersion}"
-        testCompile "org.apache.hive:hive-cli:${hiveVersion}"
-        testCompile "org.apache.hive:hive-service:${hiveVersion}"
         testCompile project(path: ':core', configuration: 'tests')
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0") {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
         }
         if (hadoop_version == "cdh4") {
-            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
+//            compile "org.apache.hive:hive-serde:0.10.0+258"
+            hiveDeps(it, hiveVersion)
         } else if (hadoop_version == "cdh5") {
-            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
+//            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
+            hiveDeps(it, hiveVersion)
         } else {
-            compile "org.apache.hive:hive-serde:${hiveVersion}"
+            hiveDeps(it, hiveVersion)
         }
     }
 }
@@ -376,8 +383,20 @@ task installHadoop() << {
 task installHive() << {
     println "Checking that ${hiveHome}/bin exists"
     if (!new File("${hiveHome}/bin").exists()) {
-        def url = "http://apache.mirrors.tds.net/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
-        
+        def url
+        url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
+        switch (hadoop_version) {
+            case ("cdh4"):
+                url = "http://archive.cloudera.com/cdh4/cdh/4/hive-${hiveVersion}.tar.gz"
+                break
+            case ("cdh5"):
+                url = "http://archive.cloudera.com/cdh5/cdh/5/hive-${hiveVersion}.tar.gz"
+                break
+            default:
+                url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
+                break
+        }
+
         println "No hive installation found.  Downloading ${hiveVersion}"
         download {
             src url
@@ -495,6 +514,13 @@ def mapReduceDeps(it, version) {
     }
 }
 
+def hiveDeps(it, version) {
+    it.compile "org.apache.hive:hive-exec:${version}"
+    it.compile "org.apache.hive:hive-serde:${version}"
+    it.testCompile "org.apache.hive:hive-cli:${version}"
+    it.testCompile "org.apache.hive:hive-service:${version}"
+}
+
 task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
     def hadoopEtc
     def hadoopLib
@@ -512,6 +538,7 @@ task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
         into hadoopLib
         rename { "mongo-hadoop-core.jar" }
     }
+//    println "Copying hive/build/libs/mongo-hadoop-hive-${project(':core').version}-hadoop_${hadoop_version}.jar into ${hiveHome}"
     copy {
         from "hive/build/libs/mongo-hadoop-hive-${project(':core').version}-hadoop_${hadoop_version}.jar"
         into hiveHome + '/lib'

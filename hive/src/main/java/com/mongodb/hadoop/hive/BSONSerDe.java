@@ -22,7 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hadoop.hive.serde2.AbstractSerDe;
+import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeStats;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -62,7 +62,7 @@ import static java.lang.String.format;
  * The BSONSerDe class deserializes (parses) and serializes object from BSON to Hive represented object. It's initialized with the hive
  * columns and hive recognized types as well as other config variables mandated by the StorageHanders.
  */
-public class BSONSerDe extends AbstractSerDe {
+public class BSONSerDe implements SerDe {
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
 
     // stores the 1-to-1 mapping of MongoDB fields to hive columns

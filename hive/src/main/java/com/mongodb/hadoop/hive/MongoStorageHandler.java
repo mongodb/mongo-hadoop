@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
-import org.apache.hadoop.hive.serde2.AbstractSerDe;
+import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
 
@@ -63,7 +63,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
     }
 
     @Override
-    public Class<? extends AbstractSerDe> getSerDeClass() {
+    public Class<? extends SerDe> getSerDeClass() {
         return BSONSerDe.class;
     }
 
