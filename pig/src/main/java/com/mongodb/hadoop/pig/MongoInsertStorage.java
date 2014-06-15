@@ -52,6 +52,8 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
     private String udfcSignature = null;
     private String idField = null;
+    private String toIgnore = null;
+
 
     private final MongoOutputFormat outputFormat = new MongoOutputFormat();
 
@@ -62,15 +64,15 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         this.idField = idField;
     }
 
-    @Deprecated
-    public MongoInsertStorage(final String idField, final String useUpsert) {
+    public MongoInsertStorage(final String idField, final String toIgnore) {
         this.idField = idField;
+        this.toIgnore = toIgnore;
     }
 
     protected void writeField(final BasicDBObjectBuilder builder,
                               final ResourceSchema.ResourceFieldSchema field,
                               final Object d) throws IOException {
-        Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
+        Object convertedType = BSONStorage.getTypeForBSON(d, field, this.toIgnore);
         if (field.getName() != null && field.getName().equals(this.idField)) {
             builder.add("_id", convertedType);
         } else {
