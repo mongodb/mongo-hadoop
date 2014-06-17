@@ -20,13 +20,11 @@ startService() {
 
 start() {
     shutdown
-    ./gradlew jar configureCluster -Phadoop_version=@HADOOP_VERSION@
     
     if [ "$1" == "-format" ]
     then
-        sleep 1
         rm -rf @HADOOP_BINARIES@/tmpdir/
-        if [ "@HADOOP_VERSION@" != "0.23" ]
+        if [[ "@HADOOP_VERSION@" != 0.23* ]]
         then
             FORCE=-force
         fi
@@ -41,10 +39,10 @@ start() {
     
     echo Starting hiveserver
     export HADOOP_HOME=@HADOOP_HOME@
-    if [[ "@HADOOP_VERSION@" == cdh* ]]
+    if [[ "@HADOOP_VERSION@" == *cdh* ]]
     then
         export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
-        if [[ "@HADOOP_VERSION@" == 'cdh4' ]]
+        if [[ "@HADOOP_VERSION@" == *cdh4* ]]
         then 
             @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
             @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib

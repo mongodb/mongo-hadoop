@@ -29,7 +29,7 @@ import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
-import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_RELEASE_VERSION;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.CLUSTER_VERSION;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 
 public class StreamingJob {
@@ -77,11 +77,11 @@ public class StreamingJob {
         if (HADOOP_VERSION.startsWith("1.1")) {
             cmd.add(String.format("%s/contrib/streaming/hadoop-streaming-%s.jar",
                                   HADOOP_HOME,
-                                  HADOOP_RELEASE_VERSION));
+                                  CLUSTER_VERSION));
         } else {
             cmd.add(String.format("%s/share/hadoop/tools/lib/hadoop-streaming-%s.jar",
                                   HADOOP_HOME,
-                                  HADOOP_RELEASE_VERSION));
+                                  CLUSTER_VERSION));
         }
         //        add("-libjars", STREAMING_JAR);
         add("-io", "mongodb");

@@ -41,8 +41,9 @@ public abstract class BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
 
     public static final String HADOOP_HOME;
+    public static final String PROJECT_VERSION = loadProperty("project.version", null);
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
-    public static final String HADOOP_RELEASE_VERSION = loadProperty("hadoop.release.version", "2.4.0");
+    public static final String CLUSTER_VERSION = loadProperty("cluster.version", "2.4.0");
     public static final String HIVE_VERSION = "0.12.0";
 
     public static final String HIVE_HOME;
@@ -73,7 +74,8 @@ public abstract class BaseHadoopTest {
 
             HADOOP_BINARIES = new File(String.format("%s/hadoop-binaries/", System.getProperty("user.home"))).getCanonicalPath();
             EXAMPLE_DATA_HOME = new File(HADOOP_BINARIES, "examples/data").getCanonicalPath();
-            HADOOP_HOME = new File(HADOOP_BINARIES, String.format("hadoop-%s/", HADOOP_RELEASE_VERSION)).getCanonicalPath();
+            
+            HADOOP_HOME = new File(HADOOP_BINARIES, String.format("hadoop-%s/", CLUSTER_VERSION)).getCanonicalPath();
             HIVE_HOME = new File(HADOOP_BINARIES, String.format("hive-%s/", HIVE_VERSION)).getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();
@@ -194,8 +196,8 @@ public abstract class BaseHadoopTest {
             File file = new File(root, "build/libs").getCanonicalFile();
             File[] files = file.listFiles(new HadoopVersionFilter(findTestJar));
             if (files.length == 0) {
-                throw new RuntimeException(format("Can't find jar.  hadoop version = %s, path = %s, findTestJar = %s",
-                                                  HADOOP_VERSION, file, findTestJar));
+                throw new RuntimeException(format("Can't find jar.  project version = %s, path = %s, findTestJar = %s",
+                                                  PROJECT_VERSION, file, findTestJar));
             }
             return files[0];
         } catch (IOException e) {

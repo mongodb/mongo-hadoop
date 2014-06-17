@@ -34,6 +34,8 @@ public class BookstoreTest extends BaseHadoopTest {
             URL resource = BookstoreTest.class.getResource("/bookstore-dump/inventory.bson");
             INVENTORY_BSON = resource.toURI();
             JAR_PATH = findProjectJar(home, true);
+            LOG.info("CLUSTER_VERSION = " + CLUSTER_VERSION);
+            LOG.info("HADOOP_HOME = " + HADOOP_HOME);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

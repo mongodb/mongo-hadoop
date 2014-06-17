@@ -18,11 +18,8 @@ function choose() {
 }
 
 function run() {
-	./bin/hadoop-all.sh shutdown
-	g clean generateScripts -Phadoop_version=${HV}
-	./bin/hadoop-all.sh start -format
-	g test -Phadoop_version=${HV} 2>&1 | tee test-${HV}.out
-	./bin/hadoop-all.sh shutdown
+	g clean jar testJar test -PclusterVersion=${HV} 2>&1 | tee test-${HV}.out
+	./build/hadoop-${HV}.sh shutdown
 }
 
 if [ "$1" == "all" ]

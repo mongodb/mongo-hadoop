@@ -1,13 +1,24 @@
 import org.apache.tools.ant.filters.ReplaceTokens
+import sun.jvmstat.monitor.HostIdentifier
+import sun.jvmstat.monitor.VmIdentifier
+import sun.jvmstat.perfdata.monitor.protocol.local.MonitoredHostProvider
 
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
 apply plugin: 'versions'
+apply from: 'gradle/functions.gradle'
 
 ext.configDir = new File(rootDir, 'config')
-ext.hadoop_version = project.getProperties().get('hadoop_version', '2.4').toLowerCase()
-ext.versionMap = [
+ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
+ext.branchVersion = project.getProperties().get('clusterVersion', '2.4').toLowerCase()
+ext.hiveVersionMap = [
+        'cdh4': '0.10.0-cdh4.6.0',
+        'cdh5': '0.12.0-cdh5.0.0'
+].withDefault {
+    '0.12.0'
+}
+ext.hadoopClusters = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
@@ -17,25 +28,19 @@ ext.versionMap = [
         '2.3' : '2.3.0',
         '2.4' : '2.4.0'
 ].withDefault {
-    throw new GradleException("Unknown hadoop version: ${hadoop_version}")
-}
-ext.hiveVersionMap = [
-        'cdh4': '0.10.0-cdh4.6.0',
-        'cdh5': '0.12.0-cdh5.0.0'
-].withDefault {
-    '0.12.0'
+    throw new GradleException("Unknown hadoop version: ${it}")
 }
 
 
-ext.hadoopVersion = versionMap[hadoop_version]
-ext.hiveVersion = hiveVersionMap[hadoop_version]
-ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
-ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
-ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
+//ext.hadoopVersion = versionMap[hadoop_version]
+ext.clusterVersion = hadoopClusters[branchVersion]
+ext.hiveVersion = hiveVersionMap[branchVersion]
 ext.javaDriverVersion = "2.12.2"
-ext.dataHome = "${hadoopBinaries}/examples/data"
+ext.hadoopVersion = '2.4.0'
 
-println "Building against hadoop ${hadoop_version} using ${hadoopVersion} libraries"
+ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
+ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
+ext.dataHome = "${hadoopBinaries}/examples/data"
 
 buildscript {
     repositories {
@@ -84,14 +89,12 @@ configure(subprojects) {
         testCompile 'org.zeroturnaround:zt-exec:1.6'
         testCompile 'com.jayway.awaitility:awaitility:1.6.0'
         testCompile 'commons-daemon:commons-daemon:1.0.15'
-        
-        if(!hadoop_version.startsWith('1.')) {
-            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
-            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
-            testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
-            testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
-            testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
-        }
+
+        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
+        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
+        testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
     }
 
     /* Compiling */
@@ -99,7 +102,7 @@ configure(subprojects) {
         options.encoding = 'ISO-8859-1'
         options.fork = true
         options.debug = true
-        options.compilerArgs = [/*'-Xlint:deprecation',*/  '-Xlint:-options']
+        options.compilerArgs = [/*'-Xlint:deprecation',*/ '-Xlint:-options']
     }
 
     project.ext.buildingWith = { n ->
@@ -109,20 +112,16 @@ configure(subprojects) {
     /* Testing */
     tasks.withType(Test) {
         maxParallelForks = 1
-        systemProperty 'hadoop.version', hadoop_version
-        systemProperty 'hadoop.release.version', hadoopVersion
+        systemProperty 'project.version', project.version
+        systemProperty 'cluster.version', hadoopClusters[branchVersion]
+        systemProperty 'hadoop.version', branchVersion
         systemProperties << System.getProperties()
-
-        dependsOn(['jar', 'testJar'])
 
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
     }
 
-    test.dependsOn ':configureCluster'
-    test.dependsOn ':downloadEnronEmails'
-            
     compileJava.dependsOn ':generateScripts'
 
     /* Code quality */
@@ -151,37 +150,33 @@ configure(subprojects) {
         }
     }
 
-    jar {
-        classifier = "hadoop_${hadoop_version}"
-    }
-
     javadoc {
         options.version = true
         options.links 'http://docs.oracle.com/javase/6/docs/api/'
-        options.links 'http://hadoop.apache.org/docs/r2.3.0/api'
+        options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
         options.links 'http://api.mongodb.org/java/2.12.0/'
     }
 
-    task listDependencies << {
-        configurations.compile.each { File file -> println file }
-    }
-    
     task testJar(type: Jar, dependsOn: testClasses) {
         from sourceSets.test.output
     }
+    
     gradle.taskGraph.whenReady { taskGraph ->
         testJar {
             baseName = "${archivesBaseName}-test"
+            mustRunAfter jar
         }
     }
-    
+
     configurations {
         tests
     }
-    
+
     artifacts {
         tests testJar
     }
+
+    test.dependsOn ':configureCluster', ':downloadEnronEmails'
 }
 
 configure(subprojects.findAll { it.name.contains('examples/') }) {
@@ -197,17 +192,11 @@ project(":core") {
     archivesBaseName = "mongo-hadoop-core"
 
     dependencies {
-        switch (hadoop_version) {
-            case ("1.0"):
-                compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
-                break
-            case ("1.1"):
-                compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
-                break
-            default:
-                compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-                mapReduceDeps(it, hadoopVersion)
-                break
+        compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+        ["core", "common", "shuffle", "app", "jobclient"].each { module ->
+            it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${hadoopVersion}") {
+                exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
+            }
         }
     }
 }
@@ -217,19 +206,16 @@ project(":hive") {
     dependencies {
         compile project(':core')
 
+        compile "org.apache.hive:hive-exec:${hiveVersion}"
+        compile "org.apache.hive:hive-serde:${hiveVersion}"
+
+        testCompile "org.apache.hive:hive-cli:${hiveVersion}"
+        testCompile "org.apache.hive:hive-service:${hiveVersion}"
+
         testCompile project(path: ':core', configuration: 'tests')
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0") {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
-        }
-        if (hadoop_version == "cdh4") {
-//            compile "org.apache.hive:hive-serde:0.10.0+258"
-            hiveDeps(it, hiveVersion)
-        } else if (hadoop_version == "cdh5") {
-//            compile "org.apache.hive:hive-serde:0.12.0-cdh5.0.0"
-            hiveDeps(it, hiveVersion)
-        } else {
-            hiveDeps(it, hiveVersion)
         }
     }
 }
@@ -238,19 +224,9 @@ project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
     dependencies {
         compile project(':core')
-        compile "org.antlr:antlr:3.5.2"
+        compile "org.apache.pig:pig:0.12.1"
 
-        if (hadoop_version == "1.0" || hadoop_version == "1.1") {
-            testCompile "log4j:log4j:1.2.17"
-            testCompile "com.google.guava:guava:17.0"
-        }
-        if (hadoop_version == "cdh4") {
-            compile "org.apache.pig:pig:0.10.0-cdh4.2.0"
-        } else if (hadoop_version == "cdh5") {
-            compile "org.apache.pig:pig:0.12.0-cdh5.0.0"
-        } else {
-            compile "org.apache.pig:pig:0.12.1"
-        }
+        testCompile "org.antlr:antlr:3.5.2"
     }
 
     jar {
@@ -284,8 +260,6 @@ project(":streaming") {
             from zipTree(it)
         }
     }
-
-    uploadArchives.onlyIf { hadoop_version != "1.0" }
 }
 
 project(":flume") {
@@ -331,43 +305,39 @@ project(":integration-tests") {
     }
 }
 
-
-task configureCluster(dependsOn: ['jar', 'copyFiles']) << {
-}
-
 def download() {
     try {
         def url
-        switch (hadoop_version) {
+        switch (branchVersion) {
             case ("cdh4"):
-                url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${hadoopVersion}.tar.gz"
+                url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${clusterVersion}.tar.gz"
                 break
             case ("cdh5"):
-                url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${hadoopVersion}.tar.gz"
+                url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${clusterVersion}.tar.gz"
                 break
             default:
-                url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
+                url = "http://archive.apache.org/dist/hadoop/common/hadoop-${clusterVersion}/hadoop-${clusterVersion}.tar.gz"
                 break
         }
-        println "No installation found.  Downloading ${hadoopVersion}"
+        println "No installation found.  Downloading ${clusterVersion}"
         download {
             src url
             dest hadoopBinaries
             onlyIfNewer true
         }
 
-        println "Extracting hadoop ${hadoopVersion} download"
+        println "Extracting hadoop ${clusterVersion} download"
         copy {
-            from(tarTree("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz"))
+            from(tarTree("${hadoopBinaries}/hadoop-${clusterVersion}.tar.gz"))
             into hadoopBinaries
         }
     } catch (Exception e) {
-        println e
+        e.printStackTrace()
         new File("${hadoopHome}").deleteDir()
-        new File("${hadoopBinaries}/hadoop-${hadoopVersion}.tar.gz").delete()
+        new File("${hadoopBinaries}/hadoop-${clusterVersion}.tar.gz").delete()
         download()
     }
-    
+
 }
 
 task installHadoop() << {
@@ -379,13 +349,12 @@ task installHadoop() << {
     }
 }
 
-
 task installHive() << {
     println "Checking that ${hiveHome}/bin exists"
     if (!new File("${hiveHome}/bin").exists()) {
         def url
         url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
-        switch (hadoop_version) {
+        switch (branchVersion) {
             case ("cdh4"):
                 url = "http://archive.cloudera.com/cdh4/cdh/4/hive-${hiveVersion}.tar.gz"
                 break
@@ -397,7 +366,7 @@ task installHive() << {
                 break
         }
 
-        println "No hive installation found.  Downloading ${hiveVersion}"
+        println "No hive installation found.  Downloading ${hiveVersion} from ${url}"
         download {
             src url
             dest hadoopBinaries
@@ -410,27 +379,74 @@ task installHive() << {
             into hadoopBinaries
         }
     }
-    
+
 }
 
-task historicalYield(dependsOn: 'configureCluster') << {
+task copyFiles(dependsOn: [installHadoop, installHive]) << {
+    def hadoopEtc
+    def hadoopLib
+    if (clusterVersion.startsWith("1")) {
+        hadoopLib = "${hadoopHome}/lib"
+        hadoopEtc = "${hadoopHome}/conf"
+    } else {
+        hadoopLib = "${hadoopHome}/share/hadoop/common"
+        hadoopEtc = "${hadoopHome}/etc/hadoop"
+    }
+
+    println "Updating mongo jars"
+
+
+    safeCopy("core/build/libs/mongo-hadoop-core-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-core.jar")
+    safeCopy("hive/build/libs/mongo-hadoop-hive-${project(':core').version}.jar", hiveHome + '/lib', "mongo-hadoop-hive.jar")
+
+    download {
+        src "http://central.maven.org/maven2/org/mongodb/mongo-java-driver/${javaDriverVersion}/mongo-java-driver-${javaDriverVersion}.jar"
+        dest "${hadoopLib}/mongo-java-driver.jar"
+        onlyIfNewer true
+    }
+    println "Updating cluster configuration"
+    copy {
+        from 'clusterConfigs'
+        into hadoopEtc
+    }
+}
+
+task configureCluster(dependsOn: copyFiles) << {
+    println "Configuring ${branchVersion} cluster"
+    exec {
+        commandLine "build/hadoop-${branchVersion}.sh"
+        args "start", "-format"
+    }
+}
+
+task shutdownCluster << {
+    println "Shutting down ${branchVersion} cluster"
+    exec {
+        commandLine "build/hadoop-${branchVersion}.sh"
+        args "shutdown"
+    }
+    
+    mustRunAfter test
+}
+
+task historicalYield(dependsOn: configureCluster) << {
     exec() {
         commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
     }
 
-    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}-hadoop_${hadoop_version}.jar",
+    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}.jar",
            "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
-                "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
-                "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
-           ])
+            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
+    ])
 }
 
 task sensorData(dependsOn: 'configureCluster') << {
-    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
            "com.mongodb.hadoop.examples.sensors.Devices", [])
 
-    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}-hadoop_${hadoop_version}.jar",
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
            "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
 }
 
@@ -439,7 +455,7 @@ task downloadEnronEmails() {
         println "Downloading Enron email test data to ${dataHome}"
         new File(dataHome).mkdirs()
         def attempts = 0
-        while(!new File(dataHome, "enron_mongo.tar.bz2").exists() && attempts < 10) {
+        while (!new File(dataHome, "enron_mongo.tar.bz2").exists() && attempts < 10) {
             try {
                 download {
                     src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
@@ -448,7 +464,7 @@ task downloadEnronEmails() {
                 }
             } catch (Exception e) {
                 attempts++
-                if(attempts == 10) {
+                if (attempts == 10) {
                     throw e;
                 }
             }
@@ -461,28 +477,13 @@ task downloadEnronEmails() {
     }
 }
 
-task enronEmails(dependsOn: [ downloadEnronEmails, configureCluster ] ) << {
+task enronEmails(dependsOn: [downloadEnronEmails, configureCluster]) << {
     exec() {
         commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
-    }    
-
-    hadoop("examples/enron/build/libs/enron-${project(':core').version}-hadoop_${hadoop_version}.jar",
-           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
-}
-
-task generateScripts() {
-    copy {
-        from 'bin/templates'
-        into 'bin'
-        filter ReplaceTokens, tokens: [
-                HADOOP_HOME: hadoopHome.toString(),
-                HADOOP_BINARIES: hadoopBinaries.toString(),
-                HADOOP_VERSION: hadoop_version,
-                HIVE_HOME: hiveHome.toString(),
-                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
-                BIN_PATH   : project.rootDir.getAbsolutePath() + '/bin'
-        ]
     }
+
+    hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
 def hadoop(jar, className, args) {
@@ -497,7 +498,7 @@ def hadoop(jar, className, args) {
     }
     println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
     def hadoopEnv = [:]
-    if (hadoop_version.startsWith("cdh")) {
+    if (clusterVersion.startsWith("cdh")) {
         hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
     }
     exec() {
@@ -506,53 +507,33 @@ def hadoop(jar, className, args) {
     }
 }
 
-def mapReduceDeps(it, version) {
-    ["core", "common", "shuffle", "app", "jobclient"].each { module ->
-        it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${version}") {
-            exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
-        }
+def safeCopy(fromPath, toPath, newName) {
+    def copied = copy {
+        from fromPath
+        into toPath
+        rename { newName }
+    }.didWork
+
+    if (!copied) {
+        throw new GradleScriptException("Failed to copy a file", new FileNotFoundException(fromPath))
     }
 }
 
-def hiveDeps(it, version) {
-    it.compile "org.apache.hive:hive-exec:${version}"
-    it.compile "org.apache.hive:hive-serde:${version}"
-    it.testCompile "org.apache.hive:hive-cli:${version}"
-    it.testCompile "org.apache.hive:hive-service:${version}"
-}
-
-task copyFiles(dependsOn: ['installHadoop', 'installHive']) << {
-    def hadoopEtc
-    def hadoopLib
-    if (hadoop_version.startsWith("1")) {
-        hadoopLib = "${hadoopHome}/lib"
-        hadoopEtc = "${hadoopHome}/conf"
-    } else {
-        hadoopLib = "${hadoopHome}/share/hadoop/common"
-        hadoopEtc = "${hadoopHome}/etc/hadoop"
-    }
-
-    println "Updating mongo jars"
-    copy {
-        from "core/build/libs/mongo-hadoop-core-${project(':core').version}-hadoop_${hadoop_version}.jar"
-        into hadoopLib
-        rename { "mongo-hadoop-core.jar" }
-    }
-//    println "Copying hive/build/libs/mongo-hadoop-hive-${project(':core').version}-hadoop_${hadoop_version}.jar into ${hiveHome}"
-    copy {
-        from "hive/build/libs/mongo-hadoop-hive-${project(':core').version}-hadoop_${hadoop_version}.jar"
-        into hiveHome + '/lib'
-        rename { "mongo-hadoop-hive.jar" }
-    }
-    download {
-        src "http://central.maven.org/maven2/org/mongodb/mongo-java-driver/${javaDriverVersion}/mongo-java-driver-${javaDriverVersion}.jar"
-        dest "${hadoopLib}/mongo-java-driver.jar"
-        onlyIfNewer true
-    }
-    println "Updating cluster configuration"
-    copy {
-        from 'clusterConfigs'
-        into hadoopEtc
+task generateScripts() << {
+    hadoopClusters.keySet().each { version ->
+        copy {
+            from 'bin/templates/hadoop-all.sh'
+            into "build/"
+            filter ReplaceTokens, tokens: [
+                    HADOOP_HOME     : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
+                    HADOOP_BINARIES : hadoopBinaries.toString(),
+                    HADOOP_VERSION  : hadoopClusters[version].toString(),
+                    HIVE_HOME       : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
+                    PROJECT_HOME    : project.rootDir.getAbsolutePath(),
+                    BIN_PATH        : project.rootDir.getAbsolutePath() + '/bin'
+            ]
+            rename { "hadoop-${version}.sh" }
+        }        
     }
 }
 
