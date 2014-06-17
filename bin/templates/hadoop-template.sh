@@ -15,7 +15,7 @@ startService() {
     BIN=$1
     SERVICE=$2
     echo Starting ${SERVICE}
-    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
+    @HADOOP_HOME@/bin/@BIN@ ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
 start() {
@@ -28,14 +28,17 @@ start() {
         then
             FORCE=-force
         fi
-        @HADOOP_HOME@/bin/hdfs namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
+        @HADOOP_HOME@/bin/@BIN@ namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
     fi
     
-    startService hdfs namenode
+    startService @BIN@ namenode
     sleep 5
-    startService hdfs datanode
-    startService yarn resourcemanager
-    startService yarn nodemanager
+    startService @BIN@ datanode
+    if [[ "@HADOOP_VERSION@" != 1.* ]]
+    then
+        startService yarn resourcemanager
+        startService yarn nodemanager
+    fi
     
     echo Starting hiveserver
     export HADOOP_HOME=@HADOOP_HOME@

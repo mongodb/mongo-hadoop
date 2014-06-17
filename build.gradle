@@ -522,7 +522,7 @@ def safeCopy(fromPath, toPath, newName) {
 task generateScripts() << {
     hadoopClusters.keySet().each { version ->
         copy {
-            from 'bin/templates/hadoop-all.sh'
+            from 'bin/templates/hadoop-template.sh'
             into "build/"
             filter ReplaceTokens, tokens: [
                     HADOOP_HOME     : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
@@ -530,6 +530,7 @@ task generateScripts() << {
                     HADOOP_VERSION  : hadoopClusters[version].toString(),
                     HIVE_HOME       : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
                     PROJECT_HOME    : project.rootDir.getAbsolutePath(),
+                    BIN             : version.startsWith("1.") ? 'hadoop' : 'hdfs',
                     BIN_PATH        : project.rootDir.getAbsolutePath() + '/bin'
             ]
             rename { "hadoop-${version}.sh" }
