@@ -15,8 +15,12 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
+import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.bson.BSONObject;
 
@@ -26,16 +30,31 @@ import java.util.Date;
 /**
  * The treasury yield mapper.
  */
-public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable, DoubleWritable> {
+public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable, DoubleWritable>
+    implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, IntWritable, DoubleWritable> {
 
     @Override
     @SuppressWarnings("deprecation")
     public void map(final Object pKey, final BSONObject pValue, final Context pContext) throws IOException, InterruptedException {
+        pContext.write(new IntWritable(((Date) pValue.get("_id")).getYear() + 1900),
+                       new DoubleWritable(((Number) pValue.get("bc10Year")).doubleValue()));
+    }
 
-        final int year = ((Date) pValue.get("_id")).getYear() + 1900;
-        double bid10Year = ((Number) pValue.get("bc10Year")).doubleValue();
+    @Override
+    public void map(final Object key, final BSONWritable value, final OutputCollector<IntWritable, DoubleWritable> output,
+                    final Reporter reporter)
+        throws IOException {
+        BSONObject pValue = value.getDoc();
+        output.collect(new IntWritable(((Date) pValue.get("_id")).getYear() + 1900),
+                       new DoubleWritable(((Number) pValue.get("bc10Year")).doubleValue()));
+    }
 
-        pContext.write(new IntWritable(year), new DoubleWritable(bid10Year));
+    @Override
+    public void close() throws IOException {
+    }
+
+    @Override
+    public void configure(final JobConf job) {
     }
 }
 

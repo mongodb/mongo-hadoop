@@ -2,11 +2,13 @@ package com.mongodb.hadoop.testutils;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.HadoopVersionFilter;
+import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +47,10 @@ public class MapReduceJob {
     private final List<String> inputUris = new ArrayList<String>();
     private final List<String> outputUris = new ArrayList<String>();
     private File jarPath;
-    private Class<? extends FileInputFormat> inputFormat;
-    private Class<? extends FileOutputFormat> outputFormat;
+    private Class<? extends InputFormat> inputFormat;
+    private Class<? extends OutputFormat> outputFormat;
+    private Class<? extends org.apache.hadoop.mapred.InputFormat> mapredInputFormat;
+    private Class<? extends org.apache.hadoop.mapred.OutputFormat> mapredOutputFormat;
 
     public MapReduceJob(final String className) {
         this.className = className;
@@ -200,10 +204,34 @@ public class MapReduceJob {
         
         if (inputFormat != null) {
             entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, inputFormat.getName()));
+        } else if (mapredInputFormat != null) {
+            entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, mapredInputFormat.getName()));
+        } else {
+            String name;
+            if (BaseHadoopTest.CLUSTER_VERSION.startsWith("1.")) {
+                name = com.mongodb.hadoop.mapred.MongoInputFormat.class.getName();
+            } else {
+                name = MongoInputFormat.class.getName();
+            }
+            entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, name));
+            LOG.info("No input format defined.  Defaulting to '%s'", name);
         }
 
         if (outputFormat != null) {
+            LOG.info("Adding output format '%s'", outputFormat.getName());
             entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, outputFormat.getName()));
+        } else if (mapredOutputFormat != null) {
+            LOG.info("Adding output format '%s'", mapredOutputFormat.getName());
+            entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, mapredOutputFormat.getName()));
+        } else {
+            String name;
+            if (BaseHadoopTest.CLUSTER_VERSION.startsWith("1.")) {
+                name = com.mongodb.hadoop.mapred.MongoOutputFormat.class.getName();
+            } else {
+                name = MongoOutputFormat.class.getName();
+            }
+            entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, name));
+            LOG.info("No output format defined.  Defaulting to '%s'", name);
         }
 
         return entries;
@@ -231,13 +259,23 @@ public class MapReduceJob {
         }
     }
 
-    public MapReduceJob inputFormat(final Class<? extends FileInputFormat> inputFormat) {
+    public MapReduceJob inputFormat(final Class<? extends InputFormat> inputFormat) {
         this.inputFormat = inputFormat;
         return this;
     }
 
-    public MapReduceJob outputFormat(final Class<? extends FileOutputFormat> outputFormat) {
+    public MapReduceJob outputFormat(final Class<? extends OutputFormat> outputFormat) {
         this.outputFormat = outputFormat;
+        return this;
+    }
+
+    public MapReduceJob mapredInputFormat(final Class<? extends org.apache.hadoop.mapred.InputFormat> inputFormat) {
+        this.mapredInputFormat = inputFormat;
+        return this;
+    }
+
+    public MapReduceJob mapredOutputFormat(final Class<? extends org.apache.hadoop.mapred.OutputFormat> outputFormat) {
+        this.mapredOutputFormat = outputFormat;
         return this;
     }
 

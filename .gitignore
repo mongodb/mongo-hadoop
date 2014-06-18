@@ -27,3 +27,4 @@ streaming/language_support/python/dist/
 streaming/language_support/python/pymongo_hadoop.egg-info/
 tags
 target
+test-*.out

@@ -1,6 +1,7 @@
 package com.mongodb.hadoop;
 
 import com.mongodb.MongoClientURI;
+import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import com.mongodb.hadoop.splitter.SingleMongoSplitter;
 import com.mongodb.hadoop.testutils.MapReduceJob;
@@ -40,7 +41,8 @@ public class TestStandalone extends TreasuryTest {
     @Test
     public void testBasicInputSource() {
         LOG.info("testing basic input source");
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        LOG.info("WHAT?");
+        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .jar(JOBJAR_PATH)
             .param("mongo.input.notimeout", "true")
             .inputUris(getInputUri())

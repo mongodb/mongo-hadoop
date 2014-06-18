@@ -15,7 +15,7 @@ startService() {
     BIN=$1
     SERVICE=$2
     echo Starting ${SERVICE}
-    @HADOOP_HOME@/bin/@BIN@ ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
+    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
 start() {
@@ -24,7 +24,7 @@ start() {
     if [ "$1" == "-format" ]
     then
         rm -rf @HADOOP_BINARIES@/tmpdir/
-        if [[ "@HADOOP_VERSION@" != 0.23* ]]
+        if [[ "@HADOOP_VERSION@" == 2.* ]]
         then
             FORCE=-force
         fi

@@ -16,8 +16,6 @@
 package com.mongodb.hadoop.examples.treasury;
 
 import com.mongodb.hadoop.MongoConfig;
-import com.mongodb.hadoop.MongoInputFormat;
-import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.logging.Log;
@@ -41,8 +39,6 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);
 
-        config.setInputFormat(MongoInputFormat.class);
-
         config.setMapper(TreasuryYieldMapper.class);
         config.setMapperOutputKey(IntWritable.class);
         config.setMapperOutputValue(DoubleWritable.class);
@@ -50,7 +46,6 @@ public class TreasuryYieldXMLConfig extends MongoTool {
         config.setReducer(TreasuryYieldReducer.class);
         config.setOutputKey(IntWritable.class);
         config.setOutputValue(BSONWritable.class);
-        config.setOutputFormat(MongoOutputFormat.class);
     }
 
     public static void main(final String[] pArgs) throws Exception {

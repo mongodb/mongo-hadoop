@@ -23,6 +23,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.io.MongoUpdateWritable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
@@ -52,6 +53,19 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
     public void write(final K key, final V value) throws IOException {
         final DBObject o = new BasicDBObject();
 
+        if (value instanceof MongoUpdateWritable) {
+            //ignore the key - just use the update directly.
+            MongoUpdateWritable muw = (MongoUpdateWritable) value;
+            try {
+                DBCollection dbCollection = getDbCollectionByRoundRobin();
+                dbCollection.update(new BasicDBObject(muw.getQuery()), new BasicDBObject(muw.getModifiers()), muw.isUpsert(),
+                                    muw.isMultiUpdate());
+                return;
+            } catch (final MongoException e) {
+                throw new IOException("can't write to mongo", e);
+            }
+        }
+        
         if (key instanceof BSONWritable) {
             o.put("_id", ((BSONWritable) key).getDoc());
         } else if (key instanceof BSONObject) {

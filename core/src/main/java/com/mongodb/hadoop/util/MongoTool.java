@@ -20,26 +20,30 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 
+import java.io.IOException;
 import java.util.Map.Entry;
 
 /**
  * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a ToolRunner Primarily
  * useful in cases of XML Config files.
- *
- * Main will be a necessary method to run the job - suggested implementation template:
- * <p></p>
- * 
+ * <p/>
+ * Main will be a necessary method to run the job - suggested implementation template: <p></p>
+ * <p/>
  * <pre>
  * public static void main(String[] args) throws Exception {
  *     System.exit(ToolRunner.run(new &lt;YourClass&gt;(), args));
  * }
  * </pre>
- * 
+ *
  * @author Brendan W. McAdams <brendan@10gen.com>
  */
 public class MongoTool extends Configured implements Tool {
@@ -68,7 +72,14 @@ public class MongoTool extends Configured implements Tool {
          */
         final Configuration conf = getConf();
 
-        LOG.info(String.format("Created a conf: '%s' on {%s} as job named '%s'", conf, this.getClass(), getJobName()));
+        boolean mapredJob;
+        LOG.info(String.format("Created a conf: '%s' on {%s} as job named '%s'", conf, getClass(), getJobName()));
+        try {
+            FileSystem.class.getDeclaredField("DEFAULT_FS").get(null);
+            mapredJob = false;
+        } catch (NoSuchFieldException e) {
+            mapredJob = true;
+        }
 
         if (LOG.isTraceEnabled()) {
             for (final Entry<String, String> entry : conf) {
@@ -76,7 +87,15 @@ public class MongoTool extends Configured implements Tool {
             }
         }
 
-        final Job job = new Job(conf, getJobName());
+        if (mapredJob) {
+            return runMapredJob(conf);
+        } else {
+            return runMapReduceJob(conf);
+        }
+    }
+
+    private int runMapredJob(final Configuration conf) {
+        final JobConf job = new JobConf(conf, getClass());
         /**
          * Any arguments specified with -D <property>=<value>
          * on the CLI will be picked up and set here
@@ -86,7 +105,71 @@ public class MongoTool extends Configured implements Tool {
          */
         // TODO - Do we need to set job name somehow more specifically?
         // This may or may not be correct/sane
-        job.setJarByClass(this.getClass());
+        job.setJarByClass(getClass());
+        final Class<? extends org.apache.hadoop.mapred.Mapper> mapper = MapredMongoConfigUtil.getMapper(conf);
+
+        LOG.debug("Mapper Class: " + mapper);
+        LOG.debug("Input URI: " + conf.get(MapredMongoConfigUtil.INPUT_URI));
+        job.setMapperClass(mapper);
+        Class<? extends org.apache.hadoop.mapred.Reducer> combiner = MapredMongoConfigUtil.getCombiner(conf);
+        if (combiner != null) {
+            job.setCombinerClass(combiner);
+        }
+        job.setReducerClass(MapredMongoConfigUtil.getReducer(conf));
+
+        job.setOutputFormat(MapredMongoConfigUtil.getOutputFormat(conf));
+        job.setOutputKeyClass(MapredMongoConfigUtil.getOutputKey(conf));
+        job.setOutputValueClass(MapredMongoConfigUtil.getOutputValue(conf));
+        job.setInputFormat(MapredMongoConfigUtil.getInputFormat(conf));
+        Class mapOutputKeyClass = MapredMongoConfigUtil.getMapperOutputKey(conf);
+        Class mapOutputValueClass = MapredMongoConfigUtil.getMapperOutputValue(conf);
+
+        if (mapOutputKeyClass != null) {
+            job.setMapOutputKeyClass(mapOutputKeyClass);
+        }
+        if (mapOutputValueClass != null) {
+            job.setMapOutputValueClass(mapOutputValueClass);
+        }
+
+        /**
+         * Determines if the job will run verbosely e.g. print debug output
+         * Only works with foreground jobs
+         */
+        final boolean verbose = MapredMongoConfigUtil.isJobVerbose(conf);
+        /**
+         * Run job in foreground aka wait for completion or background?
+         */
+        final boolean background = MapredMongoConfigUtil.isJobBackground(conf);
+        try {
+            RunningJob runningJob = JobClient.runJob(job);
+            if (background) {
+                LOG.info("Setting up and running MapReduce job in background.");
+                return 0;
+            } else {
+                LOG.info("Setting up and running MapReduce job in foreground, will wait for results.  {Verbose? "
+                         + verbose + "}");
+                runningJob.waitForCompletion();
+                return 0;
+            }
+        } catch (final Exception e) {
+            LOG.error("Exception while executing job... ", e);
+            return 1;
+        }
+        
+    }
+
+    private int runMapReduceJob(final Configuration conf) throws IOException {
+        final Job job = Job.getInstance(conf, getJobName());
+        /**
+         * Any arguments specified with -D <property>=<value>
+         * on the CLI will be picked up and set here
+         * They override any XML level values
+         * Note that -D<space> is important - no space will
+         * not work as it gets picked up by Java itself
+         */
+        // TODO - Do we need to set job name somehow more specifically?
+        // This may or may not be correct/sane
+        job.setJarByClass(getClass());
         final Class<? extends Mapper> mapper = MongoConfigUtil.getMapper(conf);
 
         LOG.debug("Mapper Class: " + mapper);

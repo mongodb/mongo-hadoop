@@ -21,6 +21,7 @@ import static com.mongodb.hadoop.hive.BSONSerDe.MONGO_COLS;
 import static com.mongodb.hadoop.hive.MongoStorageHandler.MONGO_URI;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class HiveMappingTest extends HiveTest {
@@ -66,7 +67,8 @@ public class HiveMappingTest extends HiveTest {
         collection.drop();
         dropTable(tableName);
 
-        for (int i = 0; i < 1000; i++) {
+        int size = 1000;
+        for (int i = 0; i < size; i++) {
             collection.insert(new BasicDBObject("_id", i)
                                   .append("intField", i % 10)
                                   .append("booleanField", i % 2 == 0)
@@ -93,8 +95,12 @@ public class HiveMappingTest extends HiveTest {
         if (results.hasError()) {
             fail(results.getError().getMessage());
         }
-        assertEquals("Should find 1000 items", collection.count(), 1000);
-        assertEquals("Should find only 100 items", execute("SELECT count(*) as count from " + tableName).iterator().next().get(0), "100");
+        assertEquals(format("Should find %d items", size), collection.count(), size);
+        Results execute = execute(format("SELECT * from %s where id=1", tableName));
+        assertTrue(execute.size() == 0);
+        int expected = size - 900;
+        assertEquals(format("Should find only %d items", expected),
+                     execute("SELECT count(*) as count from " + tableName).iterator().next().get(0), "" + expected);
     }
 
     private DBObject user(final int id, final String first, final String last, final String city, final String state) {
@@ -133,7 +139,7 @@ public class HiveMappingTest extends HiveTest {
         //                       new File(PROJECT_HOME, "examples/data/dump/enron_mail/messages.bson").getAbsolutePath(), 
         // "enron_messages"));
 
-        Results execute = execute(String.format("SELECT COUNT(*) from %s", name));
+        Results execute = execute(format("SELECT COUNT(*) from %s", name));
     }
 
 
