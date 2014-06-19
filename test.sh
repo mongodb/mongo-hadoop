@@ -17,8 +17,12 @@ function choose() {
 	fi
 }
 
+function build() {
+	g clean jar testJar -PclusterVersion=${HV} 2>&1 | tee test-${HV}.out
+}
+
 function run() {
-	g clean jar testJar test -PclusterVersion=${HV} 2>&1 | tee test-${HV}.out
+	g test -PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
 	./build/hadoop-${HV}.sh shutdown
 }
 
@@ -30,9 +34,11 @@ then
 	done
 	for HV in ${VERSIONS[@]}
 	do
+		build
 		run
 	done
 else
 	choose
+	build
 	run
 fi
