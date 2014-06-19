@@ -1,7 +1,4 @@
 import org.apache.tools.ant.filters.ReplaceTokens
-import sun.jvmstat.monitor.HostIdentifier
-import sun.jvmstat.monitor.VmIdentifier
-import sun.jvmstat.perfdata.monitor.protocol.local.MonitoredHostProvider
 
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -13,6 +10,8 @@ ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.branchVersion = project.getProperties().get('clusterVersion', '2.4').toLowerCase()
 ext.hiveVersionMap = [
+        '1.0': '0.10.0',
+        '1.1': '0.10.0',
         'cdh4': '0.10.0-cdh4.6.0',
         'cdh5': '0.12.0-cdh5.0.0'
 ].withDefault {
@@ -22,20 +21,18 @@ ext.hadoopClusters = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
-        'cdh4': '2.0.0-cdh4.6.0',
-        'cdh5': '2.3.0-cdh5.0.0',
         '2.2' : '2.2.0',
         '2.3' : '2.3.0',
-        '2.4' : '2.4.0'
+        '2.4' : '2.4.0',
+        'cdh4': '2.0.0-cdh4.6.0',
+        'cdh5': '2.3.0-cdh5.0.0',
 ].withDefault {
     throw new GradleException("Unknown hadoop version: ${it}")
 }
 
-
-//ext.hadoopVersion = versionMap[hadoop_version]
 ext.clusterVersion = hadoopClusters[branchVersion]
 ext.hiveVersion = hiveVersionMap[branchVersion]
-ext.javaDriverVersion = "2.12.2"
+ext.javaDriverVersion = '2.12.2'
 ext.hadoopVersion = '2.4.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
