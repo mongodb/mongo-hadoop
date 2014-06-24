@@ -31,6 +31,11 @@ start() {
         @HADOOP_HOME@/bin/@BIN@ namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
     fi
     
+    for LOG in @PROJECT_HOME@/logs/*.log
+    do
+        > $LOG
+    done
+        
     startService @BIN@ namenode
     sleep 5
     startService @BIN@ datanode
@@ -38,6 +43,9 @@ start() {
     then
         startService yarn resourcemanager
         startService yarn nodemanager
+    else
+        startService @BIN@ jobtracker
+        startService @BIN@ tasktracker
     fi
     
     echo Starting hiveserver
@@ -54,19 +62,21 @@ start() {
     @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }
 
+stopAll() {
+    stopService NodeManager node manager
+    stopService ResourceManager resource manager
+    stopService DataNode data node
+    stopService JobTracker job tracker
+    stopService TaskTracker task tracker
+    stopService NameNode name node
+    stopService RunJar hive server
+}
 shutdown() {
-    stopService NodeManager node manager
-    stopService ResourceManager resource manager
-    stopService DataNode data node
-    stopService NameNode name node
-    stopService RunJar hive server
-    
+    stopAll
+        
     KILL_SIGNAL=KILL
-    stopService NodeManager node manager
-    stopService ResourceManager resource manager
-    stopService DataNode data node
-    stopService NameNode name node
-    stopService RunJar hive server
+
+    stopAll
 }
 
 

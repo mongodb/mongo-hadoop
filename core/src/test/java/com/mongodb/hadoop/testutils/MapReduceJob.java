@@ -231,7 +231,7 @@ public class MapReduceJob {
                 name = MongoOutputFormat.class.getName();
             }
             entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, name));
-            LOG.info("No output format defined.  Defaulting to '%s'", name);
+            LOG.info(format("No output format defined.  Defaulting to '%s'", name));
         }
 
         return entries;

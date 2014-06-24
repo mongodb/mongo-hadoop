@@ -41,6 +41,7 @@ public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable,
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void map(final Object key, final BSONWritable value, final OutputCollector<IntWritable, DoubleWritable> output,
                     final Reporter reporter)
         throws IOException {
