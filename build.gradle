@@ -422,8 +422,6 @@ task shutdownCluster << {
         commandLine "build/hadoop-${branchVersion}.sh"
         args "shutdown"
     }
-    
-    mustRunAfter test
 }
 
 task historicalYield(dependsOn: configureCluster) << {
