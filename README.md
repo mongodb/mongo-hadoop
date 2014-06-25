@@ -4,7 +4,7 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
-Current stable release: **1.2.1**
+Current stable release: **1.2.0**
 
 ## Features
 
@@ -22,7 +22,7 @@ See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
 
 The mongo-hadoop connector currently supports the following versions of hadoop:  0.23, 1.0, 1.1, 2.2, 2.3, 2.4, 
 and CDH 4 abd 5.  The default build version will build against the last Apache Hadoop (currently 2.4).  If you would like to build 
-against a specific version of Hadoop you simply need to pass `-Phadoop_version=<your version>` to gradlew when building.
+against a specific version of Hadoop you simply need to pass `-PclusterVersion=<your version>` to gradlew when building.
 
 Run `./gradlew jar` to build the jars.  The jars will be placed in to `build/libs` for each module.  e.g. for the core module, 
 it will be generated in the `core/build/libs` directory.
@@ -38,14 +38,14 @@ following locations, depending on which Hadoop release you are using:
 
 | Hadoop Version                       | Build Parameter         |
 | :----------------------------------: | :---------------------: |
-| Apache Hadoop 0.23                   | -Phadoop_version='0.23' |
-| Apache Hadoop 1.0                    | -Phadoop_version='1.0'  |
-| Apache Hadoop 1.1                    | -Phadoop_version='1.1'  |
-| Apache Hadoop 2.2                    | -Phadoop_version='2.2'  |
-| Apache Hadoop 2.3                    | -Phadoop_version='2.3'  |
-| Apache Hadoop 2.4                    | -Phadoop_version='2.4'  |
-| Cloudera Distribution for Hadoop 4   | -Phadoop_version='cdh4' |
-| Cloudera Distribution for Hadoop 5   | -Phadoop_version='cdh5' |
+| Apache Hadoop 0.23                   | -PclusterVersion='0.23' |
+| Apache Hadoop 1.0                    | -PclusterVersion='1.0'  |
+| Apache Hadoop 1.1                    | -PclusterVersion='1.1'  |
+| Apache Hadoop 2.2                    | -PclusterVersion='2.2'  |
+| Apache Hadoop 2.3                    | -PclusterVersion='2.3'  |
+| Apache Hadoop 2.4                    | -PclusterVersion='2.4'  |
+| Cloudera Distribution for Hadoop 4   | -PclusterVersion='cdh4' |
+| Cloudera Distribution for Hadoop 5   | -PclusterVersion='cdh5' |
 
 ## Configuration
 

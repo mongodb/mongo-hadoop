@@ -30,7 +30,7 @@ function browser() {
 }
 
 function run() {
-	echo g configureCluster test -PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
+	g configureCluster test -PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
 	./build/hadoop-${HV}.sh shutdown
 	if [ "`grep -i failed /Users/jlee/dev/mongo-hadoop/core/build/reports/tests/index.html 2> /dev/null`" -o \
 				"`grep -i failed /Users/jlee/dev/mongo-hadoop/hive/build/reports/tests/index.html 2> /dev/null`" ]
