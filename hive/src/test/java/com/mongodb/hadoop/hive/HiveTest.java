@@ -63,9 +63,9 @@ public class HiveTest extends BaseHadoopTest {
 
     @Before
     public void checkClusterVersion() {
-        Assume.assumeFalse(CLUSTER_VERSION.startsWith("1."));    
+        Assume.assumeFalse(CLUSTER_VERSION.startsWith("1."));
     }
-    
+
     protected MongoClient getMongoClient() {
         if (mongoClient == null) {
             try {

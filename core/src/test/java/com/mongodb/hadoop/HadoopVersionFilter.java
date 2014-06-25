@@ -19,7 +19,8 @@ public class HadoopVersionFilter implements FileFilter {
 
     @Override
     public boolean accept(final File pathname) {
-        return findTestJar ? pathname.getName().contains("-test-")
-                           : pathname.getName().endsWith(FORMAT);
+        return pathname.getName().endsWith(FORMAT) && findTestJar == pathname.getName().contains("-test-");
+        //        return findTestJar ? pathname.getName().contains("-test-")
+//                           : pathname.getName().endsWith(FORMAT);
     }
 }
