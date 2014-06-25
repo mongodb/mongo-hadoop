@@ -119,7 +119,9 @@ configure(subprojects) {
         }
     }
 
+    test.dependsOn ':configureCluster'
     compileJava.dependsOn ':generateScripts'
+    clean.dependsOn ':cleanHadoop'
 
     /* Code quality */
     checkstyle {
@@ -335,6 +337,10 @@ def download() {
         download()
     }
 
+}
+
+task cleanHadoop(type: Delete) {
+    delete hadoopHome, hiveHome
 }
 
 task installHadoop() << {
