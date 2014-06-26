@@ -55,6 +55,8 @@ start() {
         export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
         if [[ "@HADOOP_VERSION@" == *cdh4* ]]
         then 
+            echo Waiting for data node to settle
+            sleep 15
             @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
             @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
         fi

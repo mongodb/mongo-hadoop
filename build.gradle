@@ -369,17 +369,24 @@ task installHive() << {
                 break
         }
 
-        println "No hive installation found.  Downloading ${hiveVersion} from ${url}"
-        download {
-            src url
-            dest hadoopBinaries
-            onlyIfNewer true
-        }
+        try {
+            println "No hive installation found.  Downloading ${hiveVersion} from ${url}"
+            download {
+                src url
+                dest hadoopBinaries
+                onlyIfNewer true
+            }
 
-        println "Extracting hive ${hiveVersion} download"
-        copy {
-            from(tarTree(resources.gzip("${hadoopBinaries}/hive-${hiveVersion}.tar.gz")))
-            into hadoopBinaries
+            println "Extracting hive ${hiveVersion} download"
+            copy {
+                from(tarTree(resources.gzip("${hadoopBinaries}/hive-${hiveVersion}.tar.gz")))
+                into hadoopBinaries
+            }
+        } catch (Exception e) {
+            e.printStackTrace()
+            new File("${hiveHome}").deleteDir()
+            new File("${hadoopBinaries}/hive-${hiveVersion}.tar.gz").delete()
+            installHive()
         }
     }
 
