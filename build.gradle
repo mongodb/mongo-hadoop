@@ -331,7 +331,7 @@ def download(url, destination, target) {
     def file = new URL(url).getPath()
     file = "${destination}/${file.substring(file.lastIndexOf('/') + 1)}"
     def count = 0;
-    while (!(new File(target).exists())) {
+    while (!(new File(target + "/bin").exists())) {
         try {
             if(!new File(file).exists()) {
                 println "${target} not found.  Downloading from ${url} to ${file}"
@@ -354,7 +354,7 @@ def download(url, destination, target) {
             new File(new URL(url).getFile()).delete()
         }
         if(count++ > 3) {
-            throw new GradleException(e.getMessage());
+            throw new GradleException();
         }
     }
 }
