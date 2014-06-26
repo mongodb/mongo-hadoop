@@ -192,18 +192,18 @@ project(":core") {
 
     dependencies {
         compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-        ["core", "common", "shuffle", "app", "jobclient"].each { module ->
-            it.compile("org.apache.hadoop:hadoop-mapreduce-client-${module}:${hadoopVersion}") {
-                exclude group: "org.apache.hadoop", module: "hadoop-hdfs"
-            }
-        }
+        compile("org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}")
+        compile("org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}")
+        compile("org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}")
+        compile("org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}")
+        compile("org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}")
     }
 }
 
 project(":hive") {
     archivesBaseName = "mongo-hadoop-hive"
     dependencies {
-        compile project(':core')
+        compile "${group}:mongo-hadoop-core:${version}"
 
         compile "org.apache.hive:hive-exec:${hiveVersion}"
         compile "org.apache.hive:hive-serde:${hiveVersion}"
@@ -222,7 +222,7 @@ project(":hive") {
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
     dependencies {
-        compile project(':core')
+        compile "${group}:mongo-hadoop-core:${version}"
         compile "org.apache.pig:pig:0.12.1"
 
         testCompile "org.antlr:antlr:3.5.2"
@@ -245,7 +245,7 @@ project(":streaming") {
     archivesBaseName = "mongo-hadoop-streaming"
 
     dependencies {
-        compile project(':core')
+        compile "${group}:mongo-hadoop-core:${version}"
         compile "org.apache.hadoop:hadoop-streaming:${hadoopVersion}"
     }
 
@@ -263,7 +263,7 @@ project(":streaming") {
 
 project(":flume") {
     dependencies {
-        compile project(':core')
+        compile "${group}:mongo-hadoop-core:${version}"
         compile("com.cloudera:flume-core:0.9.4-cdh3u3") {
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
             exclude group: 'com.cloudera.cdh', module: 'hadoop-ant'
@@ -274,7 +274,7 @@ project(":flume") {
 project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(':core')
+        compile "org.mongodb:mongo-hadoop-core:${version}"
         testCompile project(path: ':core', configuration: 'tests')
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
@@ -284,22 +284,22 @@ project(":examples/treasury_yield") {
 project(":examples/enron") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(':core')
+        compile "org.mongodb:mongo-hadoop-core:${version}"
     }
 }
 
 project(":examples/sensors") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(':core')
+        compile "org.mongodb:mongo-hadoop-core:${version}"
     }
 }
 
 project(":integration-tests") {
     uploadArchives.onlyIf { false }
     dependencies {
-        testCompile project(':core')
-        testCompile project(':streaming')
+        testCompile "${group}:mongo-hadoop-core:${version}"
+        testCompile "${group}:mongo-hadoop-streamin:${version}"
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
 }
