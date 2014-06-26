@@ -10,8 +10,8 @@ ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.branchVersion = project.getProperties().get('clusterVersion', '2.4').toLowerCase()
 ext.hiveVersionMap = [
-        '1.0': '0.10.0',
-        '1.1': '0.10.0',
+        '1.0' : '0.10.0',
+        '1.1' : '0.10.0',
         'cdh4': '0.10.0-cdh4.6.0',
         'cdh5': '0.12.0-cdh5.0.0'
 ].withDefault {
@@ -159,7 +159,7 @@ configure(subprojects) {
     task testJar(type: Jar, dependsOn: testClasses) {
         from sourceSets.test.output
     }
-    
+
     gradle.taskGraph.whenReady { taskGraph ->
         testJar {
             baseName = "${archivesBaseName}-test"
@@ -304,41 +304,6 @@ project(":integration-tests") {
     }
 }
 
-def download() {
-    try {
-        def url
-        switch (branchVersion) {
-            case ("cdh4"):
-                url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${clusterVersion}.tar.gz"
-                break
-            case ("cdh5"):
-                url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${clusterVersion}.tar.gz"
-                break
-            default:
-                url = "http://archive.apache.org/dist/hadoop/common/hadoop-${clusterVersion}/hadoop-${clusterVersion}.tar.gz"
-                break
-        }
-        println "No installation found.  Downloading ${clusterVersion}"
-        download {
-            src url
-            dest hadoopBinaries
-            onlyIfNewer true
-        }
-
-        println "Extracting hadoop ${clusterVersion} download"
-        copy {
-            from(tarTree("${hadoopBinaries}/hadoop-${clusterVersion}.tar.gz"))
-            into hadoopBinaries
-        }
-    } catch (Exception e) {
-        e.printStackTrace()
-        new File("${hadoopHome}").deleteDir()
-        new File("${hadoopBinaries}/hadoop-${clusterVersion}.tar.gz").delete()
-        download()
-    }
-
-}
-
 task cleanHadoop(type: Delete) {
     delete hadoopHome, hiveHome
 }
@@ -346,13 +311,55 @@ task cleanHadoop(type: Delete) {
 task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
-    println "Checking that ${hadoopHome}/bin exists"
-    if (!new File("${hadoopHome}/bin").exists()) {
-        download()
+    def url
+    switch (branchVersion) {
+        case ("cdh4"):
+            url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${clusterVersion}.tar.gz"
+            break
+        case ("cdh5"):
+            url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${clusterVersion}.tar.gz"
+            break
+        default:
+            url = "http://archive.apache.org/dist/hadoop/common/hadoop-${clusterVersion}/hadoop-${clusterVersion}.tar.gz"
+            break
+    }
+    
+    download(url, hadoopBinaries, hadoopHome)
+}
+
+def download(url, destination, target) {
+    def file = new URL(url).getPath()
+    file = "${destination}/${file.substring(file.lastIndexOf('/') + 1)}"
+    def count = 0;
+    while (!(new File(target).exists())) {
+        try {
+            if(!new File(file).exists()) {
+                println "${target} not found.  Downloading from ${url} to ${file}"
+            }
+            download {
+                src url
+                dest destination
+                onlyIfNewer true
+            }
+
+            println "Extracting ${file}"
+            copy {
+                from(tarTree(resources.gzip(file)))
+                into destination
+            }
+        } catch (Exception e) {
+            println "Extraction failed: " + e.getMessage()
+            println "Trying again"
+            new File(target).deleteDir()
+            new File(new URL(url).getFile()).delete()
+        }
+        if(count++ > 3) {
+            throw new GradleException(e.getMessage());
+        }
     }
 }
 
-def downloadHive() {
+task installHive() << {
     def url
     switch (branchVersion) {
         case ("cdh4"):
@@ -366,32 +373,7 @@ def downloadHive() {
             break
     }
 
-    try {
-        println "No hive installation found.  Downloading ${hiveVersion} from ${url}"
-        download {
-            src url
-            dest hadoopBinaries
-            onlyIfNewer true
-        }
-
-        println "Extracting hive ${hiveVersion} download"
-        copy {
-            from(tarTree(resources.gzip("${hadoopBinaries}/hive-${hiveVersion}.tar.gz")))
-            into hadoopBinaries
-        }
-    } catch (Exception e) {
-        e.printStackTrace()
-        new File("${hiveHome}").deleteDir()
-        new File("${hadoopBinaries}/hive-${hiveVersion}.tar.gz").delete()
-        downloadHive()
-    }
-}
-
-task installHive() << {
-    println "Checking that ${hiveHome}/bin exists"
-    if (!new File("${hiveHome}/bin").exists()) {
-        downloadHive()
-    }
+    download(url, hadoopBinaries, hiveHome)
 
 }
 
@@ -537,16 +519,16 @@ task generateScripts() << {
             from 'bin/templates/hadoop-template.sh'
             into "build/"
             filter ReplaceTokens, tokens: [
-                    HADOOP_HOME     : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
-                    HADOOP_BINARIES : hadoopBinaries.toString(),
-                    HADOOP_VERSION  : hadoopClusters[version].toString(),
-                    HIVE_HOME       : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
-                    PROJECT_HOME    : project.rootDir.getAbsolutePath(),
-                    BIN             : version.startsWith("1.") ? 'hadoop' : 'hdfs',
-                    BIN_PATH        : project.rootDir.getAbsolutePath() + '/bin'
+                    HADOOP_HOME    : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
+                    HADOOP_BINARIES: hadoopBinaries.toString(),
+                    HADOOP_VERSION : hadoopClusters[version].toString(),
+                    HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
+                    PROJECT_HOME   : project.rootDir.getAbsolutePath(),
+                    BIN            : version.startsWith("1.") ? 'hadoop' : 'hdfs',
+                    BIN_PATH       : project.rootDir.getAbsolutePath() + '/bin'
             ]
             rename { "hadoop-${version}.sh" }
-        }        
+        }
     }
 }
 
