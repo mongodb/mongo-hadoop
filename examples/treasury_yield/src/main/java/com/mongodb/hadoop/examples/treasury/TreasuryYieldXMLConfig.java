@@ -15,12 +15,14 @@
  */
 package com.mongodb.hadoop.examples.treasury;
 
-import com.mongodb.hadoop.MongoConfig;
+import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.MapredMongoConfigUtil;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.util.ToolRunner;
@@ -29,23 +31,35 @@ import org.apache.hadoop.util.ToolRunner;
  * The treasury yield xml config object.
  */
 public class TreasuryYieldXMLConfig extends MongoTool {
-    private static final Log LOG = LogFactory.getLog(TreasuryYieldXMLConfig.class);
-
     public TreasuryYieldXMLConfig() {
         this(new Configuration());
     }
 
     public TreasuryYieldXMLConfig(final Configuration conf) {
-        MongoConfig config = new MongoConfig(conf);
         setConf(conf);
 
-        config.setMapper(TreasuryYieldMapper.class);
-        config.setMapperOutputKey(IntWritable.class);
-        config.setMapperOutputValue(DoubleWritable.class);
+        boolean mrv1Job;
+        try {
+            FileSystem.class.getDeclaredField("DEFAULT_FS");
+            mrv1Job = false;
+        } catch (NoSuchFieldException e) {
+            mrv1Job = true;
+        }
 
-        config.setReducer(TreasuryYieldReducer.class);
-        config.setOutputKey(IntWritable.class);
-        config.setOutputValue(BSONWritable.class);
+        if (mrv1Job) {
+            MapredMongoConfigUtil.setInputFormat(conf, com.mongodb.hadoop.mapred.MongoInputFormat.class);
+            MapredMongoConfigUtil.setOutputFormat(conf, com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+        } else {
+            MongoConfigUtil.setInputFormat(conf, MongoInputFormat.class);
+            MongoConfigUtil.setOutputFormat(conf, MongoOutputFormat.class);
+        }
+        MongoConfigUtil.setMapper(conf, TreasuryYieldMapper.class);
+        MongoConfigUtil.setMapperOutputKey(conf, IntWritable.class);
+        MongoConfigUtil.setMapperOutputValue(conf, DoubleWritable.class);
+
+        MongoConfigUtil.setReducer(conf, TreasuryYieldReducer.class);
+        MongoConfigUtil.setOutputKey(conf, IntWritable.class);
+        MongoConfigUtil.setOutputValue(conf, BSONWritable.class);
     }
 
     public static void main(final String[] pArgs) throws Exception {
