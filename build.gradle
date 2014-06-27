@@ -1,5 +1,7 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
+import static java.lang.String.format
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
@@ -38,6 +40,13 @@ ext.hadoopVersion = '2.4.0'
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
 ext.dataHome = "${hadoopBinaries}/examples/data"
+ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
+                  '/mnt/jenkins/mongodb/26/26-release/bin/mongoimport' :
+                  '/usr/local/bin/mongoimport';
+ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore').exists() ?
+                  '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
+                  '/usr/local/bin/mongorestore';
+
 
 buildscript {
     repositories {
@@ -390,7 +399,6 @@ task copyFiles(dependsOn: [installHadoop, installHive]) << {
 
     println "Updating mongo jars"
 
-
     safeCopy("core/build/libs/mongo-hadoop-core-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-core.jar")
     safeCopy("streaming/build/libs/mongo-hadoop-streaming-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-streaming.jar")
     safeCopy("hive/build/libs/mongo-hadoop-hive-${project(':core').version}.jar", hiveHome + '/lib', "mongo-hadoop-hive.jar")
@@ -425,7 +433,7 @@ task shutdownCluster << {
 
 task historicalYield(dependsOn: configureCluster) << {
     exec() {
-        commandLine "mongoimport", "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+        commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
     }
 
@@ -473,7 +481,7 @@ task downloadEnronEmails() {
 
 task enronEmails(dependsOn: [downloadEnronEmails, configureCluster]) << {
     exec() {
-        commandLine "mongorestore", "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
+        commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
     }
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
