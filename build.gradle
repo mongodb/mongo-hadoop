@@ -73,7 +73,7 @@ configure(subprojects) {
     }
 
     group = 'org.mongodb'
-    version = '1.3.0'
+    version = '1.4.0-SNAPSHOT'
 
     sourceCompatibility = JavaVersion.VERSION_1_6
     targetCompatibility = JavaVersion.VERSION_1_6
@@ -203,7 +203,7 @@ project(":core") {
 project(":hive") {
     archivesBaseName = "mongo-hadoop-hive"
     dependencies {
-        compile "${group}:mongo-hadoop-core:${version}"
+        compile project(":core")
 
         compile "org.apache.hive:hive-exec:${hiveVersion}"
         compile "org.apache.hive:hive-serde:${hiveVersion}"
@@ -222,7 +222,7 @@ project(":hive") {
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
     dependencies {
-        compile "${group}:mongo-hadoop-core:${version}"
+        compile project(":core")
         compile "org.apache.pig:pig:0.12.1"
 
         testCompile "org.antlr:antlr:3.5.2"
@@ -245,7 +245,7 @@ project(":streaming") {
     archivesBaseName = "mongo-hadoop-streaming"
 
     dependencies {
-        compile "${group}:mongo-hadoop-core:${version}"
+        compile project(":core")
         compile "org.apache.hadoop:hadoop-streaming:${hadoopVersion}"
     }
 
@@ -263,7 +263,7 @@ project(":streaming") {
 
 project(":flume") {
     dependencies {
-        compile "${group}:mongo-hadoop-core:${version}"
+        compile project(":core")
         compile("com.cloudera:flume-core:0.9.4-cdh3u3") {
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
             exclude group: 'com.cloudera.cdh', module: 'hadoop-ant'
@@ -274,7 +274,7 @@ project(":flume") {
 project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile "org.mongodb:mongo-hadoop-core:${version}"
+        compile project(":core")
         testCompile project(path: ':core', configuration: 'tests')
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
@@ -284,21 +284,21 @@ project(":examples/treasury_yield") {
 project(":examples/enron") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile "org.mongodb:mongo-hadoop-core:${version}"
+        compile project(":core")
     }
 }
 
 project(":examples/sensors") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile "org.mongodb:mongo-hadoop-core:${version}"
+        compile project(":core")
     }
 }
 
 project(":integration-tests") {
     uploadArchives.onlyIf { false }
     dependencies {
-        testCompile "${group}:mongo-hadoop-core:${version}"
+        testCompile project(":core")
         testCompile "${group}:mongo-hadoop-streamin:${version}"
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
