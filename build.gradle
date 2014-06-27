@@ -351,7 +351,7 @@ def download(url, destination, target) {
             println "Extraction failed: " + e.getMessage()
             println "Trying again"
             new File(target).deleteDir()
-            new File(new URL(url).getFile()).delete()
+            new File(file).delete()
         }
         if(count++ > 3) {
             throw new GradleException();
