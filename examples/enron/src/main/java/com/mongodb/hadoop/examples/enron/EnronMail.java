@@ -19,6 +19,8 @@ package com.mongodb.hadoop.examples.enron;
 import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
+import com.mongodb.hadoop.util.MapredMongoConfigUtil;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
@@ -48,18 +50,23 @@ public class EnronMail extends MongoTool {
         Configuration conf = new Configuration();
         MongoConfig config = new MongoConfig(conf);
         setConf(conf);
-     
-        config.setInputFormat(MongoInputFormat.class);
+   
+        if (MongoTool.isMapRedV1()) {
+            MapredMongoConfigUtil.setInputFormat(getConf(), com.mongodb.hadoop.mapred.MongoInputFormat.class);
+            MapredMongoConfigUtil.setOutputFormat(getConf(), com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+        } else {
+            MongoConfigUtil.setInputFormat(getConf(), MongoInputFormat.class);
+            MongoConfigUtil.setOutputFormat(getConf(), MongoOutputFormat.class);
+        }
+        
         config.setInputURI("mongodb://localhost:27017/mongo_hadoop.messages");
         config.setMapper(EnronMailMapper.class);
         config.setReducer(EnronMailReducer.class);
-//        config.setCombiner(EnronMailReducer.class);
         config.setMapperOutputKey(MailPair.class);
         config.setMapperOutputValue(IntWritable.class);
         config.setOutputKey(MailPair.class);
         config.setOutputValue(IntWritable.class);
         config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.message_pairs");
-        config.setOutputFormat(MongoOutputFormat.class);
     }
 
     public static void main(final String[] pArgs) throws Exception {

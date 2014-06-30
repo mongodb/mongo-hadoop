@@ -34,9 +34,7 @@ import java.util.Map.Entry;
 
 /**
  * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a ToolRunner Primarily
- * useful in cases of XML Config files.
- * <p/>
- * Main will be a necessary method to run the job - suggested implementation template: <p></p>
+ * useful in cases of XML Config files. <p/> Main will be a necessary method to run the job - suggested implementation template: <p></p>
  * <p/>
  * <pre>
  * public static void main(String[] args) throws Exception {
@@ -48,6 +46,19 @@ import java.util.Map.Entry;
  */
 public class MongoTool extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(MongoTool.class);
+    private static final Boolean MAPRED_V1;
+
+    static {
+        boolean mapred;
+        try {
+            FileSystem.class.getDeclaredField("DEFAULT_FS");
+            mapred = false;
+        } catch (NoSuchFieldException e) {
+            mapred = true;
+        }
+        
+        MAPRED_V1 = mapred;
+    }
 
     /**
      * Defines the name of the job on the cluster. Left non-final to allow tweaking with serial #s, etc.  Defaults to the
@@ -63,7 +74,6 @@ public class MongoTool extends Configured implements Tool {
         jobName = name;
     }
 
-    @SuppressWarnings("deprecation")
     public int run(final String[] args) throws Exception {
         /**
          * ToolRunner will configure/process/setup the config
@@ -72,14 +82,7 @@ public class MongoTool extends Configured implements Tool {
          */
         final Configuration conf = getConf();
 
-        boolean mapredJob;
         LOG.info(String.format("Created a conf: '%s' on {%s} as job named '%s'", conf, getClass(), getJobName()));
-        try {
-            FileSystem.class.getDeclaredField("DEFAULT_FS").get(null);
-            mapredJob = false;
-        } catch (NoSuchFieldException e) {
-            mapredJob = true;
-        }
 
         if (LOG.isTraceEnabled()) {
             for (final Entry<String, String> entry : conf) {
@@ -87,11 +90,15 @@ public class MongoTool extends Configured implements Tool {
             }
         }
 
-        if (mapredJob) {
+        if (isMapRedV1()) {
             return runMapredJob(conf);
         } else {
             return runMapReduceJob(conf);
         }
+    }
+
+    public static boolean isMapRedV1() {
+        return MAPRED_V1;
     }
 
     private int runMapredJob(final Configuration conf) {
@@ -155,7 +162,7 @@ public class MongoTool extends Configured implements Tool {
             LOG.error("Exception while executing job... ", e);
             return 1;
         }
-        
+
     }
 
     private int runMapReduceJob(final Configuration conf) throws IOException {

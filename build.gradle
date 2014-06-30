@@ -500,7 +500,7 @@ def hadoop(jar, className, args) {
     }
     println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
     def hadoopEnv = [:]
-    if (clusterVersion.startsWith("cdh")) {
+    if (clusterVersion.contains("cdh")) {
         hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
     }
     exec() {

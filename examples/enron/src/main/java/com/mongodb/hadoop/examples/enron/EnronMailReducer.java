@@ -20,19 +20,22 @@ import com.mongodb.hadoop.io.BSONWritable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.bson.BSONObject;
 
 import java.io.IOException;
+import java.util.Iterator;
 
-public class EnronMailReducer extends Reducer<MailPair, IntWritable, BSONWritable, IntWritable> {
+public class EnronMailReducer extends Reducer<MailPair, IntWritable, BSONWritable, IntWritable> 
+    implements org.apache.hadoop.mapred.Reducer<MailPair, IntWritable, BSONWritable, IntWritable> {
 
     private static final Log LOG = LogFactory.getLog(EnronMailReducer.class);
 
     @Override
-    public void reduce(final MailPair pKey,
-                       final Iterable<IntWritable> pValues,
-                       final Context pContext)
+    public void reduce(final MailPair pKey, final Iterable<IntWritable> pValues, final Context pContext)
         throws IOException, InterruptedException {
         int sum = 0;
         for (final IntWritable value : pValues) {
@@ -44,5 +47,26 @@ public class EnronMailReducer extends Reducer<MailPair, IntWritable, BSONWritabl
         pContext.write(pkeyOut, new IntWritable(sum));
     }
 
+    @Override
+    public void reduce(final MailPair key, final Iterator<IntWritable> values, final OutputCollector<BSONWritable, IntWritable> output,
+                       final Reporter reporter)
+        throws IOException {
+        int sum = 0;
+        while (values.hasNext()) {
+            sum += values.next().get();
+        }
+        BSONObject outDoc = BasicDBObjectBuilder.start().add("f", key.from).add("t", key.to).get();
+        BSONWritable pkeyOut = new BSONWritable(outDoc);
+
+        output.collect(pkeyOut, new IntWritable(sum));
+    }
+
+    @Override
+    public void close() throws IOException {
+    }
+
+    @Override
+    public void configure(final JobConf job) {
+    }
 }
 

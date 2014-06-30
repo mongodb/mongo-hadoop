@@ -44,23 +44,18 @@ start() {
         startService yarn resourcemanager
         startService yarn nodemanager
     else
-        startService @BIN@ jobtracker
-        startService @BIN@ tasktracker
+        startService hadoop jobtracker
+        startService hadoop tasktracker
     fi
     
-    echo Starting hiveserver
-    export HADOOP_HOME=@HADOOP_HOME@
-    if [[ "@HADOOP_VERSION@" == *cdh* ]]
-    then
-        export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
-        if [[ "@HADOOP_VERSION@" == *cdh4* ]]
-        then 
-            echo Waiting for data node to settle
-            sleep 15
-            @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
-            @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
-        fi
+    if [[ "@HADOOP_VERSION@" == *cdh4* ]]
+    then 
+        @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
+        @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
+        sleep 5
     fi
+
+    echo Starting hiveserver
     @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }
 
