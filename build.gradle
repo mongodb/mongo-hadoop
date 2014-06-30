@@ -87,6 +87,18 @@ configure(subprojects) {
     sourceCompatibility = JavaVersion.VERSION_1_6
     targetCompatibility = JavaVersion.VERSION_1_6
 
+    configurations {
+        tests
+        tests.extendsFrom(testCompile)
+        
+        provided
+        provided.extendsFrom(compile)
+    }
+    
+    sourceSets.main.compileClasspath += configurations.provided
+    sourceSets.test.compileClasspath += configurations.provided
+    sourceSets.test.runtimeClasspath += configurations.provided
+
     dependencies {
         compile "org.mongodb:mongo-java-driver:${javaDriverVersion}"
 
@@ -177,7 +189,6 @@ configure(subprojects) {
     }
 
     configurations {
-        tests
     }
 
     artifacts {
@@ -201,11 +212,11 @@ project(":core") {
 
     dependencies {
         compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-        compile("org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}")
-        compile("org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}")
-        compile("org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}")
-        compile("org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}")
-        compile("org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}")
+        compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}" 
+        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}" 
+        compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
     }
 }
 
@@ -221,7 +232,7 @@ project(":hive") {
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
 
         testCompile project(path: ':core', configuration: 'tests')
-        testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0") {
+        testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
         }
@@ -308,7 +319,7 @@ project(":integration-tests") {
     uploadArchives.onlyIf { false }
     dependencies {
         testCompile project(":core")
-        testCompile "${group}:mongo-hadoop-streamin:${version}"
+        testCompile "${group}:mongo-hadoop-streaming:${version}"
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
 }
