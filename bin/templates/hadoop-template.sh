@@ -56,6 +56,11 @@ start() {
     fi
 
     echo Starting hiveserver
+    export HADOOP_HOME=@HADOOP_HOME@
+    if [[ "@HADOOP_VERSION@" == *cdh* ]]
+    then
+        export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
+    fi
     @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }
 
