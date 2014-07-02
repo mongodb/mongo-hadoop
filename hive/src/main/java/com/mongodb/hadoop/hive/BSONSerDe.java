@@ -378,6 +378,9 @@ public class BSONSerDe implements SerDe {
                 }
                 return value;
             case LONG:
+                if (value instanceof Integer) {
+                    return ((Integer) value).longValue();
+                }
                 return value;
             case SHORT:
                 return value;
