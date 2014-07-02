@@ -4,7 +4,7 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
-Current stable release: **1.2.0**
+Current stable release: **1.3.0**
 
 ## Features
 
