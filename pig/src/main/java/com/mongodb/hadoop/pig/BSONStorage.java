@@ -197,6 +197,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
     }
 
+    @Override
     public void checkSchema(final ResourceSchema schema) throws IOException {
         this.schema = schema;
         UDFContext context = UDFContext.getUDFContext();
@@ -205,15 +206,18 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
+    @Override
     public void storeSchema(final ResourceSchema schema, final String location, final Job job) {
         // not implemented
     }
 
 
+    @Override
     public void storeStatistics(final ResourceStatistics stats, final String location, final Job job) {
         // not implemented
     }
 
+    @Override
     public void putNext(final Tuple tuple) throws IOException {
         try {
             final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
@@ -237,6 +241,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
         }
     }
 
+    @Override
     public void prepareToWrite(final RecordWriter writer) throws IOException {
         out = writer;
         if (out == null) {
@@ -261,14 +266,17 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
 
     }
 
+    @Override
     public OutputFormat getOutputFormat() throws IOException {
         return outputFormat;
     }
 
+    @Override
     public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {
         return LoadFunc.getAbsolutePath(location, curDir);
     }
 
+    @Override
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
         config.set("mapred.output.file", location);
