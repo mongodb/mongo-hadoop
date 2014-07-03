@@ -24,7 +24,7 @@ import java.io.IOException;
 
 public class MongoLoader extends LoadFunc implements LoadMetadata {
     private static final Log LOG = LogFactory.getLog(MongoStorage.class);
-    private static TupleFactory tupleFactory = TupleFactory.getInstance();
+    private static final TupleFactory tupleFactory = TupleFactory.getInstance();
     // Pig specific settings
     private ResourceSchema schema = null;
     private RecordReader in = null;
@@ -46,7 +46,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         return fields;
     }
 
-    public MongoLoader(final String userSchema, final String idAlias) {
+    public MongoLoader(final String idAlias, final String userSchema) {
         this.idAlias = idAlias;
         try {
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
@@ -57,7 +57,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     }
 
     public MongoLoader(final String userSchema) {
-        this(userSchema, null);
+        this(null, userSchema);
     }
 
     @Override
@@ -110,6 +110,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         return t;
     }
 
+    @Override
     public String relativeToAbsolutePath(final String location, final Path curDir) throws IOException {
         // This is a mongo URI and has no notion of relative/absolute,
         // thus we want to always use just the same location.
@@ -136,7 +137,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
     @Override
     public String[] getPartitionKeys(final String location, final Job job) throws IOException {
-        // No partition keys. 
+        // No partition keys.
         return null;
     }
 
