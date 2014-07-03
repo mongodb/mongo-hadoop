@@ -47,11 +47,11 @@ public class BSONSplitter extends Configured implements Tool {
 
     private ArrayList<FileSplit> splitsList;
     private Path inputPath;
-    private BasicBSONCallback callback = new BasicBSONCallback();
-    private LazyBSONCallback lazyCallback = new LazyBSONCallback();
-    private LazyBSONDecoder lazyDec = new LazyBSONDecoder();
-    private BasicBSONDecoder bsonDec = new BasicBSONDecoder();
-    private BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
+    private final BasicBSONCallback callback = new BasicBSONCallback();
+    private final LazyBSONCallback lazyCallback = new LazyBSONCallback();
+    private final LazyBSONDecoder lazyDec = new LazyBSONDecoder();
+    private final BasicBSONDecoder bsonDec = new BasicBSONDecoder();
+    private final BasicBSONEncoder bsonEnc = new BasicBSONEncoder();
 
     public static class NoSplitFileException extends Exception {
     }
@@ -112,7 +112,7 @@ public class BSONSplitter extends Configured implements Tool {
             splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
         }
         splitsList = splits;
-    }//}}}
+    }
 
     public static long getSplitSize(final Configuration conf, final FileStatus file) {
         long minSize = Math.max(1L, conf.getLong("mapred.min.split.size", 1L));
@@ -139,75 +139,84 @@ public class BSONSplitter extends Configured implements Tool {
             splitsList = splits;
             return;
         }
-        if (length != 0) {
+        if (length == 0) {
+            LOG.warn("Zero-length file, skipping split calculation.");
+            return;
+        }
+
+        long splitSize = getSplitSize(getConf(), file);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Generating splits for " + path + " of up to " + splitSize + " bytes.");
+        }
+        FSDataInputStream fsDataStream = fs.open(path);
+        try {
             int numDocsRead = 0;
-            long splitSize = getSplitSize(getConf(), file);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Generating splits for " + path + " of up to " + splitSize + " bytes.");
-            }
-            FSDataInputStream fsDataStream = fs.open(path);
             long curSplitLen = 0;
             long curSplitStart = 0;
-            try {
-                while (fsDataStream.getPos() + 1 < length) {
-                    lazyCallback.reset();
-                    lazyDec.decode(fsDataStream, lazyCallback);
-                    LazyBSONObject bo = (LazyBSONObject) lazyCallback.get();
-                    int bsonDocSize = bo.getBSONSize();
-                    if (curSplitLen + bsonDocSize >= splitSize) {
-                        FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
-                        splits.add(split);
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug(String.format("Creating new split (%d) %s", splits.size(), split));
-                        }
-                        curSplitStart = fsDataStream.getPos() - bsonDocSize;
-                        curSplitLen = 0;
-                    }
-                    curSplitLen += bsonDocSize;
-                    numDocsRead++;
-                    if (numDocsRead % 1000 == 0) {
-                        float splitProgress = 100f * ((float) fsDataStream.getPos() / length);
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug(String.format("Read %d docs calculating splits for %s; %3.3f%% complete.",
-                                                    numDocsRead, file.getPath(), splitProgress));
-                        }
-                    }
-                }
-                if (curSplitLen > 0) {
+            while (fsDataStream.getPos() + 1 < length) {
+                lazyCallback.reset();
+                lazyDec.decode(fsDataStream, lazyCallback);
+                LazyBSONObject bo = (LazyBSONObject) lazyCallback.get();
+                int bsonDocSize = bo.getBSONSize();
+                if (curSplitLen + bsonDocSize >= splitSize) {
                     FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
                     splits.add(split);
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug(String.format("Final split (%d) %s", splits.size(), split.getPath()));
+                        LOG.debug(String.format("Creating new split (%d) %s", splits.size(), split));
+                    }
+                    curSplitStart = fsDataStream.getPos() - bsonDocSize;
+                    curSplitLen = 0;
+                }
+                curSplitLen += bsonDocSize;
+                numDocsRead++;
+                if (numDocsRead % 1000 == 0) {
+                    float splitProgress = 100.0f * ((float) fsDataStream.getPos() / length);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(String.format("Read %d docs calculating splits for %s; %3.3f%% complete.",
+                                                numDocsRead,
+                                                file.getPath(),
+                                                splitProgress));
                     }
                 }
-                splitsList = splits;
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Completed splits calculation for " + file.getPath());
-                }
-                writeSplits();
-            } catch (IOException e) {
-                LOG.warn("IOException: " + e);
-            } finally {
-                fsDataStream.close();
             }
-        } else {
-            LOG.warn("Zero-length file, skipping split calculation.");
+            if (curSplitLen > 0) {
+                FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
+                splits.add(split);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format("Final split (%d) %s", splits.size(), split.getPath()));
+                }
+            }
+            splitsList = splits;
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Completed splits calculation for " + file.getPath());
+            }
+            writeSplits();
+        } catch (IOException e) {
+            LOG.warn("IOException: " + e);
+        } finally {
+            fsDataStream.close();
         }
+
     }
 
     public void writeSplits() throws IOException {
-        if (!getConf().getBoolean("bson.split.write_splits", true)) {
+        if (getConf().getBoolean("bson.split.write_splits", true)) {
+            LOG.info("Writing splits to disk.");
+        } else {
             LOG.info("bson.split.write_splits is set to false - skipping writing splits to disk.");
             return;
-        } else {
-            LOG.info("Writing splits to disk.");
         }
 
         if (splitsList == null) {
             LOG.info("No splits found, skipping write of splits file.");
         }
 
-        Path outputPath = new Path(inputPath.getParent(), "." + inputPath.getName() + ".splits");
+        Path outputPath;
+        if (getConf().get("bson.split.path") != null) {
+            outputPath = new Path(getConf().get("bson.split.path"));
+        } else {
+            outputPath = new Path(inputPath.getParent(), "." + inputPath.getName() + ".splits");
+        }
 
         FileSystem pathFileSystem = outputPath.getFileSystem(getConf());
         FSDataOutputStream fsDataOut = null;
@@ -240,14 +249,15 @@ public class BSONSplitter extends Configured implements Tool {
         readSplitsForFile(file);
     }
 
+    @Override
     public int run(final String[] args) throws Exception {
-        setInputPath(new Path(getConf().get("mapred.input.dir", "")));
+        inputPath = new Path(getConf().get("mapred.input.dir", ""));
         readSplits();
         writeSplits();
         return 0;
     }
 
-    public static int getLargestBlockIndex(final BlockLocation[] blockLocations) {
+    public static int getLargestBlockIndex(final BlockLocation... blockLocations) {
         int retVal = -1;
         if (blockLocations == null) {
             return retVal;

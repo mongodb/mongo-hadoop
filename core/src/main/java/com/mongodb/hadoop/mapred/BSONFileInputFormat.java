@@ -51,13 +51,19 @@ public class BSONFileInputFormat extends FileInputFormat {
             BSONSplitter splitter = new BSONSplitter();
             splitter.setConf(job);
             splitter.setInputPath(file.getPath());
+
             Path splitFilePath;
-            splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
+            if (job.get("bson.split.path") != null) {
+                splitFilePath = new Path(job.get("bson.split.path"));
+            } else {
+                splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
+            }
+
             try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
             } catch (BSONSplitter.NoSplitFileException nsfe) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("No split file for %s; building split file", file.getPath()));
+                    LOG.debug(format("No split file for %s; building split file", file.getPath()));
                 }
                 splitter.readSplitsForFile(file);
             }

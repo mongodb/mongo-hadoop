@@ -67,16 +67,22 @@ public class BSONFileInputFormat extends FileInputFormat {
                     LOG.debug(String.format("skipping file %s not matched path filter.", file.getPath()));
                 }
                 continue;
-            } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("processing file " + file.getPath());
-                }
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("processing file " + file.getPath());
             }
 
             BSONSplitter splitter = new BSONSplitter();
             splitter.setConf(config);
             splitter.setInputPath(file.getPath());
-            Path splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
+
+            Path splitFilePath;
+            if (config.get("bson.split.path") != null) {
+                splitFilePath = new Path(config.get("bson.split.path"));
+            } else {
+                splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
+            }
+
             try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
             } catch (BSONSplitter.NoSplitFileException nsfe) {
