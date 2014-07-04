@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class BSONLoader extends LoadFunc {
 
@@ -199,6 +200,8 @@ public class BSONLoader extends LoadFunc {
         } else if (o instanceof Date) {
             return ((Date) o).getTime();
         } else if (o instanceof ObjectId) {
+            return o.toString();
+        } else if (o instanceof UUID) {
             return o.toString();
         } else if (o instanceof BasicBSONList) {
             BasicBSONList bl = (BasicBSONList) o;
