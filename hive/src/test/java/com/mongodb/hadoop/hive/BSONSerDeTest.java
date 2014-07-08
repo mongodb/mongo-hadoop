@@ -17,6 +17,7 @@ import org.bson.types.BasicBSONList;
 import org.bson.types.ObjectId;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -330,5 +331,22 @@ public class BSONSerDeTest {
 
         Object serialized = serde.serialize(obj, oi);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
+    }
+
+    @Test
+    public void testKeyWithDot() throws SerDeException {
+        BasicBSONObject value = new BasicBSONObject();
+        BasicBSONObject nested = new BasicBSONObject();
+        nested.put("simple", 10);
+        nested.put("with.dot", 20);
+        value.put("simple", 30);
+        value.put("with.dot", 40);
+        value.put("nested", nested);
+
+        BSONSerDe serde = new BSONSerDe();
+        assertThat((Integer)serde.getValue(value, "simple"), equalTo(30));
+        assertThat((Integer)serde.getValue(value, "with\\.dot"), equalTo(40));
+        assertThat((Integer)serde.getValue(value, "nested.simple"), equalTo(10));
+        assertThat((Integer)serde.getValue(value, "nested.with\\.dot"), equalTo(20));
     }
 }
