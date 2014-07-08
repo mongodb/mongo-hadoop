@@ -70,8 +70,8 @@ This setting should only be used when:
   
 #####`mongo.input.split.create_input_splits`
 
-Defaults to `'true'`. When set, attempts to create multiple input splits from the input collection, for parallelism.
-When set to `'false'` the entire collection will be treated as a **single** input split.
+Defaults to `true`. When set, attempts to create multiple input splits from the input collection, for parallelism.
+When set to `false` the entire collection will be treated as a **single** input split.
  
   
 #####`mongo.input.split.allow_read_from_secondaries`  
@@ -81,20 +81,33 @@ Sets `slaveOk` on all outbound connections when reading data from splits. This i
 
 #####`mongo.input.split.read_from_shards`
 
-When reading data for splits, query the shard directly rather than via the `mongos`. This may produce inaccurate results if there are aborted/incomplete chunk migrations in process during execution of the job - to ensure correctness when using this setting, disable the balancer while running the job and also set `mongo.input.split.read_shard_chunks` to `'true'`.
+When reading data for splits, query the shard directly rather than via the `mongos`. This may produce inaccurate results if there are aborted/incomplete chunk migrations in process during execution of the job - to ensure correctness when using this setting, disable the balancer while running the job and also set `mongo.input.split.read_shard_chunks` to `true`.
 
 #####`mongo.input.split.split_key_pattern`
 
 If you want to customize that split point for efficiency reasons (such as different distribution) on an un-sharded collection, you may set this to any valid field name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an index on the field, and follow the other rules outlined in the docs.
 
-#####`bson.split.read_splits` - When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
-##### `mapred.min.split.size` - Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
+#####`bson.split.read_splits`
+ 
+When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
 
-##### `mapred.max.split.size` - Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.
+##### `mapred.min.split.size`
 
-##### `bson.split.write_splits` - Automatically save any split information calculated for input files, by writing to corresponding `.splits` files. Defaults to `true`.
+Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
 
-##### `bson.output.build_splits` - Build a `.splits` file on the fly when constructing an output .BSON file. Defaults to `false`.
+##### `mapred.max.split.size`
 
-##### `bson.pathfilter.class` - Set the class name for a `[PathFilter](http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/PathFilter.html)` to filter which files to process when scanning directories for bson input files. Defaults to `null` (no additional filtering). You can set this value to `com.mongodb.hadoop.BSONPathFilter` to restrict input to only files ending with the ".bson" extension.
+Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.
+
+##### `bson.split.write_splits`
+
+Automatically save any split information calculated for input files, by writing to corresponding `.splits` files. Defaults to `true`.
+
+##### `bson.output.build_splits`
+
+Build a `.splits` file on the fly when constructing an output .BSON file. Defaults to `false`.
+
+##### `bson.pathfilter.class`
+
+Set the class name for a `[PathFilter](http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/PathFilter.html)` to filter which files to process when scanning directories for bson input files. Defaults to `null` (no additional filtering). You can set this value to `com.mongodb.hadoop.BSONPathFilter` to restrict input to only files ending with the ".bson" extension.
 
