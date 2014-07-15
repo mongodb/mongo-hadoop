@@ -41,6 +41,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     public void close() {
         if (cursor != null) {
             cursor.close();
+            cursor.getCollection().getDB().getMongo().close();
         }
     }
 
