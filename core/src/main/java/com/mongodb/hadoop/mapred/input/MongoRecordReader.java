@@ -53,6 +53,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     public void close() {
         if (cursor != null) {
             cursor.close();
+            cursor.getCollection().getDB().getMongo().close();
         }
     }
 
