@@ -14,7 +14,7 @@ stopService() {
 startService() {
     BIN=$1
     SERVICE=$2
-    echo @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
+    echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/logs/${SERVICE}.log\""
     @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
