@@ -34,7 +34,7 @@ ext.hadoopClusters = [
 
 ext.clusterVersion = hadoopClusters[branchVersion]
 ext.hiveVersion = hiveVersionMap[branchVersion]
-ext.javaDriverVersion = '2.12.2'
+ext.javaDriverVersion = '2.12.3'
 ext.hadoopVersion = '2.4.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
