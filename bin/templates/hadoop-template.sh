@@ -6,7 +6,7 @@ stopService() {
     PID=`jps | grep ${SERVICE} | cut -d' ' -f1`
     if [ "${PID}" ]
     then
-        echo Shutting down $*
+        echo kill -s ${KILL_SIGNAL-TERM} ${PID}
         kill -s ${KILL_SIGNAL-TERM} ${PID}
     fi
 }
@@ -14,7 +14,7 @@ stopService() {
 startService() {
     BIN=$1
     SERVICE=$2
-    echo Starting ${SERVICE}
+    echo @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
     @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
@@ -37,7 +37,13 @@ start() {
     done
         
     startService @BIN@ namenode
-    sleep 5
+    if [ "${JENKINS_URL}" ]
+    then
+        echo Sleep 30s to let the namenode settle
+        sleep 30
+    else
+        sleep 5
+    fi
     startService @BIN@ datanode
     if [[ "@HADOOP_VERSION@" != 1.* ]]
     then
@@ -50,17 +56,19 @@ start() {
     
     if [[ "@HADOOP_VERSION@" == *cdh4* ]]
     then 
+        echo @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
         @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
+        echo @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
         @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
         sleep 5
     fi
 
-    echo Starting hiveserver
     export HADOOP_HOME=@HADOOP_HOME@
     if [[ "@HADOOP_VERSION@" == *cdh* ]]
     then
         export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
     fi
+    echo @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
     @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
 }
 
@@ -73,6 +81,7 @@ stopAll() {
     stopService NameNode name node
     stopService RunJar hive server
 }
+
 shutdown() {
     stopAll
         
