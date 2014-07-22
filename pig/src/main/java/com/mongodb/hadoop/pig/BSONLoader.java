@@ -31,8 +31,8 @@ import java.util.Map;
 
 public class BSONLoader extends LoadFunc {
 
-    private static final TupleFactory tupleFactory = TupleFactory.getInstance();
-    private static final BagFactory bagFactory = BagFactory.getInstance();
+    private static TupleFactory tupleFactory = TupleFactory.getInstance();
+    private static BagFactory bagFactory = BagFactory.getInstance();
     private static final Log LOG = LogFactory.getLog(BSONLoader.class);
     private final BSONFileInputFormat inputFormat = new BSONFileInputFormat();
     //CHECKSTYLE:OFF

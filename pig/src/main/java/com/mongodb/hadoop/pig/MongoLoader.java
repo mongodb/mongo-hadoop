@@ -24,7 +24,7 @@ import java.io.IOException;
 
 public class MongoLoader extends LoadFunc implements LoadMetadata {
     private static final Log LOG = LogFactory.getLog(MongoStorage.class);
-    private static final TupleFactory tupleFactory = TupleFactory.getInstance();
+    private static TupleFactory tupleFactory = TupleFactory.getInstance();
     // Pig specific settings
     private ResourceSchema schema = null;
     private RecordReader in = null;

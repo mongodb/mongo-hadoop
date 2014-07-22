@@ -108,7 +108,8 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      * @param toIgnore      string representing "unnamed" objects
      * @param updateOptions JSON string representing 'extra' MongoDB update options
      */
-    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore, final String updateOptions) {
+    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore,
+                              final String updateOptions) {
         repl = new JSONPigReplace(new String[]{query, update, updateOptions});
         schemaStr = schema;
         unnamedStr = toIgnore.isEmpty() ? null : toIgnore;

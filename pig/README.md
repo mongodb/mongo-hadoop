@@ -73,8 +73,8 @@ have names assigned to them or try using a newer version of Pig.
 
 ### Writing output from Pig
 
-If writing to a MongoDB instance, it's recommended to set `mapred.map.tasks.speculative.execution=false` 
-and `mapred.reduce.tasks.speculative.execution=false` to prevent the possibility of duplicate records being written. You can do this on 
+If writing to a MongoDB instance, it's recommended to set `mapreduce.map.speculative=false` 
+and `mapreduce.reduce.speculative=false` to prevent the possibility of duplicate records being written. You can do this on 
 the command line with `-D` switches or directly in the Pig script using the `SET` command.
 
 ##### Static BSON file output
@@ -121,7 +121,7 @@ where
 * `<db>` is the name of the database to update and `<collection>` is the name of the collection to update
 * `<query>` is the (valid) JSON representing the query to use to find document(s) in the collection
 * `<update>` is the (valid) JSON representing the kind of updates to perform on document(s) in the collection
-* Optional: `<schema>` is the PIG schema of `<aliasname>`. **Strongly** advised to use this.
+* Optional: `<schema>` is the PIG schema of `<aliasname>`. It is **strongly** advised to use this.
 * Optional: `<fieldtoignore>` is the fieldname to ignore in `schema` during construction of BSON objects.
             Particularly useful for updating/writing an array to a document
 * Optional: you can use `<updateOptions>` to provide other update options, just as in the MongoDB JS shell.
