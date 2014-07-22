@@ -9,14 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-/**
- * Created with IntelliJ IDEA.
- * User: bpfoster
- * Date: 7/11/14
- * Time: 8:41 PM
- */
 public class MongoUpdateWritableTest {
     @Test
     public void testSerialization() throws Exception {
