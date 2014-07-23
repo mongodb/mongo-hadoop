@@ -79,11 +79,11 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query  JSON string representing 'query' parameter in MongoDB update
      * @param update JSON string representing 'update' parameter in MongoDB update
-     * @param s      string representing schema of pig output
+     * @param schema string representing schema of pig output
      */
-    public MongoUpdateStorage(final String query, final String update, final String s) {
+    public MongoUpdateStorage(final String query, final String update, final String schema) {
         this(query, update);
-        schemaStr = s;
+        schemaStr = schema;
     }
 
     /**
@@ -91,12 +91,12 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query    JSON string representing 'query' parameter in MongoDB update
      * @param update   JSON string representing 'update' parameter in MongoDB update
-     * @param s        string representing schema of pig output
+     * @param schema   string representing schema of pig output
      * @param toIgnore string representing "unnamed" objects
      */
-    public MongoUpdateStorage(final String query, final String update, final String s, final String toIgnore) {
-        this(query, update, s);
-        unnamedStr = (toIgnore.length() > 0 ? toIgnore : null);
+    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore) {
+        this(query, update, schema);
+        unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
     }
 
     /**
@@ -104,14 +104,14 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query         JSON string representing 'query' parameter in MongoDB update
      * @param update        JSON string representing 'update' parameter in MongoDB update
-     * @param s             string representing schema of pig output
+     * @param schema        string representing schema of pig output
      * @param toIgnore      string representing "unnamed" objects
      * @param updateOptions JSON string representing 'extra' MongoDB update options
      */
-    public MongoUpdateStorage(final String query, final String update, final String s, final String toIgnore, final String updateOptions) {
+    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore, final String updateOptions) {
         repl = new JSONPigReplace(new String[]{query, update, updateOptions});
-        schemaStr = s;
-        unnamedStr = (toIgnore.length() > 0 ? toIgnore : null);
+        schemaStr = schema;
+        unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
     }
 
     @Override
@@ -171,7 +171,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
 
         UDFContext udfc = UDFContext.getUDFContext();
         Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
-        
+
         /*
          * In determining the schema to use, the user-defined schema should take
          * precedence over the "inferred" schema
