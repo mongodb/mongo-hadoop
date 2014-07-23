@@ -138,6 +138,8 @@ configure(subprojects) {
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
+        
+        finalizedBy ':shutdownCluster'
     }
 
     test.dependsOn ':configureCluster'
@@ -446,6 +448,7 @@ task shutdownCluster << {
 }
 
 task historicalYield(dependsOn: configureCluster) << {
+    
     exec() {
         commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
@@ -522,6 +525,7 @@ def hadoop(jar, className, args) {
         environment << hadoopEnv
         commandLine line
     }
+    shutdownCluster.execute()    
 }
 
 def safeCopy(fromPath, toPath, newName) {

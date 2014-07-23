@@ -6,7 +6,7 @@ stopService() {
     PID=`jps | grep ${SERVICE} | cut -d' ' -f1`
     if [ "${PID}" ]
     then
-        echo kill -s ${KILL_SIGNAL-TERM} ${PID}
+        #echo kill -s ${KILL_SIGNAL-TERM} ${PID}
         kill -s ${KILL_SIGNAL-TERM} ${PID}
     fi
 }
@@ -14,7 +14,8 @@ stopService() {
 startService() {
     BIN=$1
     SERVICE=$2
-    echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/logs/${SERVICE}.log\""
+    > "@PROJECT_HOME@/logs/${SERVICE}.log"
+    #echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/logs/${SERVICE}.log\""
     @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
 
@@ -32,11 +33,6 @@ start() {
         @HADOOP_HOME@/bin/@BIN@ namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
     fi
     
-    for LOG in @PROJECT_HOME@/logs/*.log
-    do
-        > $LOG
-    done
-        
     startService @BIN@ namenode
     if [ "${JENKINS_URL}" ]
     then
@@ -57,9 +53,9 @@ start() {
     
     if [[ "@HADOOP_VERSION@" == *cdh4* ]]
     then 
-        echo @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
+        #echo @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
         @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib
-        echo @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
+        #echo @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
         @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib
         sleep 5
     fi
