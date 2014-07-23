@@ -195,7 +195,10 @@ configure(subprojects) {
         tests testJar
     }
 
-    test.dependsOn ':configureCluster', ':downloadEnronEmails'
+    test {
+        dependsOn ':configureCluster', ':downloadEnronEmails'
+        finalizedBy ':shutdownCluster'
+    }
 }
 
 configure(subprojects.findAll { it.name.contains('examples/') }) {
@@ -514,6 +517,7 @@ def hadoop(jar, className, args) {
     if (clusterVersion.contains("cdh")) {
         hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
     }
+    hadoopEnv.HADOOP_PREFIX=''
     exec() {
         environment << hadoopEnv
         commandLine line

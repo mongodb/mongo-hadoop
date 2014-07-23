@@ -21,6 +21,7 @@ startService() {
 start() {
     shutdown
     
+    unset HADOOP_PREFIX
     if [ "$1" == "-format" ]
     then
         rm -rf @HADOOP_BINARIES@/tmpdir/
@@ -36,6 +37,7 @@ start() {
         > $LOG
     done
         
+    export
     startService @BIN@ namenode
     if [ "${JENKINS_URL}" ]
     then
