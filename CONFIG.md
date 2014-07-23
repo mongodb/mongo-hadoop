@@ -91,11 +91,11 @@ If you want to customize that split point for efficiency reasons (such as differ
  
 When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
 
-##### `mapred.min.split.size`
+##### `mapreduce.input.fileinputformat.split.minsize`
 
 Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
 
-##### `mapred.max.split.size`
+##### `mapreduce.input.fileinputformat.split.maxsize`
 
 Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.
 
