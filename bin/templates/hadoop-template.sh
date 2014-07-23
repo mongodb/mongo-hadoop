@@ -37,7 +37,6 @@ start() {
         > $LOG
     done
         
-    export
     startService @BIN@ namenode
     if [ "${JENKINS_URL}" ]
     then
