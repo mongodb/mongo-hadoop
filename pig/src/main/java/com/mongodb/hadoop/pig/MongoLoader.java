@@ -46,7 +46,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         return fields;
     }
 
-    public MongoLoader(final String idAlias, final String userSchema) {
+    public MongoLoader(final String userSchema, final String idAlias) {
         this.idAlias = idAlias;
         try {
             schema = new ResourceSchema(Utils.getSchemaFromString(userSchema));
@@ -57,7 +57,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     }
 
     public MongoLoader(final String userSchema) {
-        this(null, userSchema);
+        this(userSchema, null);
     }
 
     @Override

@@ -58,15 +58,24 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     public MongoInsertStorage() {
     }
 
+    /**
+     * @deprecated useUpsert is unused.  use {@link #MongoInsertStorage(String)} instead
+     */
+    @Deprecated
+    @SuppressWarnings("UnusedParameters")
+    public MongoInsertStorage(final String idField, final String useUpsert) {
+        this.idField = idField;
+    }
+    
     public MongoInsertStorage(final String idField) {
         this.idField = idField;
     }
 
     protected void writeField(final BasicDBObjectBuilder builder,
-                              final ResourceSchema.ResourceFieldSchema field,
+                              final ResourceFieldSchema field,
                               final Object d) throws IOException {
         Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
-        if (field.getName() != null && field.getName().equals(this.idField)) {
+        if (field.getName() != null && field.getName().equals(idField)) {
             builder.add("_id", convertedType);
         } else {
             builder.add(field.getName(), convertedType);
@@ -79,7 +88,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         this.schema = schema;
         UDFContext udfc = UDFContext.getUDFContext();
 
-        Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
+        Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
@@ -98,8 +107,8 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         try {
             final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
             ResourceFieldSchema[] fields = null;
-            if (this.schema != null) {
-                fields = this.schema.getFields();
+            if (schema != null) {
+                fields = schema.getFields();
             }
             if (fields != null) {
                 for (int i = 0; i < fields.length; i++) {
@@ -118,13 +127,13 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     }
 
     public void prepareToWrite(final RecordWriter writer) throws IOException {
-        this.out = writer;
-        if (this.out == null) {
+        out = writer;
+        if (out == null) {
             throw new IOException("Invalid Record Writer");
         }
 
         UDFContext udfc = UDFContext.getUDFContext();
-        Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
+        Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
         String strSchema = p.getProperty(SCHEMA_SIGNATURE);
         if (strSchema == null) {
             throw new IOException("Could not find schema in UDF context");
@@ -132,17 +141,17 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
         try {
             // Parse the schema from the string stored in the properties object.
-            this.schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+            schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
         } catch (Exception e) {
-            this.schema = null;
+            schema = null;
             LOG.warn(e.getMessage());
         }
 
-        LOG.info("GOT A SCHEMA " + this.schema + " " + strSchema);
+        LOG.info("GOT A SCHEMA " + schema + " " + strSchema);
     }
 
     public OutputFormat getOutputFormat() throws IOException {
-        return this.outputFormat;
+        return outputFormat;
         //final MongoOutputFormat outputFmt = options == null ? new MongoOutputFormat() : new MongoOutputFormat(options.getUpdate().keys,
         // options.getUpdate().multi);
         //LOG.info( "OutputFormat... " + outputFmt );
