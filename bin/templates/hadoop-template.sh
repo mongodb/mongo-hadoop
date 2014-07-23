@@ -14,7 +14,6 @@ stopService() {
 startService() {
     BIN=$1
     SERVICE=$2
-    > "@PROJECT_HOME@/logs/${SERVICE}.log"
     #echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/logs/${SERVICE}.log\""
     @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
 }
@@ -41,7 +40,9 @@ start() {
     else
         sleep 5
     fi
+    
     startService @BIN@ datanode
+    
     if [[ "@HADOOP_VERSION@" != 1.* ]]
     then
         startService yarn resourcemanager

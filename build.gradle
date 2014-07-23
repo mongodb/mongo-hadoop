@@ -128,6 +128,10 @@ configure(subprojects) {
     }
 
     /* Testing */
+    task testJar(type: Jar, dependsOn: testClasses) {
+        from sourceSets.test.output
+    }
+
     tasks.withType(Test) {
         maxParallelForks = 1
         systemProperty 'project.version', project.version
@@ -177,10 +181,6 @@ configure(subprojects) {
         options.links 'http://docs.oracle.com/javase/6/docs/api/'
         options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
         options.links 'http://api.mongodb.org/java/2.12.0/'
-    }
-
-    task testJar(type: Jar, dependsOn: testClasses) {
-        from sourceSets.test.output
     }
 
     gradle.taskGraph.whenReady { taskGraph ->
@@ -329,7 +329,11 @@ project(":integration-tests") {
     }
 }
 
-task cleanHadoop(type: Delete) {
+task cleanLogs(type: Delete) {  
+    delete fileTree(dir: "logs", exclude: ".keep")  
+}
+
+task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome
 }
 
