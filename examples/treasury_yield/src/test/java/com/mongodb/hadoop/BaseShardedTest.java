@@ -94,7 +94,7 @@ public class BaseShardedTest extends TreasuryTest {
     public MongoClient getShard1() {
         if (shard2 == null) {
             try {
-                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27217)).build());
+                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27019)).build());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
@@ -105,7 +105,7 @@ public class BaseShardedTest extends TreasuryTest {
     public MongoClient getShard2() {
         if (shard2 == null) {
             try {
-                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27218)).build());
+                shard2 = new MongoClient(authCheck(new MongoClientURIBuilder().port(27022)).build());
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }

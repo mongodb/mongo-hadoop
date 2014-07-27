@@ -112,8 +112,9 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                 try {
                     if (shards.hasNext()) {
                         DBObject shard = shards.next();
+                        String host = ((String) shard.get("host")).replace(shard.get("_id") + "/", "");
                         MongoClientURI shardHost = new MongoClientURIBuilder(inputURI)
-                                                       .host((String) shard.get("host"))
+                                                       .host(host)
                                                        .build();
                         MongoClient shardClient = null;
                         try {
@@ -131,7 +132,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                     shards.close();
                 }
             }
-            if (!data.get("ok").equals(1.0)) {
+            if (data != null && !data.get("ok").equals(1.0)) {
                 throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
             }
 
@@ -150,8 +151,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
         for (Object aSplitData : splitData) {
             BasicDBObject currentKey = (BasicDBObject) aSplitData;
-            MongoInputSplit split = createSplitFromBounds(lastKey, currentKey);
-            returnVal.add(split);
+            returnVal.add(createSplitFromBounds(lastKey, currentKey));
             lastKey = currentKey;
         }
 

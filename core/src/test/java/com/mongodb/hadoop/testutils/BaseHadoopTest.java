@@ -41,7 +41,7 @@ public abstract class BaseHadoopTest {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHadoopTest.class);
 
     public static final String HADOOP_HOME;
-    public static final String PROJECT_VERSION = loadProperty("project.version", null);
+    public static final String PROJECT_VERSION = loadProperty("project.version", "1.3.1-SNAPSHOT");
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
     public static final String CLUSTER_VERSION = loadProperty("cluster.version", "2.4.0");
     public static final String HIVE_VERSION = "0.12.0";
