@@ -52,11 +52,12 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
 
     public void close(final Reporter reporter) {
-        try{
-            for (DBCollection collection : collections)
+        try {
+            for (DBCollection collection : collections) {
                 collection.getDB().getMongo().close();
+            }
         } catch (final MongoException e) {
-            LOG.error("Unable to close Connection: " + e.getMessage());
+            LOG.error("Unable to release Connection: " + e.getMessage());
         }
     }
 

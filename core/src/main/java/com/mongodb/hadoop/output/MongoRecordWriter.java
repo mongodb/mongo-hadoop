@@ -55,9 +55,11 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     }
 
     public void close(final TaskAttemptContext context) {
-        try{
-            for (DBCollection collection : collections)
+        try {
+            for (DBCollection collection : collections) {
                 collection.getDB().getMongo().close();
+            }
+                
         } catch (final MongoException e) {
             LOG.error("Unable to close Connection: " + e.getMessage());
         }
