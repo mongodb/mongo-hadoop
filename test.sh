@@ -2,7 +2,7 @@
 
 alias g="./gradlew --daemon"
 
-VERSIONS=(0.23 1.0 1.1 2.2 2.3 2.4 cdh4 cdh5)
+VERSIONS=(0.23 1.0 1.1 1.2 2.2 2.3 2.4 cdh4 cdh5)
 OPTS=test
 #VERSIONS=(0.23 cdh4 cdh5 2.2 2.3 2.4)
 

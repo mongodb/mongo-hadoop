@@ -23,6 +23,7 @@ ext.hadoopClusters = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
         '1.1' : '1.1.2',
+        '1.2' : '1.2.1',
         '2.2' : '2.2.0',
         '2.3' : '2.3.0',
         '2.4' : '2.4.0',
@@ -180,7 +181,7 @@ configure(subprojects) {
         options.version = true
         options.links 'http://docs.oracle.com/javase/6/docs/api/'
         options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
-        options.links 'http://api.mongodb.org/java/2.12.0/'
+        options.links 'http://api.mongodb.org/java/2.12.3/'
     }
 
     gradle.taskGraph.whenReady { taskGraph ->
