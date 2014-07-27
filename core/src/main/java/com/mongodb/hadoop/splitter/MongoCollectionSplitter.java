@@ -122,11 +122,11 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     //     }
 
     protected void init() {
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         this.inputCollection = MongoConfigUtil.getCollection(inputURI);
         DB db = this.inputCollection.getDB();
         this.mongo = db.getMongo();
-        MongoClientURI authURI = MongoConfigUtil.getAuthURI(conf);
+        MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
         if (authURI != null) {
             if (authURI.getUsername() != null
                 && authURI.getPassword() != null) {
@@ -235,10 +235,10 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         MongoInputSplit split = null;
 
         //If enabled, attempt to build the split using $gt/$lte
-        DBObject query = MongoConfigUtil.getQuery(conf);
-        if (MongoConfigUtil.isRangeQueryEnabled(conf)) {
+        DBObject query = MongoConfigUtil.getQuery(getConfiguration());
+        if (MongoConfigUtil.isRangeQueryEnabled(getConfiguration())) {
             try {
-                query = MongoConfigUtil.getQuery(conf);
+                query = MongoConfigUtil.getQuery(getConfiguration());
                 split = createRangeQuerySplit(lowerBound, upperBound, query);
             } catch (Exception e) {
                 throw new SplitFailedException("Couldn't use range query to create split: " + e.getMessage());
@@ -254,11 +254,11 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
             split.setMin(splitMin);
             split.setMax(splitMax);
         }
-        split.setInputURI(MongoConfigUtil.getInputURI(conf));
-        split.setAuthURI(MongoConfigUtil.getAuthURI(conf));
-        split.setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
-        split.setFields(MongoConfigUtil.getFields(conf));
-        split.setSort(MongoConfigUtil.getSort(conf));
+        split.setInputURI(MongoConfigUtil.getInputURI(getConfiguration()));
+        split.setAuthURI(MongoConfigUtil.getAuthURI(getConfiguration()));
+        split.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
+        split.setFields(MongoConfigUtil.getFields(getConfiguration()));
+        split.setSort(MongoConfigUtil.getSort(getConfiguration()));
         return split;
     }
 

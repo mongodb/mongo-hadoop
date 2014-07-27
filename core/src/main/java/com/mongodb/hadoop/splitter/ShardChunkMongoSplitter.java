@@ -44,6 +44,9 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
 
     private static final Log LOG = LogFactory.getLog(ShardChunkMongoSplitter.class);
 
+    public ShardChunkMongoSplitter() {
+    }
+
     public ShardChunkMongoSplitter(final Configuration conf) {
         super(conf);
     }
@@ -52,11 +55,11 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
         this.init();
-        boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(conf);
+        boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(getConfiguration());
         DB configDB = this.mongo.getDB("config");
         DBCollection chunksCollection = configDB.getCollection("chunks");
 
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
 
         DBCursor cur = chunksCollection.find(new BasicDBObject("ns", inputNS));
@@ -75,7 +78,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
             }
         }
 
-        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.conf);
+        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.getConfiguration());
         if (targetShards && mongosHostNames.size() > 0) {
             throw new SplitFailedException("Setting both mongo.input.split.read_from_shards and mongo.input.mongos_hosts"
                                            + " does not make sense. ");

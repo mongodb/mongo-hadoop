@@ -54,6 +54,9 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
     private static final Log LOG = LogFactory.getLog(StandaloneMongoSplitter.class);
 
+    public StandaloneMongoSplitter() {
+    }
+
     public StandaloneMongoSplitter(final Configuration conf) {
         super(conf);
     }
@@ -61,13 +64,13 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
         init();
-        final DBObject splitKey = MongoConfigUtil.getInputSplitKey(conf);
-        final int splitSize = MongoConfigUtil.getSplitSize(conf);
+        final DBObject splitKey = MongoConfigUtil.getInputSplitKey(getConfiguration());
+        final int splitSize = MongoConfigUtil.getSplitSize(getConfiguration());
 
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
         final String ns = inputCollection.getFullName();
 
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
 
         LOG.info("Running splitvector to check splits against " + inputURI);
         final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)

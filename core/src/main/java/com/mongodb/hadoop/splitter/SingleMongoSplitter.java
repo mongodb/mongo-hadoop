@@ -50,17 +50,17 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
     public List<InputSplit> calculateSplits() {
         init();
 
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         LOG.info("SingleMongoSplitter calculating splits for " + inputURI);
         final List<InputSplit> splits = new ArrayList<InputSplit>();
         MongoInputSplit mongoSplit = new MongoInputSplit();
 
-        mongoSplit.setInputURI(MongoConfigUtil.getInputURI(conf));
-        mongoSplit.setAuthURI(MongoConfigUtil.getAuthURI(conf));
-        mongoSplit.setQuery(MongoConfigUtil.getQuery(conf));
-        mongoSplit.setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
-        mongoSplit.setFields(MongoConfigUtil.getFields(conf));
-        mongoSplit.setSort(MongoConfigUtil.getSort(conf));
+        mongoSplit.setInputURI(MongoConfigUtil.getInputURI(getConfiguration()));
+        mongoSplit.setAuthURI(MongoConfigUtil.getAuthURI(getConfiguration()));
+        mongoSplit.setQuery(MongoConfigUtil.getQuery(getConfiguration()));
+        mongoSplit.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
+        mongoSplit.setFields(MongoConfigUtil.getFields(getConfiguration()));
+        mongoSplit.setSort(MongoConfigUtil.getSort(getConfiguration()));
 
         //Not using any index min/max bounds, so range query is 
         //meaningless here - don't set it

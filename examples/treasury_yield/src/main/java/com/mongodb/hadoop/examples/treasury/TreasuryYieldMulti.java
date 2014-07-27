@@ -29,11 +29,6 @@ import java.util.Date;
  * The treasury yield xml config object.
  */
 public class TreasuryYieldMulti extends MongoTool {
-
-    static {
-        //        Configuration.addDefaultResource("src/examples/mongo-defaults.xml");
-    }
-
     public static void main(final String[] pArgs) throws Exception {
         //Here is an example of how to use multiple collections as the input to
         //a hadoop job, from within Java code directly.
