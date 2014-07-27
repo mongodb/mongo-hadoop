@@ -4,7 +4,10 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
 import com.mongodb.ReadPreference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,10 +16,11 @@ import java.util.Map.Entry;
 import static java.lang.String.format;
 
 public class MongoClientURIBuilder {
+    private static final Logger LOG = LoggerFactory.getLogger(MongoClientURIBuilder.class);
+
     private MongoClientOptions options;
     private MongoCredential credentials;
-    private String host = "localhost";
-    private Integer port = 27017;
+    private final List<String> hosts = new ArrayList<String>();
     private String database;
     private String collection;
     private String userName;
@@ -27,19 +31,9 @@ public class MongoClientURIBuilder {
     }
 
     public MongoClientURIBuilder(final MongoClientURI mongoClientURI) {
-        List<String> hosts = mongoClientURI.getHosts();
-        if (!hosts.isEmpty()) {
-            String first = hosts.get(0);
-            if (first.contains("/")) {
-                first = first.substring(0, first.indexOf("/"));
-            }
-            if (first.contains(":")) {
-                String[] split = first.split(":");
-                host = split[0];
-                port = Integer.valueOf(split[1]);
-            } else {
-                host = first;
-            }
+        List<String> list = mongoClientURI.getHosts();
+        for (String s : list) {
+            host(s);
         }
         database = mongoClientURI.getDatabase();
         collection = mongoClientURI.getCollection();
@@ -47,6 +41,7 @@ public class MongoClientURIBuilder {
         if (mongoClientURI.getPassword() != null) {
             password = new String(mongoClientURI.getPassword());
         }
+        options = mongoClientURI.getOptions();
         String uri = mongoClientURI.getURI();
         if (uri.contains("?")) {
             String query = uri.substring(uri.indexOf('?') + 1);
@@ -59,18 +54,32 @@ public class MongoClientURIBuilder {
     }
 
     public MongoClientURIBuilder host(final String host) {
-        if (host.contains(":")) {
-            String[] split = host.split(":");
-            this.host = split[0];
-            port = Integer.valueOf(split[1]);
-        } else {
-            this.host = host;
-        }
+        return host(host, null);
+    }
+
+    public MongoClientURIBuilder host(final String newHost, final Integer newPort) {
+        hosts.clear();
+        addHost(newHost, newPort);
+
         return this;
     }
 
+    public void addHost(final String newHost, final Integer newPort) {
+        if (newHost.contains(":") && newPort == null) {
+            hosts.add(newHost);
+        } else {
+            String host = newHost == null || newHost.isEmpty() ? "localhost" : newHost;
+            Integer port = newPort == null ? 27017 : newPort;
+            hosts.add(format("%s:%d", host, port));
+        }
+    }
+
     public MongoClientURIBuilder port(final Integer port) {
-        this.port = port;
+        if (hosts.size() == 0) {
+            host("localhost", port);
+        } else {
+            host(hosts.get(0), port);
+        }
         return this;
     }
 
@@ -93,7 +102,7 @@ public class MongoClientURIBuilder {
     }
 
     public MongoClientURIBuilder param(final String key, final String value) {
-        this.params.put(key, value);
+        params.put(key, value);
         return this;
     }
 
@@ -102,7 +111,13 @@ public class MongoClientURIBuilder {
         if (userName != null) {
             uri.append(format("%s:%s@", userName, password));
         }
-        uri.append(format("%s:%d", host, port));
+        for (int i = 0; i < hosts.size(); i++) {
+            final String host = hosts.get(i);
+            if (i != 0) {
+                uri.append(",");
+            }
+            uri.append(host);
+        }
         if (database != null) {
             uri.append(format("/%s.%s", database, collection));
 
