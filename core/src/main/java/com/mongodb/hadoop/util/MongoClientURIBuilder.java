@@ -70,6 +70,9 @@ public class MongoClientURIBuilder {
         } else {
             String host = newHost == null || newHost.isEmpty() ? "localhost" : newHost;
             Integer port = newPort == null ? 27017 : newPort;
+            if (host.contains(":")) {
+                host = host.substring(0, host.indexOf(':'));
+            }
             hosts.add(format("%s:%d", host, port));
         }
     }
