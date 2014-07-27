@@ -39,9 +39,9 @@ public class TreasuryYieldMulti extends MongoTool {
         //a hadoop job, from within Java code directly.
         MultiCollectionSplitBuilder builder = new MultiCollectionSplitBuilder();
         builder.add(new MongoClientURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in"), null, true, null, null, null, false,
-                    MultiMongoCollectionSplitter.class)
+                    null)
                .add(new MongoClientURI("mongodb://localhost:27017/mongo_hadoop.yield_historical.in"), null, true, null, null,
-                    new BasicDBObject("_id", new BasicDBObject("$gt", new Date(883440000000L))), false, MultiMongoCollectionSplitter.class);
+                    new BasicDBObject("_id", new BasicDBObject("$gt", new Date(883440000000L))), false, null);
 
         Configuration conf = new Configuration();
         conf.set(MultiMongoCollectionSplitter.MULTI_COLLECTION_CONF_KEY, builder.toJSON());
