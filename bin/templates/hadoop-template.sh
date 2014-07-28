@@ -14,8 +14,9 @@ stopService() {
 startService() {
     BIN=$1
     SERVICE=$2
-    #echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/logs/${SERVICE}.log\""
-    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/logs/${SERVICE}.log" &
+    mkdir -p "@PROJECT_HOME@/build/logs/"
+    #echo "@HADOOP_HOME@/bin/${BIN} ${SERVICE} &> \"@PROJECT_HOME@/build/logs/${SERVICE}.log\""
+    @HADOOP_HOME@/bin/${BIN} ${SERVICE} &> "@PROJECT_HOME@/build/logs/${SERVICE}.log" &
 }
 
 start() {
@@ -29,7 +30,7 @@ start() {
         then
             FORCE=-force
         fi
-        @HADOOP_HOME@/bin/@BIN@ namenode -format ${FORCE} &> "@PROJECT_HOME@/logs/namenode-format.out"
+        @HADOOP_HOME@/bin/@BIN@ namenode -format ${FORCE} &> "@PROJECT_HOME@/build/logs/namenode-format.out"
     fi
     
     startService @BIN@ namenode
@@ -66,8 +67,8 @@ start() {
     then
         export MAPRED_DIR=@HADOOP_HOME@/share/hadoop/mapreduce2
     fi
-    echo @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
-    @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/logs/hiveserver.log" &
+    echo @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/build/logs/hiveserver.log" &
+    @HIVE_HOME@/bin/hive --service hiveserver &> "@PROJECT_HOME@/build/logs/hiveserver.log" &
 }
 
 stopAll() {
