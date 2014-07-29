@@ -117,7 +117,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
             case DataType.CHARARRAY:
                 return o;
             case DataType.DATETIME:
-            	return ((DateTime) o).toDate();
+            	return (o==null ? null : ((DateTime) o).toDate());
 
             //Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
@@ -166,7 +166,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                         Map<String, Object> ma = new LinkedHashMap<String, Object>();
                         for (int j = 0; j < fs.length; j++) {
                         	String fn = FieldUtils.getEscFieldName(fs[j].getName());
-                            ma.put(fn, t.get(j));
+                        	Object data = getTypeForBSON(t.get(j), fs[j], null);
+                            ma.put(fn, data);
                         }
                         a.add(ma);
                     }

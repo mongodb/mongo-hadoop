@@ -20,6 +20,7 @@ package com.mongodb.hadoop.pig;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -91,6 +92,10 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
+    public void storeSchema(final ResourceSchema schema) {
+        this.schema = schema;
+    }
+    
     @Override
     public void storeSchema(final ResourceSchema schema, final String location, final Job job) {
         // not implemented
@@ -121,7 +126,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
             out.write(null, builder.get());
         } catch (Exception e) {
-            throw new IOException("Couldn't convert tuple to bson: ", e);
+            throw new IOException("Couldn't convert tuple " + tuple + " to bson: ", e);
         }
     }
 
