@@ -1,9 +1,8 @@
--- update jar locations to point to their correct positions on your system
-REGISTER /usr/local/Cellar/hadoop/1.1.2/libexec/lib/mongo-2.10.1.jar
-REGISTER /usr/local/Cellar/hadoop/1.1.2/libexec/lib/mongo-hadoop-core_1.1.2-1.1.0.jar
-REGISTER /usr/local/Cellar/hadoop/1.1.2/libexec/lib/mongo-hadoop-pig_1.1.2-1.1.0.jar
+REGISTER @JAVA_DRIVER_JAR@
+REGISTER @PROJECT_HOME@/core/build/libs/mongo-hadoop-core-@PROJECT_VERSION@.jar
+REGISTER @PROJECT_HOME@/pig/build/libs/mongo-hadoop-pig-@PROJECT_VERSION@.jar
 
-persons_info = LOAD 'dump/test/persons_info.bson' 
+persons_info = LOAD '@PROJECT_HOME@/pig/build/dump/test/persons_info.bson' 
           USING com.mongodb.hadoop.pig.BSONLoader;
 
 to_store = FOREACH persons_info
@@ -13,7 +12,7 @@ to_store = FOREACH persons_info
 
 dump to_store;
 
-STORE to_store INTO 'mongodb://localhost:27017/test.update_mus'
+STORE to_store INTO 'mongodb://localhost:27017/mongo_hadoop.update_mus'
                USING com.mongodb.hadoop.pig.MongoUpdateStorage(
              '{last:"Alabi"}',
              '{\$set:{age:30}}', 

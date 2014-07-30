@@ -1,4 +1,4 @@
-import static java.lang.String.format
+import org.apache.tools.ant.filters.ReplaceTokens
 
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -9,6 +9,7 @@ apply from: 'gradle/functions.gradle'
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
 ext.branchVersion = project.getProperties().get('clusterVersion', '2.4').toLowerCase()
+
 ext.hiveVersionMap = [
         '1.0' : '0.10.0',
         '1.1' : '0.10.0',
@@ -17,6 +18,7 @@ ext.hiveVersionMap = [
 ].withDefault {
     '0.12.0'
 }
+
 ext.hadoopClusters = [
         '0.23': '0.23.10',
         '1.0' : '1.0.4',
@@ -31,13 +33,22 @@ ext.hadoopClusters = [
     throw new GradleException("Unknown hadoop version: ${it}")
 }
 
+ext.pigVersionMap = [
+        'cdh4': '0.11.0-cdh4.6.0',
+        'cdh5': '0.12.0-cdh5.0.0'
+].withDefault {
+    '0.13.0'
+}
+
 ext.clusterVersion = hadoopClusters[branchVersion]
 ext.hiveVersion = hiveVersionMap[branchVersion]
+ext.pigVersion = pigVersionMap[branchVersion]
 ext.javaDriverVersion = '2.12.3'
 ext.hadoopVersion = '2.4.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
+ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}"
 ext.dataHome = "${hadoopBinaries}/examples/data"
 ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongoimport' :
@@ -245,11 +256,22 @@ project(":hive") {
 
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
+    
     dependencies {
         compile project(":core")
-        compile "org.apache.pig:pig:0.12.1"
+        compile "org.apache.pig:pig:${pigVersion}"
 
+        testCompile project(path: ':core', configuration: 'tests')
         testCompile "org.antlr:antlr:3.5.2"
+    }
+
+    processTestResources {
+        outputs.upToDateWhen{ false }
+        filter ReplaceTokens, tokens: [
+                JAVA_DRIVER_JAR : project(':core').configurations.compile.find { it.name.startsWith("mongo-java-driver") }.toString(),
+                PROJECT_VERSION : project(':core').version,
+                PROJECT_HOME    : project.rootDir.getAbsolutePath(),
+        ]
     }
 
     jar {
