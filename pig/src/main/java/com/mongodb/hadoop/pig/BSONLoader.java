@@ -8,9 +8,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.pig.Expression;
 import org.apache.pig.LoadFunc;
+import org.apache.pig.LoadMetadata;
 import org.apache.pig.ResourceSchema;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+import org.apache.pig.ResourceStatistics;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
@@ -29,7 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BSONLoader extends LoadFunc {
+public class BSONLoader extends LoadFunc implements LoadMetadata {
 
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
@@ -133,7 +136,7 @@ public class BSONLoader extends LoadFunc {
                     ResourceFieldSchema[] fs = s.getFields();
                     Tuple t = tupleFactory.newTuple(fs.length);
 
-                    BasicDBObject val = (BasicDBObject) obj;
+                    BasicBSONObject val = (BasicBSONObject) obj;
 
                     for (int j = 0; j < fs.length; j++) {
                         t.set(j, readField(val.get(fs[j].getName()), fs[j]));
@@ -150,12 +153,12 @@ public class BSONLoader extends LoadFunc {
 
                     DataBag bag = bagFactory.newDefaultBag();
 
-                    BasicDBList vals = (BasicDBList) obj;
+                    BasicBSONList vals = (BasicBSONList) obj;
 
                     for (Object val1 : vals) {
                         t = tupleFactory.newTuple(fs.length);
                         for (int k = 0; k < fs.length; k++) {
-                            t.set(k, readField(((BasicDBObject) val1).get(fs[k].getName()), fs[k]));
+                            t.set(k, readField(((BasicBSONObject) val1).get(fs[k].getName()), fs[k]));
                         }
                         bag.add(t);
                     }
@@ -220,5 +223,28 @@ public class BSONLoader extends LoadFunc {
         }
 
     }
+    
+	@Override
+	public ResourceSchema getSchema(String location, Job job)
+			throws IOException {
+		return this.schema;
+	}
+
+	@Override
+	public ResourceStatistics getStatistics(String location, Job job)
+			throws IOException {
+		return null;
+	}
+
+	@Override
+	public String[] getPartitionKeys(String location, Job job)
+			throws IOException {
+		return null;
+	}
+
+	@Override
+	public void setPartitionFilter(Expression partitionFilter)
+			throws IOException {
+	}
 
 }
