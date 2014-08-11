@@ -416,4 +416,27 @@ task enronEmails(dependsOn: [downloadEnronEmails, configureCluster]) << {
            "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
 }
 
+def hadoop(jar, className, args) {
+    def line = ["${hadoopHome}/bin/hadoop",
+                "jar", jar, className,
+                //Split settings
+                "-Dmongo.input.split_size=8",
+                "-Dmongo.job.verbose=true",
+    ]
+    args.each {
+        line << "-D${it}"
+    }
+    println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
+    def hadoopEnv = [:]
+    if (clusterVersion.contains("cdh")) {
+        hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
+    }
+    hadoopEnv.HADOOP_PREFIX=''
+    exec() {
+        environment << hadoopEnv
+        commandLine line
+    }
+    shutdownCluster.execute()    
+}
+
 apply from: 'gradle/maven-deployment.gradle'
