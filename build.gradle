@@ -106,6 +106,7 @@ configure(subprojects) {
         testCompile 'org.zeroturnaround:zt-exec:1.6'
         testCompile 'com.jayway.awaitility:awaitility:1.6.0'
         testCompile 'commons-daemon:commons-daemon:1.0.15'
+        testCompile 'org.easymock:easymock:3.2'
 
         testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
         testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"

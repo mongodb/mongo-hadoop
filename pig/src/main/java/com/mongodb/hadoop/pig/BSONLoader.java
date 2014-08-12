@@ -1,7 +1,5 @@
 package com.mongodb.hadoop.pig;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.hadoop.BSONFileInputFormat;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
