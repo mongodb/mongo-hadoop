@@ -66,7 +66,7 @@ def shutdown()
   stopAll
 end
 
-unless Dir.exists?('@PROJECT_HOME@/build/logs/')
+unless File.exists?('@PROJECT_HOME@/build/logs/')
   Dir.mkdir('@PROJECT_HOME@/build/logs/')
 end
 

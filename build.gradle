@@ -45,7 +45,7 @@ ext.javaDriverVersion = '2.12.3'
 ext.clusterVersion = hadoopClusters[branchVersion]
 ext.hiveVersion = hiveVersionMap[branchVersion]
 ext.pigVersion = pigVersionMap[branchVersion]
-ext.hadoopVersion = '2.4.0'
+ext.hadoopVersion = '2.4.1'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
