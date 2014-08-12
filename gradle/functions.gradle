@@ -6,13 +6,13 @@ task generateScripts() << {
             from 'bin/templates/'
             into "build/"
             filter ReplaceTokens, tokens: [
-                    HADOOP_HOME    : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
-                    HADOOP_BINARIES: hadoopBinaries.toString(),
-                    HADOOP_VERSION : hadoopClusters[version].toString(),
-                    HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
-                    PROJECT_HOME   : project.rootDir.getAbsolutePath(),
-                    BIN            : version.startsWith("1.") ? 'hadoop' : 'hdfs',
-                    BIN_PATH       : project.rootDir.getAbsolutePath() + '/bin'
+                    HADOOP_HOME      : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
+                    HIVE_HOME        : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
+                    PIG_HOME         : "${hadoopBinaries}/pig-${pigVersionMap[version]}".toString(),
+                    HADOOP_BINARIES  : hadoopBinaries.toString(),
+                    HADOOP_VERSION   : hadoopClusters[version].toString(),
+                    PROJECT_HOME     : project.rootDir.getAbsolutePath(),
+                    BIN              : version.startsWith("1.") ? 'hadoop' : 'hdfs'
             ]
             rename { 
                 it.replace("template", version)
@@ -55,7 +55,9 @@ def download(url, destination, target) {
                 onlyIfNewer true
             }
 
-            println "Extracting ${file}"
+            if(!new File(destination).exists()) {
+                println "Extracting ${file}"
+            }
             copy {
                 from(tarTree(resources.gzip(file)))
                 into destination
@@ -124,7 +126,7 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     safeCopy("streaming/build/libs/mongo-hadoop-streaming-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-streaming.jar")
     safeCopy("hive/build/libs/mongo-hadoop-hive-${project(':core').version}.jar", hiveHome + '/lib', "mongo-hadoop-hive.jar")
     safeCopy(findJar(":core", "mongo-java-driver"), hadoopLib, "mongo-java-driver.jar")
-
+    
     println "Updating cluster configuration"
     copy {
         from 'clusterConfigs'
@@ -160,6 +162,6 @@ def safeCopy(fromPath, toPath, newName) {
     }.didWork
 
     if (!copied) {
-        throw new GradleScriptException("Failed to copy a file", new FileNotFoundException(fromPath))
+        throw new GradleException("Failed to copy a file", new FileNotFoundException(fromPath))
     }
 }

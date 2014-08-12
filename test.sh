@@ -2,7 +2,7 @@
 
 alias g="./gradlew --daemon"
 
-VERSIONS=(0.23 1.0 1.1 1.2 2.2 2.3 2.4 cdh4 cdh5)
+VERSIONS=(0.23 1.0 1.1 2.2 2.3 2.4 cdh4 cdh5)
 OPTS=test
 #VERSIONS=(0.23 cdh4 cdh5 2.2 2.3 2.4)
 
@@ -50,17 +50,23 @@ function browser() {
 function run() {
 	#g clean jar testJar configureCluster test historicalYield sensorData enronEmails \
 		#-PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
-	g clean jar testJar configureCluster $OPTS -PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
+	g clean jar testJar configureCluster $OPTS -PclusterVersion=${HV} --stacktrace 2>&1 | tee -a test-${HV}.out
 
 
-	if [ "`grep -i failed /Users/jlee/dev/mongo-hadoop/core/build/reports/tests/index.html 2> /dev/null`" -o \
-				"`grep -i failed /Users/jlee/dev/mongo-hadoop/hive/build/reports/tests/index.html 2> /dev/null`" ]
-	then
-		echo "********** Found failing tests.  Exiting."
-		browser /Users/jlee/dev/mongo-hadoop/core/build/reports/tests/index.html \
-			/Users/jlee/dev/mongo-hadoop/hive/build/reports/tests/index.html
-		exit
-	fi
+	for i in "*/build/reports/tests/index.html"
+	do
+		if [ "`grep -i failed $i 2> /dev/null`" ]
+		then
+			echo "********** Found failing tests.  Exiting."
+			browser $i
+			FAILED=true
+		fi
+
+		if [ $FAILED ]
+		then
+			exit
+		fi
+	done
 }
 
 if [ "$HV" == "all" ]
@@ -78,5 +84,3 @@ else
 	choose
 	run $*
 fi
-
-./build/hadoop-2.4.sh shutdown

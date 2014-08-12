@@ -6,15 +6,15 @@ import com.mongodb.hadoop.input.BSONFileRecordReader;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.TaskAttemptContextImpl;
-import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.pig.Main;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class PigTest extends BaseHadoopTest {
         uri = new MongoClientURI("mongodb://localhost:27017/mongo_hadoop.pigtests");
         mongoClient = new MongoClient(uri);
     }
-    
+
     @After
     public void tearDown() {
         mongoClient.close();
@@ -64,20 +64,20 @@ public class PigTest extends BaseHadoopTest {
     @Test
     public void mongoUpdateStorage() throws InterruptedException, TimeoutException, IOException {
         BSONFileRecordReader reader = new BSONFileRecordReader();
-        File file = new File("build/resources/test/dump/test/persons_info.bson");
+        File file = new File(PROJECT_HOME + "/pig/src/test/resources/dump/test/persons_info.bson");
         FileSplit split = new FileSplit(new Path(file.toURI()), 0L, file.length(), new String[0]);
         reader.initialize(split, new TaskAttemptContextImpl(new JobConf(), new TaskAttemptID()));
-        while(reader.nextKeyValue()) {
-            System.out.println(reader.getCurrentValue());
+        while (reader.nextKeyValue()) {
+            LOG.info(reader.getCurrentValue().toString());
         }
         runScript("update_simple_mus.pig");
     }
 
-    public void runScript(String script) throws IOException, TimeoutException, InterruptedException {
+    public void runScript(final String script) throws IOException, TimeoutException, InterruptedException {
         List<String> cmd = new ArrayList<String>();
         cmd.add(PIG);
         cmd.add("-x");
-        cmd.add("local");
+        cmd.add("mapreduce");
         cmd.add("-l");
         cmd.add(format("%s/pig/build", PROJECT_HOME));
         cmd.add(format("%s/pig/build/resources/test/pig/%s", PROJECT_HOME, script));
@@ -102,15 +102,13 @@ public class PigTest extends BaseHadoopTest {
 
         LOG.info(output.toString());
         final Map<String, String> env = new HashMap<String, String>();
+        String path = System.getenv("PATH");
         env.put("HADOOP_HOME", HADOOP_HOME);
-        cmd.remove(0);
-        Main.main(cmd.toArray(new String[0]));
-/*
+        env.put("path", HADOOP_HOME + "/bin" + File.pathSeparator + path);
         new ProcessExecutor().command(cmd)
                              .environment(env)
                              .redirectError(System.out)
                              .execute();
-*/
 
     }
 

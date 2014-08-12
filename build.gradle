@@ -40,10 +40,11 @@ ext.pigVersionMap = [
     '0.13.0'
 }
 
+ext.javaDriverVersion = '2.12.3'
+
 ext.clusterVersion = hadoopClusters[branchVersion]
 ext.hiveVersion = hiveVersionMap[branchVersion]
 ext.pigVersion = pigVersionMap[branchVersion]
-ext.javaDriverVersion = '2.12.3'
 ext.hadoopVersion = '2.4.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
@@ -147,6 +148,8 @@ configure(subprojects) {
         systemProperty 'project.version', project.version
         systemProperty 'cluster.version', hadoopClusters[branchVersion]
         systemProperty 'hadoop.version', branchVersion
+        systemProperty 'hive.version', hiveVersion
+        systemProperty 'pig.version', pigVersion
         systemProperties << System.getProperties()
 
         beforeTest { descr ->
@@ -174,6 +177,8 @@ configure(subprojects) {
         classpath += configurations.compile
     }
 
+    task quickCheck(dependsOn: [checkstyleMain, checkstyleTest] ) << {}
+    
     findbugs {
         excludeFilter = new File("$configDir/findbugs-exclude.xml")
         sourceSets = [sourceSets.main]
@@ -355,7 +360,7 @@ task cleanLogs(type: Delete) {
 }
 
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
-    delete hadoopHome, hiveHome
+    delete hadoopHome, hiveHome, pigHome
 }
 
 task historicalYield(dependsOn: configureCluster) << {

@@ -22,6 +22,10 @@
         <value>hdfs://127.0.0.1:8020/</value>
     </property>
     <property>
+        <name>fs.default.name</name>
+        <value>hdfs://127.0.0.1:8020/</value>
+    </property>
+    <property>
         <name>hadoop.tmp.dir</name>
         <value>${user.home}/hadoop-binaries/tmpdir</value>
     </property>

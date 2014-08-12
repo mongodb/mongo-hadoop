@@ -12,10 +12,10 @@ import java.io.IOException;
  * TOBAG : converts a tuple to a bag of one-item tuples
  */
 public class TOBAG extends EvalFunc<DataBag> {
-    TupleFactory mTupleFactory = TupleFactory.getInstance();
-    BagFactory mBagFactory = BagFactory.getInstance();
+    private TupleFactory mTupleFactory = TupleFactory.getInstance();
+    private BagFactory mBagFactory = BagFactory.getInstance();
 
-    public DataBag exec(Tuple input) throws IOException {
+    public DataBag exec(final Tuple input) throws IOException {
         if (input == null || input.size() == 0) {
             return null;
         }
