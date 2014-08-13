@@ -1,22 +1,20 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 task generateScripts() << {
-    hadoopClusters.keySet().each { version ->
-        copy {
-            from 'bin/templates/'
-            into "build/"
-            filter ReplaceTokens, tokens: [
-                    HADOOP_HOME      : "${hadoopBinaries}/hadoop-${hadoopClusters[version]}".toString(),
-                    HIVE_HOME        : "${hadoopBinaries}/hive-${hiveVersionMap[version]}".toString(),
-                    PIG_HOME         : "${hadoopBinaries}/pig-${pigVersionMap[version]}".toString(),
-                    HADOOP_BINARIES  : hadoopBinaries.toString(),
-                    HADOOP_VERSION   : hadoopClusters[version].toString(),
-                    PROJECT_HOME     : project.rootDir.getAbsolutePath(),
-                    BIN              : version.startsWith("1.") ? 'hadoop' : 'hdfs'
-            ]
-            rename { 
-                it.replace("template", version)
-            }
+    copy {
+        from 'bin/templates/'
+        into "build/"
+        filter ReplaceTokens, tokens: [
+                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${clusterVersion}".toString(),
+                HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
+                PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
+                HADOOP_BINARIES: hadoopBinaries.toString(),
+                HADOOP_VERSION : clusterVersion.toString(),
+                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
+                BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs'
+        ]
+        rename {
+            it.replace("-template", '')
         }
     }
 }
@@ -141,7 +139,7 @@ def findJar(String proj, String filter) {
 task configureCluster(dependsOn: copyFiles) << {
     println "Configuring ${branchVersion} cluster"
     exec {
-        commandLine "build/hadoop-${branchVersion}.rb"
+        commandLine "build/hadoop.rb"
         args "start", "-format"
     }
 }
@@ -149,7 +147,7 @@ task configureCluster(dependsOn: copyFiles) << {
 task shutdownCluster << {
     println "Shutting down ${branchVersion} cluster"
     exec {
-        commandLine "build/hadoop-${branchVersion}.rb"
+        commandLine "build/hadoop.rb"
         args "shutdown"
     }
 }
@@ -162,6 +160,6 @@ def safeCopy(fromPath, toPath, newName) {
     }.didWork
 
     if (!copied) {
-        throw new GradleException("Failed to copy a file", new FileNotFoundException(fromPath))
+        throw new GradleException("Failed to copy a file: " + fromPath, new FileNotFoundException(fromPath))
     }
 }
