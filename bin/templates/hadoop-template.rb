@@ -81,8 +81,7 @@ else
       if '@HADOOP_VERSION@'.start_with?('2.*')
         force='-force'
       end
-      system({'HADOOP_PREFIX' => ''},
-             "@HADOOP_HOME@/bin/@BIN@ namenode -format #{force} &> '@PROJECT_HOME@/build/logs/namenode-format.out'")
+      system({:HADOOP_PREFIX => ''}, "@HADOOP_HOME@/bin/@BIN@ namenode -format #{force} &> '@PROJECT_HOME@/build/logs/namenode-format.out'")
     end
   end
 
