@@ -1,7 +1,6 @@
 #! /usr/bin/ruby
 
-@signal = 'TERM'
-@format = false
+@signal='TERM'
 
 def stopService(service, name)
   pid = `jps | grep #{service} | cut -d' ' -f1`

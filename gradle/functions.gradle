@@ -3,16 +3,21 @@ import org.apache.tools.ant.filters.ReplaceTokens
 task generateScripts() << {
     copy {
         from 'bin/templates/'
-        into "build/"
         filter ReplaceTokens, tokens: [
+                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
+
                 HADOOP_HOME    : "${hadoopBinaries}/hadoop-${clusterVersion}".toString(),
                 HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
                 PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
-                HADOOP_BINARIES: hadoopBinaries.toString(),
+
+
                 HADOOP_VERSION : clusterVersion.toString(),
-                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
+                HIVE_VERSION   : hiveVersion.toString(),
+
+                HADOOP_BINARIES: hadoopBinaries.toString(),
                 BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs'
         ]
+        into "build/"
         rename {
             it.replace("-template", '')
         }
@@ -137,18 +142,18 @@ def findJar(String proj, String filter) {
 }
 
 task configureCluster(dependsOn: copyFiles) << {
-    println "Configuring ${branchVersion} cluster"
+    println "Configuring ${branchVersion} hadoop cluster"
     exec {
-        commandLine "build/hadoop.rb"
-        args "start", "-format"
+        commandLine 'build/hadoop.py'
+        args 'start', '-format'
     }
 }
 
 task shutdownCluster << {
-    println "Shutting down ${branchVersion} cluster"
+    println "Shutting down hadoop cluster"
     exec {
-        commandLine "build/hadoop.rb"
-        args "shutdown"
+        commandLine 'build/hadoop.py'
+        args 'shutdown'
     }
 }
 
