@@ -1,6 +1,12 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 task generateScripts() << {
+    def python
+    if(System.env.WORKSPACE == null) {
+        python = '/usr/bin/python'
+    } else { 
+        python = '/mnt/jenkins/languages/python/r2.7/bin/python'
+    }
     copy {
         from 'bin/templates/'
         filter ReplaceTokens, tokens: [
@@ -15,7 +21,8 @@ task generateScripts() << {
                 HIVE_VERSION   : hiveVersion.toString(),
 
                 HADOOP_BINARIES: hadoopBinaries.toString(),
-                BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs'
+                BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
+                PYTHON_BIN     : python
         ]
         into "build/"
         rename {

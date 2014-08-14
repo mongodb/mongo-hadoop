@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! @PYTHON_BIN@
 
 import sys
 from os import popen
