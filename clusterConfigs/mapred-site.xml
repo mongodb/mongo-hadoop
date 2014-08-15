@@ -16,11 +16,12 @@
 
 <!-- Put site-specific property overrides in this file. -->
 
-<configuration><!--
+<configuration>
     <property>
         <name>mapred.job.tracker</name>
-        <value>127.0.0.1:8021/</value>
+        <value>localhost:8021</value>
     </property>
+    <!--
     <property>
         <name>mapred.task.tracker.report.address</name>
         <value>127.0.0.1:0</value>

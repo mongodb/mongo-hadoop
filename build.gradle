@@ -441,7 +441,6 @@ def hadoop(jar, className, args) {
         environment << hadoopEnv
         commandLine line
     }
-    shutdownCluster.execute()    
 }
 
 apply from: 'gradle/maven-deployment.gradle'
