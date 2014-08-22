@@ -17,18 +17,13 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
-<!--
     <property>
-        <name>fs.defaultFS</name>
-        <value>hdfs://127.0.0.1:8020/</value>
+        <name>mapred.job.tracker</name>
+        <value>localhost:8021</value>
     </property>
--->
+    <!--
     <property>
-        <name>fs.default.name</name>
-        <value>hdfs://localhost:8020</value>
+        <name>mapred.task.tracker.report.address</name>
+        <value>127.0.0.1:0</value>
     </property>
-    <property>
-        <name>hadoop.tmp.dir</name>
-        <value>${user.home}/hadoop-binaries/tmpdir</value>
-    </property>
-</configuration>
+--></configuration>

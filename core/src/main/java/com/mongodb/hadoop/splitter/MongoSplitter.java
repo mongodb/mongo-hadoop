@@ -23,21 +23,22 @@ import java.util.List;
 
 public abstract class MongoSplitter {
 
-    //CHECKSTYLE:OFF
-    protected Configuration conf;
-    //CHECKSTYLE:ON
+    private Configuration configuration;
 
     public MongoSplitter() {
     }
 
-    public MongoSplitter(final Configuration conf) {
-        this.conf = conf;
+    public MongoSplitter(final Configuration configuration) {
+        setConfiguration(configuration);
     }
 
     public void setConfiguration(final Configuration conf) {
-        this.conf = conf;
+        configuration = conf;
     }
 
     public abstract List<InputSplit> calculateSplits() throws SplitFailedException;
 
+    public Configuration getConfiguration() {
+        return configuration;
+    }
 }

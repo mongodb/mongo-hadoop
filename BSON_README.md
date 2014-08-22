@@ -24,14 +24,14 @@ BSON objects loaded from a .bson file do not necessarily have a _id field, so th
 this, you should use `NullWritable` or simply `Object` as your input key for the map phase, and ignore the key variable in your code. 
 For example:
 
-	public void map(NullWritable key, BSONObject val, final Context context){
+	public void map(NullWritable key, BSONWritable writable, final Context context){
 	   // …
 	}
 
 #####Splitting .BSON files for parallelism
 
 Because BSON contains headers and length information, a .bson file cannot be split at arbitrary offsets because it would create incomplete 
-document fragements. Instead it must be split at the boundaries between documents. To facilitate this the mongo-hadoop adapter refers to a 
+document fragments. Instead it must be split at the boundaries between documents. To facilitate this the mongo-hadoop adapter refers to a 
 small metadata file which contains information about the offsets of documents within the file. This metadata file is stored in the same 
 directory as the input file, with the same name but starting with a "." and ending with ".splits". If this metadata file already exists in 
 when the job runs, the `.splits` file will be read and used to directly generate the list of splits. If the `.splits` file does not yet 
@@ -40,9 +40,9 @@ exist, it will be generated automatically so that it is available for subsequent
 `bson.split.read_splits` to false
 
 The default split size is determined from the default block size on the input file's filesystem, or 64 megabytes if this is not available. 
-You can set lower and upper bounds for the split size by setting values (in bytes) for `mapred.min.split.size` and `mapred.max.split.size`.
-The `.splits` file contains bson objects which list the start positions and lengths for portions of the file, not exceeding the split size, 
-which can then be read directly into a `Mapper` task. 
+You can set lower and upper bounds for the split size by setting values (in bytes) for `mapreduce.input.fileinputformat.split
+.minsize` and `mapreduce.input.fileinputformat.split.maxsize`.  The `.splits` file contains bson objects which list the start positions 
+and lengths for portions of the file, not exceeding the split size, which can then be read directly into a `Mapper` task. 
 
 However, for optimal performance, it's faster to build this file locally before uploading to S3 or HDFS if possible. You can do this by 
 running the script `tools/bson_splitter.py`. The default split size is 64 megabytes, but you can set any value you want for split size by 
@@ -73,8 +73,9 @@ beginning of another job. By default, this setting is set to `false` and no `.sp
 
 * `bson.split.read_splits` - When set to `true`, will attempt to read + calculate split points for each BSON file in the input. When set 
 to `false`, will create just *one* split for each input file, consisting of the entire length of the file. Defaults to `true`.
-* `mapred.min.split.size` - Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
-* `mapred.max.split.size` - Set an upper bound on acceptable size for file splits (in bytes). Defaults to LONG_MAX_VALUE.
+* `mapreduce.input.fileinputformat.split.minsize` - Set a lower bound on acceptable size for file splits (in bytes). Defaults to 1.
+* `mapreduce.input.fileinputformat.split.maxsize` - Set an upper bound on acceptable size for file splits (in bytes). Defaults to 
+LONG_MAX_VALUE.
 * `bson.split.write_splits` - Automatically save any split information calculated for input files, 
 by writing to corresponding `.splits` files. Defaults to `true`.
 * `bson.output.build_splits` - Build a `.splits` file on the fly when constructing an output .BSON file. Defaults to `false`.

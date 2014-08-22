@@ -1,0 +1,177 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+task generateScripts() << {
+    def python
+    if(System.env.WORKSPACE == null) {
+        python = '/usr/bin/python'
+    } else { 
+        python = '/mnt/jenkins/languages/python/r2.7/bin/python'
+    }
+    copy {
+        from 'bin/templates/'
+        filter ReplaceTokens, tokens: [
+                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
+
+                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${clusterVersion}".toString(),
+                HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
+                PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
+
+
+                HADOOP_VERSION : clusterVersion.toString(),
+                HIVE_VERSION   : hiveVersion.toString(),
+
+                HADOOP_BINARIES: hadoopBinaries.toString(),
+                BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
+                PYTHON_BIN     : python
+        ]
+        into "build/"
+        rename {
+            it.replace("-template", '')
+        }
+    }
+}
+
+task installHadoop() << {
+    new File(hadoopHome).getParentFile().mkdirs()
+
+    def url
+    switch (branchVersion) {
+        case ("cdh4"):
+            url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${clusterVersion}.tar.gz"
+            break
+        case ("cdh5"):
+            url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${clusterVersion}.tar.gz"
+            break
+        default:
+            url = "http://archive.apache.org/dist/hadoop/common/hadoop-${clusterVersion}/hadoop-${clusterVersion}.tar.gz"
+            break
+    }
+    
+    download(url, hadoopBinaries, hadoopHome)
+}
+
+def download(url, destination, target) {
+    def file = new URL(url).getPath()
+    file = "${destination}/${file.substring(file.lastIndexOf('/') + 1)}"
+    def count = 0;
+    while (!(new File(target + "/bin").exists())) {
+        try {
+            if(!new File(file).exists()) {
+                println "${target} not found.  Downloading from ${url} to ${file}"
+            }
+            download {
+                src url
+                dest destination
+                onlyIfNewer true
+            }
+
+            if(!new File(destination).exists()) {
+                println "Extracting ${file}"
+            }
+            copy {
+                from(tarTree(resources.gzip(file)))
+                into destination
+            }
+        } catch (Exception e) {
+            println "Extraction failed: " + e.getMessage()
+            println "Trying again"
+            new File(target).deleteDir()
+            new File(file).delete()
+        }
+        if(count++ > 3) {
+            throw new GradleException("Failed to download after 3 attempts: ${url}");
+        }
+    }
+}
+
+task installHive() << {
+    def url
+    switch (branchVersion) {
+        case ("cdh4"):
+            url = "http://archive.cloudera.com/cdh4/cdh/4/hive-${hiveVersion}.tar.gz"
+            break
+        case ("cdh5"):
+            url = "http://archive.cloudera.com/cdh5/cdh/5/hive-${hiveVersion}.tar.gz"
+            break
+        default:
+            url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
+            break
+    }
+
+    download(url, hadoopBinaries, hiveHome)
+
+}
+
+task installPig() << {
+    def url
+    switch (branchVersion) {
+        case ("cdh4"):
+            url = "http://archive.cloudera.com/cdh4/cdh/4/pig-${pigVersion}.tar.gz"
+            break
+        case ("cdh5"):
+            url = "http://archive.cloudera.com/cdh5/cdh/5/pig-${pigVersion}.tar.gz"
+            break
+        default:
+            url = "https://archive.apache.org/dist/pig/pig-${pigVersion}/pig-${pigVersion}.tar.gz"
+            break
+    }
+
+    download(url, hadoopBinaries, pigHome)
+}
+
+task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
+    def hadoopEtc
+    def hadoopLib
+    if (clusterVersion.startsWith("1")) {
+        hadoopLib = "${hadoopHome}/lib"
+        hadoopEtc = "${hadoopHome}/conf"
+    } else {
+        hadoopLib = "${hadoopHome}/share/hadoop/common"
+        hadoopEtc = "${hadoopHome}/etc/hadoop"
+    }
+
+    println "Updating mongo jars"
+    
+    safeCopy("core/build/libs/mongo-hadoop-core-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-core.jar")
+    safeCopy("streaming/build/libs/mongo-hadoop-streaming-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-streaming.jar")
+    safeCopy("hive/build/libs/mongo-hadoop-hive-${project(':core').version}.jar", hiveHome + '/lib', "mongo-hadoop-hive.jar")
+    safeCopy(findJar(":core", "mongo-java-driver"), hadoopLib, "mongo-java-driver.jar")
+    
+    println "Updating cluster configuration"
+    copy {
+        from 'clusterConfigs'
+        into hadoopEtc
+    }
+}
+
+def findJar(String proj, String filter) {
+    project(proj).configurations.compile.find { it.name.startsWith(filter) }
+}
+
+task configureCluster(dependsOn: copyFiles) << {
+    println "Configuring ${branchVersion} hadoop cluster"
+    exec {
+        commandLine 'build/hadoop.py'
+        args 'start', '-format'
+    }
+}
+
+task shutdownCluster << {
+    println "Shutting down hadoop cluster"
+    exec {
+        commandLine 'build/hadoop.py'
+        args 'shutdown'
+    }
+}
+
+def safeCopy(fromPath, toPath, newName) {
+    def copied = copy {
+        from fromPath
+        into toPath
+        rename { newName }
+    }.didWork
+
+    if (!copied) {
+        throw new GradleException("Failed to copy a file: " + fromPath, new FileNotFoundException(fromPath))
+    }
+}

@@ -33,6 +33,8 @@ import java.util.Map;
  * migrations.
  */
 public class ShardMongoSplitter extends MongoCollectionSplitter {
+    public ShardMongoSplitter() {
+    }
 
     public ShardMongoSplitter(final Configuration conf) {
         super(conf);
@@ -44,7 +46,7 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
         this.init();
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
 
         Map<String, String> shardsMap;
         shardsMap = this.getShardsMap();

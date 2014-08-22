@@ -110,6 +110,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
         return t;
     }
 
+    @Override
     public String relativeToAbsolutePath(final String location, final Path curDir) throws IOException {
         // This is a mongo URI and has no notion of relative/absolute,
         // thus we want to always use just the same location.
@@ -136,7 +137,7 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
 
     @Override
     public String[] getPartitionKeys(final String location, final Job job) throws IOException {
-        // No partition keys. 
+        // No partition keys.
         return null;
     }
 

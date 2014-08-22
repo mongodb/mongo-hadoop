@@ -8,14 +8,14 @@ To load records from MongoDB database to use in a Pig script, a class called `Mo
 dependency jars in your script and then specify the Mongo URI to load with the `MongoLoader` class.
 
     -- First, register jar dependencies
-    REGISTER ../mongo-2.10.1.jar                    -- mongodb java driver  
-    REGISTER ../core/target/mongo-hadoop-core.jar   -- mongo-hadoop core lib
-    REGISTER ../pig/target/mongo-hadoop-pig.jar     -- mongo-hadoop pig lib
+    REGISTER mongo-java-driver.jar  
+    REGISTER mongo-hadoop-core.jar
+    REGISTER mongo-hadoop-pig.jar
 
-    raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' using com.mongodb.hadoop.pig.MongoLoader;
+    raw = LOAD 'mongodb://localhost:27017/demo.yield_historical.in' USING com.mongodb.hadoop.pig.MongoLoader;
 
-`MongoLoader` can be used in two ways - `Dynamic Schema` mode and `Fixed Schema` mode. By creating an instance of the class without 
-specifying any field names in the constructor (as in the previous snippet) each record will appear to pig as a tuple containing a 
+`MongoLoader` can be used in two ways - `Dynamic Schema` and `Fixed Schema` mode. By creating an instance of the class without 
+specifying any field names in the constructor (as in the previous snippet) each record will appear to Pig as a tuple containing a 
 single `Map` that corresponds to the document from the collection, for example: 
                   
     ([bc2Year#7.87,bc3Year#7.9,bc1Month#,bc5Year#7.87,_id#631238400000,bc10Year#7.94,bc20Year#,bc7Year#7.98,bc6Month#7.89,bc3Month#7.83,dayOfWeek#TUESDAY,bc30Year#8,bc1Year#7.81])
@@ -49,7 +49,7 @@ Pig 0.10 and later handles both cases correctly, so avoiding Pig 0.9 or earlier 
 
 You can load records directly into a Pig relation from a BSON file using the `BSONLoader` class, for example:
 
-    raw = LOAD 'file:///tmp/dump/yield_historical.in.bson' using com.mongodb.hadoop.pig.BSONLoader;
+    raw = LOAD 'file:///tmp/dump/yield_historical.in.bson' USING com.mongodb.hadoop.pig.BSONLoader;
 
 As with `MongoLoader` you can also supply an optional `idAlias` argument to map the `_id` field to a named Pig field, along with a 
 `schema` to select fields/types to extract from the documents.
@@ -68,41 +68,39 @@ output type will be inferred based on the values in the documents.  Data mapping
 year, or other information - see http://aws.amazon.com/code/Elastic-MapReduce/2730 for some examples.
 
 Note: older versions of Pig may not be able to generate mappings when tuples are unnamed, due to 
-https://issues.apache.org/jira/browse/PIG-2509. If you get errors, try making sure that all top-level fields in the relation being stored 
+[PIG-2509](https://issues.apache.org/jira/browse/PIG-2509). If you get errors, try making sure that all top-level fields in the relation being stored 
 have names assigned to them or try using a newer version of Pig.
 
 ### Writing output from Pig
 
-If writing to a MongoDB instance, it's recommended to set `mapred.map.tasks.speculative.execution=false` 
-and `mapred.reduce.tasks.speculative.execution=false` to prevent the possibility of duplicate records being written. You can do this on 
+If writing to a MongoDB instance, it's recommended to set `mapreduce.map.speculative=false` 
+and `mapreduce.reduce.speculative=false` to prevent the possibility of duplicate records being written. You can do this on 
 the command line with `-D` switches or directly in the Pig script using the `SET` command.
 
-#####Static BSON file output
+##### Static BSON file output
   
-To store output from Pig in a .BSON file (which can then be imported into a mongoDB instance using `mongorestore`) use the BSONStorage 
+To store output from Pig in a .BSON file (which can then be imported into a MongoDB instance using `mongorestore`) use the BSONStorage 
 class. Example:
 
     STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage;
 
-If you want to supply a custom value for the `'_id'` field in the documents written out by `BSONStorage` you can give it an optional 
-`idAlias` field which maps a value in the Pig record to the `'_id'` field in the output document, for example:
+If you want to supply a custom value for the `_id` field in the documents written out by `BSONStorage` you can give it an optional 
+`idAlias` field which maps a value in the Pig record to the `_id` field in the output document, for example:
 
     STORE raw_out INTO 'file:///tmp/whatever.bson' USING com.mongodb.hadoop.pig.BSONStorage('id');
 
 The output URI for BSONStorage can be any accessible file system including `hdfs://` and `s3n://`. However, when using S3 for an output 
 file, you will also need to set `fs.s3.awsAccessKeyId` and `fs.s3.awsSecretAccessKey` for your AWS account accordingly.
 
-#####Inserting directly into a MongoDB collection
+##### Inserting directly into a MongoDB collection
 
 To make each output record be used as an insert into a MongoDB collection, use the `MongoInsertStorage` class supplying the output URI. 
 For example:
 
     STORE dates_averages INTO 'mongodb://localhost:27017/demo.yield_aggregated' USING com.mongodb.hadoop.pig.MongoInsertStorage('', '' );
 
-The `MongoInsertStorage` class also takes two args: an `idAlias` and a `schema` as described above. If `schema` is left blank, it will 
-attempt to infer the output schema from the data using the strategy described above. If `idAlias` is left blank, an `ObjectId` will be 
+The `MongoInsertStorage` class also takes one argument: an `idAlias` as described above. If `idAlias` is left blank, an `ObjectId` will be 
 generated for the value of the `_id` field in each output document.
-
 
 ### Updating a MongoDB collection
 
@@ -111,10 +109,11 @@ Just like in the MongoDB javascript shell, you can now update documents in a Mon
 
 ```
 STORE <aliasname> INTO 'mongodb://localhost:27017/<db>.<collection>'
-              	  USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+                  USING com.mongodb.hadoop.pig.MongoUpdateStorage(
                         '<query>',
                         '<update>',
-                        '<schema>', '<fieldtoignore>',
+                        '<schema>',
+                        '<fieldtoignore>',
                         '<updateOptions>');
 ```
 where
@@ -122,11 +121,11 @@ where
 * `<db>` is the name of the database to update and `<collection>` is the name of the collection to update
 * `<query>` is the (valid) JSON representing the query to use to find document(s) in the collection
 * `<update>` is the (valid) JSON representing the kind of updates to perform on document(s) in the collection
-* Optional: `<schema>` is the PIG schema of <aliasname>. **Strongly** advised to use this.
+* Optional: `<schema>` is the PIG schema of `<aliasname>`. It is **strongly** advised to use this.
 * Optional: `<fieldtoignore>` is the fieldname to ignore in `schema` during construction of BSON objects.
-  	    Particularly useful for updating/writing an array to a document
+            Particularly useful for updating/writing an array to a document
 * Optional: you can use `<updateOptions>` to provide other update options, just as in the MongoDB JS shell.
-  	    For example, `{upsert : true, multi : true}`. Only upsert and multi are supported for now.
+            For example, `{upsert : true, multi : true}`. Only upsert and multi are supported for now.
 
 Consider the following examples:
 
@@ -146,11 +145,11 @@ To insert the gender, first and last names of each person in `data` into a `test
 making sure that we update any existing documents with the same `first` and `last` fields, use
 ```
 STORE data INTO 'mongodb://localhost:27017/test.persons_info'
-      	   USING com.mongodb.hadoop.pig.MongoUpdateStorage(
+           USING com.mongodb.hadoop.pig.MongoUpdateStorage(
                  '{first:"\$f", last:"\$l"}',
                  '{\$set:{gender:"\$g"}}',
                  'f:chararray, l:chararray, g:chararray, age:int, cars:{t:(car:chararray)}'
-	   );
+           );
 ```
 The resulting collection looks like this:
 ```
@@ -190,7 +189,6 @@ specifying what field to ignore in the schema while inserting pig objects. The r
 { "_id" : ObjectId("..."), "gender":"male", "age" : 21, "cars" : ["d", "e"], "first" : "Tolu", "last" : "Alabi" }
 { "_id" : ObjectId("..."), "gender":"female", "age" : 50, "cars" : [], "first" : "Tinuke", "last" : "Dada" }
 ```
-More like it.
 
 
 
