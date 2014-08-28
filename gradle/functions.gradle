@@ -12,16 +12,16 @@ task generateScripts() << {
         filter ReplaceTokens, tokens: [
                 PROJECT_HOME   : project.rootDir.getAbsolutePath(),
 
-                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${clusterVersion}".toString(),
+                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${hadoopVersion}".toString(),
                 HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
                 PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
 
 
-                HADOOP_VERSION : clusterVersion.toString(),
+                HADOOP_VERSION : hadoopVersion.toString(),
                 HIVE_VERSION   : hiveVersion.toString(),
 
                 HADOOP_BINARIES: hadoopBinaries.toString(),
-                BIN            : branchVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
+                BIN            : hadoopVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
                 PYTHON_BIN     : python
         ]
         into "build/"
@@ -34,19 +34,8 @@ task generateScripts() << {
 task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
-    def url
-    switch (branchVersion) {
-        case ("cdh4"):
-            url = "http://archive.cloudera.com/cdh4/cdh/4/hadoop-${clusterVersion}.tar.gz"
-            break
-        case ("cdh5"):
-            url = "http://archive.cloudera.com/cdh5/cdh/5/hadoop-${clusterVersion}.tar.gz"
-            break
-        default:
-            url = "http://archive.apache.org/dist/hadoop/common/hadoop-${clusterVersion}/hadoop-${clusterVersion}.tar.gz"
-            break
-    }
-    
+    def url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
+
     download(url, hadoopBinaries, hadoopHome)
 }
 
@@ -85,50 +74,21 @@ def download(url, destination, target) {
 }
 
 task installHive() << {
-    def url
-    switch (branchVersion) {
-        case ("cdh4"):
-            url = "http://archive.cloudera.com/cdh4/cdh/4/hive-${hiveVersion}.tar.gz"
-            break
-        case ("cdh5"):
-            url = "http://archive.cloudera.com/cdh5/cdh/5/hive-${hiveVersion}.tar.gz"
-            break
-        default:
-            url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
-            break
-    }
+    def url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
 
     download(url, hadoopBinaries, hiveHome)
 
 }
 
 task installPig() << {
-    def url
-    switch (branchVersion) {
-        case ("cdh4"):
-            url = "http://archive.cloudera.com/cdh4/cdh/4/pig-${pigVersion}.tar.gz"
-            break
-        case ("cdh5"):
-            url = "http://archive.cloudera.com/cdh5/cdh/5/pig-${pigVersion}.tar.gz"
-            break
-        default:
-            url = "https://archive.apache.org/dist/pig/pig-${pigVersion}/pig-${pigVersion}.tar.gz"
-            break
-    }
+    def url = "https://archive.apache.org/dist/pig/pig-${pigVersion}/pig-${pigVersion}.tar.gz"
 
     download(url, hadoopBinaries, pigHome)
 }
 
 task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
-    def hadoopEtc
-    def hadoopLib
-    if (clusterVersion.startsWith("1")) {
-        hadoopLib = "${hadoopHome}/lib"
-        hadoopEtc = "${hadoopHome}/conf"
-    } else {
-        hadoopLib = "${hadoopHome}/share/hadoop/common"
-        hadoopEtc = "${hadoopHome}/etc/hadoop"
-    }
+    def hadoopEtc = "${hadoopHome}/etc/hadoop"
+    def hadoopLib = "${hadoopHome}/share/hadoop/common"
 
     println "Updating mongo jars"
     
@@ -149,7 +109,7 @@ def findJar(String proj, String filter) {
 }
 
 task configureCluster(dependsOn: copyFiles) << {
-    println "Configuring ${branchVersion} hadoop cluster"
+    println "Configuring ${hadoopVersion} hadoop cluster"
     exec {
         commandLine 'build/hadoop.py'
         args 'start', '-format'

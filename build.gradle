@@ -8,46 +8,12 @@ apply from: 'gradle/functions.gradle'
 
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
-ext.branchVersion = project.getProperties().get('clusterVersion', '2.4').toLowerCase()
-
-ext.hiveVersionMap = [
-        '1.0' : '0.10.0',
-        '1.1' : '0.10.0',
-        'cdh4': '0.10.0-cdh4.6.0',
-        'cdh5': '0.12.0-cdh5.0.0'
-].withDefault {
-    '0.12.0'
-}
-
-ext.hadoopClusters = [
-        '0.23': '0.23.10',
-        '1.0' : '1.0.4',
-        '1.1' : '1.1.2',
-        '1.2' : '1.2.1',
-        '2.2' : '2.2.0',
-        '2.3' : '2.3.0',
-        '2.4' : '2.4.0',
-        'cdh4': '2.0.0-cdh4.6.0',
-        'cdh5': '2.3.0-cdh5.0.0',
-].withDefault {
-    throw new GradleException("Unknown hadoop version: ${it}")
-}
-
-ext.pigVersionMap = [
-        'cdh4': '0.11.0-cdh4.6.0',
-        'cdh5': '0.12.0-cdh5.0.0'
-].withDefault {
-    '0.13.0'
-}
-
 ext.javaDriverVersion = '2.12.3'
-
-ext.clusterVersion = hadoopClusters[branchVersion]
-ext.hiveVersion = hiveVersionMap[branchVersion]
-ext.pigVersion = pigVersionMap[branchVersion]
+ext.hiveVersion = '0.12.0'
+ext.pigVersion = '0.13.0'
 ext.hadoopVersion = '2.4.1'
 
-ext.hadoopHome = "${hadoopBinaries}/hadoop-${clusterVersion}"
+ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
 ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
 ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}"
 ext.dataHome = "${hadoopBinaries}/examples/data"
@@ -76,7 +42,11 @@ buildscript {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.11'
+    gradleVersion = '1.12'
+}
+
+if(project.hasProperty("clusterVersion")) {
+    println "The cluster version property has been obsoleted.  See https://jira.mongodb.org/browse/HADOOP-160 for details."
 }
 
 configure(subprojects) {
@@ -146,8 +116,8 @@ configure(subprojects) {
     tasks.withType(Test) {
         maxParallelForks = 1
         systemProperty 'project.version', project.version
-        systemProperty 'cluster.version', hadoopClusters[branchVersion]
-        systemProperty 'hadoop.version', branchVersion
+        systemProperty 'cluster.version', hadoopVersion
+        systemProperty 'hadoop.version', hadoopVersion
         systemProperty 'hive.version', hiveVersion
         systemProperty 'pig.version', pigVersion
         systemProperties << System.getProperties()
@@ -158,7 +128,7 @@ configure(subprojects) {
         
         finalizedBy ':shutdownCluster'
     }
-
+    
     test.dependsOn ':configureCluster'
     compileJava.dependsOn ':generateScripts'
     clean.dependsOn ':cleanHadoop'
@@ -433,9 +403,6 @@ def hadoop(jar, className, args) {
     }
     println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
     def hadoopEnv = [:]
-    if (clusterVersion.contains("cdh")) {
-        hadoopEnv.MAPRED_DIR = 'share/hadoop/mapreduce2'
-    }
     hadoopEnv.HADOOP_PREFIX=''
     exec() {
         environment << hadoopEnv

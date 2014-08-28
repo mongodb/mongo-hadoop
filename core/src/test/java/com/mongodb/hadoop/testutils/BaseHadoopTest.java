@@ -42,8 +42,9 @@ public abstract class BaseHadoopTest {
 
     public static final String HADOOP_HOME;
     public static final String PROJECT_VERSION = loadProperty("project.version", "1.4.0-SNAPSHOT");
-    public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4");
-    public static final String CLUSTER_VERSION = loadProperty("cluster.version", "2.4.0");
+    public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.4.1");
+    @Deprecated
+    public static final String CLUSTER_VERSION = loadProperty("cluster.version", HADOOP_VERSION);
     public static final String HIVE_VERSION = loadProperty("hive.version", "0.12.0");
 
     public static final String HIVE_HOME;
@@ -75,7 +76,7 @@ public abstract class BaseHadoopTest {
             HADOOP_BINARIES = new File(String.format("%s/hadoop-binaries/", System.getProperty("user.home"))).getCanonicalPath();
             EXAMPLE_DATA_HOME = new File(HADOOP_BINARIES, "examples/data").getCanonicalPath();
             
-            HADOOP_HOME = new File(HADOOP_BINARIES, String.format("hadoop-%s/", CLUSTER_VERSION)).getCanonicalPath();
+            HADOOP_HOME = new File(HADOOP_BINARIES, String.format("hadoop-%s/", HADOOP_VERSION)).getCanonicalPath();
             HIVE_HOME = new File(HADOOP_BINARIES, String.format("hive-%s/", HIVE_VERSION)).getCanonicalPath();
 
             File current = new File(".").getCanonicalFile();

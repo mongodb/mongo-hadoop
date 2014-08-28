@@ -25,12 +25,11 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.OUTPUT_URI;
 import static java.lang.String.format;
-import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
-import static com.mongodb.hadoop.testutils.BaseHadoopTest.CLUSTER_VERSION;
-import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 
 public class StreamingJob {
     private static final String STREAMING_JAR;
@@ -77,11 +76,11 @@ public class StreamingJob {
         if (HADOOP_VERSION.startsWith("1.1")) {
             cmd.add(String.format("%s/contrib/streaming/hadoop-streaming-%s.jar",
                                   HADOOP_HOME,
-                                  CLUSTER_VERSION));
+                                  HADOOP_VERSION));
         } else {
             cmd.add(String.format("%s/share/hadoop/tools/lib/hadoop-streaming-%s.jar",
                                   HADOOP_HOME,
-                                  CLUSTER_VERSION));
+                                  HADOOP_VERSION));
         }
         //        add("-libjars", STREAMING_JAR);
         add("-io", "mongodb");
