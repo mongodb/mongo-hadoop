@@ -66,6 +66,10 @@ public abstract class BaseHadoopTest {
         try {
             String property = System.getProperty("mongodb_server");
             String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
+            if (serverType.equals("27-nightly")) {
+                serverType = "master-nightly";
+                property = serverType + "-release";
+            }
             String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
             MONGO_IMPORT = new File(path).exists() ? path : "/usr/local/bin/mongoimport";
             if (!new File(MONGO_IMPORT).exists()) {
