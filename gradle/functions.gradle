@@ -8,7 +8,7 @@ task generateScripts() << {
         python = '/mnt/jenkins/languages/python/r2.7/bin/python'
     }
     copy {
-        from 'bin/templates/'
+        from 'bin/templates/hadoop-template.py'
         filter ReplaceTokens, tokens: [
                 PROJECT_HOME   : project.rootDir.getAbsolutePath(),
 
@@ -110,7 +110,10 @@ def findJar(String proj, String filter) {
 
 task configureCluster(dependsOn: copyFiles) << {
     println "Configuring ${hadoopVersion} hadoop cluster"
+    def env = [:]
+    env['HADOOP_HOME']="${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
     exec {
+        environment << env
         commandLine 'build/hadoop.py'
         args 'start', '-format'
     }

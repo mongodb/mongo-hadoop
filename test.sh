@@ -28,8 +28,6 @@ function browser() {
 }
 
 function run() {
-	#g clean jar testJar configureCluster test historicalYield sensorData enronEmails \
-		#-PclusterVersion=${HV} 2>&1 | tee -a test-${HV}.out
 	g clean jar testJar $OPTS --stacktrace 2>&1 | tee -a build/test.out
 
 

@@ -21,28 +21,14 @@ def start()
   startService '@BIN@', 'namenode'
   sleep 5
   startService '@BIN@', 'datanode'
-  if '@HADOOP_VERSION@'.start_with?('1.')
-    startService 'hadoop', 'jobtracker'
-    startService 'hadoop', 'tasktracker'
-  else
-    startService 'yarn', 'resourcemanager'
-    startService 'yarn', 'nodemanager'
-  end
+  startService 'yarn', 'resourcemanager'
+  startService 'yarn', 'nodemanager'
   sleep 15
-
-  if '@HADOOP_VERSION@'.include? 'cdh4'
-    %x( @HADOOP_HOME@/bin/hadoop fs -mkdir @HIVE_HOME@/lib )
-    %x( @HADOOP_HOME@/bin/hadoop fs -put @HIVE_HOME@/lib/hive-builtins-*.jar @HIVE_HOME@/lib )
-    sleep 5
-  end
 
   puts 'Starting hiveserver'
   env = {}
   env['HADOOP_HOME']='@HADOOP_HOME@'
   env['HADOOP_PREFIX']=''
-  if '@HADOOP_VERSION@'.include? 'cdh'
-    env['MAPRED_DIR']='@HADOOP_HOME@/share/hadoop/mapreduce2'
-  end
   system(env, "@HIVE_HOME@/bin/hadoop fs -mkdir /user/hive/warehouse")
   system(env, "@HIVE_HOME@/bin/hadoop fs -chmod g+w /user/hive/warehouse")
   
@@ -53,8 +39,6 @@ def stopAll()
   stopService 'NodeManager', 'node manager'
   stopService 'ResourceManager', 'resource manager'
   stopService 'DataNode', 'data node'
-  stopService 'JobTracker', 'job tracker'
-  stopService 'TaskTracker', 'task tracker'
   stopService 'NameNode', 'name node'
   stopService 'RunJar', 'hive server'
 end
@@ -77,10 +61,7 @@ else
       shutdown
       force=''
       %x( rm -rf @HADOOP_BINARIES@/tmpdir/ )
-      if '@HADOOP_VERSION@'.start_with?('2.*')
-        force='-force'
-      end
-      system({:HADOOP_PREFIX => ''}, "@HADOOP_HOME@/bin/@BIN@ namenode -format #{force} &> '@PROJECT_HOME@/build/logs/namenode-format.out'")
+      system({:HADOOP_PREFIX => ''}, "@HADOOP_HOME@/bin/@BIN@ namenode -format &> '@PROJECT_HOME@/build/logs/namenode-format.out'")
     end
   end
 
