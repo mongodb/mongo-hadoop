@@ -111,6 +111,8 @@ public class BSONSplitter extends Configured implements Tool {
             BSONObject splitInfo = (BSONObject) callback.get();
             splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
         }
+        fsDataStream.close();
+        fs.close();
         splitsList = splits;
     }//}}}
 
