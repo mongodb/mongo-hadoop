@@ -38,6 +38,7 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -171,6 +172,11 @@ public final class MongoConfigUtil {
      * Defaults to {@code false}
      */
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
+
+    /**
+     * Shared MongoClient instance cache.
+     */
+    private static Map<String, MongoClient> mongoClients = new java.util.HashMap<String, MongoClient>();
 
     private MongoConfigUtil() {
     }
@@ -348,7 +354,7 @@ public final class MongoConfigUtil {
     
     public static DBCollection getCollection(final MongoClientURI uri) {
         try {
-            return new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return getMongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
@@ -370,7 +376,7 @@ public final class MongoConfigUtil {
 
         DBCollection coll;
         try {
-            Mongo mongo = new MongoClient(authURI);
+            Mongo mongo = getMongoClient(authURI);
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
             return coll;
         } catch (Exception e) {
@@ -404,7 +410,7 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead 
+     * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead
      */
     @Deprecated
     public static void setMongoURI(final Configuration conf, final String key, final MongoURI value) {
@@ -779,6 +785,14 @@ public final class MongoConfigUtil {
             }
         }
         return newConf;
+    }
+
+    private static synchronized MongoClient getMongoClient(MongoClientURI uri) throws UnknownHostException {
+        String uriStr = uri.toString();
+        if (mongoClients.get(uriStr) == null) {
+            mongoClients.put(uriStr, new MongoClient(uri));
+        }
+        return mongoClients.get(uriStr);
     }
 
 }
