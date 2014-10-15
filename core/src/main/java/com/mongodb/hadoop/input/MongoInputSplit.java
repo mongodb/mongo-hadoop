@@ -55,8 +55,8 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     protected boolean notimeout = false;
     protected transient DBCursor cursor;
 
-    protected static transient BSONEncoder _bsonEncoder = new BasicBSONEncoder();
-    protected static transient BSONDecoder _bsonDecoder = new BasicBSONDecoder();
+    protected transient BSONEncoder _bsonEncoder = new BasicBSONEncoder();
+    protected transient BSONDecoder _bsonDecoder = new BasicBSONDecoder();
     //CHECKSTYLE:ON
 
     public MongoInputSplit() {
