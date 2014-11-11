@@ -218,6 +218,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         split.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
         split.setFields(MongoConfigUtil.getFields(getConfiguration()));
         split.setSort(MongoConfigUtil.getSort(getConfiguration()));
+        split.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
         return split;
     }
 
