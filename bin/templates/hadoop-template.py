@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 shutdown()
                 delete("@HADOOP_BINARIES@/tmpdir/")
                 out = open("@PROJECT_HOME@/build/logs/namenode-format.out", mode='w+')
-                subprocess.check_call(["@HADOOP_HOME@/bin/@BIN@", 'namenode', '-format'], stdout=out, stderr=subprocess.STDOUT)
+                subprocess.check_call(["@HADOOP_HOME@/bin/@BIN@", 'namenode', '-format', '-force'], stdout=out, stderr=subprocess.STDOUT)
                 args.remove(arg)
 
         if len(args) == 0:

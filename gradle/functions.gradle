@@ -100,6 +100,9 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     copy {
         from 'clusterConfigs'
         into hadoopEtc
+        filter ReplaceTokens, tokens: [
+                HADOOP_BINARIES: "${buildDir}/hadoop-logs".toString()
+        ]
     }
 }
 

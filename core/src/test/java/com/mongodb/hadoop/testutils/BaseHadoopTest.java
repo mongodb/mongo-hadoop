@@ -69,10 +69,10 @@ public abstract class BaseHadoopTest {
             if (gradleProps.exists()) {
                 System.getProperties().load(new FileInputStream(gradleProps));
             }
-            HADOOP_BINARIES = new File(String.format("%s/hadoop-binaries/", System.getProperty("user.home"))).getCanonicalPath();
+            HADOOP_BINARIES = new File(PROJECT_HOME, "hadoop-binaries/").getCanonicalPath();
             EXAMPLE_DATA_HOME = new File(HADOOP_BINARIES, "examples/data").getCanonicalPath();
 
-            HADOOP_HOME = new File(System.getProperty("hadoop_home")).getCanonicalPath();
+            HADOOP_HOME = new File(HADOOP_BINARIES, format("hadoop-%s", HADOOP_VERSION)).getCanonicalPath();
 //            HIVE_HOME = new File(System.getProperty("hive_home")).getCanonicalPath();
             LOG.info("HADOOP_HOME = " + HADOOP_HOME);
 //            LOG.info("HIVE_HOME = " + HIVE_HOME);
