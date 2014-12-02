@@ -68,7 +68,7 @@ public class MongoClientURIBuilder {
         if (newHost.contains(":") && newPort == null) {
             hosts.add(newHost);
         } else {
-            String host = newHost == null || newHost.isEmpty() ? "localhost" : newHost;
+            String host = newHost.isEmpty() ? "localhost" : newHost;
             Integer port = newPort == null ? 27017 : newPort;
             if (host.contains(":")) {
                 host = host.substring(0, host.indexOf(':'));
