@@ -128,7 +128,7 @@ configure(subprojects) {
         
         finalizedBy ':shutdownCluster'
     }
-    
+
     test.dependsOn ':configureCluster'
     compileJava.dependsOn ':generateScripts'
     clean.dependsOn ':cleanHadoop'
@@ -167,7 +167,7 @@ configure(subprojects) {
         options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
         options.links 'http://api.mongodb.org/java/2.12.3/'
     }
-
+    
     gradle.taskGraph.whenReady { taskGraph ->
         testJar {
             baseName = "${archivesBaseName}-test"
@@ -183,7 +183,7 @@ configure(subprojects) {
     }
 
     test {
-        dependsOn ':configureCluster', ':downloadEnronEmails'
+        dependsOn 'jar', 'testJar', ':configureCluster', ':downloadEnronEmails'
         finalizedBy ':shutdownCluster'
     }
 }
@@ -194,7 +194,6 @@ configure(subprojects.findAll { it.name.contains('examples/') }) {
         baseName = exampleName
     }
     group += ".mongo-hadoop-examples"
-
 }
 
 project(":core") {
@@ -210,10 +209,10 @@ project(":core") {
     }
 }
 
-project(":hive") {
-    archivesBaseName = "mongo-hadoop-hive"
+project(':hive') {
+    archivesBaseName = 'mongo-hadoop-hive'
     dependencies {
-        compile project(":core")
+        compile project(':core')
 
         compile "org.apache.hive:hive-exec:${hiveVersion}"
         compile "org.apache.hive:hive-serde:${hiveVersion}"
@@ -221,7 +220,9 @@ project(":hive") {
         testCompile "org.apache.hive:hive-cli:${hiveVersion}"
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
 
-        testCompile project(path: ':core', configuration: 'tests')
+        testCompile files(project(':core').sourceSets.main.output)
+        testCompile files(project(':core').sourceSets.test.output)
+        
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
@@ -236,7 +237,8 @@ project(":pig") {
         compile project(":core")
         compile "org.apache.pig:pig:${pigVersion}"
 
-        testCompile project(path: ':core', configuration: 'tests')
+        testCompile files(project(':core').sourceSets.main.output)
+        testCompile files(project(':core').sourceSets.test.output)
         testCompile "org.antlr:antlr:3.5.2"
     }
 
@@ -295,8 +297,9 @@ project(":flume") {
 project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(":core")
-        testCompile project(path: ':core', configuration: 'tests')
+        compile project(':core')
+        
+        testCompile files(project(':core').sourceSets.test.output)
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
@@ -305,7 +308,7 @@ project(":examples/treasury_yield") {
 project(":examples/enron") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(":core")
+        compile project(':core')
     }
 }
 
@@ -328,7 +331,7 @@ project(":integration-tests") {
 task cleanLogs(type: Delete) {  
     delete fileTree(dir: "logs", exclude: ".keep")  
 }
-
+    
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome, pigHome
 }

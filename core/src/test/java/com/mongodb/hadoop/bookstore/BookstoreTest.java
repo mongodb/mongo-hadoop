@@ -57,7 +57,7 @@ public class BookstoreTest extends BaseHadoopTest {
                                .inputUris(INVENTORY_BSON)
                                .outputUris(outputUri)
                                .param("mapred.input.dir", INVENTORY_BSON.toString());
-        if (!CLUSTER_VERSION.startsWith("1.")) {
+        if (!HADOOP_VERSION.startsWith("1.")) {
             job.inputFormat(BSONFileInputFormat.class);
         } else {
             job.mapredInputFormat(com.mongodb.hadoop.mapred.BSONFileInputFormat.class);

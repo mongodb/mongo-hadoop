@@ -77,7 +77,6 @@ task installHive() << {
     def url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
 
     download(url, hadoopBinaries, hiveHome)
-
 }
 
 task installPig() << {
