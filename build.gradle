@@ -333,7 +333,7 @@ task cleanLogs(type: Delete) {
 }
     
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
-    delete hadoopHome, hiveHome, pigHome
+    delete hadoopBinaries
 }
 
 task historicalYield(dependsOn: configureCluster) << {
