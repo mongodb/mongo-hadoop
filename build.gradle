@@ -229,8 +229,6 @@ configure(subprojects) {
     
     nexus {
         sign = true
-        //    repositoryUrl = 'http://localhost:8081/nexus/content/repositories/internal/'
-        //    snapshotRepositoryUrl = 'http://localhost:8081/nexus/content/repositories/internal-snapshots/'
     }
     
 }
