@@ -185,6 +185,12 @@ configure(subprojects) {
     }
 }
 
+idea {
+    module {
+        excludeDirs += file('hadoop-binaries')
+    }
+}
+
 configure(subprojects.findAll { it.name.contains('examples/') }) {
     def exampleName = project.name.split('/')[1]
     jar {
