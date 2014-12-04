@@ -3,7 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
-apply plugin: 'versions'
+apply plugin: 'com.github.ben-manes.versions'
 apply from: 'gradle/functions.gradle'
 
 ext.configDir = new File(rootDir, 'config')
@@ -24,29 +24,35 @@ ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
                   '/usr/local/bin/mongorestore';
 
-
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         jcenter()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         maven { url 'https://github.com/ben-manes/gradle-versions-plugin/raw/mvnrepo' }
     }
     dependencies {
+        classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
+        
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.1.1'
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
-        classpath 'com.antwerkz.github:github-release-gradle-plugin:1.1.0'
         classpath 'de.undercouch:gradle-download-task:1.0'
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.5-beta-2'
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.6'
     }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
+    gradleVersion = '2.2.1'
 }
 
 if(project.hasProperty("clusterVersion")) {
     println "The cluster version property has been obsoleted.  See https://jira.mongodb.org/browse/HADOOP-160 for details."
+}
+
+allprojects {
+    version = '1.3.1'
+    group = 'org.mongodb.mongo-hadoop'
 }
 
 configure(subprojects) {
@@ -55,6 +61,7 @@ configure(subprojects) {
     apply plugin: 'eclipse'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
+    apply plugin: 'com.bmuschko.nexus'
 
     repositories {
         mavenCentral()
@@ -62,12 +69,11 @@ configure(subprojects) {
         maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
     }
 
-    group = 'org.mongodb'
-    version = '1.3.1'
 
     sourceCompatibility = JavaVersion.VERSION_1_6
     targetCompatibility = JavaVersion.VERSION_1_6
 
+/*
     configurations {
         tests
         tests.extendsFrom(testCompile)
@@ -79,6 +85,7 @@ configure(subprojects) {
     sourceSets.main.compileClasspath += configurations.provided
     sourceSets.test.compileClasspath += configurations.provided
     sourceSets.test.runtimeClasspath += configurations.provided
+*/
 
     dependencies {
         compile "org.mongodb:mongo-java-driver:${javaDriverVersion}"
@@ -108,10 +115,10 @@ configure(subprojects) {
         project.hasProperty(n) && project.property(n).toBoolean()
     }
 
-    /* Testing */
-    task testJar(type: Jar, dependsOn: testClasses) {
-        from sourceSets.test.output
-    }
+//    /* Testing */
+//    task testJar(type: Jar, dependsOn: testClasses) {
+//        from sourceSets.test.output
+//    }
 
     tasks.withType(Test) {
         maxParallelForks = 1
@@ -125,7 +132,7 @@ configure(subprojects) {
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
-        
+
         finalizedBy ':shutdownCluster'
     }
 
@@ -148,7 +155,7 @@ configure(subprojects) {
     }
 
     task quickCheck(dependsOn: [checkstyleMain, checkstyleTest] ) << {}
-    
+
     findbugs {
         excludeFilter = new File("$configDir/findbugs-exclude.xml")
         sourceSets = [sourceSets.main]
@@ -167,22 +174,65 @@ configure(subprojects) {
         options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
         options.links 'http://api.mongodb.org/java/2.12.3/'
     }
-    
+
     gradle.taskGraph.whenReady { taskGraph ->
-        testJar {
-            baseName = "${archivesBaseName}-test"
-            mustRunAfter jar
-        }
+        copyFiles.dependsOn 'jar', 'testsJar'
     }
 
-    artifacts {
-        tests testJar
-    }
+//    artifacts {
+//        tests testJar
+//    }
 
     test {
-        dependsOn 'jar', 'testJar', ':configureCluster', ':downloadEnronEmails'
+        dependsOn 'jar', 'testsJar', ':configureCluster', ':downloadEnronEmails'
         finalizedBy ':shutdownCluster'
     }
+
+    modifyPom {
+        project {
+            name = 'MongoDB Connector for Hadoop'
+            description = 'The MongoDB Connector for Hadoop is a plugin for Hadoop that provides the ability to use MongoDB as an input source and/or an output destination.'
+            url 'https://github.com/mongodb/mongo-hadoop.git'
+    
+            scm {
+                url 'https://github.com/mongodb/mongo-hadoop.git'
+                connection 'scm:git:git://github.com/mongodb/mongo-hadoop.git'
+            }
+    
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+    
+            developers {
+                developer {
+                    name 'Various'
+                    organization = 'MongoDB'
+                }
+            }
+        }
+    
+        whenConfigured { resultPom ->
+            resultPom.dependencies.removeAll { dep -> dep.scope != 'compile' }
+            resultPom.dependencies*.scope = null
+        }
+    }
+    
+    extraArchive {
+        sources = true
+        tests = true
+        javadoc = true
+    }
+    
+    nexus {
+        sign = true
+        //    repositoryUrl = 'http://localhost:8081/nexus/content/repositories/internal/'
+        //    snapshotRepositoryUrl = 'http://localhost:8081/nexus/content/repositories/internal-snapshots/'
+    }
+    
 }
 
 idea {
@@ -223,7 +273,7 @@ project(':hive') {
         testCompile "org.apache.hive:hive-cli:${hiveVersion}"
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
 
-        testCompile files(project(':core').sourceSets.main.output)
+//        testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
         
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
@@ -416,4 +466,4 @@ def hadoop(jar, className, args) {
     }
 }
 
-apply from: 'gradle/maven-deployment.gradle'
+//apply from: 'gradle/maven-deployment.gradle'
