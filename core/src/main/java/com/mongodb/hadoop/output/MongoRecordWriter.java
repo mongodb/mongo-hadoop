@@ -26,6 +26,8 @@ import com.mongodb.hadoop.io.MongoUpdateWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.bson.BSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import java.util.List;
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
+    private static final Log LOG = LogFactory.getLog(MongoRecordWriter.class);
     private final List<DBCollection> collections;
     private final int numberOfHosts;
     private final TaskAttemptContext context;
@@ -52,6 +55,14 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     }
 
     public void close(final TaskAttemptContext context) {
+        try {
+            for (DBCollection collection : collections) {
+                collection.getDB().getMongo().close();
+            }
+                
+        } catch (final MongoException e) {
+            LOG.error("Unable to close Connection: " + e.getMessage());
+        }
     }
 
     public void write(final K key, final V value) throws IOException {
