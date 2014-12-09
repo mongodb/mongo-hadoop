@@ -48,8 +48,6 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
 
     @Override
     public List<InputSplit> calculateSplits() {
-        init();
-
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         LOG.info("SingleMongoSplitter calculating splits for " + inputURI);
         final List<InputSplit> splits = new ArrayList<InputSplit>();

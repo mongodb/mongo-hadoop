@@ -20,6 +20,7 @@ package com.mongodb.hadoop.input;
 
 import com.mongodb.DBCursor;
 import com.mongodb.MongoException;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -41,7 +42,7 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
     public void close() {
         if (cursor != null) {
             cursor.close();
-            cursor.getCollection().getDB().getMongo().close();
+            MongoConfigUtil.close(cursor.getCollection().getDB().getMongo());
         }
     }
 

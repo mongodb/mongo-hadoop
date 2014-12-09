@@ -24,6 +24,7 @@ import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
@@ -54,7 +55,7 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
     public void close(final Reporter reporter) {
         try {
             for (DBCollection collection : collections) {
-                collection.getDB().getMongo().close();
+                MongoConfigUtil.close(collection.getDB().getMongo());
             }
         } catch (final MongoException e) {
             LOG.error("Unable to release Connection: " + e.getMessage());

@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -54,9 +55,8 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
     // Generate one split per chunk.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        this.init();
         boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(getConfiguration());
-        DB configDB = this.mongo.getDB("config");
+        DB configDB = getConfigDB();
         DBCollection chunksCollection = configDB.getCollection("chunks");
 
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
@@ -69,7 +69,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
         Map<String, String> shardsMap = null;
         if (targetShards) {
             try {
-                shardsMap = this.getShardsMap();
+                shardsMap = getShardsMap();
             } catch (Exception e) {
                 //Something went wrong when trying to
                 //read the shards data from the config server,
@@ -78,7 +78,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
             }
         }
 
-        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.getConfiguration());
+        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(getConfiguration());
         if (targetShards && mongosHostNames.size() > 0) {
             throw new SplitFailedException("Setting both mongo.input.split.read_from_shards and mongo.input.mongos_hosts"
                                            + " does not make sense. ");
@@ -130,7 +130,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
         int splitIndex = 0;
         while (splitIndex < numChunks) {
             Set<String> shardSplitsToRemove = new HashSet<String>();
-            for (Map.Entry<String, LinkedList<InputSplit>> shardSplits : shardToSplits.entrySet()) {
+            for (Entry<String, LinkedList<InputSplit>> shardSplits : shardToSplits.entrySet()) {
                 LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
                 InputSplit split = shardSplitsList.pop();
                 splits.add(splitIndex, split);

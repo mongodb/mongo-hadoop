@@ -23,6 +23,7 @@ import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.bson.BSONObject;
@@ -57,7 +58,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     public void close(final TaskAttemptContext context) {
         try {
             for (DBCollection collection : collections) {
-                collection.getDB().getMongo().close();
+                MongoConfigUtil.close(collection.getDB().getMongo());
             }
                 
         } catch (final MongoException e) {

@@ -41,9 +41,11 @@ import org.apache.hadoop.mapreduce.Reducer;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -176,7 +178,9 @@ public final class MongoConfigUtil {
     /**
      * Shared MongoClient instance cache.
      */
-    private static Map<String, MongoClient> mongoClients = new java.util.HashMap<String, MongoClient>();
+    private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
+    
+    private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
 
     private MongoConfigUtil() {
     }
@@ -767,7 +771,7 @@ public final class MongoConfigUtil {
 
     public static Configuration buildConfiguration(final Map<String, Object> data) {
         Configuration newConf = new Configuration();
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
+        for (Entry<String, Object> entry : data.entrySet()) {
             String key = entry.getKey();
             Object val = entry.getValue();
             if (val instanceof String) {
@@ -787,12 +791,29 @@ public final class MongoConfigUtil {
         return newConf;
     }
 
-    private static synchronized MongoClient getMongoClient(MongoClientURI uri) throws UnknownHostException {
-        String uriStr = uri.toString();
-        if (mongoClients.get(uriStr) == null) {
-            mongoClients.put(uriStr, new MongoClient(uri));
+    public static void close(final Mongo client) {
+        synchronized (CLIENTS) {
+            MongoClientURI uri = uriMap.remove(client);
+            if (uri != null) {
+                MongoClient remove;
+                remove = CLIENTS.remove(uri);
+                if (remove != client) {
+                    throw new IllegalStateException("different clients found");
+                }
+            }
+            client.close();
         }
-        return mongoClients.get(uriStr);
     }
-
+    
+    private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
+        synchronized (CLIENTS) {
+            MongoClient mongoClient = CLIENTS.get(uri);
+            if (mongoClient == null) {
+                mongoClient = new MongoClient(uri);
+                CLIENTS.put(uri, mongoClient);
+                uriMap.put(mongoClient, uri);
+            }
+            return mongoClient;
+        }
+    }
 }

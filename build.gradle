@@ -133,7 +133,7 @@ configure(subprojects) {
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
 
-        finalizedBy ':shutdownCluster'
+//        finalizedBy ':shutdownCluster'
     }
 
     test.dependsOn ':configureCluster'
@@ -185,7 +185,6 @@ configure(subprojects) {
 
     test {
         dependsOn 'jar', 'testsJar', ':configureCluster', ':downloadEnronEmails'
-        finalizedBy ':shutdownCluster'
     }
 
     modifyPom {
