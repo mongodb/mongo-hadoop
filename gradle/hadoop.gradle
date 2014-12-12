@@ -1,0 +1,106 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'org.zeroturnaround', name: 'zt-exec', version: '1.6'
+    }
+}
+
+def execute(command, args = [], outStream = null, errStream = null, background = false ) {
+    def env = [HADOOP_HOME: hadoopHome]
+    env << System.getProperties()
+    
+    def executor = new org.zeroturnaround.exec.ProcessExecutor().command([command.toString()] + args)
+                                                                .readOutput(true)
+                                                                .environment(env)
+                                                                .redirectOutput(outStream)
+                                                                .redirectError(errStream != null ? errStream : outStream);
+    if (!background) {
+        try {
+            def result = executor.execute();
+            if (outStream == null) {
+                return result.outputString().split('\n')
+            }
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+    } else {
+        executor.start()
+    }
+}
+
+def stopService(signal, service, name) {
+    for (String process : execute('jps')) {
+        if (process.endsWith(service)) {
+            println("Shutting down ${name}")
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                if (signal == 'TERM') {
+                    execute("taskkill", "/PID", process.split()[0])
+                 } else{
+                    execute("taskkill", "/F", "/PID", process.split()[0])
+                }
+            }else{
+                if (signal == 'TERM'){
+                    execute("kill", process.split()[0])
+                } else {
+                    execute("kill", "-9", process.split()[0])
+                }
+            }
+        }
+    }
+}
+
+def startService(cmd, service) {
+    println "Starting ${service}"
+
+    execute("$hadoopHome/bin/${cmd}", [service], new FileOutputStream("${rootDir}/build/logs/${service}.log"), null, true)
+}
+
+def start() {
+    startService('hdfs', 'namenode')
+    sleep(5000)
+    startService('hdfs', 'datanode')
+    startService('yarn', 'resourcemanager')
+    startService('yarn', 'nodemanager')
+    sleep(5000)
+
+    print('Starting hiveserver') 
+    execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
+            ("${rootDir}/build/logs/hiveserver-mkdir.out"))
+    execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
+                ("${rootDir}/build/logs/hiveserver-chmod.out"))
+
+    execute("$hiveHome/bin/hive", ["--service", "hiveserver"], new FileOutputStream("${rootDir}/build/logs/hiveserver.log"), null, true)
+    sleep(15)
+}
+
+def stopAll(signal) {
+    stopService(signal, 'NodeManager', 'node manager')
+    stopService(signal, 'ResourceManager', 'resource manager')
+    stopService(signal, 'DataNode', 'data node')
+    stopService(signal, 'NameNode', 'name node')
+    stopService(signal, 'RunJar', 'hive server')
+}
+
+task shutdownCluster() << {
+    stopAll('TERM')
+    stopAll('KILL')
+}
+
+task startCluster(dependsOn: [copyFiles]) << {
+    if (!file("${rootDir}/build/logs/").isDirectory()) {
+        file("${rootDir}/build/logs/").mkdirs()
+    }
+
+    delete {
+        delete fileTree(dir: file("${hadoopBinaries}/hadoop-tmpdir/"))
+    }
+    println "Formatting HDFS"
+    execute("${hadoopHome}/bin/hdfs", [ 'namenode', '-format', '-force' ], null,
+            new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
+
+    start()
+}

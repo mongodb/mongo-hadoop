@@ -1,36 +1,5 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
-task generateScripts() << {
-    def python
-    if(System.env.WORKSPACE == null) {
-        python = '/usr/bin/python'
-    } else { 
-        python = '/mnt/jenkins/languages/python/r2.7/bin/python'
-    }
-    copy {
-        from 'bin/templates/hadoop-template.py'
-        filter ReplaceTokens, tokens: [
-                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
-
-                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${hadoopVersion}".toString(),
-                HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
-                PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
-
-
-                HADOOP_VERSION : hadoopVersion.toString(),
-                HIVE_VERSION   : hiveVersion.toString(),
-
-                HADOOP_BINARIES: hadoopBinaries.toString(),
-                BIN            : hadoopVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
-                PYTHON_BIN     : python
-        ]
-        into "build/"
-        rename {
-            it.replace("-template", '')
-        }
-    }
-}
-
 task installHadoop() << {
     new File(hadoopHome).getParentFile().mkdirs()
 
@@ -101,32 +70,13 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
         from 'clusterConfigs'
         into hadoopEtc
         filter ReplaceTokens, tokens: [
-                HADOOP_BINARIES: "${buildDir}/hadoop-logs".toString()
+                HADOOP_BINARIES: hadoopBinaries.toString()
         ]
     }
 }
 
 def findJar(String proj, String filter) {
     project(proj).configurations.compile.find { it.name.startsWith(filter) }
-}
-
-task configureCluster(dependsOn: copyFiles) << {
-    println "Configuring ${hadoopVersion} hadoop cluster"
-    def env = [:]
-    env['HADOOP_HOME']="${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
-    exec {
-        environment << env
-        commandLine 'build/hadoop.py'
-        args 'start', '-format'
-    }
-}
-
-task shutdownCluster << {
-    println "Shutting down hadoop cluster"
-    exec {
-        commandLine 'build/hadoop.py'
-        args 'shutdown'
-    }
 }
 
 def safeCopy(fromPath, toPath, newName) {

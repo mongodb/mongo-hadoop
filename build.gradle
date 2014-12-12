@@ -4,7 +4,6 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
 apply plugin: 'com.github.ben-manes.versions'
-apply from: 'gradle/functions.gradle'
 
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
@@ -34,6 +33,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
+        classpath 'org.zeroturnaround:zt-exec:1.6'
         
         classpath 'com.bmuschko:gradle-nexus-plugin:2.1.1'
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
@@ -41,6 +41,10 @@ buildscript {
         classpath 'com.github.ben-manes:gradle-versions-plugin:0.6'
     }
 }
+
+//apply from: 'gradle/maven-deployment.gradle'
+apply from: 'gradle/functions.gradle'
+apply from: 'gradle/hadoop.gradle'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.2.1'
@@ -133,11 +137,10 @@ configure(subprojects) {
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
 
-//        finalizedBy ':shutdownCluster'
+        finalizedBy ':shutdownCluster'
     }
 
-    test.dependsOn ':configureCluster'
-    compileJava.dependsOn ':generateScripts'
+    test.dependsOn ':startCluster'
     clean.dependsOn ':cleanHadoop'
 
     /* Code quality */
@@ -184,7 +187,7 @@ configure(subprojects) {
 //    }
 
     test {
-        dependsOn 'jar', 'testsJar', ':configureCluster', ':downloadEnronEmails'
+        dependsOn 'jar', 'testsJar', ':startCluster', ':downloadEnronEmails'
     }
 
     modifyPom {
@@ -386,7 +389,7 @@ task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome, pigHome
 }
 
-task historicalYield(dependsOn: configureCluster) << {
+task historicalYield(dependsOn: startCluster) << {
     
     exec() {
         commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
@@ -400,7 +403,7 @@ task historicalYield(dependsOn: configureCluster) << {
     ])
 }
 
-task sensorData(dependsOn: 'configureCluster') << {
+task sensorData(dependsOn: 'startCluster') << {
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
            "com.mongodb.hadoop.examples.sensors.Devices", [])
 
@@ -435,7 +438,7 @@ task downloadEnronEmails() {
     }
 }
 
-task enronEmails(dependsOn: [downloadEnronEmails, configureCluster]) << {
+task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
     exec() {
         commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
     }
@@ -462,5 +465,3 @@ def hadoop(jar, className, args) {
         commandLine line
     }
 }
-
-//apply from: 'gradle/maven-deployment.gradle'
