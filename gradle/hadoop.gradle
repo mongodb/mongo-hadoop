@@ -65,7 +65,6 @@ def start() {
     startService('hdfs', 'datanode')
     startService('yarn', 'resourcemanager')
     startService('yarn', 'nodemanager')
-    sleep(5000)
 
     print('Starting hiveserver') 
     execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
@@ -74,7 +73,6 @@ def start() {
                 ("${rootDir}/build/logs/hiveserver-chmod.out"))
 
     execute("$hiveHome/bin/hive", ["--service", "hiveserver"], new FileOutputStream("${rootDir}/build/logs/hiveserver.log"), null, true)
-    sleep(15)
 }
 
 def stopAll(signal) {
@@ -103,4 +101,55 @@ task startCluster(dependsOn: [copyFiles]) << {
             new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
 
     start()
+}
+
+task historicalYield(dependsOn: startCluster) << {
+    
+    exec() {
+        commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+    }
+
+    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
+            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
+    ])
+}
+
+task sensorData(dependsOn: 'startCluster') << {
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Devices", [])
+
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
+}
+
+
+task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
+    exec() {
+        commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
+    }
+
+    hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
+}
+
+def hadoop(jar, className, args) {
+    def line = ["${hadoopHome}/bin/hadoop",
+                "jar", jar, className,
+                //Split settings
+                "-Dmongo.input.split_size=8",
+                "-Dmongo.job.verbose=true",
+    ]
+    args.each {
+        line << "-D${it}"
+    }
+    println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
+    def hadoopEnv = [:]
+    hadoopEnv.HADOOP_PREFIX=''
+    exec() {
+        environment << hadoopEnv
+        commandLine line
+    }
 }
