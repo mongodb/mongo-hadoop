@@ -3,20 +3,19 @@ import org.apache.tools.ant.filters.ReplaceTokens
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'download-task'
-apply plugin: 'versions'
-apply from: 'gradle/functions.gradle'
+apply plugin: 'com.github.ben-manes.versions'
 
 ext.configDir = new File(rootDir, 'config')
-ext.hadoopBinaries = "${System.getProperty('user.home')}/hadoop-binaries"
+ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '2.12.3'
 ext.hiveVersion = '0.12.0'
 ext.pigVersion = '0.13.0'
 ext.hadoopVersion = '2.4.1'
 
-ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}"
-ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}"
-ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}"
-ext.dataHome = "${hadoopBinaries}/examples/data"
+ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
+ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}".toString()
+ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
+ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongoimport' :
                   '/usr/local/bin/mongoimport';
@@ -24,29 +23,40 @@ ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
                   '/usr/local/bin/mongorestore';
 
-
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         jcenter()
-        maven { url "https://github.com/ben-manes/gradle-versions-plugin/raw/mvnrepo" }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'https://github.com/ben-manes/gradle-versions-plugin/raw/mvnrepo' }
     }
     dependencies {
+        classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
+        classpath 'org.zeroturnaround:zt-exec:1.6'
+        
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.1.1'
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
-        classpath 'com.antwerkz.github:github-release-gradle-plugin:1.1.0'
         classpath 'de.undercouch:gradle-download-task:1.0'
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.5-beta-2'
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.6'
     }
 }
 
+//apply from: 'gradle/maven-deployment.gradle'
+apply from: 'gradle/functions.gradle'
+apply from: 'gradle/hadoop.gradle'
+
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
+    gradleVersion = '2.2.1'
 }
 
 if(project.hasProperty("clusterVersion")) {
     println "The cluster version property has been obsoleted.  See https://jira.mongodb.org/browse/HADOOP-160 for details."
+}
+
+allprojects {
+    version = '1.3.2-SNAPSHOT'
+    group = 'org.mongodb.mongo-hadoop'
 }
 
 configure(subprojects) {
@@ -55,6 +65,7 @@ configure(subprojects) {
     apply plugin: 'eclipse'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
+    apply plugin: 'com.bmuschko.nexus'
 
     repositories {
         mavenCentral()
@@ -62,12 +73,11 @@ configure(subprojects) {
         maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
     }
 
-    group = 'org.mongodb'
-    version = '1.4.0-SNAPSHOT'
 
     sourceCompatibility = JavaVersion.VERSION_1_6
     targetCompatibility = JavaVersion.VERSION_1_6
 
+/*
     configurations {
         tests
         tests.extendsFrom(testCompile)
@@ -79,6 +89,7 @@ configure(subprojects) {
     sourceSets.main.compileClasspath += configurations.provided
     sourceSets.test.compileClasspath += configurations.provided
     sourceSets.test.runtimeClasspath += configurations.provided
+*/
 
     dependencies {
         compile "org.mongodb:mongo-java-driver:${javaDriverVersion}"
@@ -108,10 +119,10 @@ configure(subprojects) {
         project.hasProperty(n) && project.property(n).toBoolean()
     }
 
-    /* Testing */
-    task testJar(type: Jar, dependsOn: testClasses) {
-        from sourceSets.test.output
-    }
+//    /* Testing */
+//    task testJar(type: Jar, dependsOn: testClasses) {
+//        from sourceSets.test.output
+//    }
 
     tasks.withType(Test) {
         maxParallelForks = 1
@@ -125,12 +136,11 @@ configure(subprojects) {
         beforeTest { descr ->
             logger.info("[Test ${descr.className} > ${descr.name}]")
         }
-        
+
         finalizedBy ':shutdownCluster'
     }
-    
-    test.dependsOn ':configureCluster'
-    compileJava.dependsOn ':generateScripts'
+
+    test.dependsOn ':startCluster'
     clean.dependsOn ':cleanHadoop'
 
     /* Code quality */
@@ -148,7 +158,7 @@ configure(subprojects) {
     }
 
     task quickCheck(dependsOn: [checkstyleMain, checkstyleTest] ) << {}
-    
+
     findbugs {
         excludeFilter = new File("$configDir/findbugs-exclude.xml")
         sourceSets = [sourceSets.main]
@@ -169,22 +179,65 @@ configure(subprojects) {
     }
 
     gradle.taskGraph.whenReady { taskGraph ->
-        testJar {
-            baseName = "${archivesBaseName}-test"
-            mustRunAfter jar
-        }
+        copyFiles.dependsOn 'jar', 'testsJar'
     }
 
-    configurations {
-    }
-
-    artifacts {
-        tests testJar
-    }
+//    artifacts {
+//        tests testJar
+//    }
 
     test {
-        dependsOn ':configureCluster', ':downloadEnronEmails'
-        finalizedBy ':shutdownCluster'
+        dependsOn 'jar', 'testsJar', ':startCluster', ':downloadEnronEmails'
+    }
+
+    modifyPom {
+        project {
+            name = 'MongoDB Connector for Hadoop'
+            description = 'The MongoDB Connector for Hadoop is a plugin for Hadoop that provides the ability to use MongoDB as an input source and/or an output destination.'
+            url 'https://github.com/mongodb/mongo-hadoop.git'
+    
+            scm {
+                url 'https://github.com/mongodb/mongo-hadoop.git'
+                connection 'scm:git:git://github.com/mongodb/mongo-hadoop.git'
+            }
+    
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+    
+            developers {
+                developer {
+                    name 'Various'
+                    organization = 'MongoDB'
+                }
+            }
+        }
+    
+        whenConfigured { resultPom ->
+            resultPom.dependencies.removeAll { dep -> dep.scope != 'compile' }
+            resultPom.dependencies*.scope = null
+        }
+    }
+    
+    extraArchive {
+        sources = true
+        tests = true
+        javadoc = true
+    }
+    
+    nexus {
+        sign = true
+    }
+    
+}
+
+idea {
+    module {
+        excludeDirs += file('hadoop-binaries')
     }
 }
 
@@ -194,7 +247,6 @@ configure(subprojects.findAll { it.name.contains('examples/') }) {
         baseName = exampleName
     }
     group += ".mongo-hadoop-examples"
-
 }
 
 project(":core") {
@@ -210,10 +262,10 @@ project(":core") {
     }
 }
 
-project(":hive") {
-    archivesBaseName = "mongo-hadoop-hive"
+project(':hive') {
+    archivesBaseName = 'mongo-hadoop-hive'
     dependencies {
-        compile project(":core")
+        compile project(':core')
 
         compile "org.apache.hive:hive-exec:${hiveVersion}"
         compile "org.apache.hive:hive-serde:${hiveVersion}"
@@ -221,7 +273,9 @@ project(":hive") {
         testCompile "org.apache.hive:hive-cli:${hiveVersion}"
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
 
-        testCompile project(path: ':core', configuration: 'tests')
+//        testCompile files(project(':core').sourceSets.main.output)
+        testCompile files(project(':core').sourceSets.test.output)
+        
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
@@ -236,7 +290,8 @@ project(":pig") {
         compile project(":core")
         compile "org.apache.pig:pig:${pigVersion}"
 
-        testCompile project(path: ':core', configuration: 'tests')
+        testCompile files(project(':core').sourceSets.main.output)
+        testCompile files(project(':core').sourceSets.test.output)
         testCompile "org.antlr:antlr:3.5.2"
     }
 
@@ -295,8 +350,9 @@ project(":flume") {
 project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(":core")
-        testCompile project(path: ':core', configuration: 'tests')
+        compile project(':core')
+        
+        testCompile files(project(':core').sourceSets.test.output)
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
     }
@@ -305,7 +361,7 @@ project(":examples/treasury_yield") {
 project(":examples/enron") {
     uploadArchives.onlyIf { false }
     dependencies {
-        compile project(":core")
+        compile project(':core')
     }
 }
 
@@ -328,86 +384,7 @@ project(":integration-tests") {
 task cleanLogs(type: Delete) {  
     delete fileTree(dir: "logs", exclude: ".keep")  
 }
-
+    
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome, pigHome
 }
-
-task historicalYield(dependsOn: configureCluster) << {
-    
-    exec() {
-        commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
-                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
-    }
-
-    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
-            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
-            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
-    ])
-}
-
-task sensorData(dependsOn: 'configureCluster') << {
-    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Devices", [])
-
-    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
-}
-
-task downloadEnronEmails() {
-    if (!new File("${dataHome}/dump").exists()) {
-        println "Downloading Enron email test data to ${dataHome}"
-        new File(dataHome).mkdirs()
-        def attempts = 0
-        while (!new File(dataHome, "enron_mongo.tar.bz2").exists() && attempts < 10) {
-            try {
-                download {
-                    src 'https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'
-                    dest dataHome
-                    onlyIfNewer true
-                }
-            } catch (Exception e) {
-                attempts++
-                if (attempts == 10) {
-                    throw e;
-                }
-            }
-        }
-        println "extracting email data"
-        copy {
-            from(tarTree("${dataHome}/enron_mongo.tar.bz2"))
-            into dataHome
-        }
-    }
-}
-
-task enronEmails(dependsOn: [downloadEnronEmails, configureCluster]) << {
-    exec() {
-        commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
-    }
-
-    hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
-}
-
-def hadoop(jar, className, args) {
-    def line = ["${hadoopHome}/bin/hadoop",
-                "jar", jar, className,
-                //Split settings
-                "-Dmongo.input.split_size=8",
-                "-Dmongo.job.verbose=true",
-    ]
-    args.each {
-        line << "-D${it}"
-    }
-    println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
-    def hadoopEnv = [:]
-    hadoopEnv.HADOOP_PREFIX=''
-    exec() {
-        environment << hadoopEnv
-        commandLine line
-    }
-}
-
-apply from: 'gradle/maven-deployment.gradle'

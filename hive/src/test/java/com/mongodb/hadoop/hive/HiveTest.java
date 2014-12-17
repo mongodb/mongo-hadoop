@@ -10,8 +10,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,12 +58,7 @@ public class HiveTest extends BaseHadoopTest {
             client.shutdown();
         }
     }
-
-    @Before
-    public void checkClusterVersion() {
-        Assume.assumeFalse(CLUSTER_VERSION.startsWith("1."));
-    }
-
+    
     protected MongoClient getMongoClient() {
         if (mongoClient == null) {
             try {

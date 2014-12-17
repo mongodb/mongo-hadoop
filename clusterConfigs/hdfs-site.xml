@@ -23,6 +23,6 @@
     </property>
     <property>
         <name>hadoop.tmp.dir</name>
-        <value>${user.home}/hadoop-binaries/tmpdir</value>
+        <value>@HADOOP_BINARIES@/hadoop-tmpdir</value>
     </property>
 </configuration>

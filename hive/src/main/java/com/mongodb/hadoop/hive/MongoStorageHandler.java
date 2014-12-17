@@ -101,7 +101,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
                     DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
-                    coll.drop();
+                    try {
+                        coll.drop();
+                    } finally {
+                        MongoConfigUtil.close(coll.getDB().getMongo());
+                    }
                 } else {
                     throw new MetaException(format("No '%s' property found. Collection not dropped.", MONGO_URI));
                 }

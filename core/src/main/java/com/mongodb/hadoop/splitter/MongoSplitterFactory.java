@@ -62,14 +62,20 @@ public final class MongoSplitterFactory {
         } else {
             MongoClientURI authURI = MongoConfigUtil.getAuthURI(config);
             CommandResult stats;
-            DBCollection coll;
-            if (authURI != null) {
-                coll = MongoConfigUtil.getCollectionWithAuth(uri, authURI);
-                stats = coll.getStats();
-                LOG.info("Retrieved Collection stats:" + stats);
-            } else {
-                coll = MongoConfigUtil.getCollection(uri);
-                stats = coll.getStats();
+            DBCollection coll = null;
+            try {
+                if (authURI != null) {
+                    coll = MongoConfigUtil.getCollectionWithAuth(uri, authURI);
+                    stats = coll.getStats();
+                    LOG.info("Retrieved Collection stats:" + stats);
+                } else {
+                    coll = MongoConfigUtil.getCollection(uri);
+                    stats = coll.getStats();
+                }
+            } finally {
+                if (coll != null) {
+                    MongoConfigUtil.close(coll.getDB().getMongo());
+                }
             }
 
             if (!stats.getBoolean("ok", false)) {
