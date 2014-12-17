@@ -100,10 +100,21 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     protected DB getConfigDB() {
         Mongo mongo;
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
+		MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
+		
+		DBCollection 
+        if (authURI != null
+                && authURI.getUsername() != null
+                && authURI.getPassword() != null) {
+            this.inputCollection = MongoConfigUtil.getCollectionWithAuth(inputURI, authURI);
+        } else {
+            this.inputCollection = MongoConfigUtil.getCollection(inputURI);
+        }
+
         final DBCollection inputCollection = MongoConfigUtil.getCollection(inputURI);
         DB db = inputCollection.getDB();
         mongo = db.getMongo();
-        MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
+
         if (authURI != null) {
             if (authURI.getUsername() != null
                 && authURI.getPassword() != null) {
