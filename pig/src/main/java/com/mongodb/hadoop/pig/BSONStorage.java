@@ -151,7 +151,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 // For example, {("a"),("b")} becomes ["a","b"] if
                 // unnamedStr == "t" and schema for bag is {<*>:(t:chararray)}
                 // <*> -> can be any string since the field name of the tuple in a bag should be ignored 
-                if (fs.length == 1 && fs[0].getName().equals(toIgnore)) {
+                if (fs.length == 1 && (fs[0].getName() == null || fs[0].getName().equals(toIgnore))) {
                     for (Tuple t : (DataBag) o) {
                         a.add(t.get(0));
                     }
