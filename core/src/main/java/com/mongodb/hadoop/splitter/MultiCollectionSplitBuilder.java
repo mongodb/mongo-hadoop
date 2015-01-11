@@ -26,10 +26,11 @@ import com.mongodb.util.JSON;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class MultiCollectionSplitBuilder {
-    private LinkedList<CollectionSplitterConf> collectionSplitters;
+    private List<CollectionSplitterConf> collectionSplitters;
 
     public MultiCollectionSplitBuilder() {
         collectionSplitters = new LinkedList<CollectionSplitterConf>();
@@ -99,7 +100,7 @@ public class MultiCollectionSplitBuilder {
                 outMap.put(MongoConfigUtil.AUTH_URI, authURI.toString());
             }
 
-            outMap.put(MongoConfigUtil.INPUT_NOTIMEOUT, noTimeout ? "true" : "false");
+            outMap.put(MongoConfigUtil.INPUT_NOTIMEOUT, noTimeout + "");
 
             if (fields != null) {
                 outMap.put(MongoConfigUtil.INPUT_FIELDS, JSON.serialize(fields));

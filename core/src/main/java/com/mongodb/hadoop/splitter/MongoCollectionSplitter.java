@@ -37,6 +37,7 @@ import org.bson.types.MinKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public abstract class MongoCollectionSplitter extends MongoSplitter {
 
@@ -45,94 +46,20 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     public static final MinKey MIN_KEY_TYPE = new MinKey();
     public static final MaxKey MAX_KEY_TYPE = new MaxKey();
     //CHECKSTYLE:OFF
-    protected Mongo mongo;
-    protected DBCollection inputCollection;
+//    protected Mongo mongo;
+//    protected DBCollection inputCollection;
 
     //A reference to the database that we authenticated against, if there was
     //some authURI provided in the config.
     protected DB authDB;
     //CHECKSTYLE:ON
 
-    /*
-    protected MongoURI inputURI;
-    protected MongoURI authURI;
-    protected DBObject query;
-    protected boolean useRangeQuery;
-    protected boolean noTimeout;
-    protected DBObject fields;
-    protected DBObject sort;*/
 
     public MongoCollectionSplitter() {
     }
 
     public MongoCollectionSplitter(final Configuration conf) {
         super(conf);
-    }
-    //
-    //     public void setInputURI(MongoURI inputURI){
-    //         this.inputURI = inputURI;
-    //     }
-    //
-    //     public void setQuery(DBObject query){
-    //         this.query = query;
-    //     }
-    //
-    //     public BSONObject getQuery(){
-    //         return this.query;
-    //     }
-    //
-    //     public boolean getUseRangeQuery(){
-    //         return this.useRangeQuery;
-    //     }
-    //
-    //     public void setUseRangeQuery(boolean useRangeQuery){
-    //         this.useRangeQuery = useRangeQuery;
-    //     }
-    //
-    //     public void setAuthURI(MongoURI authURI){
-    //         this.authURI = authURI;
-    //     }
-    //
-    //     public boolean getNoTimeout(){
-    //         return this.noTimeout;
-    //     }
-    //
-    //     public void setNoTimeout(boolean noTimeout){
-    //         this.noTimeout = noTimeout;
-    //     }
-    //
-    //     public MongoURI getAuthURI(){
-    //         return this.authURI;
-    //     }
-    //
-    //     public DBObject getFields(){
-    //         return this.fields;
-    //     }
-    //
-    //     public void setFields(DBObject fields){
-    //         this.fields = fields;
-    //     }
-    //
-    //     public DBObject getSort(){
-    //         return this.sort;
-    //     }
-    //
-    //     public void setSort(DBObject sort){
-    //         this.sort = sort;
-    //     }
-
-    protected void init() {
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
-        this.inputCollection = MongoConfigUtil.getCollection(inputURI);
-        DB db = this.inputCollection.getDB();
-        this.mongo = db.getMongo();
-        MongoClientURI authURI = MongoConfigUtil.getAuthURI(conf);
-        if (authURI != null) {
-            if (authURI.getUsername() != null
-                && authURI.getPassword() != null) {
-                authDB = mongo.getDB(authURI.getDatabase());
-            }
-        }
     }
 
     @Override
@@ -142,11 +69,13 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
      * Contacts the config server and builds a map of each shard's name to its host(s) by examining config.shards.
      */
     protected Map<String, String> getShardsMap() {
-        DB configDB = this.mongo.getDB("config");
-        final HashMap<String, String> shardsMap = new HashMap<String, String>();
-        DBCollection shardsCollection = configDB.getCollection("shards");
-        DBCursor cur = shardsCollection.find();
+        DBCursor cur = null;
+        HashMap<String, String> shardsMap = new HashMap<String, String>();
+        DB configDB = null;
         try {
+            configDB = getConfigDB();
+            DBCollection shardsCollection = configDB.getCollection("shards");
+            cur = shardsCollection.find();
             while (cur.hasNext()) {
                 final BasicDBObject row = (BasicDBObject) cur.next();
                 String host = row.getString("host");
@@ -158,9 +87,40 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
                 shardsMap.put((String) row.get("_id"), host);
             }
         } finally {
-            cur.close();
+            if (cur != null) {
+                cur.close();
+            }
+            if (configDB != null) {
+                MongoConfigUtil.close(configDB.getMongo());
+            }
         }
         return shardsMap;
+    }
+
+    protected DB getConfigDB() {
+        Mongo mongo;
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
+        MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
+
+        final DBCollection inputCollection;
+        if (authURI != null
+                && authURI.getUsername() != null
+                && authURI.getPassword() != null) {
+            inputCollection = MongoConfigUtil.getCollectionWithAuth(inputURI, authURI);
+        } else {
+            inputCollection = MongoConfigUtil.getCollection(inputURI);
+        }
+
+        DB db = inputCollection.getDB();
+        mongo = db.getMongo();
+        if (authURI != null) {
+            if (authURI.getUsername() != null
+                && authURI.getPassword() != null) {
+                authDB = mongo.getDB(authURI.getDatabase());
+            }
+        }
+
+        return mongo.getDB("config");
     }
 
     /**
@@ -190,8 +150,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
 
         StringBuilder sb = new StringBuilder(originalUriString);
         sb.replace(serverStart, serverEnd, newServerUri);
-        String ans = MongoURI.MONGODB_PREFIX + sb.toString();
-        return new MongoClientURI(ans);
+        return new MongoClientURI(MongoURI.MONGODB_PREFIX + sb);
     }
 
     /**
@@ -211,7 +170,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         DBObject splitMin = new BasicDBObject();
         DBObject splitMax = new BasicDBObject();
         if (lowerBound != null) {
-            for (Map.Entry<String, Object> entry : lowerBound.entrySet()) {
+            for (Entry<String, Object> entry : lowerBound.entrySet()) {
                 String key = entry.getKey();
                 Object val = entry.getValue();
 
@@ -222,7 +181,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         }
 
         if (upperBound != null) {
-            for (Map.Entry<String, Object> entry : upperBound.entrySet()) {
+            for (Entry<String, Object> entry : upperBound.entrySet()) {
                 String key = entry.getKey();
                 Object val = entry.getValue();
 
@@ -235,10 +194,10 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         MongoInputSplit split = null;
 
         //If enabled, attempt to build the split using $gt/$lte
-        DBObject query = MongoConfigUtil.getQuery(conf);
-        if (MongoConfigUtil.isRangeQueryEnabled(conf)) {
+        DBObject query = MongoConfigUtil.getQuery(getConfiguration());
+        if (MongoConfigUtil.isRangeQueryEnabled(getConfiguration())) {
             try {
-                query = MongoConfigUtil.getQuery(conf);
+                query = MongoConfigUtil.getQuery(getConfiguration());
                 split = createRangeQuerySplit(lowerBound, upperBound, query);
             } catch (Exception e) {
                 throw new SplitFailedException("Couldn't use range query to create split: " + e.getMessage());
@@ -254,11 +213,11 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
             split.setMin(splitMin);
             split.setMax(splitMax);
         }
-        split.setInputURI(MongoConfigUtil.getInputURI(conf));
-        split.setAuthURI(MongoConfigUtil.getAuthURI(conf));
-        split.setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
-        split.setFields(MongoConfigUtil.getFields(conf));
-        split.setSort(MongoConfigUtil.getSort(conf));
+        split.setInputURI(MongoConfigUtil.getInputURI(getConfiguration()));
+        split.setAuthURI(MongoConfigUtil.getAuthURI(getConfiguration()));
+        split.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
+        split.setFields(MongoConfigUtil.getFields(getConfiguration()));
+        split.setSort(MongoConfigUtil.getSort(getConfiguration()));
         return split;
     }
 
@@ -289,9 +248,9 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         //First check that the split contains no compound keys.
         // e.g. this is valid: { _id : "foo" }
         // but this is not {_id : "foo", name : "bar"}
-        Map.Entry<String, Object> minKey = chunkLowerBound != null && chunkLowerBound.keySet().size() == 1
+        Entry<String, Object> minKey = chunkLowerBound != null && chunkLowerBound.keySet().size() == 1
                                            ? chunkLowerBound.entrySet().iterator().next() : null;
-        Map.Entry<String, Object> maxKey = chunkUpperBound != null && chunkUpperBound.keySet().size() == 1
+        Entry<String, Object> maxKey = chunkUpperBound != null && chunkUpperBound.keySet().size() == 1
                                            ? chunkUpperBound.entrySet().iterator().next() : null;
         if (minKey == null && maxKey == null) {
             throw new IllegalArgumentException("Range query is enabled but one or more split boundaries contains a compound key:\n"

@@ -25,6 +25,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 
 /**
@@ -33,6 +34,8 @@ import java.util.Map;
  * migrations.
  */
 public class ShardMongoSplitter extends MongoCollectionSplitter {
+    public ShardMongoSplitter() {
+    }
 
     public ShardMongoSplitter(final Configuration conf) {
         super(conf);
@@ -41,15 +44,14 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
     // Treat each shard as one split.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        this.init();
         final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(conf);
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
 
         Map<String, String> shardsMap;
-        shardsMap = this.getShardsMap();
+        shardsMap = getShardsMap();
 
-        for (Map.Entry<String, String> entry : shardsMap.entrySet()) {
+        for (Entry<String, String> entry : shardsMap.entrySet()) {
             String shardHosts = entry.getValue();
 
             MongoInputSplit chunkSplit = createSplitFromBounds(null, null);

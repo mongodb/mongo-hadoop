@@ -20,7 +20,7 @@ public class BSONFileInputFormatTest {
     public void enronEmails() throws IOException {
         BSONFileInputFormat inputFormat = new BSONFileInputFormat();
         JobConf job = new JobConf();
-        job.set(INPUT_DIR, new File(EXAMPLE_DATA_HOME, "/dump/enron_mail/messages.bson").getAbsolutePath());
+        job.set(INPUT_DIR, new File(EXAMPLE_DATA_HOME, "/dump/enron_mail/messages.bson").getAbsoluteFile().toURI().toString());
         FileSplit[] splits = inputFormat.getSplits(job, 5);
         int count = 0;
         for (FileSplit split : splits) {

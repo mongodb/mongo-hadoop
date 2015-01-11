@@ -20,16 +20,21 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.bson.BasicBSONObject;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * The treasury yield reducer.
  */
 public class TreasuryYieldReducer
-    extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
+    extends Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> 
+    implements org.apache.hadoop.mapred.Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
 
     private static final Log LOG = LogFactory.getLog(TreasuryYieldReducer.class);
 
@@ -53,5 +58,35 @@ public class TreasuryYieldReducer
         output.put("avg", avg);
         output.put("sum", sum);
         pContext.write(pKey, new BSONWritable(output));
+    }
+
+    @Override
+    public void reduce(final IntWritable key, final Iterator<DoubleWritable> values,
+                       final OutputCollector<IntWritable, BSONWritable> output,
+                       final Reporter reporter) throws IOException {
+        int count = 0;
+        double sum = 0;
+        while (values.hasNext()) {
+            sum += values.next().get();
+            count++;
+        }
+
+        final double avg = sum / count;
+
+        LOG.debug("Average 10 Year Treasury for " + key.get() + " was " + avg);
+
+        BasicBSONObject bsonObject = new BasicBSONObject();
+        bsonObject.put("count", count);
+        bsonObject.put("avg", avg);
+        bsonObject.put("sum", sum);
+        output.collect(key, new BSONWritable(bsonObject));
+    }
+
+    @Override
+    public void close() throws IOException {
+    }
+
+    @Override
+    public void configure(final JobConf job) {
     }
 }

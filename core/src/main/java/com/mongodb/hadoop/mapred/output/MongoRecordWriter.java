@@ -23,15 +23,21 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.io.MongoUpdateWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
 import org.bson.BSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.util.List;
 
 public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
+    private static final Log LOG = LogFactory.getLog(MongoRecordWriter.class);
+
 
     private int roundRobinCounter = 0;
     private final int numberOfHosts;
@@ -47,11 +53,31 @@ public class MongoRecordWriter<K, V> implements RecordWriter<K, V> {
 
 
     public void close(final Reporter reporter) {
+        try {
+            for (DBCollection collection : collections) {
+                MongoConfigUtil.close(collection.getDB().getMongo());
+            }
+        } catch (final MongoException e) {
+            LOG.error("Unable to release Connection: " + e.getMessage());
+        }
     }
 
     public void write(final K key, final V value) throws IOException {
         final DBObject o = new BasicDBObject();
 
+        if (value instanceof MongoUpdateWritable) {
+            //ignore the key - just use the update directly.
+            MongoUpdateWritable muw = (MongoUpdateWritable) value;
+            try {
+                DBCollection dbCollection = getDbCollectionByRoundRobin();
+                dbCollection.update(new BasicDBObject(muw.getQuery()), new BasicDBObject(muw.getModifiers()), muw.isUpsert(),
+                                    muw.isMultiUpdate());
+                return;
+            } catch (final MongoException e) {
+                throw new IOException("can't write to mongo", e);
+            }
+        }
+        
         if (key instanceof BSONWritable) {
             o.put("_id", ((BSONWritable) key).getDoc());
         } else if (key instanceof BSONObject) {

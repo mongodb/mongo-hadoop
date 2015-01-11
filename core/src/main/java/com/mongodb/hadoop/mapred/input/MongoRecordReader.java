@@ -21,6 +21,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.InputSplit;
@@ -53,6 +54,7 @@ public class MongoRecordReader implements RecordReader<BSONWritable, BSONWritabl
     public void close() {
         if (cursor != null) {
             cursor.close();
+            MongoConfigUtil.close(cursor.getCollection().getDB().getMongo());
         }
     }
 

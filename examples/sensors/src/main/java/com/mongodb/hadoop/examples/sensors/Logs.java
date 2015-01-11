@@ -1,10 +1,12 @@
 package com.mongodb.hadoop.examples.sensors;
 
-import com.mongodb.hadoop.MongoConfig;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
+import com.mongodb.hadoop.util.MapredMongoConfigUtil;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import com.mongodb.hadoop.util.MongoTool;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.ToolRunner;
@@ -15,20 +17,32 @@ public class Logs extends MongoTool {
 
     public Logs() throws UnknownHostException {
         Configuration conf = new Configuration();
-        MongoConfig config = new MongoConfig(conf);
         setConf(conf);
+        boolean mrv1Job;
+        try {
+            FileSystem.class.getDeclaredField("DEFAULT_FS");
+            mrv1Job = false;
+        } catch (NoSuchFieldException e) {
+            mrv1Job = true;
+        }
+        if (mrv1Job) {
+            MapredMongoConfigUtil.setInputFormat(getConf(), com.mongodb.hadoop.mapred.MongoInputFormat.class);
+            MapredMongoConfigUtil.setOutputFormat(getConf(), com.mongodb.hadoop.mapred.MongoOutputFormat.class);
+        } else {
+            MongoConfigUtil.setInputFormat(getConf(), MongoInputFormat.class);
+            MongoConfigUtil.setOutputFormat(getConf(), MongoOutputFormat.class);
+        }
 
-        config.setInputFormat(MongoInputFormat.class);
-        config.setInputURI("mongodb://localhost:27017/mongo_hadoop.logs");
-        config.setOutputFormat(MongoOutputFormat.class);
-        config.setOutputURI("mongodb://localhost:27017/mongo_hadoop.logs_aggregate");
 
-        config.setMapper(LogMapper.class);
-        config.setReducer(LogReducer.class);
-        config.setCombiner(LogCombiner.class);
+        MongoConfigUtil.setInputURI(getConf(), "mongodb://localhost:27017/mongo_hadoop.logs");
+        MongoConfigUtil.setOutputURI(getConf(), "mongodb://localhost:27017/mongo_hadoop.logs_aggregate");
 
-        config.setOutputKey(Text.class);
-        config.setOutputValue(IntWritable.class);
+        MongoConfigUtil.setMapper(getConf(), LogMapper.class);
+        MongoConfigUtil.setReducer(getConf(), LogReducer.class);
+        MongoConfigUtil.setCombiner(getConf(), LogCombiner.class);
+
+        MongoConfigUtil.setOutputKey(getConf(), Text.class);
+        MongoConfigUtil.setOutputValue(getConf(), IntWritable.class);
     }
 
     public static void main(final String[] pArgs) throws Exception {

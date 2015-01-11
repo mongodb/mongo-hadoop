@@ -29,8 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class 
-    MultiMongoCollectionSplitter extends MongoSplitter {
+public class MultiMongoCollectionSplitter extends MongoSplitter {
 
     public static final String MULTI_COLLECTION_CONF_KEY = "mongo.input.multi_uri.json";
     private static final Log LOG = LogFactory.getLog(MultiMongoCollectionSplitter.class);
@@ -44,7 +43,7 @@ public class
 
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        List<MongoClientURI> inputURIs = MongoConfigUtil.getMongoURIs(this.conf, MongoConfigUtil.INPUT_URI);
+        List<MongoClientURI> inputURIs = MongoConfigUtil.getMongoURIs(this.getConfiguration(), MongoConfigUtil.INPUT_URI);
         List<InputSplit> returnVal = new LinkedList<InputSplit>();
         List<MongoSplitter> splitters = new LinkedList<MongoSplitter>();
 
@@ -61,7 +60,7 @@ public class
             //the configuration instead.
             for (MongoClientURI uri : inputURIs) {
                 MongoCollectionSplitter splitter;
-                Configuration confForThisUri = new Configuration(conf);
+                Configuration confForThisUri = new Configuration(getConfiguration());
                 MongoConfigUtil.setInputURI(confForThisUri, uri);
                 confForThisUri.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "");
                 splitter = MongoSplitterFactory.getSplitterByStats(uri, confForThisUri);
@@ -70,7 +69,7 @@ public class
         } else {
             //Otherwise the user has set options per-collection.
             LOG.info("Loading multiple input URIs from JSON stored in " + MULTI_COLLECTION_CONF_KEY);
-            DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.conf, MULTI_COLLECTION_CONF_KEY);
+            DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.getConfiguration(), MULTI_COLLECTION_CONF_KEY);
 
             if (!(multiUriConfig instanceof List)) {
                 throw new IllegalArgumentException("Invalid JSON format in multi uri config key: Must be an array where each element "

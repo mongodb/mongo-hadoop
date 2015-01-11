@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
-import org.apache.hadoop.hive.serde2.AbstractSerDe;
+import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
 
@@ -63,7 +63,7 @@ public class MongoStorageHandler extends DefaultStorageHandler {
     }
 
     @Override
-    public Class<? extends AbstractSerDe> getSerDeClass() {
+    public Class<? extends SerDe> getSerDeClass() {
         return BSONSerDe.class;
     }
 
@@ -101,7 +101,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
                     DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
-                    coll.drop();
+                    try {
+                        coll.drop();
+                    } finally {
+                        MongoConfigUtil.close(coll.getDB().getMongo());
+                    }
                 } else {
                     throw new MetaException(format("No '%s' property found. Collection not dropped.", MONGO_URI));
                 }

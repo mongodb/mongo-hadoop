@@ -23,9 +23,12 @@ import com.mongodb.MongoException;
 import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.bson.BSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,43 +38,32 @@ import java.util.List;
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
+    private static final Log LOG = LogFactory.getLog(MongoRecordWriter.class);
     private final List<DBCollection> collections;
     private final int numberOfHosts;
     private final TaskAttemptContext context;
-    private final String[] updateKeys;
-    private final boolean multiUpdate;
 
     private int roundRobinCounter = 0;
 
     public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
-        this(c, ctx, null);
-    }
-
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx, final String[] updateKeys) {
-        this(c, ctx, updateKeys, false);
-    }
-
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx, final String[] updateKeys, final boolean multi) {
-        this(Arrays.asList(c), ctx, updateKeys, multi);
+        this(Arrays.asList(c), ctx);
     }
 
     public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx) {
-        this(c, ctx, null);
-    }
-
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx, final String[] updateKeys) {
-        this(c, ctx, updateKeys, false);
-    }
-
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx, final String[] updateKeys, final boolean multi) {
         collections = new ArrayList<DBCollection>(c);
         context = ctx;
-        this.updateKeys = updateKeys;
-        this.multiUpdate = false;
         this.numberOfHosts = c.size();
     }
 
     public void close(final TaskAttemptContext context) {
+        try {
+            for (DBCollection collection : collections) {
+                MongoConfigUtil.close(collection.getDB().getMongo());
+            }
+                
+        } catch (final MongoException e) {
+            LOG.error("Unable to close Connection: " + e.getMessage());
+        }
     }
 
     public void write(final K key, final V value) throws IOException {
@@ -110,23 +102,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
         try {
             DBCollection dbCollection = getDbCollectionByRoundRobin();
-
-            if (updateKeys == null) {
-                dbCollection.save(o);
-            } else {
-                // Form the query fields
-                DBObject query = new BasicDBObject(updateKeys.length);
-                for (String updateKey : updateKeys) {
-                    query.put(updateKey, o.get(updateKey));
-                    o.removeField(updateKey);
-                }
-                // If _id is null remove it, we don't want to override with null _id
-                if (o.get("_id") == null) {
-                    o.removeField("_id");
-                }
-                DBObject set = new BasicDBObject().append("$set", o);
-                dbCollection.update(query, set, true, multiUpdate);
-            }
+            dbCollection.save(o);
         } catch (final MongoException e) {
             throw new IOException("can't write to mongo", e);
         }
@@ -146,4 +122,3 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         return context;
     }
 }
-

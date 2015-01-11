@@ -48,10 +48,8 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
 
     // Pig specific settings
     static final String SCHEMA_SIGNATURE = "mongoupdate.pig.output.schema";
-    //CHECKSTYLE:OFF
-    protected ResourceSchema schema = null;
-    //CHECKSTYLE:ON
-    private String udfcSignature = null;
+    private ResourceSchema schema = null;
+    private String signature = null;
 
     // private final MongoStorageOptions options;
     private final MongoOutputFormat outputFormat = new MongoOutputFormat();
@@ -60,7 +58,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
     private MongoRecordWriter<?, MongoUpdateWritable> recordWriter = null;
 
     // JSONPigReplace setup
-    private JSONPigReplace repl;
+    private JSONPigReplace pigReplace;
     private String schemaStr;
     private String unnamedStr;
 
@@ -71,7 +69,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      * @param update JSON string representing 'update' parameter in MongoDB update
      */
     public MongoUpdateStorage(final String query, final String update) {
-        repl = new JSONPigReplace(new String[]{query, update});
+        pigReplace = new JSONPigReplace(new String[]{query, update});
     }
 
     /**
@@ -79,11 +77,11 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query  JSON string representing 'query' parameter in MongoDB update
      * @param update JSON string representing 'update' parameter in MongoDB update
-     * @param s      string representing schema of pig output
+     * @param schema string representing schema of pig output
      */
-    public MongoUpdateStorage(final String query, final String update, final String s) {
+    public MongoUpdateStorage(final String query, final String update, final String schema) {
         this(query, update);
-        schemaStr = s;
+        schemaStr = schema;
     }
 
     /**
@@ -91,12 +89,12 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query    JSON string representing 'query' parameter in MongoDB update
      * @param update   JSON string representing 'update' parameter in MongoDB update
-     * @param s        string representing schema of pig output
+     * @param schema   string representing schema of pig output
      * @param toIgnore string representing "unnamed" objects
      */
-    public MongoUpdateStorage(final String query, final String update, final String s, final String toIgnore) {
-        this(query, update, s);
-        unnamedStr = (toIgnore.length() > 0 ? toIgnore : null);
+    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore) {
+        this(query, update, schema);
+        unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
     }
 
     /**
@@ -104,22 +102,23 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      *
      * @param query         JSON string representing 'query' parameter in MongoDB update
      * @param update        JSON string representing 'update' parameter in MongoDB update
-     * @param s             string representing schema of pig output
+     * @param schema        string representing schema of pig output
      * @param toIgnore      string representing "unnamed" objects
      * @param updateOptions JSON string representing 'extra' MongoDB update options
      */
-    public MongoUpdateStorage(final String query, final String update, final String s, final String toIgnore, final String updateOptions) {
-        repl = new JSONPigReplace(new String[]{query, update, updateOptions});
-        schemaStr = s;
-        unnamedStr = (toIgnore.length() > 0 ? toIgnore : null);
+    public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore,
+                              final String updateOptions) {
+        pigReplace = new JSONPigReplace(new String[]{query, update, updateOptions});
+        schemaStr = schema;
+        unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
     }
 
     @Override
     public void checkSchema(final ResourceSchema s) throws IOException {
         schema = s;
-        UDFContext udfc = UDFContext.getUDFContext();
+        UDFContext udfContext = UDFContext.getUDFContext();
 
-        Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
+        Properties p = udfContext.getUDFProperties(getClass(), new String[]{signature});
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
@@ -137,7 +136,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
     public void putNext(final Tuple tuple) throws IOException {
         try {
             // perform substitution on variables "marked" for replacements
-            BasicBSONObject[] toUpdate = repl.substitute(tuple, schema, unnamedStr);
+            BasicBSONObject[] toUpdate = pigReplace.substitute(tuple, schema, unnamedStr);
             // 'query' JSON
             BasicBSONObject q = toUpdate[0];
             // 'update' JSON
@@ -146,10 +145,10 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
             // multi and upsert 'options' JSON
             boolean isUpsert = true;
             boolean isMulti = false;
-            BasicBSONObject mu = (toUpdate.length > 2 ? toUpdate[2] : null);
+            BasicBSONObject mu = toUpdate.length > 2 ? toUpdate[2] : null;
             if (mu != null) {
-                isUpsert = (!mu.containsField("upsert") || mu.getBoolean("upsert"));
-                isMulti = (mu.containsField("multi") && mu.getBoolean("multi"));
+                isUpsert = !mu.containsField("upsert") || mu.getBoolean("upsert");
+                isMulti = mu.containsField("multi") && mu.getBoolean("multi");
             }
 
             recordWriter.write(null, new MongoUpdateWritable(q, u,
@@ -169,9 +168,9 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
             throw new IOException("Invalid Record Writer");
         }
 
-        UDFContext udfc = UDFContext.getUDFContext();
-        Properties p = udfc.getUDFProperties(this.getClass(), new String[]{udfcSignature});
-        
+        UDFContext context = UDFContext.getUDFContext();
+        Properties p = context.getUDFProperties(getClass(), new String[]{signature});
+
         /*
          * In determining the schema to use, the user-defined schema should take
          * precedence over the "inferred" schema
@@ -210,12 +209,11 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
             throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
         }
 
-        // set output URI
         MongoConfigUtil.setOutputURI(config, location);
     }
 
     @Override
     public void setStoreFuncUDFContextSignature(final String signature) {
-        udfcSignature = signature;
+        this.signature = signature;
     }
 }

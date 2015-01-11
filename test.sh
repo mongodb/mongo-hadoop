@@ -2,40 +2,49 @@
 
 alias g="./gradlew --daemon"
 
-HV=$1
-VERSIONS=(0.23 1.0 1.1 cdh4 cdh5 2.2 2.3 2.4)
-VERSIONS=(0.23 cdh4 cdh5 2.2 2.3 2.4)
+OPTS=test
 
-function choose() {
-	if [ -z "${HV}" ]
-	then
-		echo Choose a hadoop version
-		select HV in ${VERSIONS[@]}
-		do
-			break
-		done
-	fi
+while [ "$1" ]
+do
+    case $1 in
+        "examples")
+            OPTS="historicalYield sensorData enronEmails"
+            ;;
+        "all")
+            HV="all"
+            ;;
+    esac
+	shift
+done
+
+echo Running \"$OPTS\"
+
+function browser() {
+	while [ "$1" ]
+	do
+		[ -f $1 ] && open $1
+		shift
+	done
 }
 
 function run() {
-	./bin/hadoop-all.sh shutdown
-	g clean jar -Phadoop_version=${HV}
-	./bin/hadoop-all.sh start -format
-	g test -Phadoop_version=${HV} 2>&1 | tee test-${HV}.out
-	./bin/hadoop-all.sh shutdown
+	g clean jar testJar $OPTS --stacktrace 2>&1 | tee -a build/test.out
+
+
+	for i in "*/build/reports/tests/index.html"
+	do
+		if [ "`grep -i failed $i 2> /dev/null`" ]
+		then
+			echo "********** Found failing tests.  Exiting."
+			browser $i
+			FAILED=true
+		fi
+
+		if [ $FAILED ]
+		then
+			exit
+		fi
+	done
 }
 
-if [ "$1" == "all" ]
-then
-	for HV in ${VERSIONS[@]}
-	do
-		> test-${HV}.out
-	done
-	for HV in ${VERSIONS[@]}
-	do
-		run
-	done
-else
-	choose
-	run
-fi
+run

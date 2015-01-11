@@ -4,7 +4,7 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
 
-Current stable release: **1.2.1**
+Current stable release: **1.3.1**
 
 ## Features
 
@@ -20,10 +20,6 @@ See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
 
 ## Building
 
-The mongo-hadoop connector currently supports the following versions of hadoop:  0.23, 1.0, 1.1, 2.2, 2.3, 2.4, 
-and CDH 4 abd 5.  The default build version will build against the last Apache Hadoop (currently 2.4).  If you would like to build 
-against a specific version of Hadoop you simply need to pass `-Phadoop_version=<your version>` to gradlew when building.
-
 Run `./gradlew jar` to build the jars.  The jars will be placed in to `build/libs` for each module.  e.g. for the core module, 
 it will be generated in the `core/build/libs` directory.
 
@@ -34,18 +30,8 @@ following locations, depending on which Hadoop release you are using:
 * `$HADOOP_HOME/share/hadoop/mapreduce/`
 * `$HADOOP_HOME/share/hadoop/lib/`
 
-## Supported Distributions of Hadoop
-
-| Hadoop Version                       | Build Parameter         |
-| :----------------------------------: | :---------------------: |
-| Apache Hadoop 0.23                   | -Phadoop_version='0.23' |
-| Apache Hadoop 1.0                    | -Phadoop_version='1.0'  |
-| Apache Hadoop 1.1                    | -Phadoop_version='1.1'  |
-| Apache Hadoop 2.2                    | -Phadoop_version='2.2'  |
-| Apache Hadoop 2.3                    | -Phadoop_version='2.3'  |
-| Apache Hadoop 2.4                    | -Phadoop_version='2.4'  |
-| Cloudera Distribution for Hadoop 4   | -Phadoop_version='cdh4' |
-| Cloudera Distribution for Hadoop 5   | -Phadoop_version='cdh5' |
+mongo-hadoop should work on any distribution of hadoop.  Should you run in to an issue, please file a 
+[Jira](https://jira.mongodb.org/browse/HADOOP/) ticket.
 
 ## Configuration
 
@@ -96,7 +82,7 @@ If you're not sure how to write a test for a feature or have trouble with a test
 and we will try to help.  _Note_: Until findbugs updates its dependencies, running `./gradlew check` on Java 8 will fail.
 
 ### Maintainers
-Justin lee (justin.lee@mongodb.com)
+Justin Lee (justin.lee@mongodb.com)
 
 ### Contributors
 * Mike O'Brien (mikeo@10gen.com)

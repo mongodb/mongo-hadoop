@@ -17,12 +17,18 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
+<!--
     <property>
         <name>fs.defaultFS</name>
-        <value>hdfs://localhost</value>
+        <value>hdfs://127.0.0.1:8020/</value>
+    </property>
+-->
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://localhost:8020</value>
     </property>
     <property>
         <name>hadoop.tmp.dir</name>
-        <value>${user.home}/hadoop-binaries/tmpdir</value>
+        <value>@HADOOP_BINARIES@/hadoop-tmpdir</value>
     </property>
 </configuration>
