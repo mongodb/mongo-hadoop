@@ -141,6 +141,13 @@ public final class MongoConfigUtil {
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
+     * If the key specified for {@link #INPUT_SPLIT_KEY_PATTERN} is a descending index or
+     * is a compound key that contains a descending value then this should be set to {@code true}.<p/>
+     * Defaults to {@code false}.
+     **/
+    public static final String SPLIT_KEY_DESCENDING = "mongo.input.split.split_key_descending";
+
+    /**
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
      * <p/>
@@ -174,6 +181,24 @@ public final class MongoConfigUtil {
      * Defaults to {@code false}
      */
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
+
+    /**
+     * The lower bound shard key to use when creating the input splits.<p/>
+     * Defaults to {@code null}.  Values must be provided for both this key
+     * and {@link #SPLITS_MAX_KEY} in order for the range to be used.  Remember
+     * that if your index is ordered descending then the value for this key
+     * will actually be greater than the value specified at {@link #SPLITS_MAX_KEY}.
+     **/
+    public static final String SPLITS_MIN_KEY = "mongo.input.split.split_key_min";
+
+    /**
+     * The upper bound shard key to use when creating the input splits.<p/>
+     * Defaults to {@code null}.  Values must be provided for both this key
+     * and {@link #SPLITS_MIN_KEY} in order for the range to be used.  Remember
+     * that if your index is ordered descending then the value for this key
+     * will actually be less than the value specified at {@link #SPLITS_MIN_KEY}.
+     **/
+    public static final String SPLITS_MAX_KEY = "mongo.input.split.split_key_max";
 
     /**
      * Shared MongoClient instance cache.
@@ -597,6 +622,14 @@ public final class MongoConfigUtil {
 
     public static void setRangeQueryEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_RANGEQUERY, value);
+    }
+
+    public static boolean isSplitKeyDescending(final Configuration conf) {
+      return conf.getBoolean(SPLIT_KEY_DESCENDING, false);
+    }
+
+    public static void setSplitKeyDescending(final Configuration conf, final boolean value) {
+      conf.setBoolean(SPLIT_KEY_DESCENDING, value);
     }
 
     /**
