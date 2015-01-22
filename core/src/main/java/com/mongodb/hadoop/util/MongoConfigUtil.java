@@ -142,7 +142,10 @@ public final class MongoConfigUtil {
 
     /**
      * If the key specified for {@link #INPUT_SPLIT_KEY_PATTERN} is a descending index or
-     * is a compound key that contains a descending value then this should be set to {@code true}.<p/>
+     * is a compound key that contains a descending value then this should be set to {@code true}.
+     * If {@link #SPLITS_MIN_KEY} and {@link #SPLITS_MAX_KEY} are specified and the max key value
+     * is less than the min key value then this should be set to {@code true}.  In all other
+     * cases this should either not be set or be set to {@code false}.<p/>
      * Defaults to {@code false}.
      **/
     public static final String SPLIT_KEY_DESCENDING = "mongo.input.split.split_key_descending";

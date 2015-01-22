@@ -71,12 +71,12 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         final boolean splitKeyDescending = MongoConfigUtil.isSplitKeyDescending(getConfiguration());
         MongoClientURI inputURI;
         DBCollection inputCollection = null;
-        final ArrayList<InputSplit> returnVal;
+        final List<InputSplit> returnVal;
         try {
             inputURI = MongoConfigUtil.getInputURI(getConfiguration());
             inputCollection = MongoConfigUtil.getCollection(inputURI);
 
-            returnVal = new ArrayList<InputSplit>();
+            //returnVal = new ArrayList<InputSplit>();
             final String ns = inputCollection.getFullName();
 
             LOG.info("Running splitvector to check splits against " + inputURI);
@@ -160,18 +160,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                 LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"
                          + " small, try lowering 'mongo.input.split_size' if this is undesirable.");
             }
-
-            BasicDBObject lastKey = splitKeyDescending ? splitMin : splitMax; // Lower boundary of the first min split
-
-            for (Object aSplitData : splitData) {
-                BasicDBObject currentKey = (BasicDBObject) aSplitData;
-                returnVal.add(createSplitFromBounds(lastKey, currentKey));
-                lastKey = currentKey;
-            }
-
-            // Last max split, with empty upper boundary
-            MongoInputSplit lastSplit = createSplitFromBounds(lastKey, null);
-            returnVal.add(lastSplit);
+            returnVal = createSplits(splitData, splitMin, splitMax, splitKeyDescending);
         } finally {
             if (inputCollection != null) {
                 MongoConfigUtil.close(inputCollection.getDB().getMongo());
@@ -181,4 +170,19 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         return returnVal;
     }
 
+    protected List<InputSplit> createSplits( BasicDBList splitData, 
+                    BasicDBObject splitMin, BasicDBObject splitMax, boolean descending ) throws SplitFailedException {
+      final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
+
+      BasicDBObject minKey = descending ? splitMax : splitMin;
+      BasicDBObject maxKey = descending ? splitMin : splitMax;
+      for( Object aSplitData : splitData ) {
+        BasicDBObject currentKey = (BasicDBObject)aSplitData;
+        returnVal.add(createSplitFromBounds(maxKey, currentKey));
+        maxKey = currentKey;        
+      }
+      returnVal.add(createSplitFromBounds(maxKey,minKey));
+
+      return returnVal; 
+    }
 }
