@@ -84,7 +84,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
             value.setDoc(bo);
 
             numDocsRead++;
-            if (numDocsRead % 5000 == 0) {
+            if (LOG.isDebugEnabled() && numDocsRead % 5000 == 0) {
                 LOG.debug(String.format("read %d docs from %s at %d", numDocsRead, fileSplit, in.getPos()));
             }
             return true;

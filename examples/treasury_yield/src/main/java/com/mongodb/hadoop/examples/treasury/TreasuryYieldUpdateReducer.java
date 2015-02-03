@@ -51,7 +51,9 @@ public class TreasuryYieldUpdateReducer
 
         final double avg = sum / count;
 
-        LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        }
 
         BasicBSONObject query = new BasicBSONObject("_id", pKey.get());
         BasicBSONObject modifiers = new BasicBSONObject();

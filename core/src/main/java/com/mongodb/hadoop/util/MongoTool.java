@@ -115,8 +115,10 @@ public class MongoTool extends Configured implements Tool {
         job.setJarByClass(getClass());
         final Class<? extends org.apache.hadoop.mapred.Mapper> mapper = MapredMongoConfigUtil.getMapper(conf);
 
-        LOG.debug("Mapper Class: " + mapper);
-        LOG.debug("Input URI: " + conf.get(MapredMongoConfigUtil.INPUT_URI));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapper Class: " + mapper);
+            LOG.debug("Input URI: " + conf.get(MapredMongoConfigUtil.INPUT_URI));
+        }
         job.setMapperClass(mapper);
         Class<? extends org.apache.hadoop.mapred.Reducer> combiner = MapredMongoConfigUtil.getCombiner(conf);
         if (combiner != null) {
@@ -179,8 +181,10 @@ public class MongoTool extends Configured implements Tool {
         job.setJarByClass(getClass());
         final Class<? extends Mapper> mapper = MongoConfigUtil.getMapper(conf);
 
-        LOG.debug("Mapper Class: " + mapper);
-        LOG.debug("Input URI: " + conf.get(MongoConfigUtil.INPUT_URI));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapper Class: " + mapper);
+            LOG.debug("Input URI: " + conf.get(MongoConfigUtil.INPUT_URI));
+        }
         job.setMapperClass(mapper);
         Class<? extends Reducer> combiner = MongoConfigUtil.getCombiner(conf);
         if (combiner != null) {

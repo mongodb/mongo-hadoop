@@ -32,8 +32,10 @@ public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUp
 
         BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(pKey.toString()));
         BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
-        LOG.debug("query: " + query);
-        LOG.debug("update: " + update);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("query: " + query);
+            LOG.debug("update: " + update);
+        }
         pContext.write(null, new MongoUpdateWritable(query, update, true, false));
     }
 
@@ -47,8 +49,10 @@ public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUp
 
         BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(key.toString()));
         BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
-        LOG.debug("query: " + query);
-        LOG.debug("update: " + update);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("query: " + query);
+            LOG.debug("update: " + update);
+        }
         output.collect(null, new MongoUpdateWritable(query, update, true, false));
     }
 

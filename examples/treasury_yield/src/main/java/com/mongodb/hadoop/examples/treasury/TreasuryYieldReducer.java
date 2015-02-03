@@ -51,7 +51,9 @@ public class TreasuryYieldReducer
 
         final double avg = sum / count;
 
-        LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        }
 
         BasicBSONObject output = new BasicBSONObject();
         output.put("count", count);
@@ -73,7 +75,9 @@ public class TreasuryYieldReducer
 
         final double avg = sum / count;
 
-        LOG.debug("Average 10 Year Treasury for " + key.get() + " was " + avg);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Average 10 Year Treasury for " + key.get() + " was " + avg);
+        }
 
         BasicBSONObject bsonObject = new BasicBSONObject();
         bsonObject.put("count", count);

@@ -99,7 +99,9 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
 
     public void putNext(final Tuple tuple) throws IOException {
-        LOG.debug("writing " + tuple.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("writing " + tuple.toString());
+        }
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
 
         ResourceFieldSchema[] fields = this.schema.getFields();
@@ -107,7 +109,9 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             writeField(builder, fields[i], tuple.get(i));
         }
 
-        LOG.debug("writing out:" + builder.get().toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("writing out:" + builder.get().toString());
+        }
         //noinspection unchecked
         recordWriter.write(null, builder.get());
     }
