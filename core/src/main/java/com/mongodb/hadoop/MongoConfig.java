@@ -361,16 +361,20 @@ public class MongoConfig {
     }
 
     /**
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
+     * <p>
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false,
+     * Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
-     * <p/>
+     * </p>
+     * <p>
      * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
      * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
      * index on the field, and follow the other rules outlined in the docs.
-     * <p/>
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
-     *
-     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     * </p>
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public String getInputSplitKeyPattern() {
         return MongoConfigUtil.getInputSplitKeyPattern(configuration);
@@ -382,16 +386,20 @@ public class MongoConfig {
     }
 
     /**
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
+     * <p>
+     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false,
+     * Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
-     * <p/>
+     * </p>
+     * <p>
      * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
      * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
      * index on the field, and follow the other rules outlined in the docs.
-     * <p/>
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
-     *
-     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     * </p>
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public void setInputSplitKeyPattern(final String pattern) {
         MongoConfigUtil.setInputSplitKeyPattern(configuration, pattern);
@@ -403,44 +411,58 @@ public class MongoConfig {
     }
 
     /**
+     * <p>
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * <p/>
+     * </p>
+     * <p>
      * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
      * severely reducing parallel mapping.
+     * </p>
      */
     public boolean createInputSplits() {
         return MongoConfigUtil.createInputSplits(configuration);
     }
 
     /**
+     * <p>
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * <p/>
+     * </p>
+     * <p>
      * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
      * severely reducing parallel mapping.
+     * </p>
      */
     public void setCreateInputSplits(final boolean value) {
         MongoConfigUtil.setCreateInputSplits(configuration, value);
     }
 
     /**
+     * <p>
      * The MongoDB field to read from for the Mapper Input.
-     * <p/>
+     * </p>
+     * <p>
      * This will be fed to your mapper as the "Key" for the input.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code _id}
+     * </p>
      */
     public String getInputKey() {
         return MongoConfigUtil.getInputKey(configuration);
     }
 
     /**
+     * <p>
      * The MongoDB field to read from for the Mapper Input.
-     * <p/>
+     * </p>
+     * <p>
      * This will be fed to your mapper as the "Key" for the input.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code _id}
+     * </p>
      */
     public void setInputKey(final String fieldName) {
         MongoConfigUtil.setInputKey(configuration, fieldName);

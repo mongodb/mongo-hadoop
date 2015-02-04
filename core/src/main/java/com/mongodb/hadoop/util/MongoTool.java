@@ -33,16 +33,20 @@ import java.io.IOException;
 import java.util.Map.Entry;
 
 /**
+ * <p>
  * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a ToolRunner Primarily
- * useful in cases of XML Config files. <p/> Main will be a necessary method to run the job - suggested implementation template: <p></p>
- * <p/>
- * <pre>
+ * useful in cases of XML Config files.
+ * </p>
+ * <p>
+ * Main will be a necessary method to run the job - suggested implementation template:
+ * </p>
+ * <code>
  * public static void main(String[] args) throws Exception {
- *     System.exit(ToolRunner.run(new &lt;YourClass&gt;(), args));
+ *     System.exit(ToolRunner.run(new &lt;YourClass&gt;, args));
  * }
- * </pre>
+ * </code>
  *
- * @author Brendan W. McAdams <brendan@10gen.com>
+ * @author Brendan W. McAdams (brendan@10gen.com)
  */
 public class MongoTool extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(MongoTool.class);

@@ -228,8 +228,9 @@ public class BSONSerDe implements SerDe {
 
 
     /**
+     * <p>
      * For a given Object value and its supposed TypeInfo determine and return its Hive object representation
-     * <p/>
+     * </p>
      * Map in here must be of the same type, so instead an embedded doc becomes a struct instead. ***
      */
     public Object deserializeField(final Object value, final TypeInfo valueTypeInfo, final String ext) {

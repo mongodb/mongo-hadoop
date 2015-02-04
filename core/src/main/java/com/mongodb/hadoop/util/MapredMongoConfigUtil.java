@@ -81,11 +81,15 @@ public final class MapredMongoConfigUtil {
 
 
     /**
+     * <p>
      * The MongoDB field to read from for the Mapper Input.
-     * <p/>
+     * </p>
+     * <p>
      * This will be fed to your mapper as the "Key" for the input.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code _id}
+     * </p>
      */
     public static final String INPUT_KEY = "mongo.input.key";
     public static final String INPUT_NOTIMEOUT = "mongo.input.notimeout";
@@ -105,70 +109,98 @@ public final class MapredMongoConfigUtil {
 
 
     /**
+     * <p>
      * A username and password to use.
-     * <p/>
+     * </p>
+     * <p>
      * This is necessary when running jobs with a sharded cluster, as access to the config database is needed to get
+     * </p>
      */
     public static final String AUTH_URI = "mongo.auth.uri";
 
 
     /**
+     * <p>
      * When *not* using 'read_from_shards' or 'read_shard_chunks' The number of megabytes per Split to create for the input data.
-     * <p/>
+     * </p>
+     * <p>
      * Currently defaults to 8MB, tweak it as necessary for your code.
-     * <p/>
+     * </p>
+     * <p>
      * This default will likely change as we research better options.
+     * </p>
      */
     public static final String INPUT_SPLIT_SIZE = "mongo.input.split_size";
 
     public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
+     * <p>
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
-     * <p/>
+     * </p>
+     * <p>
      * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
      * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
      * index on the field, and follow the other rules outlined in the docs.
-     * <p/>
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
+     * </p>
      *
-     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a> 
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
+     * <p>
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * <p/>
+     * </p>
+     * <p>
      * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
      * severely reducing parallel mapping.
+     * </p>
      */
     public static final String CREATE_INPUT_SPLITS = "mongo.input.split.create_input_splits";
 
     /**
      * If {@code true} in a sharded setup splits will be made to connect to individual backend {@code mongod}s.  This can be unsafe. If
-     * {@code mongos} is moving chunks around you might see duplicate data, or miss some data entirely. Defaults to {@code false}
+     * {@code mongos} is moving chunks around you might see duplicate data, or miss some data entirely.
+     *
+     * <p> 
+     * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_USE_SHARDS = "mongo.input.split.read_from_shards";
     /**
      * If {@code true} have one split = one shard chunk.  If {@link #SPLITS_USE_SHARDS} is not true splits will still use chunks, but will
      * connect through {@code mongos} instead of the individual backend {@code mongod}s (the safe thing to do). If {@link
      * #SPLITS_USE_SHARDS} is {@code true} but this is {@code false} one split will be made for each backend shard. THIS IS UNSAFE and may
-     * result in data being run multiple times <p> Defaults to {@code true }
+     * result in data being run multiple times
+     *
+     * <p>
+     * Defaults to {@code true }
+     * </p>
      */
     public static final String SPLITS_USE_CHUNKS = "mongo.input.split.read_shard_chunks";
     /**
+     * <p>
      * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the URI.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
     /**
+     * <p>
      * If true then queries for splits will be constructed using $lt/$gt instead of $min and $max.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
 

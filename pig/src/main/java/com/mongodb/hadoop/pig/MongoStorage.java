@@ -65,12 +65,26 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
     /**
-     * Takes a list of arguments of two types: <ul> <li>A single set of keys to base updating on in the format:<br /> 'update [time, user]'
-     * or 'multi [timer, user] for multi updates</li>
-     * <p/>
-     * <li>Multiple indexes to ensure in the format:<br /> '{time: 1, user: 1},{unique: true}'<br /> (The syntax is exactly like
-     * db.col.ensureIndex())</li> </ul> Example:<br /> STORE Result INTO '$db' USING com.mongodb.hadoop.pig.MongoStorage('update [time,
-     * servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}').
+     * <p>
+     * Takes a list of arguments of two types:
+     * </p>
+     * <ul>
+     * <li>A single set of keys to base updating on in the format:
+     * <code>'update [time, user]'</code> or <code>'multi [time, user]'</code> for multi updates</li>
+     * <li>Multiple indexes to ensure in the format:
+     * <code>'{time: 1, user: 1},{unique: true}'</code>
+     * (The syntax is exactly like db.col.ensureIndex())</li>
+     * </ul>
+     * <p>
+     * Example:
+     * </p>
+     * <pre><code>
+     * STORE Result INTO '$db'
+     * USING com.mongodb.hadoop.pig.MongoStorage(
+     *   'update [time, * servername, hostname]',
+     *   '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}'
+     * )
+     * </code></pre>
      *
      * @param args storage arguments
      * @throws ParseException
