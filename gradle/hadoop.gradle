@@ -93,9 +93,8 @@ task startCluster(dependsOn: [copyFiles]) << {
         file("${rootDir}/build/logs/").mkdirs()
     }
 
-    delete {
-        delete fileTree(dir: file("${hadoopBinaries}/hadoop-tmpdir/"))
-    }
+    delete file("${hadoopBinaries}/hadoop-tmpdir")
+
     println "Formatting HDFS"
     execute("${hadoopHome}/bin/hdfs", [ 'namenode', '-format', '-force' ], null,
             new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
