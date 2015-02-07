@@ -143,10 +143,17 @@ public class MongoUpdateWritable implements Writable {
         if (upsert != other.upsert || multiUpdate != other.multiUpdate) {
             return false;
         }
-        if (!(query != other.query && (query == null || !query.equals(other.query)))) {
-            return true;
+        if ((query == null && other.query != null)
+                || (other.query == null && query != null)
+                || (!query.equals(other.query))) {
+            return false;
         }
-        return !(modifiers != other.modifiers && (modifiers == null || !modifiers.equals(other.modifiers)));
+        if ((modifiers == null && other.modifiers != null)
+                || (other.modifiers == null && modifiers != null)
+                || (!modifiers.equals(other.modifiers))) {
+            return false;
+        }
+        return true;
     }
 
     @Override
