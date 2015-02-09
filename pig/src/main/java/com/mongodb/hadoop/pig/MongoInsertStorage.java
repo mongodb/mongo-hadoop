@@ -20,6 +20,7 @@ package com.mongodb.hadoop.pig;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -52,6 +53,8 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
     private String udfcSignature = null;
     private String idField = null;
+    private String toIgnore = null;
+
 
     private final MongoOutputFormat outputFormat = new MongoOutputFormat();
 
@@ -66,19 +69,25 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     public MongoInsertStorage(final String idField, final String useUpsert) {
         this.idField = idField;
     }
-    
+
     public MongoInsertStorage(final String idField) {
         this.idField = idField;
+    }
+
+    public MongoInsertStorage(final String idField, final String useUpsert, final String toIgnore) {
+        this.idField = idField;
+        this.toIgnore = toIgnore;
     }
 
     protected void writeField(final BasicDBObjectBuilder builder,
                               final ResourceFieldSchema field,
                               final Object d) throws IOException {
-        Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
+        Object convertedType = BSONStorage.getTypeForBSON(d, field, this.toIgnore);
         if (field.getName() != null && field.getName().equals(idField)) {
             builder.add("_id", convertedType);
         } else {
-            builder.add(field.getName(), convertedType);
+        	String fieldName = FieldUtils.getEscFieldName(field.getName());
+            builder.add(fieldName, convertedType);
         }
 
     }
@@ -90,6 +99,10 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
         Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
+    }
+
+    public void storeSchema(final ResourceSchema schema) {
+        this.schema = schema;
     }
 
     @Override
@@ -122,7 +135,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
             out.write(null, builder.get());
         } catch (Exception e) {
-            throw new IOException("Couldn't convert tuple to bson: ", e);
+            throw new IOException("Couldn't convert tuple " + tuple + " to bson: ", e);
         }
     }
 
@@ -171,7 +184,6 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         }
         MongoConfigUtil.setOutputURI(config, location);
     }
-
 
     @Override
     public void setStoreFuncUDFContextSignature(final String signature) {

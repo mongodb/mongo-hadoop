@@ -37,6 +37,9 @@ import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
 
+import org.joda.time.DateTime;
+
+import java.util.Date;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,7 +61,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     private String idField = null;
 
     private final BSONFileOutputFormat outputFormat = new BSONFileOutputFormat();
-
+    
     public BSONStorage() {
     }
 
@@ -113,6 +116,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 return o.toString();
             case DataType.CHARARRAY:
                 return o;
+            case DataType.DATETIME:
+            	return (o==null ? null : ((DateTime) o).toDate());
 
             //Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
@@ -123,7 +128,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                 ResourceFieldSchema[] fs = s.getFields();
                 Map<String, Object> m = new LinkedHashMap<String, Object>();
                 for (int j = 0; j < fs.length; j++) {
-                    m.put(fs[j].getName(), getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
+                	String fn = FieldUtils.getEscFieldName(fs[j].getName());
+                    m.put(fn, getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
                 }
                 return m;
 
@@ -159,7 +165,9 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
                     for (Tuple t : (DataBag) o) {
                         Map<String, Object> ma = new LinkedHashMap<String, Object>();
                         for (int j = 0; j < fs.length; j++) {
-                            ma.put(fs[j].getName(), t.get(j));
+                        	String fn = FieldUtils.getEscFieldName(fs[j].getName());
+                        	Object data = getTypeForBSON(t.get(j), fs[j], null);
+                            ma.put(fn, data);
                         }
                         a.add(ma);
                     }
@@ -184,7 +192,7 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     @SuppressWarnings("unchecked")
     protected void writeField(final BasicDBObjectBuilder builder, final ResourceFieldSchema field, final Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field, null);
-        String fieldName = field != null ? field.getName() : "value";
+        String fieldName = field != null ? FieldUtils.getEscFieldName(field.getName()) : "value";
 
         if (convertedType instanceof Map) {
             for (Map.Entry<String, Object> mapentry : ((Map<String, Object>) convertedType).entrySet()) {

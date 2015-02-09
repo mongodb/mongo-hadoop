@@ -134,9 +134,11 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                               final ResourceSchema.ResourceFieldSchema field,
                               final Object d) throws IOException {
 
+    	String fieldName = FieldUtils.getEscFieldName(field.getName());
+    	
         // If the field is missing or the value is null, write a null
         if (d == null) {
-            builder.add(field.getName(), null);
+            builder.add(fieldName, null);
             return;
         }
 
@@ -145,35 +147,37 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
         // Based on the field's type, write it out
         byte i = field.getType();
         if (i == DataType.INTEGER) {
-            builder.add(field.getName(), d);
+            builder.add(fieldName, d);
         } else if (i == DataType.LONG) {
-            builder.add(field.getName(), d);
+            builder.add(fieldName, d);
         } else if (i == DataType.FLOAT) {
-            builder.add(field.getName(), d);
+            builder.add(fieldName, d);
         } else if (i == DataType.DOUBLE) {
-            builder.add(field.getName(), d);
+            builder.add(fieldName, d);
+        } else if (i == DataType.DATETIME) {
+            builder.add(fieldName, d);
         } else if (i == DataType.BYTEARRAY) {
-            builder.add(field.getName(), d.toString());
+            builder.add(fieldName, d.toString());
         } else if (i == DataType.CHARARRAY) {
-            builder.add(field.getName(), d);
+            builder.add(fieldName, d);
         } else if (i == DataType.TUPLE) {
             // Given a TUPLE, create a Map so BSONEncoder will eat it
             if (s == null) {
                 throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                      + field.getName());
+                                      + fieldName);
             }
             ResourceFieldSchema[] fs = s.getFields();
             Map<String, Object> m = new LinkedHashMap<String, Object>();
             for (int j = 0; j < fs.length; j++) {
                 m.put(fs[j].getName(), ((Tuple) d).get(j));
             }
-            builder.add(field.getName(), (Map) m);
+            builder.add(fieldName, (Map) m);
         } else if (i == DataType.BAG) {
             // Given a BAG, create an Array so BSONEncoder will eat it.
             ResourceFieldSchema[] fs;
             if (s == null) {
                 throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                      + field.getName());
+                                      + fieldName);
             }
             fs = s.getFields();
             if (fs.length != 1 || fs[0].getType() != DataType.TUPLE) {
@@ -184,7 +188,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             s = fs[0].getSchema();
             if (s == null) {
                 throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                      + field.getName());
+                                      + fieldName);
             }
             fs = s.getFields();
 
@@ -197,7 +201,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
                 a.add(ma);
             }
 
-            builder.add(field.getName(), a);
+            builder.add(fieldName, a);
         } else if (i == DataType.MAP) {
             Map map = (Map) d;
             for (Object key : map.keySet()) {
