@@ -2,9 +2,14 @@
 
 ##Purpose
 
-The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem.
+The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem including the following:
+* [**Pig**][pig-usage]
+* **Spark**
+* **MapReduce**
+* [**Hive**][hive-usage]
+* [**Flume**][flume-usage]
 
-Current stable release: **1.3.1**
+Check out the [releases](https://github.com/mongodb/mongo-hadoop/releases) page for the latest stable release.
 
 ## Features
 
@@ -13,7 +18,7 @@ Current stable release: **1.3.1**
 * Supports Hadoop Streaming, to allow job code to be written in any language (python, ruby, nodejs currently supported)
 * Can read data from MongoDB backup files residing on S3, HDFS, or local filesystems
 * Can write data out in .bson format, which can then be imported to any MongoDB database with `mongorestore`
-* Works with BSON/MongoDB documents in other Hadoop tools such as **Pig** and **Hive**.
+* Works with BSON/MongoDB documents in other Hadoop tools such as [**Pig**][pig-usage] and [**Hive**][hive-usage].
 
 ## Download
 See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
@@ -33,29 +38,9 @@ following locations, depending on which Hadoop release you are using:
 mongo-hadoop should work on any distribution of hadoop.  Should you run in to an issue, please file a 
 [Jira](https://jira.mongodb.org/browse/HADOOP/) ticket.
 
-## Configuration
+## Documentation
 
-[Configuration](CONFIG.md)
-
-## Streaming
-
-[Streaming](streaming/README.md)
-
-## Hive
-
-[Hive](hive/README.md)
-
-## Pig
-
-[Pig](pig/README.md)
-
-## Examples
-
-[Examples](examples/README.md)
-
-## Usage with static .bson (mongo backup) files
-
-[BSON Usage](BSON_README.md)
+For full documentation, please check out the [Hadoop Connector Wiki][wiki]. The documentation includes installation instructions, configuration options, as well as specific instructions and examples for each Hadoop application the connector supports.
 
 ## Usage with Amazon Elastic MapReduce
 
@@ -69,20 +54,14 @@ java driver, mongo-hadoop-core libs, etc.) and place them into the hadoop distri
 
 For a full example (running the enron example on Elastic MapReduce) please see [here](examples/elastic-mapreduce/README.md).
 
-## Usage with Pig
-
-[Documentation on Pig with the MongoDB Connector for Hadoop](pig/README.md).
-
-For examples on using Pig with the MongoDB Connector for Hadoop, also refer to the [examples section](examples/README.md).
-
 ## Notes for Contributors
 
-If your code introduces new features, add tests that cover them if possible and make sure that `./gradlew check` still passes.
+If your code introduces new features, add tests that cover them if possible and make sure that `./gradlew check` still passes. For instructions on how to run the tests, see the [Running the Tests](https://github.com/mongodb/mongo-hadoop/wiki/Running-the-Tests) section in the [wiki][wiki].
 If you're not sure how to write a test for a feature or have trouble with a test failure, please post on the google-groups with details 
 and we will try to help.  _Note_: Until findbugs updates its dependencies, running `./gradlew check` on Java 8 will fail.
 
 ### Maintainers
-Justin Lee (justin.lee@mongodb.com)
+Luke Lovett (luke.lovett@mongodb.com)
 
 ### Contributors
 * Mike O'Brien (mikeo@10gen.com)
@@ -101,9 +80,16 @@ Justin Lee (justin.lee@mongodb.com)
 * Carsten Hufe
 * Asya Kamsky
 * Thomas Millar
+* Justin Lee
+* Luke Lovett
 
 ### Support
 
 Issue tracking: https://jira.mongodb.org/browse/HADOOP/
 
 Discussion: http://groups.google.com/group/mongodb-user/
+
+[pig-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Pig-Usage
+[hive-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Hive-Usage
+[flume-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Flume-Usage
+[wiki]: https://github.com/mongodb/mongo-hadoop/wiki
