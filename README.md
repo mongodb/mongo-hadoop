@@ -6,6 +6,7 @@ The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup fi
 * [**Pig**][pig-usage]
 * **Spark**
 * **MapReduce**
+* [**Hadoop Streaming**][streaming-usage]
 * [**Hive**][hive-usage]
 * [**Flume**][flume-usage]
 
@@ -92,4 +93,5 @@ Discussion: http://groups.google.com/group/mongodb-user/
 [pig-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Pig-Usage
 [hive-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Hive-Usage
 [flume-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Flume-Usage
+[streaming-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Streaming-Usage
 [wiki]: https://github.com/mongodb/mongo-hadoop/wiki
