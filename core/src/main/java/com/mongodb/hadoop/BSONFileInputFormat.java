@@ -44,9 +44,7 @@ public class BSONFileInputFormat extends FileInputFormat {
     public RecordReader createRecordReader(final InputSplit split, final TaskAttemptContext context)
         throws IOException, InterruptedException {
 
-        BSONFileRecordReader reader = new BSONFileRecordReader();
-        reader.initialize(split, context);
-        return reader;
+        return new BSONFileRecordReader();
     }
 
     public static PathFilter getInputPathFilter(final JobContext context) {
