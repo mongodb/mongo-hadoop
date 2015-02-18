@@ -4,8 +4,8 @@
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem including the following:
 * [**Pig**][pig-usage]
-* **Spark**
-* **MapReduce**
+* [**Spark**][spark-usage]
+* [**MapReduce**][mapreduce-usage]
 * [**Hadoop Streaming**][streaming-usage]
 * [**Hive**][hive-usage]
 * [**Flume**][flume-usage]
@@ -94,4 +94,6 @@ Discussion: http://groups.google.com/group/mongodb-user/
 [hive-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Hive-Usage
 [flume-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Flume-Usage
 [streaming-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Streaming-Usage
+[spark-usage]: https://github.com/mongodb/mongo-hadoop/wiki/Spark-Usage
+[mapreduce-usage]: https://github.com/mongodb/mongo-hadoop/wiki/MapReduce-Usage
 [wiki]: https://github.com/mongodb/mongo-hadoop/wiki
