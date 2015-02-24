@@ -98,23 +98,27 @@ public class BSONSplitter extends Configured implements Tool {
         ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         FileSystem fs = splitFile.getFileSystem(getConf()); // throws IOException
         FileStatus splitFileStatus;
+        FSDataInputStream fsDataStream;
         try {
-            splitFileStatus = fs.getFileStatus(splitFile);
-            LOG.info("Found split file at : " + splitFileStatus);
-        } catch (Exception e) {
-            throw new NoSplitFileException();
-        }
-        FSDataInputStream fsDataStream = fs.open(splitFile); // throws IOException
-        while (fsDataStream.getPos() < splitFileStatus.getLen()) {
-            callback.reset();
-            bsonDec.decode(fsDataStream, callback);
-            BSONObject splitInfo = (BSONObject) callback.get();
-            splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
+            try {
+                splitFileStatus = fs.getFileStatus(splitFile);
+                LOG.info("Found split file at : " + splitFileStatus);
+            } catch (Exception e) {
+                throw new NoSplitFileException();
+            }
+            fsDataStream = fs.open(splitFile); // throws IOException
+            while (fsDataStream.getPos() < splitFileStatus.getLen()) {
+                callback.reset();
+                bsonDec.decode(fsDataStream, callback);
+                BSONObject splitInfo = (BSONObject) callback.get();
+                splits.add(createFileSplitFromBSON(splitInfo, fs, inputFile));
+            }
+        } finally {
+            fs.close();
         }
         fsDataStream.close();
-        fs.close();
         splitsList = splits;
-    }//}}}
+    }
 
     public static long getSplitSize(final Configuration conf, final FileStatus file) {
         long minSize = Math.max(1L, conf.getLong("mapred.min.split.size", 1L));
