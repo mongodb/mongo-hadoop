@@ -200,10 +200,14 @@ public final class MongoConfigUtil {
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
 
     /**
-     * Shared MongoClient instance cache.
+     * One client per thread
      */
-    private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
-    
+    private static final ThreadLocal< Map<MongoClientURI, MongoClient> > CLIENTS = new ThreadLocal< Map<MongoClientURI, MongoClient> >() {
+        @Override public Map<MongoClientURI, MongoClient> initialValue() {
+            return new HashMap<MongoClientURI, MongoClient>();
+        }
+    };
+
     private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
 
     private MongoConfigUtil() {
@@ -816,28 +820,24 @@ public final class MongoConfigUtil {
     }
 
     public static void close(final Mongo client) {
-        synchronized (CLIENTS) {
             MongoClientURI uri = uriMap.remove(client);
             if (uri != null) {
                 MongoClient remove;
-                remove = CLIENTS.remove(uri);
+                remove = CLIENTS.get().remove(uri);
                 if (remove != client) {
                     throw new IllegalStateException("different clients found");
                 }
             }
             client.close();
-        }
     }
     
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
-        synchronized (CLIENTS) {
-            MongoClient mongoClient = CLIENTS.get(uri);
+        MongoClient mongoClient = CLIENTS.get().get(uri);
             if (mongoClient == null) {
                 mongoClient = new MongoClient(uri);
-                CLIENTS.put(uri, mongoClient);
+                CLIENTS.get().put(uri, mongoClient);
                 uriMap.put(mongoClient, uri);
             }
             return mongoClient;
         }
-    }
 }
