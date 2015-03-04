@@ -90,9 +90,6 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
             if (cur != null) {
                 cur.close();
             }
-            if (configDB != null) {
-                MongoConfigUtil.close(configDB.getMongo());
-            }
         }
         return shardsMap;
     }
