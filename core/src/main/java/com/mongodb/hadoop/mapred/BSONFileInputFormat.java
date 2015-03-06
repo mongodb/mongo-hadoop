@@ -29,6 +29,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
+import org.bson.BSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ import java.util.List;
 
 import static java.lang.String.format;
 
-public class BSONFileInputFormat extends FileInputFormat {
+public class BSONFileInputFormat extends FileInputFormat<NullWritable, BSONObject> {
 
     protected boolean isSplitable(final JobContext context, final Path filename) {
         return true;
