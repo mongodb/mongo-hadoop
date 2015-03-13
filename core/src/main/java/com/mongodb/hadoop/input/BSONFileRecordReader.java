@@ -17,6 +17,7 @@
 package com.mongodb.hadoop.input;
 
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.util.MongoPathRetriever;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -58,7 +59,7 @@ import static java.lang.String.format;
  * </p>
  */
 
-public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject> {
+public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
 
     private FileSplit fileSplit;
@@ -125,8 +126,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     }
 
     @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-        return NullWritable.get();
+    public Object getCurrentKey() throws IOException, InterruptedException {
+        Object key = null;
+        if (fileSplit instanceof BSONFileSplit) {
+            key = MongoPathRetriever.get(
+              value, ((BSONFileSplit) fileSplit).getKeyField());
+        }
+        return key != null ? key : NullWritable.get();
     }
 
     @Override

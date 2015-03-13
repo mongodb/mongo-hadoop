@@ -59,6 +59,7 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
         mongoSplit.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
         mongoSplit.setFields(MongoConfigUtil.getFields(getConfiguration()));
         mongoSplit.setSort(MongoConfigUtil.getSort(getConfiguration()));
+        mongoSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
 
         //Not using any index min/max bounds, so range query is 
         //meaningless here - don't set it

@@ -1,7 +1,6 @@
 package com.mongodb.hadoop.bookstore;
 
 import com.mongodb.hadoop.io.BSONWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
@@ -12,11 +11,13 @@ import org.bson.types.BasicBSONList;
 
 import java.io.IOException;
 
-public class TagsMapper extends Mapper<NullWritable, BSONObject, Text, BSONWritable> 
-    implements org.apache.hadoop.mapred.Mapper<NullWritable, BSONWritable, Text, BSONWritable> {
+public class TagsMapper extends Mapper<Object, BSONObject, Text, BSONWritable>
+  implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, Text,
+  BSONWritable> {
 
     @Override
-    protected void map(final NullWritable key, final BSONObject value, final Context context) throws IOException, InterruptedException {
+    protected void map(final Object key, final BSONObject value, final Context
+      context) throws IOException, InterruptedException {
         BasicBSONList tags = (BasicBSONList) value.get("tags");
         Text text = new Text();
         value.removeField("tags");
@@ -27,7 +28,8 @@ public class TagsMapper extends Mapper<NullWritable, BSONObject, Text, BSONWrita
     }
 
     @Override
-    public void map(final NullWritable key, final BSONWritable value, final OutputCollector<Text, BSONWritable> output,
+    public void map(final Object key, final BSONWritable value, final
+    OutputCollector<Text, BSONWritable> output,
                     final Reporter reporter) throws IOException {
         BasicBSONList tags = (BasicBSONList) value.getDoc().get("tags");
         Text text = new Text();
@@ -40,7 +42,7 @@ public class TagsMapper extends Mapper<NullWritable, BSONObject, Text, BSONWrita
 
     @Override
     public void configure(final JobConf job) {
-        
+
     }
 
     @Override

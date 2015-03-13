@@ -158,7 +158,7 @@ public final class MapredMongoConfigUtil {
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
      * </p>
      * <p>
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop,
      * severely reducing parallel mapping.
      * </p>
      */

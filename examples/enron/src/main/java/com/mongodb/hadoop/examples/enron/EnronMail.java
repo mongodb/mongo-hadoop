@@ -60,6 +60,7 @@ public class EnronMail extends MongoTool {
         }
         
         config.setInputURI("mongodb://localhost:27017/mongo_hadoop.messages");
+        config.setInputKey("headers.From");
         config.setMapper(EnronMailMapper.class);
         config.setReducer(EnronMailReducer.class);
         config.setMapperOutputKey(MailPair.class);

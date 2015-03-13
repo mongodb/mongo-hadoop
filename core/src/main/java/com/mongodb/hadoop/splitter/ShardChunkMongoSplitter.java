@@ -122,6 +122,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
                 shardList = new LinkedList<InputSplit>();
                 shardToSplits.put(shard, shardList);
             }
+            chunkSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
             shardList.add(chunkSplit);
             numChunks++;
         }

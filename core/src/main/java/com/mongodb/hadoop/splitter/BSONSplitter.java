@@ -17,6 +17,8 @@
 package com.mongodb.hadoop.splitter;
 
 import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.hadoop.input.BSONFileSplit;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -45,7 +47,7 @@ public class BSONSplitter extends Configured implements Tool {
 
     private static final Log LOG = LogFactory.getLog(BSONSplitter.class);
 
-    private ArrayList<FileSplit> splitsList;
+    private ArrayList<BSONFileSplit> splitsList;
     private Path inputPath;
     private BasicBSONCallback callback = new BasicBSONCallback();
     private LazyBSONCallback lazyCallback = new LazyBSONCallback();
@@ -60,42 +62,54 @@ public class BSONSplitter extends Configured implements Tool {
         inputPath = p;
     }
 
-    public ArrayList<FileSplit> getAllSplits() {
+    public ArrayList<BSONFileSplit> getAllSplits() {
         if (splitsList == null) {
-            return new ArrayList<FileSplit>(0);
+            return new ArrayList<BSONFileSplit>(0);
         } else {
             return splitsList;
         }
     }
 
-    public FileSplit createFileSplitFromBSON(final BSONObject obj, final FileSystem fs, final FileStatus inputFile) throws IOException {
+    public BSONFileSplit createFileSplitFromBSON(final BSONObject obj, final
+    FileSystem fs, final FileStatus inputFile) throws IOException {
         long start = (Long) obj.get("s");
         long splitLen = (Long) obj.get("l");
+        BSONFileSplit split;
         try {
             BlockLocation[] blkLocations = fs.getFileBlockLocations(inputFile, start, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
-            return new FileSplit(inputFile.getPath(), start, splitLen, blkLocations[blockIndex].getHosts());
+            split = new BSONFileSplit(inputFile.getPath(), start, splitLen,
+                                      blkLocations[blockIndex].getHosts());
         } catch (IOException e) {
             LOG.warn("Couldn't find block locations when constructing input split from BSON. Using non-block-aware input split; "
                      + e.getMessage());
-            return new FileSplit(inputFile.getPath(), start, splitLen, null);
+            split = new BSONFileSplit(inputFile.getPath(), start, splitLen,
+                                      null);
         }
+        split.setKeyField(MongoConfigUtil.getInputKey(getConf()));
+        return split;
     }
 
-    public FileSplit createFileSplit(final FileStatus inFile, final FileSystem fs, final long splitStart, final long splitLen) {
+    public BSONFileSplit createFileSplit(final FileStatus inFile, final
+    FileSystem fs, final long splitStart, final long splitLen) {
+        BSONFileSplit split;
         try {
             BlockLocation[] blkLocations = fs.getFileBlockLocations(inFile, splitStart, splitLen);
             int blockIndex = getLargestBlockIndex(blkLocations);
-            return new FileSplit(inFile.getPath(), splitStart, splitLen, blkLocations[blockIndex].getHosts());
+            split = new BSONFileSplit(inFile.getPath(), splitStart, splitLen,
+                                      blkLocations[blockIndex].getHosts());
         } catch (IOException e) {
             LOG.warn("Couldn't find block locations when constructing input split from byte offset. Using non-block-aware input split; "
                      + e.getMessage());
-            return new FileSplit(inFile.getPath(), splitStart, splitLen, null);
+            split = new BSONFileSplit(inFile.getPath(), splitStart, splitLen,
+                                      null);
         }
+        split.setKeyField(MongoConfigUtil.getInputKey(getConf()));
+        return split;
     }
 
     public void loadSplitsFromSplitFile(final FileStatus inputFile, final Path splitFile) throws NoSplitFileException, IOException {
-        ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
+        ArrayList<BSONFileSplit> splits = new ArrayList<BSONFileSplit>();
         FileSystem fs = splitFile.getFileSystem(getConf()); // throws IOException
         FileStatus splitFileStatus;
         FSDataInputStream fsDataStream;
@@ -135,12 +149,12 @@ public class BSONSplitter extends Configured implements Tool {
 
     public void readSplitsForFile(final FileStatus file) throws IOException {
         Path path = file.getPath();
-        ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
+        ArrayList<BSONFileSplit> splits = new ArrayList<BSONFileSplit>();
         FileSystem fs = path.getFileSystem(getConf());
         long length = file.getLen();
         if (!getConf().getBoolean("bson.split.read_splits", true)) {
             LOG.info("Reading splits is disabled - constructing single split for " + file);
-            FileSplit onesplit = createFileSplit(file, fs, 0, length);
+            BSONFileSplit onesplit = createFileSplit(file, fs, 0, length);
             splits.add(onesplit);
             splitsList = splits;
             return;
@@ -161,7 +175,8 @@ public class BSONSplitter extends Configured implements Tool {
                     LazyBSONObject bo = (LazyBSONObject) lazyCallback.get();
                     int bsonDocSize = bo.getBSONSize();
                     if (curSplitLen + bsonDocSize >= splitSize) {
-                        FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
+                        BSONFileSplit split = createFileSplit(file, fs,
+                                                              curSplitStart, curSplitLen);
                         splits.add(split);
                         if (LOG.isDebugEnabled()) {
                             LOG.debug(String.format("Creating new split (%d) %s", splits.size(), split));
@@ -180,7 +195,8 @@ public class BSONSplitter extends Configured implements Tool {
                     }
                 }
                 if (curSplitLen > 0) {
-                    FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
+                    BSONFileSplit split = createFileSplit(file, fs,
+                                                          curSplitStart, curSplitLen);
                     splits.add(split);
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(String.format("Final split (%d) %s", splits.size(), split.getPath()));
@@ -237,7 +253,7 @@ public class BSONSplitter extends Configured implements Tool {
     }
 
     public void readSplits() throws IOException {
-        splitsList = new ArrayList<FileSplit>();
+        splitsList = new ArrayList<BSONFileSplit>();
         if (inputPath == null) {
             throw new IllegalStateException("Input path has not been set.");
         }
