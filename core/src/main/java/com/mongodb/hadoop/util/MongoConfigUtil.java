@@ -105,6 +105,7 @@ public final class MongoConfigUtil {
 
 
     //Settings specific to bson reading/writing.
+    public static final String BSON_SPLITS_PATH = "bson.split.splits_path";
     public static final String BSON_READ_SPLITS = "bson.split.read_splits";
     public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
     public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
@@ -737,6 +738,15 @@ public final class MongoConfigUtil {
 
     public static Class<?> getBSONPathFilter(final Configuration conf) {
         return conf.getClass(BSON_PATHFILTER, null);
+    }
+
+    public static String getBSONSplitsPath(final Configuration conf) {
+        return conf.get(BSON_SPLITS_PATH);
+    }
+
+    public static void setBSONSplitsPath(final Configuration conf, final
+                                         String path) {
+        conf.set(BSON_SPLITS_PATH, path);
     }
 
     public static Class<? extends MongoSplitter> getSplitterClass(final Configuration conf) {

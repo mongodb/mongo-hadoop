@@ -159,18 +159,13 @@ public class BSONSplitter extends Configured implements Tool {
             splitsList = splits;
             return;
         }
-        if (length == 0) {
-            LOG.warn("Zero-length file, skipping split calculation.");
-            return;
-        }
-
-        long splitSize = getSplitSize(getConf(), file);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Generating splits for " + path + " of up to " + splitSize + " bytes.");
-        }
-        FSDataInputStream fsDataStream = fs.open(path);
-        try {
+        if (length != 0) {
             int numDocsRead = 0;
+            long splitSize = getSplitSize(getConf(), file);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Generating splits for " + path + " of up to " + splitSize + " bytes.");
+            }
+            FSDataInputStream fsDataStream = fs.open(path);
             long curSplitLen = 0;
             long curSplitStart = 0;
             try {
@@ -204,41 +199,22 @@ public class BSONSplitter extends Configured implements Tool {
                                                           curSplitStart, curSplitLen);
                     splits.add(split);
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug(String.format("Creating new split (%d) %s", splits.size(), split));
-                    }
-                    curSplitStart = fsDataStream.getPos() - bsonDocSize;
-                    curSplitLen = 0;
-                }
-                curSplitLen += bsonDocSize;
-                numDocsRead++;
-                if (numDocsRead % 1000 == 0) {
-                    float splitProgress = 100.0f * ((float) fsDataStream.getPos() / length);
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(String.format("Read %d docs calculating splits for %s; %3.3f%% complete.",
-                                                numDocsRead,
-                                                file.getPath(),
-                                                splitProgress));
+                        LOG.debug(String.format("Final split (%d) %s", splits.size(), split.getPath()));
                     }
                 }
-            }
-            if (curSplitLen > 0) {
-                FileSplit split = createFileSplit(file, fs, curSplitStart, curSplitLen);
-                splits.add(split);
+                splitsList = splits;
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("Final split (%d) %s", splits.size(), split.getPath()));
+                    LOG.debug("Completed splits calculation for " + file.getPath());
                 }
+                writeSplits();
+            } catch (IOException e) {
+                LOG.warn("IOException: " + e);
+            } finally {
+                fsDataStream.close();
             }
-            splitsList = splits;
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Completed splits calculation for " + file.getPath());
-            }
-            writeSplits();
-        } catch (IOException e) {
-            LOG.warn("IOException: " + e);
-        } finally {
-            fsDataStream.close();
+        } else {
+            LOG.warn("Zero-length file, skipping split calculation.");
         }
-
     }
 
     public void writeSplits() throws IOException {
@@ -253,13 +229,7 @@ public class BSONSplitter extends Configured implements Tool {
             LOG.info("No splits found, skipping write of splits file.");
         }
 
-        Path outputPath;
-        if (getConf().get("bson.split.path") != null) {
-            outputPath = new Path(getConf().get("bson.split.path"));
-        } else {
-            outputPath = new Path(inputPath.getParent(), "." + inputPath.getName() + ".splits");
-        }
-
+        Path outputPath = getSplitsFilePath(inputPath, getConf());
         FileSystem pathFileSystem = outputPath.getFileSystem(getConf());
         FSDataOutputStream fsDataOut = null;
         try {
@@ -293,13 +263,13 @@ public class BSONSplitter extends Configured implements Tool {
 
     @Override
     public int run(final String[] args) throws Exception {
-        inputPath = new Path(getConf().get("mapred.input.dir", ""));
+        setInputPath(new Path(getConf().get("mapred.input.dir", "")));
         readSplits();
         writeSplits();
         return 0;
     }
 
-    public static int getLargestBlockIndex(final BlockLocation... blockLocations) {
+    public static int getLargestBlockIndex(final BlockLocation[] blockLocations) {
         int retVal = -1;
         if (blockLocations == null) {
             return retVal;
@@ -312,6 +282,21 @@ public class BSONSplitter extends Configured implements Tool {
             }
         }
         return retVal;
+    }
+
+    /**
+     * Get the path to the ".splits" file for a BSON file.
+     * @param filePath the path to the BSON file.
+     * @param conf the Hadoop configuration.
+     * @return the path to the ".splits" file.
+     */
+    public static Path getSplitsFilePath(final Path filePath, final Configuration conf) {
+        String splitsPath = MongoConfigUtil.getBSONSplitsPath(conf);
+        if (null == splitsPath) {
+            return new Path(
+              filePath.getParent(), "." + filePath.getName() + ".splits");
+        }
+        return new Path(splitsPath);
     }
 
     public static void main(final String[] args) throws Exception {

@@ -102,6 +102,7 @@ public final class MapredMongoConfigUtil {
 
 
     //Settings specific to bson reading/writing.
+    public static final String BSON_SPLITS_PATH = "bson.split.splits_path";
     public static final String BSON_READ_SPLITS = "bson.split.read_splits";
     public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
     public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
@@ -113,7 +114,8 @@ public final class MapredMongoConfigUtil {
      * A username and password to use.
      * </p>
      * <p>
-     * This is necessary when running jobs with a sharded cluster, as access to the config database is needed to get
+     * This is necessary when running jobs with a sharded cluster, as access
+     * to the config database is needed to get
      * </p>
      */
     public static final String AUTH_URI = "mongo.auth.uri";
@@ -727,6 +729,15 @@ public final class MapredMongoConfigUtil {
 
     public static void setBSONOutputBuildSplits(final Configuration conf, final boolean val) {
         conf.setBoolean(BSON_OUTPUT_BUILDSPLITS, val);
+    }
+
+    public static String getBSONSplitsPath(final Configuration conf) {
+        return conf.get(BSON_SPLITS_PATH);
+    }
+
+    public static void setBSONSplitsPath(final Configuration conf,
+                                         final String path) {
+        conf.set(BSON_SPLITS_PATH, path);
     }
 
     public static void setBSONPathFilter(final Configuration conf, final Class<? extends PathFilter> val) {

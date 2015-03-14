@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.mongodb.hadoop.splitter.BSONSplitter.getSplitsFilePath;
+
 
 public class BSONFileInputFormat extends FileInputFormat {
 
@@ -65,22 +67,17 @@ public class BSONFileInputFormat extends FileInputFormat {
                     LOG.debug(String.format("skipping file %s not matched path filter.", file.getPath()));
                 }
                 continue;
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processing file " + file.getPath());
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("processing file " + file.getPath());
+                }
             }
 
             BSONSplitter splitter = new BSONSplitter();
             splitter.setConf(config);
             splitter.setInputPath(file.getPath());
 
-            Path splitFilePath;
-            if (config.get("bson.split.path") != null) {
-                splitFilePath = new Path(config.get("bson.split.path"));
-            } else {
-                splitFilePath = new Path(file.getPath().getParent(), "." + file.getPath().getName() + ".splits");
-            }
-
+            Path splitFilePath = getSplitsFilePath(file.getPath(), config);
             try {
                 splitter.loadSplitsFromSplitFile(file, splitFilePath);
             } catch (BSONSplitter.NoSplitFileException nsfe) {
