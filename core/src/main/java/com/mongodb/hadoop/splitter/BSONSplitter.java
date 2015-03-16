@@ -292,11 +292,11 @@ public class BSONSplitter extends Configured implements Tool {
      */
     public static Path getSplitsFilePath(final Path filePath, final Configuration conf) {
         String splitsPath = MongoConfigUtil.getBSONSplitsPath(conf);
+        String splitsFileName = "." + filePath.getName() + ".splits";
         if (null == splitsPath) {
-            return new Path(
-              filePath.getParent(), "." + filePath.getName() + ".splits");
+            return new Path(filePath.getParent(), splitsFileName);
         }
-        return new Path(splitsPath);
+        return new Path(splitsPath, splitsFileName);
     }
 
     public static void main(final String[] args) throws Exception {
