@@ -217,6 +217,7 @@ public class BSONWritable implements WritableComparable {
                 for (int i = 0; i < o.length; i++) {
                     a[i] = toBSON(o[i]);
                 }
+                return a;
             }
             if (x instanceof NullWritable) {
                 return null;
