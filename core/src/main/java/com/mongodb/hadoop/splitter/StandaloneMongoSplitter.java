@@ -68,7 +68,6 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         final int splitSize = MongoConfigUtil.getSplitSize(getConfiguration());
         final BasicDBObject splitMin = (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MIN_KEY);
         final BasicDBObject splitMax = splitMin == null ? null : (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MAX_KEY);
-        final boolean splitKeyDescending = MongoConfigUtil.isSplitKeyDescending(getConfiguration());
         MongoClientURI inputURI;
         DBCollection inputCollection = null;
         final List<InputSplit> returnVal;
@@ -160,7 +159,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                 LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"
                          + " small, try lowering 'mongo.input.split_size' if this is undesirable.");
             }
-            returnVal = createSplits(splitData, splitMin, splitMax, splitKeyDescending);
+            returnVal = createSplits(splitData, splitMin, splitMax);
         } finally {
             if (inputCollection != null) {
                 MongoConfigUtil.close(inputCollection.getDB().getMongo());
@@ -170,18 +169,17 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         return returnVal;
     }
 
-    protected List<InputSplit> createSplits( BasicDBList splitData, 
-                    BasicDBObject splitMin, BasicDBObject splitMax, boolean descending ) throws SplitFailedException {
+    protected List<InputSplit> createSplits(BasicDBList splitData, 
+                    BasicDBObject splitMin, BasicDBObject splitMax) throws SplitFailedException {
       final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
 
-      BasicDBObject minKey = descending ? splitMax : splitMin;
-      BasicDBObject maxKey = descending ? splitMin : splitMax;
+      BasicDBObject lastKey = splitMin;
       for( Object aSplitData : splitData ) {
         BasicDBObject currentKey = (BasicDBObject)aSplitData;
-        returnVal.add(createSplitFromBounds(maxKey, currentKey));
-        maxKey = currentKey;        
+        returnVal.add(createSplitFromBounds(lastKey,currentKey));
+        lastKey = currentKey;
       }
-      returnVal.add(createSplitFromBounds(maxKey,minKey));
+      returnVal.add(createSplitFromBounds(lastKey,splitMax));
 
       return returnVal; 
     }

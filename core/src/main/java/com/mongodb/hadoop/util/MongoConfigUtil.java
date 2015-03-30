@@ -141,16 +141,6 @@ public final class MongoConfigUtil {
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
-     * If the key specified for {@link #INPUT_SPLIT_KEY_PATTERN} is a descending index or
-     * is a compound key that contains a descending value then this should be set to {@code true}.
-     * If {@link #SPLITS_MIN_KEY} and {@link #SPLITS_MAX_KEY} are specified and the max key value
-     * is less than the min key value then this should be set to {@code true}.  In all other
-     * cases this should either not be set or be set to {@code false}.<p/>
-     * Defaults to {@code false}.
-     **/
-    public static final String SPLIT_KEY_DESCENDING = "mongo.input.split.split_key_descending";
-
-    /**
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
      * <p/>
@@ -625,14 +615,6 @@ public final class MongoConfigUtil {
 
     public static void setRangeQueryEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_RANGEQUERY, value);
-    }
-
-    public static boolean isSplitKeyDescending(final Configuration conf) {
-      return conf.getBoolean(SPLIT_KEY_DESCENDING, false);
-    }
-
-    public static void setSplitKeyDescending(final Configuration conf, final boolean value) {
-      conf.setBoolean(SPLIT_KEY_DESCENDING, value);
     }
 
     /**
