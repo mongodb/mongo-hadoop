@@ -92,7 +92,7 @@ public class BSONWritable implements WritableComparable {
         enc.set(buf);
         enc.putObject(doc);
         enc.done();
-        buf.pipe(out);
+        buf.pipe(new DataOutputOutputStreamAdapter(out));
     }
 
 
