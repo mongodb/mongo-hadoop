@@ -66,23 +66,29 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
     public List<InputSplit> calculateSplits() throws SplitFailedException {
         final DBObject splitKey = MongoConfigUtil.getInputSplitKey(getConfiguration());
         final int splitSize = MongoConfigUtil.getSplitSize(getConfiguration());
+        final BasicDBObject splitMin = (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MIN_KEY);
+        final BasicDBObject splitMax = splitMin == null ? null : (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MAX_KEY);
         MongoClientURI inputURI;
         DBCollection inputCollection = null;
-        final ArrayList<InputSplit> returnVal;
+        final List<InputSplit> returnVal;
         try {
             inputURI = MongoConfigUtil.getInputURI(getConfiguration());
             inputCollection = MongoConfigUtil.getCollection(inputURI);
 
-            returnVal = new ArrayList<InputSplit>();
+            //returnVal = new ArrayList<InputSplit>();
             final String ns = inputCollection.getFullName();
 
             LOG.info("Running splitvector to check splits against " + inputURI);
-            final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)
+            final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start("splitVector", ns)
                                      .add("keyPattern", splitKey)
                                           // force:True is misbehaving it seems
                                      .add("force", false)
-                                     .add("maxChunkSize", splitSize)
-                                     .get();
+                                     .add("maxChunkSize", splitSize);
+            if(splitMin != null) {
+              builder.add( "min", splitMin );
+              builder.add( "max", splitMax );
+            }
+            final DBObject cmd = builder.get();
 
             CommandResult data;
             boolean ok = true;
@@ -153,18 +159,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                 LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"
                          + " small, try lowering 'mongo.input.split_size' if this is undesirable.");
             }
-
-            BasicDBObject lastKey = null; // Lower boundary of the first min split
-
-            for (Object aSplitData : splitData) {
-                BasicDBObject currentKey = (BasicDBObject) aSplitData;
-                returnVal.add(createSplitFromBounds(lastKey, currentKey));
-                lastKey = currentKey;
-            }
-
-            // Last max split, with empty upper boundary
-            MongoInputSplit lastSplit = createSplitFromBounds(lastKey, null);
-            returnVal.add(lastSplit);
+            returnVal = createSplits(splitData, splitMin, splitMax);
         } finally {
             if (inputCollection != null) {
                 MongoConfigUtil.close(inputCollection.getDB().getMongo());
@@ -174,4 +169,18 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         return returnVal;
     }
 
+    protected List<InputSplit> createSplits(BasicDBList splitData, 
+                    BasicDBObject splitMin, BasicDBObject splitMax) throws SplitFailedException {
+      final ArrayList<InputSplit> returnVal = new ArrayList<InputSplit>();
+
+      BasicDBObject lastKey = splitMin;
+      for( Object aSplitData : splitData ) {
+        BasicDBObject currentKey = (BasicDBObject)aSplitData;
+        returnVal.add(createSplitFromBounds(lastKey,currentKey));
+        lastKey = currentKey;
+      }
+      returnVal.add(createSplitFromBounds(lastKey,splitMax));
+
+      return returnVal; 
+    }
 }

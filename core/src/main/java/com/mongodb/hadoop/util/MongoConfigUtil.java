@@ -201,6 +201,24 @@ public final class MongoConfigUtil {
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
 
     /**
+     * The lower bound shard key to use when creating the input splits.<p/>
+     * Defaults to {@code null}.  Values must be provided for both this key
+     * and {@link #SPLITS_MAX_KEY} in order for the range to be used.  Remember
+     * that if your index is ordered descending then the value for this key
+     * will actually be greater than the value specified at {@link #SPLITS_MAX_KEY}.
+     **/
+    public static final String SPLITS_MIN_KEY = "mongo.input.split.split_key_min";
+
+    /**
+     * The upper bound shard key to use when creating the input splits.<p/>
+     * Defaults to {@code null}.  Values must be provided for both this key
+     * and {@link #SPLITS_MIN_KEY} in order for the range to be used.  Remember
+     * that if your index is ordered descending then the value for this key
+     * will actually be less than the value specified at {@link #SPLITS_MIN_KEY}.
+     **/
+    public static final String SPLITS_MAX_KEY = "mongo.input.split.split_key_max";
+
+    /**
      * Shared MongoClient instance cache.
      */
     private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
