@@ -196,7 +196,7 @@ public abstract class BaseHadoopTest {
         if (client == null) {
             try {
                 client = new MongoClient(uri);
-            } catch (UnknownHostException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }

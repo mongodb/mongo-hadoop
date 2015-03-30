@@ -63,7 +63,7 @@ public class HiveTest extends BaseHadoopTest {
         if (mongoClient == null) {
             try {
                 mongoClient = new MongoClient(getInputUri());
-            } catch (UnknownHostException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }

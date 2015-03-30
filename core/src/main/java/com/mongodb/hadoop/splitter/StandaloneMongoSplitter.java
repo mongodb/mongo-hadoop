@@ -127,7 +127,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                             try {
                                 shardClient = new MongoClient(shardHost);
                                 data = shardClient.getDB("admin").command(cmd);
-                            } catch (UnknownHostException e) {
+                            } catch (Exception e) {
                                 LOG.error(e.getMessage(), e);
                             } finally {
                                 if (shardClient != null) {

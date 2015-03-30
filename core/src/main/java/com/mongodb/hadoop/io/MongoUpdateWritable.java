@@ -92,7 +92,7 @@ public class MongoUpdateWritable implements Writable {
         enc.set(buf);
         enc.putObject(modifiers);
         enc.done();
-        buf.pipe(out);
+        buf.pipe(new DataOutputOutputStreamAdapter(out));
         out.writeBoolean(upsert);
         out.writeBoolean(multiUpdate);
     }
