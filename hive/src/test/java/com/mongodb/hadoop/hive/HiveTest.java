@@ -18,7 +18,6 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 
 import static java.lang.String.format;
 
@@ -34,7 +33,7 @@ public class HiveTest extends BaseHadoopTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveTest.class);
     private static HiveClient client;
-    private MongoClientURI mongoTestURI;
+    private final MongoClientURI mongoTestURI;
     private MongoClient mongoClient;
 
     public HiveTest() {
@@ -46,8 +45,8 @@ public class HiveTest extends BaseHadoopTest {
 
     @BeforeClass
     public static void setupHive() throws TException, IOException, InterruptedException {
-        TSocket transport = new TSocket("127.0.0.1", 10000);
-        TBinaryProtocol protocol = new TBinaryProtocol(transport);
+        final TSocket transport = new TSocket("127.0.0.1", 10000);
+        final TBinaryProtocol protocol = new TBinaryProtocol(transport);
         client = new HiveClient(protocol);
         transport.open();
     }
@@ -63,7 +62,7 @@ public class HiveTest extends BaseHadoopTest {
         if (mongoClient == null) {
             try {
                 mongoClient = new MongoClient(getInputUri());
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }
@@ -86,14 +85,14 @@ public class HiveTest extends BaseHadoopTest {
     }
 
     protected Results execute(final String command) {
-        Results results = new Results();
+        final Results results = new Results();
         try {
             if (LOG.isInfoEnabled()) {
                 LOG.info(format("Executing Hive command: %s", command.replace("\n", "\n\t")));
             }
             client.execute(command);
             results.process(client);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             results.process(e);
             LOG.error(e.getMessage(), e);
         }
@@ -107,7 +106,7 @@ public class HiveTest extends BaseHadoopTest {
     protected String getPath(final String resource) {
         try {
             return new File(getClass().getResource("/" + resource).toURI()).getAbsolutePath();
-        } catch (URISyntaxException e) {
+        } catch (final URISyntaxException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -134,7 +133,7 @@ public class HiveTest extends BaseHadoopTest {
 
     public void createMongoBackedTable(final boolean withSerDeProps) {
         dropTable(MONGO_BACKED_TABLE);
-        MongoClientURI uri = authCheck(new MongoClientURIBuilder()
+        final MongoClientURI uri = authCheck(new MongoClientURIBuilder()
                                            .collection("mongo_hadoop", MONGO_COLLECTION)
                                       ).build();
         execute(format("CREATE TABLE %s %s\n"
@@ -163,7 +162,7 @@ public class HiveTest extends BaseHadoopTest {
                 .directory(PROJECT_HOME)
                 .redirectOutput(System.out)
                 .execute();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
