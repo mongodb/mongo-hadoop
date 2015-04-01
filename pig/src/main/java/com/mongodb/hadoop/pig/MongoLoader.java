@@ -19,6 +19,7 @@ import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.Utils;
 import org.bson.BSONObject;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 
