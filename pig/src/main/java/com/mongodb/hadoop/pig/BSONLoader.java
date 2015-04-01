@@ -23,6 +23,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.types.BasicBSONList;
 import org.bson.types.ObjectId;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.Date;
@@ -129,6 +130,8 @@ public class BSONLoader extends LoadFunc {
                     return BSONLoader.convertBSONtoPigType(obj);
                 case DataType.CHARARRAY:
                     return obj.toString();
+                case DataType.DATETIME:
+                    return new DateTime(obj);
                 case DataType.TUPLE:
                     ResourceSchema s = field.getSchema();
                     ResourceFieldSchema[] fs = s.getFields();

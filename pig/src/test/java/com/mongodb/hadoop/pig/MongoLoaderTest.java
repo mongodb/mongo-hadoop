@@ -4,6 +4,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.Tuple;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -45,7 +46,19 @@ public class MongoLoaderTest {
         Object result = BSONLoader.readField(1.1D, ml.getFields()[0]);
         assertEquals(1.1F, result);
     }
-    
+
+    @Test
+    public void testSimpleDate() throws IOException {
+        String userSchema = "d:datetime";
+        MongoLoader ml = new MongoLoader(userSchema);
+
+        Calendar calendar = Calendar.getInstance();
+        Date in = calendar.getTime();
+        DateTime out = new DateTime(in);
+        Object result = BSONLoader.readField(in, ml.getFields()[0]);
+        assertEquals(out, result);
+    }
+
     @Test
     public void testSimpleTuple() throws IOException {
         String userSchema = "t:tuple(t1:chararray, t2:chararray)";

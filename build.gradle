@@ -292,6 +292,7 @@ project(":pig") {
     dependencies {
         compile project(":core")
         compile "org.apache.pig:pig:${pigVersion}:h2"
+        compile 'joda-time:joda-time:2.7'
 
         testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
