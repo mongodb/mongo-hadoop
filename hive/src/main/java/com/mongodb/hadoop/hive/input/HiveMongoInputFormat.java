@@ -23,6 +23,8 @@ import com.mongodb.hadoop.mapred.input.MongoRecordReader;
 import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.hadoop.splitter.MongoSplitterFactory;
 import com.mongodb.hadoop.splitter.SplitFailedException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.io.HiveInputFormat;
 import org.apache.hadoop.io.Text;
@@ -42,6 +44,8 @@ import java.util.List;
  * 
  */
 public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWritable> {
+
+    private static final Log LOG = LogFactory.getLog(HiveMongoInputFormat.class);
 
     @Override
     public RecordReader<BSONWritable, BSONWritable> getRecordReader(final InputSplit split,

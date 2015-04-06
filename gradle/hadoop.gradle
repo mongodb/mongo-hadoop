@@ -66,13 +66,11 @@ def start() {
     startService('yarn', 'resourcemanager')
     startService('yarn', 'nodemanager')
 
-    print('Starting hiveserver') 
+    print('Creating Hive warehouse directory')
     execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
             ("${rootDir}/build/logs/hiveserver-mkdir.out"))
     execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
                 ("${rootDir}/build/logs/hiveserver-chmod.out"))
-
-    execute("$hiveHome/bin/hive", ["--service", "hiveserver"], new FileOutputStream("${rootDir}/build/logs/hiveserver.log"), null, true)
 }
 
 def stopAll(signal) {

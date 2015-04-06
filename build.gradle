@@ -8,12 +8,12 @@ apply plugin: 'com.github.ben-manes.versions'
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '3.0.0'
-ext.hiveVersion = '0.12.0'
+ext.hiveVersion = '1.1.0'
 ext.pigVersion = '0.14.0'
 ext.hadoopVersion = '2.6.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
-ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}".toString()
+ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
 ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
@@ -267,6 +267,13 @@ project(":core") {
 
 project(':hive') {
     archivesBaseName = 'mongo-hadoop-hive'
+
+    configurations {
+        // Dependencies of hive-exec, but not available on Maven.
+        all*.exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+        all*.exclude group: 'eigenbase', module: 'eigenbase-properties'
+    }
+
     dependencies {
         compile project(':core')
 
@@ -275,8 +282,8 @@ project(':hive') {
 
         testCompile "org.apache.hive:hive-cli:${hiveVersion}"
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
+        testCompile "org.apache.hive:hive-jdbc:${hiveVersion}"
 
-//        testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
 
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
