@@ -279,7 +279,10 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     @Override
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
-        config.set("mapred.output.file", location);
+        // Old property.
+        config.set("mapred.output.dir", location);
+        // Modern property.
+        config.set("mapreduce.output.fileoutputformat.outputdir", location);
     }
 
 
