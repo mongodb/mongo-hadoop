@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
@@ -80,7 +81,22 @@ public class PigTest extends BaseHadoopTest {
         org.apache.pig.pigunit.PigTest test =
           new org.apache.pig.pigunit.PigTest(
             getClass().getResource("/pig/pig_uuid.pig").getPath());
-        test.assertOutput(new String[] {"(" + uuid.toString() + ")"});
+        test.assertOutput(new String[]{"(" + uuid.toString() + ")"});
+    }
+
+    @Test
+    public void testPigBSONOutput() throws IOException, ParseException {
+        org.apache.pig.pigunit.PigTest test =
+          new org.apache.pig.pigunit.PigTest(
+            getClass().getResource("/pig/bson_test.pig").getPath());
+        test.unoverride("STORE");
+
+        String[] expected = {
+          "([_id#51eb4b4c873b8b9013457e4a,last#Alabi,first#Daniel,cars#(a,b,c),age#19.0])",
+          "([_id#51eb4b7a873b8b9013457e4b,last#Alabi,first#Tolu,cars#(d,e,f),age#21.0])",
+          "([_id#51eb4bd3873b8b9013457e4c,last#Dada,first#Tinuke,cars#(g),age#50.0])"
+        };
+        test.assertOutput("persons_read", expected);
     }
 
 }

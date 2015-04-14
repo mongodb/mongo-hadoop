@@ -317,6 +317,7 @@ project(":pig") {
                 JAVA_DRIVER_JAR : project(':core').configurations.compile.find { it.name.startsWith("mongo-java-driver") }.toString(),
                 PROJECT_VERSION : project(':core').version,
                 PROJECT_HOME    : project.rootDir.getAbsolutePath(),
+                PIG_RESOURCES   : project(':pig').sourceSets.test.output.resourcesDir.toString()
         ]
     }
 
