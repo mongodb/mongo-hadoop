@@ -34,7 +34,7 @@ buildscript {
     dependencies {
         classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
         classpath 'org.zeroturnaround:zt-exec:1.6'
-        
+
         classpath 'com.bmuschko:gradle-nexus-plugin:2.1.1'
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
         classpath 'de.undercouch:gradle-download-task:1.0'
@@ -81,11 +81,11 @@ configure(subprojects) {
     configurations {
         tests
         tests.extendsFrom(testCompile)
-        
+
         provided
         provided.extendsFrom(compile)
     }
-    
+
     sourceSets.main.compileClasspath += configurations.provided
     sourceSets.test.compileClasspath += configurations.provided
     sourceSets.test.runtimeClasspath += configurations.provided
@@ -198,12 +198,12 @@ configure(subprojects) {
             name = 'MongoDB Connector for Hadoop'
             description = 'The MongoDB Connector for Hadoop is a plugin for Hadoop that provides the ability to use MongoDB as an input source and/or an output destination.'
             url 'https://github.com/mongodb/mongo-hadoop.git'
-    
+
             scm {
                 url 'https://github.com/mongodb/mongo-hadoop.git'
                 connection 'scm:git:git://github.com/mongodb/mongo-hadoop.git'
             }
-    
+
             licenses {
                 license {
                     name 'The Apache Software License, Version 2.0'
@@ -211,7 +211,7 @@ configure(subprojects) {
                     distribution 'repo'
                 }
             }
-    
+
             developers {
                 developer {
                     name 'Various'
@@ -219,23 +219,23 @@ configure(subprojects) {
                 }
             }
         }
-    
+
         whenConfigured { resultPom ->
             resultPom.dependencies.removeAll { dep -> dep.scope != 'compile' }
             resultPom.dependencies*.scope = null
         }
     }
-    
+
     extraArchive {
         sources = true
         tests = true
         javadoc = true
     }
-    
+
     nexus {
         sign = true
     }
-    
+
 }
 
 idea {
@@ -258,8 +258,8 @@ project(":core") {
     dependencies {
         compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}" 
-        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}" 
+        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
     }
@@ -278,7 +278,7 @@ project(':hive') {
 
 //        testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
-        
+
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
@@ -288,7 +288,7 @@ project(':hive') {
 
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
-    
+
     dependencies {
         compile project(":core")
         compile "org.apache.pig:pig:${pigVersion}:h2"
@@ -356,7 +356,7 @@ project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
-        
+
         testCompile files(project(':core').sourceSets.test.output)
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
@@ -377,19 +377,10 @@ project(":examples/sensors") {
     }
 }
 
-project(":integration-tests") {
-    uploadArchives.onlyIf { false }
-    dependencies {
-        testCompile project(":core")
-        testCompile "${group}:mongo-hadoop-streaming:${version}"
-        testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
-    }
+task cleanLogs(type: Delete) {
+    delete fileTree(dir: "logs", exclude: ".keep")
 }
 
-task cleanLogs(type: Delete) {  
-    delete fileTree(dir: "logs", exclude: ".keep")  
-}
-    
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome, pigHome
 }
