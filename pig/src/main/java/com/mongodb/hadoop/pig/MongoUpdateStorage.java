@@ -62,6 +62,9 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
     private String schemaStr;
     private String unnamedStr;
 
+    // Single instance of MongoUpdateWritable for result output.
+    private MongoUpdateWritable muw;
+
     /**
      * First constructor
      *
@@ -69,7 +72,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      * @param update JSON string representing 'update' parameter in MongoDB update
      */
     public MongoUpdateStorage(final String query, final String update) {
-        pigReplace = new JSONPigReplace(new String[]{query, update});
+        this(query, update, null);
     }
 
     /**
@@ -80,8 +83,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      * @param schema string representing schema of pig output
      */
     public MongoUpdateStorage(final String query, final String update, final String schema) {
-        this(query, update);
-        schemaStr = schema;
+        this(query, update, schema, "");
     }
 
     /**
@@ -93,8 +95,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
      * @param toIgnore string representing "unnamed" objects
      */
     public MongoUpdateStorage(final String query, final String update, final String schema, final String toIgnore) {
-        this(query, update, schema);
-        unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
+        this(query, update, schema, toIgnore, "");
     }
 
     /**
@@ -111,6 +112,7 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
         pigReplace = new JSONPigReplace(new String[]{query, update, updateOptions});
         schemaStr = schema;
         unnamedStr = toIgnore.isEmpty() ? null : toIgnore;
+        muw = new MongoUpdateWritable();
     }
 
     @Override
@@ -151,9 +153,11 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
                 isMulti = mu.containsField("multi") && mu.getBoolean("multi");
             }
 
-            recordWriter.write(null, new MongoUpdateWritable(q, u,
-                                                             isUpsert,
-                                                             isMulti));
+            muw.setQuery(q);
+            muw.setModifiers(u);
+            muw.setUpsert(isUpsert);
+            muw.setMultiUpdate(isMulti);
+            recordWriter.write(null, muw);
         } catch (Exception e) {
             throw new IOException("Couldn't convert tuple to bson: ", e);
         }

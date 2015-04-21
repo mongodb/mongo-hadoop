@@ -12,6 +12,16 @@ import java.io.IOException;
 
 public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWritable>
     implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, MailPair, IntWritable> {
+
+    private final IntWritable intw;
+    private final MailPair mp;
+
+    public EnronMailMapper() {
+        super();
+        intw = new IntWritable(1);
+        mp = new MailPair();
+    }
+
     @Override
     public void map(final Object key, final BSONObject val,
                     final Context context)
@@ -24,8 +34,9 @@ public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWri
             for (final String recip1 : recipients) {
                 String recip = recip1.trim();
                 if (recip.length() > 0) {
-                    context.write(new MailPair((String) key, recip),
-                                  new IntWritable(1));
+                    mp.setFrom((String) key);
+                    mp.setTo(recip);
+                    context.write(mp, intw);
                 }
             }
         }
@@ -42,8 +53,9 @@ public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWri
             for (final String recip1 : recipients) {
                 String recip = recip1.trim();
                 if (recip.length() > 0) {
-                    output.collect(new MailPair(from, recip),
-                                   new IntWritable(1));
+                    mp.setFrom(from);
+                    mp.setTo(recip);
+                    output.collect(mp, intw);
                 }
             }
         }

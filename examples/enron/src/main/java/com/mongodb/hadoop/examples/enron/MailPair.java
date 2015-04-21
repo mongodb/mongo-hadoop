@@ -8,17 +8,30 @@ import java.io.IOException;
 
 
 public class MailPair implements WritableComparable {
-
-    //CHECKSTYLE:OFF
-    String from;
-    String to;
-    //CHECKSTYLE:ON
+    private String from;
+    private String to;
 
     public MailPair() {
     }
 
     public MailPair(final String from, final String to) {
         this.from = from;
+        this.to = to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
         this.to = to;
     }
 

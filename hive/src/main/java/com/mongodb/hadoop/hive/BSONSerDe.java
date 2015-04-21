@@ -88,6 +88,9 @@ public class BSONSerDe implements SerDe {
     // A row represents a row in the Hive table 
     private List<Object> row = new ArrayList<Object>();
 
+    // BSONWritable to hold documents to be serialized.
+    private BSONWritable bsonWritable;
+
     /**
      * Finds out the information of the table, including the column names and types.
      */
@@ -124,6 +127,9 @@ public class BSONSerDe implements SerDe {
             (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI =
             TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
+
+        // Create the BSONWritable instance for future use.
+        bsonWritable = new BSONWritable();
     }
 
 
@@ -453,7 +459,9 @@ public class BSONSerDe implements SerDe {
     //CHECKSTYLE:OFF
     @Override
     public Writable serialize(final Object obj, final ObjectInspector oi) throws SerDeException {
-        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        bsonWritable.setDoc(
+          (BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        return bsonWritable;
     }
     //CHECKSTYLE:ON
 

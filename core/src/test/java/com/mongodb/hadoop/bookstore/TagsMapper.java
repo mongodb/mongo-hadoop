@@ -15,6 +15,13 @@ public class TagsMapper extends Mapper<Object, BSONObject, Text, BSONWritable>
   implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, Text,
   BSONWritable> {
 
+    private BSONWritable writable;
+
+    public TagsMapper() {
+        super();
+        writable = new BSONWritable();
+    }
+
     @Override
     protected void map(final Object key, final BSONObject value, final Context
       context) throws IOException, InterruptedException {
@@ -23,7 +30,8 @@ public class TagsMapper extends Mapper<Object, BSONObject, Text, BSONWritable>
         value.removeField("tags");
         for (Object tag : tags) {
             text.set((String) tag);
-            context.write(text, new BSONWritable(value));
+            writable.setDoc(value);
+            context.write(text, writable);
         }
     }
 

@@ -13,23 +13,27 @@ import java.io.IOException;
 public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> {
 
     private DataInput in;
-    private BSONWritable bson;
     private static final Log LOG = LogFactory.getLog(MongoOutputReader.class);
+    private BSONWritable currentKey;
+    private BSONWritable currentValue;
 
     @Override
     public void initialize(final PipeMapRed pipeMapRed) throws IOException {
         super.initialize(pipeMapRed);
         in = pipeMapRed.getClientInput();
+        this.currentKey = new BSONWritable();
+        this.currentValue = new BSONWritable();
     }
 
     @Override
     public boolean readKeyValue() throws IOException {
         // Actually, just read the value as the key is embedded.
         try {
-            bson = new BSONWritable();
-            bson.readFields(in);
+            currentValue.readFields(in);
+            Object _id = currentValue.getDoc().get("_id");
+            currentKey.setDoc(new BasicDBObject("_id", _id));
             // If successful we'll have an _id field
-            return bson.getDoc().containsField("_id");
+            return _id != null;
         } catch (IndexOutOfBoundsException e) {
             // No more data
             LOG.info("No more data; no key/value pair read.");
@@ -39,16 +43,16 @@ public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> 
 
     @Override
     public BSONWritable getCurrentKey() throws IOException {
-        return new BSONWritable(new BasicDBObject("_id", bson.getDoc().get("_id")));
+        return currentKey;
     }
 
     @Override
     public BSONWritable getCurrentValue() throws IOException {
-        return bson;
+        return currentValue;
     }
 
     @Override
     public String getLastOutput() {
-        return bson.toString();
+        return currentValue.toString();
     }
 }

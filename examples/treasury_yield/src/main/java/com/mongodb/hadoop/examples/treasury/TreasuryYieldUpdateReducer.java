@@ -35,6 +35,12 @@ public class TreasuryYieldUpdateReducer
     extends Reducer<IntWritable, DoubleWritable, NullWritable, MongoUpdateWritable> {
 
     private static final Log LOG = LogFactory.getLog(TreasuryYieldReducer.class);
+    private MongoUpdateWritable reduceResult;
+
+    public TreasuryYieldUpdateReducer() {
+        super();
+        reduceResult = new MongoUpdateWritable();
+    }
 
     @Override
     public void reduce(final IntWritable pKey,
@@ -65,7 +71,9 @@ public class TreasuryYieldUpdateReducer
 
         modifiers.put("$push", new BasicBSONObject("calculatedAt", new Date()));
         modifiers.put("$inc", new BasicBSONObject("numCalculations", 1));
-        pContext.write(null, new MongoUpdateWritable(query, modifiers, true, false));
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(modifiers);
+        pContext.write(null, reduceResult);
     }
 
 }

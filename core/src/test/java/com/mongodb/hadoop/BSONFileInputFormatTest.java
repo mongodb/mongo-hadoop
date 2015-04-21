@@ -24,9 +24,10 @@ public class BSONFileInputFormatTest {
         job.set(INPUT_DIR, new File(EXAMPLE_DATA_HOME, "/dump/enron_mail/messages.bson").getAbsoluteFile().toURI().toString());
             FileSplit[] splits = inputFormat.getSplits(job, 5);
         int count = 0;
+        BSONWritable writable = new BSONWritable();
         for (FileSplit split : splits) {
             RecordReader<NullWritable, BSONWritable> recordReader = inputFormat.getRecordReader(split, job, null);
-            while (recordReader.next(null, new BSONWritable())) {
+            while (recordReader.next(null, writable)) {
                 count++;
             }
         }

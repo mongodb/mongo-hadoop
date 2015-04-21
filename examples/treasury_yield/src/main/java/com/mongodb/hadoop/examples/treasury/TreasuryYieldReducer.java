@@ -37,6 +37,12 @@ public class TreasuryYieldReducer
     implements org.apache.hadoop.mapred.Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
 
     private static final Log LOG = LogFactory.getLog(TreasuryYieldReducer.class);
+    private BSONWritable reduceResult;
+
+    public TreasuryYieldReducer() {
+        super();
+        reduceResult = new BSONWritable();
+    }
 
     @Override
     public void reduce(final IntWritable pKey, final Iterable<DoubleWritable> pValues, final Context pContext)
@@ -59,7 +65,8 @@ public class TreasuryYieldReducer
         output.put("count", count);
         output.put("avg", avg);
         output.put("sum", sum);
-        pContext.write(pKey, new BSONWritable(output));
+        reduceResult.setDoc(output);
+        pContext.write(pKey, reduceResult);
     }
 
     @Override
@@ -83,7 +90,8 @@ public class TreasuryYieldReducer
         bsonObject.put("count", count);
         bsonObject.put("avg", avg);
         bsonObject.put("sum", sum);
-        output.collect(key, new BSONWritable(bsonObject));
+        reduceResult.setDoc(bsonObject);
+        output.collect(key, reduceResult);
     }
 
     @Override
