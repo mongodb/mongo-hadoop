@@ -36,12 +36,13 @@ public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWri
                     final Reporter reporter) throws IOException {
         BSONObject headers = (BSONObject) writable.getDoc().get("headers");
         String to = (String) headers.get("To");
+        String from = (String) headers.get("From");
         if (null != to) {
             String[] recipients = to.split(",");
             for (final String recip1 : recipients) {
                 String recip = recip1.trim();
                 if (recip.length() > 0) {
-                    output.collect(new MailPair((String) key, recip),
+                    output.collect(new MailPair(from, recip),
                                    new IntWritable(1));
                 }
             }
