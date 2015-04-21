@@ -34,22 +34,22 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * This is <em>not</em> reusable.
- */
-
 @SuppressWarnings("deprecation")
 public class MongoUpdateWritable implements Writable {
 
     private static final Log LOG = LogFactory.getLog(MongoUpdateWritable.class);
+    private static final BSONEncoder enc = new BasicBSONEncoder();
+
     private BasicBSONObject query;
     private BasicBSONObject modifiers;
     private boolean upsert;
-
     private boolean multiUpdate;
-    private BSONEncoder enc = new BasicBSONEncoder();
 
     private BasicOutputBuffer buf = new BasicOutputBuffer();
+
+    public MongoUpdateWritable() {
+        this(null, null);
+    }
 
     public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers, final boolean upsert,
                                final boolean multiUpdate) {
@@ -78,6 +78,22 @@ public class MongoUpdateWritable implements Writable {
 
     public boolean isMultiUpdate() {
         return multiUpdate;
+    }
+
+    public void setQuery(BasicBSONObject query) {
+        this.query = query;
+    }
+
+    public void setModifiers(BasicBSONObject modifiers) {
+        this.modifiers = modifiers;
+    }
+
+    public void setUpsert(boolean upsert) {
+        this.upsert = upsert;
+    }
+
+    public void setMultiUpdate(boolean multiUpdate) {
+        this.multiUpdate = multiUpdate;
     }
 
     /**
