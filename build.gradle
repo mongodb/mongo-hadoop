@@ -274,6 +274,10 @@ project(':hive') {
         all*.exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
 
+    test {
+        onlyIf { JavaVersion.current().isJava7Compatible() }
+    }
+
     dependencies {
         compile project(':core')
 
