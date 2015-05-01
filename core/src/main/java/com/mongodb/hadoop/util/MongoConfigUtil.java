@@ -321,17 +321,19 @@ public final class MongoConfigUtil {
     }
 
     public static List<MongoClientURI> getMongoURIs(final Configuration conf, final String key) {
-        final String raw = conf.get(key);
+        String raw = conf.get(key);
+        List<MongoClientURI> result = new LinkedList<MongoClientURI>();
         if (raw != null && !raw.trim().isEmpty()) {
-            List<MongoClientURI> result = new LinkedList<MongoClientURI>();
-            String[] split = StringUtils.split(raw, ", ");
-            for (String mongoURI : split) {
-                result.add(new MongoClientURI(mongoURI));
+            for (String connectionString : raw.split("mongodb://")) {
+                // Try to be forgiving with formatting.
+                connectionString = StringUtils.strip(connectionString, ", ");
+                if (!connectionString.isEmpty()) {
+                    result.add(
+                      new MongoClientURI("mongodb://" + connectionString));
+                }
             }
-            return result;
-        } else {
-            return Collections.emptyList();
         }
+        return result;
     }
 
     /**

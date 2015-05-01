@@ -320,17 +320,7 @@ public final class MapredMongoConfigUtil {
     }
 
     public static List<MongoClientURI> getMongoURIs(final Configuration conf, final String key) {
-        final String raw = conf.get(key);
-        if (raw != null && !raw.trim().isEmpty()) {
-            List<MongoClientURI> result = new LinkedList<MongoClientURI>();
-            String[] split = StringUtils.split(raw, ", ");
-            for (String mongoURI : split) {
-                result.add(new MongoClientURI(mongoURI));
-            }
-            return result;
-        } else {
-            return Collections.emptyList();
-        }
+        return MongoConfigUtil.getMongoURIs(conf, key);
     }
 
     /**
