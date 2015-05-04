@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
@@ -38,13 +37,19 @@ public class PigTest extends BaseHadoopTest {
     public void runMongoUpdateStorageTest(
       final String scriptName, final String[] expected)
       throws IOException, ParseException {
+        runMongoUpdateStorageTest(scriptName, expected, "results");
+    }
+
+    public void runMongoUpdateStorageTest(
+      final String scriptName, final String[] expected, final String alias)
+      throws IOException, ParseException {
         org.apache.pig.pigunit.PigTest pigTest = new org.apache.pig.pigunit
           .PigTest(getClass().getResource(scriptName).getPath());
 
         // Let the STORE statement do its job so we can test MongoUpdateStorage.
         pigTest.unoverride("STORE");
 
-        pigTest.assertOutput("results", expected);
+        pigTest.assertOutput(alias, expected);
     }
 
     @Test
@@ -86,17 +91,15 @@ public class PigTest extends BaseHadoopTest {
 
     @Test
     public void testPigBSONOutput() throws IOException, ParseException {
-        org.apache.pig.pigunit.PigTest test =
-          new org.apache.pig.pigunit.PigTest(
-            getClass().getResource("/pig/bson_test.pig").getPath());
-        test.unoverride("STORE");
-
-        String[] expected = {
-          "([_id#51eb4b4c873b8b9013457e4a,last#Alabi,first#Daniel,cars#(a,b,c),age#19.0])",
-          "([_id#51eb4b7a873b8b9013457e4b,last#Alabi,first#Tolu,cars#(d,e,f),age#21.0])",
-          "([_id#51eb4bd3873b8b9013457e4c,last#Dada,first#Tinuke,cars#(g),age#50.0])"
-        };
-        test.assertOutput("persons_read", expected);
+        runMongoUpdateStorageTest(
+          "/pig/bson_test.pig",
+          new String[]{
+            "(Daniel,Alabi,19.0)",
+            "(Tolu,Alabi,21.0)",
+            "(Tinuke,Dada,50.0)"
+          },
+          "persons_read"
+        );
     }
 
 }

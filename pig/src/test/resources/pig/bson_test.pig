@@ -15,6 +15,8 @@ STORE persons_info
 
 persons_read =
     LOAD 'file://@PIG_RESOURCES@/pig/test_output'
-    USING com.mongodb.hadoop.pig.BSONLoader;
+    USING com.mongodb.hadoop.pig.BSONLoader(
+      'id', 'first: chararray, last: chararray, age: double')
+    AS (first: chararray, last: chararray, age: double);
 
 DUMP persons_read;
