@@ -331,4 +331,40 @@ public class BSONSerDeTest {
         Object serialized = serde.serialize(obj, oi);
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
+
+    @Test
+    public void testBigIntFromLong() throws SerDeException {
+
+        String columnNames = "bigint";
+        String columnTypes = "bigint";
+        Long value = 1L;
+        BSONSerDe serde = new BSONSerDe();
+        Object result = helpDeserialize(serde, columnNames, columnTypes, value);
+        assertThat(value, equalTo(result));
+
+        ObjectInspector innerInspector =
+                PrimitiveObjectInspectorFactory.getPrimitiveObjectInspectorFromClass(Long.class);
+        BasicBSONObject bObject = new BasicBSONObject();
+        Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
+        assertThat(new BSONWritable(bObject), equalTo(serialized));
+
+    }
+
+    @Test
+    public void testBigIntFromInteger() throws SerDeException {
+
+        String columnNames = "bigint";
+        String columnTypes = "bigint";
+        Integer value = 1;
+        BSONSerDe serde = new BSONSerDe();
+        Object result = helpDeserialize(serde, columnNames, columnTypes, value);
+        assertThat(((Integer) value).longValue(), equalTo(result));
+
+        ObjectInspector innerInspector =
+                PrimitiveObjectInspectorFactory.getPrimitiveObjectInspectorFromClass(Integer.class);
+        BasicBSONObject bObject = new BasicBSONObject();
+        Object serialized = helpSerialize(columnNames, innerInspector, bObject, value, serde);
+        assertThat(new BSONWritable(bObject), equalTo(serialized));
+
+    }
 }
