@@ -26,6 +26,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoException;
+import com.mongodb.ReadPreference;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -87,7 +88,9 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             boolean ok = true;
             if (authDB == null) {
                 try {
-                    data = inputCollection.getDB().getSisterDB("admin").command(cmd);
+                    data = inputCollection.getDB()
+                      .getSisterDB("admin")
+                      .command(cmd, ReadPreference.primary());
                 } catch (final MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
                     data = null;
                     LOG.info(e.getMessage(), e);
@@ -98,7 +101,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                     }
                 }
             } else {
-                data = authDB.command(cmd);
+                data = authDB.command(cmd, ReadPreference.primary());
             }
 
             if (data != null) {
@@ -125,7 +128,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                             MongoClient shardClient = null;
                             try {
                                 shardClient = new MongoClient(shardHost);
-                                data = shardClient.getDB("admin").command(cmd);
+                                data = shardClient.getDB("admin")
+                                  .command(cmd, ReadPreference.primary());
                             } catch (final Exception e) {
                                 LOG.error(e.getMessage(), e);
                             } finally {
