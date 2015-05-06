@@ -139,6 +139,13 @@ def hadoop(jar, className, args) {
                 "-Dmongo.input.split_size=8",
                 "-Dmongo.job.verbose=true",
     ]
+    // Allow overriding the input URI with an environment variable.
+    if (mongoURI != null) {
+        line.add("-Dmongo.input.uri=${mongoURI}")
+    }
+    if (mongoAuthURI != null) {
+        line.add("-Dmongo.auth.uri=${mongoAuthURI}")
+    }
     args.each {
         line << "-D${it}"
     }

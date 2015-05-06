@@ -22,6 +22,8 @@ ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport')
 ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore').exists() ?
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
                   '/usr/local/bin/mongorestore';
+ext.mongoURI = System.getenv("MONGO_INPUT_URI")
+ext.mongoAuthURI = System.getenv("MONGO_AUTH_URI")
 
 buildscript {
     repositories {
