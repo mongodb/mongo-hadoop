@@ -30,7 +30,10 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     private RecordReader in = null;
     private final MongoInputFormat inputFormat = new MongoInputFormat();
     private ResourceFieldSchema[] fields;
+    private String[] inputFields;
     private String idAlias = null;
+    
+    private String query = null;
 
     @Override
     public void setUDFContextSignature(final String signature) {
@@ -55,7 +58,19 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
             throw new IllegalArgumentException("Invalid Schema Format");
         }
     }
+    
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFields) {
+    	this(userSchema, idAlias);
+        this.inputFields = inputFields.split(",");
+        if (fields != null && fields.length != this.inputFields.length)
+        	throw new IllegalArgumentException("Input fields should have the same amount of fields as user schema");
+    }
 
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFields, final String query) {
+     	this(userSchema, idAlias, inputFields);
+     	this.query = query;
+     }
+    
     public MongoLoader(final String userSchema) {
         this(userSchema, null);
     }
@@ -63,7 +78,12 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
     @Override
     public void setLocation(final String location, final Job job) throws IOException {
         MongoConfigUtil.setInputURI(job.getConfiguration(), location);
-
+        try {
+        	if (query != null)
+        		MongoConfigUtil.setQuery( job.getConfiguration(), query );
+        } catch (Throwable e) {
+        	throw new IllegalArgumentException("Could not set query.", e);
+        }
     }
 
     @Override
@@ -104,6 +124,8 @@ public class MongoLoader extends LoadFunc implements LoadMetadata {
                 if (idAlias != null && idAlias.equals(fieldTemp)) {
                     fieldTemp = "_id";
                 }
+                if (inputFields != null)
+                	fieldTemp = inputFields[i];
                 t.set(i, BSONLoader.readField(val.get(fieldTemp), fields[i]));
             }
         }

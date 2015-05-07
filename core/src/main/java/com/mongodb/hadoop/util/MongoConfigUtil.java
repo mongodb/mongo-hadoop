@@ -144,7 +144,7 @@ public final class MongoConfigUtil {
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
      * <p/>
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop 
      * severely reducing parallel mapping.
      */
     public static final String CREATE_INPUT_SPLITS = "mongo.input.split.create_input_splits";
@@ -380,8 +380,11 @@ public final class MongoConfigUtil {
 
         DBCollection coll;
         try {
+
+            LOG.info("Connecting to Mongo");
             Mongo mongo = getMongoClient(authURI);
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            LOG.info("Got Mongo connection");
             return coll;
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);

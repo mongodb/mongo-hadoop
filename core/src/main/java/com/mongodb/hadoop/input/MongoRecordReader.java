@@ -80,6 +80,8 @@ public class MongoRecordReader extends RecordReader<Object, BSONObject> {
 
             current = cursor.next();
             seen++;
+            LOG.info("Reading " + seen + " documents from:");
+            LOG.info(split.toString());
 
             return true;
         } catch (MongoException e) {
