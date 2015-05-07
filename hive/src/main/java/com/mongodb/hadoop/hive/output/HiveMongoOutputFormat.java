@@ -18,6 +18,7 @@ package com.mongodb.hadoop.hive.output;
 
 import com.mongodb.DBCollection;
 import com.mongodb.hadoop.io.BSONWritable;
+import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
 import com.mongodb.hadoop.mapred.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.fs.FileSystem;
@@ -26,6 +27,9 @@ import org.apache.hadoop.hive.ql.exec.FileSinkOperator.RecordWriter;
 import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TaskAttemptContext;
+import org.apache.hadoop.mapred.TaskAttemptContextImpl;
+import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
@@ -69,13 +73,27 @@ public class HiveMongoOutputFormat implements HiveOutputFormat<BSONWritable, BSO
         extends MongoRecordWriter<Object, BSONWritable>
         implements RecordWriter {
 
+        private final TaskAttemptContext context;
+        private final MongoOutputCommitter committer;
+
         public HiveMongoRecordWriter(final List<DBCollection> ls, final JobConf conf) {
-            super(ls, conf);
+            super(conf);
+            context = new TaskAttemptContextImpl(
+              conf, TaskAttemptID.forName(conf.get("mapred.task.id")));
+            // Hive doesn't use an OutputCommitter, so we'll need to do this
+            // manually.
+            committer = new MongoOutputCommitter(ls);
         }
 
         @Override
         public void close(final boolean abort) throws IOException {
-            super.close(null);
+            // Disambiguate call to super.close().
+            super.close((TaskAttemptContext) null);
+            if (abort) {
+                committer.abortTask(context);
+            } else if (committer.needsTaskCommit(context)) {
+                committer.commitTask(context);
+            }
         }
 
         @Override

@@ -3,8 +3,11 @@ package com.mongodb.hadoop.pig;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.ListIndexesIterable;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import org.apache.pig.tools.parameters.ParseException;
+import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class PigTest extends BaseHadoopTest {
@@ -31,6 +37,7 @@ public class PigTest extends BaseHadoopTest {
 
     @After
     public void tearDown() {
+        mongoClient.getDB("mongo_hadoop").dropDatabase();
         mongoClient.close();
     }
 
@@ -50,6 +57,18 @@ public class PigTest extends BaseHadoopTest {
         pigTest.unoverride("STORE");
 
         pigTest.assertOutput(alias, expected);
+    }
+
+    private boolean indexExists(MongoCollection<Document> collection, String indexName) {
+        ListIndexesIterable<Document> indexes = collection.listIndexes();
+        for (Document indexSpec : indexes) {
+            LOG.info("Found index: " + indexSpec.toString());
+            String idxName = (String) indexSpec.get("name");
+            if (idxName.equals(indexName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Test
@@ -102,4 +121,35 @@ public class PigTest extends BaseHadoopTest {
         );
     }
 
+    @Test
+    public void testMongoStorageEnsureIndex()
+      throws IOException, ParseException {
+        org.apache.pig.pigunit.PigTest test =
+          new org.apache.pig.pigunit.PigTest(
+            getClass().getResource("/pig/ensure_index.pig").getPath());
+        test.unoverride("STORE");
+        test.runScript();
+
+        MongoClient client = new MongoClient("localhost:27017");
+        // There should be an index on the "last" field, ascending.
+        MongoCollection<Document> coll = client.getDatabase("mongo_hadoop")
+          .getCollection("ensure_indexes");
+        assertTrue("Should have the index \"last_1\"",
+          indexExists(coll, "last_1"));
+
+        //  Drop the index.
+        coll.dropIndex("last_1");
+
+        // Run the second pig script, which ensures a different index.
+        org.apache.pig.pigunit.PigTest secondTest =
+          new org.apache.pig.pigunit.PigTest(
+            getClass().getResource("/pig/ensure_index_2.pig").getPath());
+        secondTest.unoverride("STORE");
+        secondTest.runScript();
+
+        assertTrue("Should have the index \"first_1\"",
+          indexExists(coll, "first_1"));
+        assertFalse("Should not have the index \"last_1\"",
+          indexExists(coll, "last_1"));
+    }
 }

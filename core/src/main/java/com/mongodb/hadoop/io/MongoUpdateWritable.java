@@ -45,8 +45,6 @@ public class MongoUpdateWritable implements Writable {
     private boolean upsert;
     private boolean multiUpdate;
 
-    private BasicOutputBuffer buf = new BasicOutputBuffer();
-
     public MongoUpdateWritable() {
         this(null, null);
     }
@@ -102,6 +100,7 @@ public class MongoUpdateWritable implements Writable {
      * @see Writable#write(DataOutput)
      */
     public void write(final DataOutput out) throws IOException {
+        BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set(buf);
         enc.putObject(query);
         enc.done();

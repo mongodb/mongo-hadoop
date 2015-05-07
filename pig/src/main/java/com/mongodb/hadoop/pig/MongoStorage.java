@@ -240,9 +240,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
     public OutputFormat getOutputFormat() throws IOException {
-        return options == null
-               ? new MongoOutputFormat()
-               : new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
+        return new MongoOutputFormat();
     }
 
     public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {

@@ -28,9 +28,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import java.io.IOException;
 
 public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
-    private final String[] updateKeys;
-    private final boolean multiUpdate;
-
     public void checkOutputSpecs(final JobContext context) throws IOException {
         if (MongoConfigUtil.getOutputURIs(context.getConfiguration()).isEmpty()) {
             throw new IOException("No output URI is specified. You must set mongo.output.uri.");
@@ -38,23 +35,28 @@ public class MongoOutputFormat<K, V> extends OutputFormat<K, V> {
     }
 
     public OutputCommitter getOutputCommitter(final TaskAttemptContext context) {
-        return new MongoOutputCommitter();
+        return new MongoOutputCommitter(
+          MongoConfigUtil.getOutputCollections(context.getConfiguration()));
     }
 
     /**
      * Get the record writer that points to the output collection.
      */
     public RecordWriter<K, V> getRecordWriter(final TaskAttemptContext context) {
-        return new MongoRecordWriter(MongoConfigUtil.getOutputCollections(context.getConfiguration()), context);
+        return new MongoRecordWriter<K, V>(
+          MongoConfigUtil.getOutputCollections(context.getConfiguration()),
+          context);
     }
 
-    public MongoOutputFormat() {
-        multiUpdate = false;
-        updateKeys = null;
-    }
+    public MongoOutputFormat() {}
 
+    /**
+     * @param updateKeys ignored
+     * @param multiUpdate ignored
+     * @deprecated this constructor is no longer useful.
+     */
+    @Deprecated
     public MongoOutputFormat(final String[] updateKeys, final boolean multiUpdate) {
-        this.updateKeys = updateKeys;
-        this.multiUpdate = multiUpdate;
+        this();
     }
 }

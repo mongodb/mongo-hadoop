@@ -41,12 +41,14 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
     }
 
     public OutputCommitter getOutputCommitter(final TaskAttemptContext context) {
-        return new MongoOutputCommitter();
+        return new MongoOutputCommitter(
+          MongoConfigUtil.getOutputCollections(context.getJobConf()));
     }
 
-    public RecordWriter<K, V> getRecordWriter(final FileSystem ignored, final JobConf job, final String name,
-                                              final Progressable progress) {
-        return new MongoRecordWriter<K, V>(MongoConfigUtil.getOutputCollections(job), job);
+    public RecordWriter<K, V> getRecordWriter(
+      final FileSystem ignored, final JobConf job, final String name,
+      final Progressable progress) {
+        return new MongoRecordWriter<K, V>(job);
     }
 
 }

@@ -17,32 +17,46 @@
 
 package com.mongodb.hadoop.mapred.output;
 
+import com.mongodb.DBCollection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.hadoop.mapred.TaskAttemptContext;
 
+import java.util.List;
+
 public class MongoOutputCommitter extends OutputCommitter {
     private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
+    private final com.mongodb.hadoop.output.MongoOutputCommitter delegate;
 
+    public MongoOutputCommitter(final List<DBCollection> collections) {
+        delegate =
+          new com.mongodb.hadoop.output.MongoOutputCommitter(collections);
+    }
+
+    @Override
     public void abortTask(final TaskAttemptContext taskContext) {
-        LOG.info("should abort task");
+        delegate.abortTask(taskContext);
     }
 
+    @Override
     public void commitTask(final TaskAttemptContext taskContext) {
-        LOG.info("should commit task");
+        delegate.commitTask(taskContext);
     }
 
+    @Override
     public boolean needsTaskCommit(final TaskAttemptContext taskContext) {
-        return true;
+        return delegate.needsTaskCommit(taskContext);
     }
 
+    @Override
     public void setupJob(final JobContext jobContext) {
-        LOG.info("should setup job");
+        delegate.setupJob(jobContext);
     }
 
+    @Override
     public void setupTask(final TaskAttemptContext taskContext) {
-        LOG.info("should setup context");
+        delegate.setupTask(taskContext);
     }
 }

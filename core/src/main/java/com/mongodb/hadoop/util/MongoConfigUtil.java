@@ -79,6 +79,7 @@ public final class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
+    public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
 
@@ -501,6 +502,26 @@ public final class MongoConfigUtil {
 
     public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
+    }
+
+    /**
+     * Get the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @return the number of documents
+     */
+    public static int getBatchSize(final Configuration conf) {
+        return conf.getInt(OUTPUT_BATCH_SIZE, 1000);
+    }
+
+    /**
+     * Set the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @param size the number of documents
+     */
+    public static void setBatchSize(final Configuration conf, final int size) {
+        conf.setInt(OUTPUT_BATCH_SIZE, size);
     }
 
     /**

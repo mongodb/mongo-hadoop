@@ -113,7 +113,7 @@ public class HiveTest extends BaseHadoopTest {
             results.process(resultSet);
         } catch (SQLException e) {
             LOG.error("SQL query <" + queryStr + "> threw SQLException; "
-                    + "it may not have returned a ResultSet.");
+                    + "it may not have returned a ResultSet.", e);
         }
         return results;
     }
