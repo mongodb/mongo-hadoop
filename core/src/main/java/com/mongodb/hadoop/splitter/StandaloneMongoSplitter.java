@@ -71,7 +71,13 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         final ArrayList<InputSplit> returnVal;
         try {
             inputURI = MongoConfigUtil.getInputURI(getConfiguration());
-            inputCollection = MongoConfigUtil.getCollection(inputURI);
+            MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
+            if (authURI != null) {
+                inputCollection = MongoConfigUtil.getCollectionWithAuth(
+                  inputURI, authURI);
+            } else {
+                inputCollection = MongoConfigUtil.getCollection(inputURI);
+            }
 
             returnVal = new ArrayList<InputSplit>();
             final String ns = inputCollection.getFullName();
@@ -86,22 +92,18 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
             CommandResult data;
             boolean ok = true;
-            if (authDB == null) {
-                try {
-                    data = inputCollection.getDB()
-                      .getSisterDB("admin")
-                      .command(cmd, ReadPreference.primary());
-                } catch (final MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
-                    data = null;
-                    LOG.info(e.getMessage(), e);
-                    if (e.getMessage().contains("unrecognized command: splitVector")) {
-                        ok = false;
-                    } else {
-                        throw e;
-                    }
+            try {
+                data = inputCollection.getDB()
+                  .getSisterDB("admin")
+                  .command(cmd, ReadPreference.primary());
+            } catch (final MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
+                data = null;
+                LOG.info(e.getMessage(), e);
+                if (e.getMessage().contains("unrecognized command: splitVector")) {
+                    ok = false;
+                } else {
+                    throw e;
                 }
-            } else {
-                data = authDB.command(cmd, ReadPreference.primary());
             }
 
             if (data != null) {
@@ -121,10 +123,12 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                     try {
                         if (shards.hasNext()) {
                             final DBObject shard = shards.next();
-                            final String host = ((String) shard.get("host")).replace(shard.get("_id") + "/", "");
-                            final MongoClientURI shardHost = new MongoClientURIBuilder(inputURI)
-                                                           .host(host)
-                                                           .build();
+                            final String host = ((String) shard.get("host")).replace(
+                              shard.get("_id") + "/", "");
+                            final MongoClientURI shardHost =
+                              new MongoClientURIBuilder(authURI)
+                                .host(host)
+                                .build();
                             MongoClient shardClient = null;
                             try {
                                 shardClient = new MongoClient(shardHost);
