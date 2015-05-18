@@ -42,21 +42,43 @@ import static java.lang.String.format;
 
 public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWritable> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
+    public static final long BSON_RR_POSITION_NOT_GIVEN = -1L;
 
     private FileSplit fileSplit;
     private FSDataInputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
+    private long startingPosition = 0;
+    private long pos = 0;
 
     private BSONCallback callback;
     private BSONDecoder decoder;
 
+    public BSONFileRecordReader() {
+        this(BSON_RR_POSITION_NOT_GIVEN);
+    }
+
+    public BSONFileRecordReader(final long startingPosition) {
+        this.startingPosition = startingPosition;
+    }
+
+    /**
+     * Initialize the RecordReader with an InputSplit and a Configuration.
+     * Note that this method is not called from within Hadoop as in
+     * {@link com.mongodb.hadoop.input.BSONFileRecordReader}; it exists for
+     * consistency.
+     *
+     * @param inputSplit the FileSplit over which to iterate BSONWritables.
+     * @param conf the job's Configuration.
+     * @throws IOException
+     */
     public void initialize(final InputSplit inputSplit, final Configuration conf) throws IOException {
         fileSplit = (FileSplit) inputSplit;
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(conf);
         in = fs.open(file, 16 * 1024 * 1024);
-        in.seek(fileSplit.getStart());
+        pos = in.skip(startingPosition == BSON_RR_POSITION_NOT_GIVEN
+          ? fileSplit.getStart() : startingPosition);
         if (MongoConfigUtil.getLazyBSON(conf)) {
             callback = new LazyBSONCallback();
             decoder = new LazyBSONDecoder();
@@ -99,24 +121,24 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
         }
     }
 
+    @Override
     public float getProgress() throws IOException {
         if (finished) {
             return 1f;
         }
         if (in != null) {
-            return (float) (in.getPos() - fileSplit.getStart()) / fileSplit.getLength();
+            return Math.min(
+              1.0f, (pos - startingPosition) / (float) fileSplit.getLength());
         }
         return 0f;
     }
 
+    @Override
     public long getPos() throws IOException {
-        if (finished) {
-            return fileSplit.getStart() + fileSplit.getLength();
-        }
         if (in != null) {
-            return in.getPos();
+            return pos;
         }
-        return fileSplit.getStart();
+        return startingPosition;
     }
 
     @Override

@@ -39,6 +39,8 @@ import org.bson.LazyBSONDecoder;
 
 import java.io.IOException;
 
+import static com.mongodb.hadoop.mapred.input.BSONFileRecordReader
+  .BSON_RR_POSITION_NOT_GIVEN;
 import static java.lang.String.format;
 
 /**
@@ -67,21 +69,32 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     private FSDataInputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
+    private long startingPosition;
 
     private BSONCallback callback;
     private BSONDecoder decoder;
+    private Configuration configuration;
+
+    public BSONFileRecordReader() {
+        this(BSON_RR_POSITION_NOT_GIVEN);
+    }
+
+    public BSONFileRecordReader(final long startingPosition) {
+        this.startingPosition = startingPosition;
+    }
 
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext context) throws IOException, InterruptedException {
         fileSplit = (FileSplit) inputSplit;
-        final Configuration configuration = context.getConfiguration();
+        configuration = context.getConfiguration();
         if (LOG.isDebugEnabled()) {
             LOG.debug("reading split " + fileSplit);
         }
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(configuration);
         in = fs.open(file, 16 * 1024 * 1024);
-        in.seek(fileSplit.getStart());
+        in.seek(startingPosition == BSON_RR_POSITION_NOT_GIVEN
+          ? fileSplit.getStart() : startingPosition);
 
         if (MongoConfigUtil.getLazyBSON(configuration)) {
             callback = new LazyBSONCallback();

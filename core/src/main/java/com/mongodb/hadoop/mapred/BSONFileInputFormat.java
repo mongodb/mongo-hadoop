@@ -18,15 +18,17 @@ package com.mongodb.hadoop.mapred;
 
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.mapred.input.BSONFileRecordReader;
+import com.mongodb.hadoop.mapred.input.BSONFileSplit;
 import com.mongodb.hadoop.splitter.BSONSplitter;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 
@@ -39,18 +41,19 @@ import static java.lang.String.format;
 
 public class BSONFileInputFormat extends FileInputFormat {
 
-    protected boolean isSplitable(final JobContext context, final Path filename) {
+    @Override
+    protected boolean isSplitable(final FileSystem fs, final Path filename) {
         return true;
     }
 
     @Override
     public FileSplit[] getSplits(final JobConf job, final int numSplits) throws IOException {
 
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(job);
         FileStatus[] inputFiles = listStatus(job);
         List<FileSplit> results = new ArrayList<FileSplit>();
         for (FileStatus file : inputFiles) {
-            BSONSplitter splitter = new BSONSplitter();
-            splitter.setConf(job);
             splitter.setInputPath(file.getPath());
 
             Path splitFilePath = getSplitsFilePath(file.getPath(), job);
@@ -67,25 +70,45 @@ public class BSONFileInputFormat extends FileInputFormat {
             }
 
             for (org.apache.hadoop.mapreduce.lib.input.FileSplit split : splitter.getAllSplits()) {
-                FileSplit fsplit =
-                    new FileSplit(split.getPath(),
-                                  split.getStart(),
-                                  split.getLength(),
-                                  split.getLocations());
+                BSONFileSplit fsplit = new BSONFileSplit(
+                  split.getPath(),
+                  split.getStart(),
+                  split.getLength(),
+                  split.getLocations());
+                fsplit.setKeyField(MongoConfigUtil.getInputKey(job));
                 results.add(fsplit);
             }
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug(format("Total of %d found.", results.size()));
         }
-        return results.toArray(new FileSplit[results.size()]);
+        return results.toArray(new BSONFileSplit[results.size()]);
     }
+
 
     @Override
     public RecordReader<NullWritable, BSONWritable> getRecordReader(final InputSplit split, final JobConf job, final Reporter reporter)
         throws IOException {
-        BSONFileRecordReader reader = new BSONFileRecordReader();
-        reader.initialize(split, job);
+
+        if (split instanceof BSONFileSplit) {
+            BSONFileRecordReader reader = new BSONFileRecordReader();
+            reader.initialize(split, job);
+            return reader;
+        }
+
+        // Split was not created by BSONSplitter.
+        FileSplit fileSplit = (FileSplit) split;
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(job);
+        splitter.setInputPath(fileSplit.getPath());
+        org.apache.hadoop.mapreduce.lib.input.FileSplit newStyleFileSplit =
+          new org.apache.hadoop.mapreduce.lib.input.FileSplit(
+            fileSplit.getPath(), fileSplit.getStart(), fileSplit.getLength(),
+            fileSplit.getLocations());
+        long start = splitter.getStartingPositionForSplit(newStyleFileSplit);
+
+        BSONFileRecordReader reader = new BSONFileRecordReader(start);
+        reader.initialize(fileSplit, job);
         return reader;
     }
 }

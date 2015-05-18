@@ -16,6 +16,7 @@
 package com.mongodb.hadoop;
 
 import com.mongodb.hadoop.input.BSONFileRecordReader;
+import com.mongodb.hadoop.input.BSONFileSplit;
 import com.mongodb.hadoop.splitter.BSONSplitter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,7 +47,20 @@ public class BSONFileInputFormat extends FileInputFormat {
     public RecordReader createRecordReader(final InputSplit split, final TaskAttemptContext context)
         throws IOException, InterruptedException {
 
-        return new BSONFileRecordReader();
+        if (split instanceof BSONFileSplit) {
+            // Split was created by BSONSplitter and starts at a whole document.
+            return new BSONFileRecordReader();
+        }
+
+        // Split was not created by BSONSplitter, and we need to find the
+        // first document to begin iterating.
+        FileSplit fileSplit = (FileSplit) split;
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(context.getConfiguration());
+        splitter.setInputPath(fileSplit.getPath());
+
+        return new BSONFileRecordReader(
+          splitter.getStartingPositionForSplit(fileSplit));
     }
 
     public static PathFilter getInputPathFilter(final JobContext context) {
@@ -59,6 +73,8 @@ public class BSONFileInputFormat extends FileInputFormat {
     public List<FileSplit> getSplits(final JobContext context) throws IOException {
         Configuration config = context.getConfiguration();
         PathFilter pf = getInputPathFilter(context);
+        BSONSplitter splitter = new BSONSplitter();
+        splitter.setConf(config);
         ArrayList<FileSplit> splits = new ArrayList<FileSplit>();
         List<FileStatus> inputFiles = listStatus(context);
         for (FileStatus file : inputFiles) {
@@ -73,8 +89,6 @@ public class BSONFileInputFormat extends FileInputFormat {
                 }
             }
 
-            BSONSplitter splitter = new BSONSplitter();
-            splitter.setConf(config);
             splitter.setInputPath(file.getPath());
 
             Path splitFilePath = getSplitsFilePath(file.getPath(), config);
