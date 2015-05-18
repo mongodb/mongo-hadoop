@@ -38,7 +38,7 @@ import java.io.IOException;
 public class MongoUpdateWritable implements Writable {
 
     private static final Log LOG = LogFactory.getLog(MongoUpdateWritable.class);
-    private static final BSONEncoder enc = new BasicBSONEncoder();
+    private final BSONEncoder enc = new BasicBSONEncoder();
 
     private BasicBSONObject query;
     private BasicBSONObject modifiers;
@@ -80,19 +80,19 @@ public class MongoUpdateWritable implements Writable {
         return multiUpdate;
     }
 
-    public void setQuery(BasicBSONObject query) {
+    public void setQuery(final BasicBSONObject query) {
         this.query = query;
     }
 
-    public void setModifiers(BasicBSONObject modifiers) {
+    public void setModifiers(final BasicBSONObject modifiers) {
         this.modifiers = modifiers;
     }
 
-    public void setUpsert(boolean upsert) {
+    public void setUpsert(final boolean upsert) {
         this.upsert = upsert;
     }
 
-    public void setMultiUpdate(boolean multiUpdate) {
+    public void setMultiUpdate(final boolean multiUpdate) {
         this.multiUpdate = multiUpdate;
     }
 

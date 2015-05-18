@@ -23,7 +23,7 @@ public class MailPair implements WritableComparable {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(final String from) {
         this.from = from;
     }
 
@@ -31,7 +31,7 @@ public class MailPair implements WritableComparable {
         return to;
     }
 
-    public void setTo(String to) {
+    public void setTo(final String to) {
         this.to = to;
     }
 

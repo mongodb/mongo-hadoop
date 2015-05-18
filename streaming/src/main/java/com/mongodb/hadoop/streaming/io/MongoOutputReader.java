@@ -30,10 +30,10 @@ public class MongoOutputReader extends OutputReader<BSONWritable, BSONWritable> 
         // Actually, just read the value as the key is embedded.
         try {
             currentValue.readFields(in);
-            Object _id = currentValue.getDoc().get("_id");
-            currentKey.setDoc(new BasicDBObject("_id", _id));
+            Object id = currentValue.getDoc().get("_id");
+            currentKey.setDoc(new BasicDBObject("_id", id));
             // If successful we'll have an _id field
-            return _id != null;
+            return id != null;
         } catch (IndexOutOfBoundsException e) {
             // No more data
             LOG.info("No more data; no key/value pair read.");
