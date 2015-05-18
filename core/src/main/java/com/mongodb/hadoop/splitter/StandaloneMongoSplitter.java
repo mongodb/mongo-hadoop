@@ -125,10 +125,14 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                             final DBObject shard = shards.next();
                             final String host = ((String) shard.get("host")).replace(
                               shard.get("_id") + "/", "");
-                            final MongoClientURI shardHost =
-                              new MongoClientURIBuilder(authURI)
-                                .host(host)
-                                .build();
+                            final MongoClientURI shardHost;
+                            if (authURI != null) {
+                                shardHost = new MongoClientURIBuilder(authURI)
+                                  .host(host).build();
+                            } else {
+                                shardHost = new MongoClientURIBuilder(inputURI)
+                                  .host(host).build();
+                            }
                             MongoClient shardClient = null;
                             try {
                                 shardClient = new MongoClient(shardHost);
