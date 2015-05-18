@@ -12,7 +12,7 @@ buildscript {
 def execute(command, args = [], outStream = null, errStream = null, background = false ) {
     def env = [HADOOP_HOME: hadoopHome]
     env << System.getProperties()
-    
+
     def executor = new org.zeroturnaround.exec.ProcessExecutor().command([command.toString()] + args)
                                                                 .readOutput(true)
                                                                 .environment(env)
@@ -101,7 +101,7 @@ task startCluster(dependsOn: [copyFiles]) << {
 }
 
 task historicalYield(dependsOn: startCluster) << {
-    
+
     exec() {
         commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
@@ -125,7 +125,14 @@ task sensorData(dependsOn: 'startCluster') << {
 
 task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
     exec() {
-        commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
+        def line = [mongorestore, "-v", "-d", "mongo_hadoop", "--drop"]
+        if (mongoUsername != null && mongoPassword != null) {
+            line += ["--authenticationDatabase", "admin",
+                     "--username", mongoUsername,
+                     "--password", mongoPassword]
+        }
+        line << "${dataHome}/dump/enron_mail"
+        commandLine line
     }
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",

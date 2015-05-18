@@ -24,6 +24,8 @@ ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore
                   '/usr/local/bin/mongorestore';
 ext.mongoURI = System.getenv("MONGO_INPUT_URI")
 ext.mongoAuthURI = System.getenv("MONGO_AUTH_URI")
+ext.mongoUsername = System.getenv("MONGO_USER")
+ext.mongoPassword = System.getenv("MONGO_PASSWORD")
 
 buildscript {
     repositories {
