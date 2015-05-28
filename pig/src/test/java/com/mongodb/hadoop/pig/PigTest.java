@@ -11,8 +11,6 @@ import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -23,8 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 
 public class PigTest extends BaseHadoopTest {
-    private static final Logger LOG = LoggerFactory.getLogger(PigTest.class);
-
     private static final MongoClientURI URI =
       new MongoClientURI("mongodb://localhost:27017/mongo_hadoop.pigtests");
     private MongoClient mongoClient;
@@ -59,10 +55,10 @@ public class PigTest extends BaseHadoopTest {
         pigTest.assertOutput(alias, expected);
     }
 
-    private boolean indexExists(MongoCollection<Document> collection, String indexName) {
+    private boolean indexExists(
+      final MongoCollection<Document> collection, final String indexName) {
         ListIndexesIterable<Document> indexes = collection.listIndexes();
         for (Document indexSpec : indexes) {
-            LOG.info("Found index: " + indexSpec.toString());
             String idxName = (String) indexSpec.get("name");
             if (idxName.equals(indexName)) {
                 return true;

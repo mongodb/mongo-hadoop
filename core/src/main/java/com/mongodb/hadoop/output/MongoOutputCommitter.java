@@ -17,9 +17,7 @@
 package com.mongodb.hadoop.output;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BulkUpdateRequestBuilder;
 import com.mongodb.BulkWriteOperation;
-import com.mongodb.BulkWriteRequestBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
@@ -48,12 +46,12 @@ public class MongoOutputCommitter extends OutputCommitter {
     private final int numberOfHosts;
     public static final String TEMP_DIR_NAME = "_MONGO_OUT_TEMP";
 
-    public MongoOutputCommitter(List<DBCollection> collections) {
+    public MongoOutputCommitter(final List<DBCollection> collections) {
         this.collections = collections;
         numberOfHosts = this.collections.size();
     }
 
-    private void cleanupTemporaryFiles(TaskAttemptContext taskContext) {
+    private void cleanupTemporaryFiles(final TaskAttemptContext taskContext) {
         Path tempPath = getTaskAttemptPath(taskContext);
         try {
             FileSystem fs = FileSystem.get(taskContext.getConfiguration());
