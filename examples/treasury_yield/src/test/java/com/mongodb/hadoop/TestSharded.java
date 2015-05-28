@@ -20,10 +20,8 @@ import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_SLAVE_OK;
 import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_CHUNKS;
 import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_RANGEQUERY;
 import static com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_SHARDS;
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class TestSharded extends BaseShardedTest {
 
@@ -34,7 +32,8 @@ public class TestSharded extends BaseShardedTest {
             .inputUris(getInputUri())
             .outputUris(getOutputUri())
             .execute(isRunTestInVm());
-        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
+        compareResults(getMongos().getDB("mongo_hadoop")
+          .getCollection("yield_historical.out"), getReference());
     }
 
     @Test
@@ -46,28 +45,23 @@ public class TestSharded extends BaseShardedTest {
             .inputUris(getInputUri())
             .outputUris(outputUri)
             .execute(isRunTestInVm());
-        compareResults(getMongos().getDB(outputUri.getDatabase()).getCollection(outputUri.getCollection()), getReference());
+        compareResults(getMongos().getDB(outputUri.getDatabase())
+          .getCollection(outputUri.getCollection()), getReference());
     }
 
     @Test
     public void testMultiOutputs() {
-        DBObject opCounterBefore1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
-        DBObject opCounterBefore2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
         MongoClientURI outputUri = getOutputUri();
 
         new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .jar(JOBJAR_PATH)
             .inputUris(getInputUri())
-            .outputUris(outputUri, new MongoClientURIBuilder(outputUri).port(27018).build())
+            .outputUris(outputUri,
+              new MongoClientURIBuilder(outputUri).port(27018).build())
             .execute(isRunTestInVm());
 
-        compareResults(getMongos().getDB(outputUri.getDatabase()).getCollection(outputUri.getCollection()), getReference());
-
-        DBObject opCounterAfter1 = (DBObject) getMongos().getDB("admin").command("serverStatus").get("opcounters");
-        DBObject opCounterAfter2 = (DBObject) getMongos2().getDB("admin").command("serverStatus").get("opcounters");
-
-        compare(opCounterBefore1, opCounterAfter1);
-        compare(opCounterBefore2, opCounterAfter2);
+        compareResults(getMongos().getDB(outputUri.getDatabase())
+          .getCollection(outputUri.getCollection()), getReference());
     }
 
     @Test
@@ -92,11 +86,6 @@ public class TestSharded extends BaseShardedTest {
     }
 
     public void testDirectAccess() {
-        //        Map<String, String> params = new HashMap<String, String>();
-        //        params.put(com.mongodb.hadoop.util.MongoConfigUtil.SPLITS_USE_CHUNKS, "true");
-        //        runJob(params, "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", null, null);
-        //        compareResults(getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out"), getReference());
-        //
         DBCollection collection = getMongos().getDB("mongo_hadoop").getCollection("yield_historical.out");
         collection.drop();
 
@@ -155,17 +144,4 @@ public class TestSharded extends BaseShardedTest {
         // Make sure that this fails when rangequery is used with a query that conflicts
         assertEquals(collection.count(), 0);
     }
-
-    private void compare(final DBObject before, final DBObject after) {
-        compare("update", before, after);
-        compare("command", before, after);
-    }
-
-    private void compare(final String field, final DBObject before, final DBObject after) {
-        Integer afterValue = (Integer) after.get(field);
-        Integer beforeValue = (Integer) before.get(field);
-        assertTrue(format("%s should be greater after the job runs.  before:  %d  after:  %d", field, beforeValue, afterValue),
-                   afterValue > beforeValue);
-    }
-
 }
