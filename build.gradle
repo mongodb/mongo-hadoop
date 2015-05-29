@@ -9,7 +9,7 @@ ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '2.12.3'
 ext.hiveVersion = '0.12.0'
-ext.pigVersion = '0.13.0'
+ext.pigVersion = '0.14.0'
 ext.hadoopVersion = '2.4.1'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
@@ -26,6 +26,7 @@ ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore
 buildscript {
     repositories {
         mavenLocal()
+        maven { url 'http://192.168.137.3:8081/nexus/content/groups/eurlanda/' }
         mavenCentral()
         jcenter()
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
@@ -55,7 +56,7 @@ if(project.hasProperty("clusterVersion")) {
 }
 
 allprojects {
-    version = '1.3.2'
+    version = '1.3.2_e1'
     group = 'org.mongodb.mongo-hadoop'
 }
 
@@ -68,8 +69,9 @@ configure(subprojects) {
     apply plugin: 'com.bmuschko.nexus'
 
     repositories {
-        mavenCentral()
         mavenLocal()
+        maven { url 'http://192.168.137.3:8081/nexus/content/groups/eurlanda/' }
+        mavenCentral()
         maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
     }
 
@@ -226,7 +228,7 @@ configure(subprojects) {
     extraArchive {
         sources = true
         tests = true
-        javadoc = true
+//        javadoc = true
     }
     
     nexus {

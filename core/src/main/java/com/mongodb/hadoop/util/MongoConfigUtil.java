@@ -178,9 +178,15 @@ public final class MongoConfigUtil {
     /**
      * Shared MongoClient instance cache.
      */
-    private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
-    
-    private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
+//    private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
+
+    private static final ThreadLocal<Map<MongoClientURI, MongoClient>> MAP_THREAD_LOCAL
+            = new ThreadLocal<Map<MongoClientURI, MongoClient>>();
+
+//    private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
+
+    private static ThreadLocal<Map<MongoClient, MongoClientURI>> urlMapThreadLocal
+            = new ThreadLocal<Map<MongoClient, MongoClientURI>>();
 
     private MongoConfigUtil() {
     }
@@ -792,28 +798,45 @@ public final class MongoConfigUtil {
     }
 
     public static void close(final Mongo client) {
-        synchronized (CLIENTS) {
-            MongoClientURI uri = uriMap.remove(client);
-            if (uri != null) {
-                MongoClient remove;
-                remove = CLIENTS.remove(uri);
-                if (remove != client) {
-                    throw new IllegalStateException("different clients found");
-                }
-            }
-            client.close();
+        Map<MongoClient, MongoClientURI> uriMap = urlMapThreadLocal.get();
+        if (uriMap == null) {
+            uriMap = new HashMap<MongoClient, MongoClientURI>();
+            urlMapThreadLocal.set(uriMap);
         }
+        Map<MongoClientURI, MongoClient> clients = MAP_THREAD_LOCAL.get();
+        if (clients == null) {
+            clients = new HashMap<MongoClientURI, MongoClient>();
+            MAP_THREAD_LOCAL.set(clients);
+        }
+
+        MongoClientURI uri = uriMap.remove(client);
+        if (uri != null) {
+            MongoClient remove;
+            remove = clients.remove(uri);
+            if (remove != client) {
+                throw new IllegalStateException("different clients found");
+            }
+        }
+        client.close();
     }
     
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
-        synchronized (CLIENTS) {
-            MongoClient mongoClient = CLIENTS.get(uri);
-            if (mongoClient == null) {
-                mongoClient = new MongoClient(uri);
-                CLIENTS.put(uri, mongoClient);
-                uriMap.put(mongoClient, uri);
-            }
-            return mongoClient;
+        Map<MongoClient, MongoClientURI> uriMap = urlMapThreadLocal.get();
+        if (uriMap == null) {
+            uriMap = new HashMap<MongoClient, MongoClientURI>();
+            urlMapThreadLocal.set(uriMap);
         }
+        Map<MongoClientURI, MongoClient> clients = MAP_THREAD_LOCAL.get();
+        if (clients == null) {
+            clients = new HashMap<MongoClientURI, MongoClient>();
+            MAP_THREAD_LOCAL.set(clients);
+        }
+        MongoClient mongoClient = clients.get(uri);
+        if (mongoClient == null) {
+            mongoClient = new MongoClient(uri);
+            clients.put(uri, mongoClient);
+            uriMap.put(mongoClient, uri);
+        }
+        return mongoClient;
     }
 }
