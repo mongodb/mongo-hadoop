@@ -204,13 +204,20 @@ public final class MongoConfigUtil {
     /**
      * One client per thread
      */
-    private static final ThreadLocal< Map<MongoClientURI, MongoClient> > CLIENTS = new ThreadLocal< Map<MongoClientURI, MongoClient> >() {
-        @Override public Map<MongoClientURI, MongoClient> initialValue() {
-            return new HashMap<MongoClientURI, MongoClient>();
-        }
-    };
+    private static final ThreadLocal<Map<MongoClientURI, MongoClient>> CLIENTS =
+      new ThreadLocal<Map<MongoClientURI, MongoClient>>() {
+          @Override public Map<MongoClientURI, MongoClient> initialValue() {
+              return new HashMap<MongoClientURI, MongoClient>();
+          }
+      };
 
-    private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
+    private static final ThreadLocal<Map<MongoClient, MongoClientURI>> URI_MAP =
+      new ThreadLocal<Map<MongoClient, MongoClientURI>>() {
+          @Override
+          public Map<MongoClient, MongoClientURI> initialValue() {
+              return new HashMap<MongoClient, MongoClientURI>();
+          }
+      };
 
     private MongoConfigUtil() {
     }
@@ -853,7 +860,7 @@ public final class MongoConfigUtil {
     }
 
     public static void close(final Mongo client) {
-            MongoClientURI uri = uriMap.remove(client);
+            MongoClientURI uri = URI_MAP.get().remove(client);
             if (uri != null) {
                 MongoClient remove;
                 remove = CLIENTS.get().remove(uri);
@@ -869,7 +876,7 @@ public final class MongoConfigUtil {
             if (mongoClient == null) {
                 mongoClient = new MongoClient(uri);
                 CLIENTS.get().put(uri, mongoClient);
-                uriMap.put(mongoClient, uri);
+                URI_MAP.get().put(mongoClient, uri);
             }
             return mongoClient;
         }
