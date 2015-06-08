@@ -327,7 +327,7 @@ public final class MongoConfigUtil {
         if (raw != null && !raw.trim().isEmpty()) {
             for (String connectionString : raw.split("mongodb://")) {
                 // Try to be forgiving with formatting.
-                connectionString = StringUtils.strip(connectionString, ", ");
+                connectionString = StringUtils.splitByWholeSeparator(connectionString, ", ");
                 if (!connectionString.isEmpty()) {
                     result.add(
                       new MongoClientURI("mongodb://" + connectionString));
