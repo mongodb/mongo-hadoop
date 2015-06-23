@@ -94,8 +94,7 @@ public class MongoOutputCommitter extends OutputCommitter {
 
         // Read Writables out of the temporary file.
         BSONWritable bw = new BSONWritable();
-        // TODO: Use zero-args constructor from other branch.
-        MongoUpdateWritable muw = new MongoUpdateWritable(null, null);
+        MongoUpdateWritable muw = new MongoUpdateWritable();
         while (filePos < fileLen) {
             try {
                 // Determine writable type, and perform corresponding operation
@@ -139,6 +138,10 @@ public class MongoOutputCommitter extends OutputCommitter {
                     coll = getDbCollectionByRoundRobin();
                     bulkOp = coll.initializeOrderedBulkOperation();
                     curBatchSize = 0;
+
+                    // Signal progress back to Hadoop framework so that we
+                    // don't time out.
+                    taskContext.progress();
                 }
             } catch (IOException e) {
                 LOG.error("Error reading from temporary file", e);
