@@ -1,3 +1,10 @@
+1.4 / 2nd of July, 2015
+=======================
+
+  * [HADOOP-206] Update progress inside MongoOutputCommitter so that Hadoop doesn't time out the commit
+
+This stable release also includes all features and fixes from the 1.4-rc0 release described below.
+
 1.4-rc0 / 18th of June, 2015
 ============================
 
