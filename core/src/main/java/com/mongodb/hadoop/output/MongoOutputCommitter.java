@@ -95,6 +95,9 @@ public class MongoOutputCommitter extends OutputCommitter {
         // Read Writables out of the temporary file.
         BSONWritable bw = new BSONWritable();
         MongoUpdateWritable muw = new MongoUpdateWritable();
+        DBObject query = new BasicDBObject();
+        DBObject insert = new BasicDBObject();
+        DBObject modifiers = new BasicDBObject();
         while (filePos < fileLen) {
             try {
                 // Determine writable type, and perform corresponding operation
@@ -102,12 +105,12 @@ public class MongoOutputCommitter extends OutputCommitter {
                 int mwType = inputStream.readInt();
                 if (MongoWritableTypes.BSON_WRITABLE == mwType) {
                     bw.readFields(inputStream);
-                    bulkOp.insert(new BasicDBObject(bw.getDoc().toMap()));
+                    insert.putAll(bw.getDoc().toMap());
+                    bulkOp.insert(insert);
                 } else if (MongoWritableTypes.MONGO_UPDATE_WRITABLE == mwType) {
                     muw.readFields(inputStream);
-                    DBObject query = new BasicDBObject(muw.getQuery().toMap());
-                    DBObject modifiers =
-                      new BasicDBObject(muw.getModifiers().toMap());
+                    query.putAll(muw.getQuery().toMap());
+                    modifiers.putAll(muw.getModifiers().toMap());
                     if (muw.isMultiUpdate()) {
                         if (muw.isUpsert()) {
                             bulkOp.find(query).upsert().update(modifiers);
