@@ -72,12 +72,17 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     /**
      * @deprecated use {@link #setAuthURI(MongoClientURI)} instead
+     * @param authURI a MongoDB URI providing credentials
      */
     @Deprecated
     public void setAuthURI(final MongoURI authURI) {
         setAuthURI(authURI != null ? new MongoClientURI(authURI.toString()) : null);
     }
 
+    /**
+     * Set the MongoDB URI to use for authentication.
+     * @param authURI the MongoDB URI
+     */
     public void setAuthURI(final MongoClientURI authURI) {
         this.authURI = authURI;
     }

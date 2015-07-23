@@ -46,10 +46,20 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
     private final BSONWritable bsonWritable;
     private FSDataOutputStream outputStream;
 
+    /**
+     * Create a MongoRecordWriter targeting a single DBCollection.
+     * @param c a DBCollection
+     * @param ctx the TaskAttemptContext
+     */
     public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
         this(Arrays.asList(c), ctx);
     }
 
+    /**
+     * Create a MongoRecordWriter that targets multiple DBCollections.
+     * @param c a list of DBCollections
+     * @param ctx the TaskAttemptContext
+     */
     public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx) {
         collections = new ArrayList<DBCollection>(c);
         context = ctx;
@@ -78,6 +88,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
     }
 
+    @Override
     public void write(final K key, final V value) throws IOException {
         if (value instanceof MongoUpdateWritable) {
             outputStream.writeInt(MongoWritableTypes.MONGO_UPDATE_WRITABLE);
@@ -119,6 +130,10 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         collections.get(0).createIndex(index, options);
     }
 
+    /**
+     * Get the TaskAttemptContext associated with this MongoRecordWriter.
+     * @return the TaskAttemptContext
+     */
     public TaskAttemptContext getContext() {
         return context;
     }

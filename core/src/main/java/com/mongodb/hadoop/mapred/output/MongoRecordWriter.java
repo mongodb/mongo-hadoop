@@ -32,6 +32,10 @@ public class MongoRecordWriter<K, V>
   implements RecordWriter<K, V> {
     private final JobConf configuration;
 
+    /**
+     * Create a new MongoRecordWriter.
+     * @param conf the job configuration
+     */
     public MongoRecordWriter(final JobConf conf) {
         super(
           Collections.<DBCollection>emptyList(),
@@ -42,7 +46,9 @@ public class MongoRecordWriter<K, V>
 
     /**
      * @deprecated MongoRecordWriter doesn't use DBCollections directly.
-     * Please use {@link MongoRecordWriter(JobConf)} instead.
+     * Please use {@link #MongoRecordWriter(JobConf)} instead.
+     * @param c the DBCollection
+     * @param conf the job configuration
      */
     @Deprecated
     public MongoRecordWriter(final List<DBCollection> c, final JobConf conf) {

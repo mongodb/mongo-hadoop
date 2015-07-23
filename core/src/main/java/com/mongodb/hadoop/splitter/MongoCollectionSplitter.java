@@ -66,7 +66,9 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     public abstract List<InputSplit> calculateSplits() throws SplitFailedException;
 
     /**
-     * Contacts the config server and builds a map of each shard's name to its host(s) by examining config.shards.
+     * Contacts the config server and builds a map of each shard's name to its
+     * host(s) by examining config.shards.
+     * @return a Map of shard name onto shard hostnames
      */
     protected Map<String, String> getShardsMap() {
         DBCursor cur = null;
@@ -128,6 +130,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
      *
      * @param originalUri  the URI to rewrite
      * @param newServerUri the new host(s) to target, e.g. server1:port1[,server2:port2,...]
+     * @return the rewritten URI
      */
     protected static MongoClientURI rewriteURI(final MongoClientURI originalUri, final String newServerUri) {
         String originalUriString = originalUri.toString();
@@ -157,6 +160,8 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
      *
      * @param lowerBound the lower bound of the collection
      * @param upperBound the upper bound of the collection
+     * @return a MongoInputSplit in the given bounds
+     * @throws SplitFailedException if the split could not be created
      */
     public MongoInputSplit createSplitFromBounds(final BasicDBObject lowerBound, final BasicDBObject upperBound)
         throws SplitFailedException {
@@ -225,6 +230,8 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
      *
      * @param chunkLowerBound the lower bound of the chunk (min)
      * @param chunkUpperBound the upper bound of the chunk (max)
+     * @param query a query filtering the documents within the split
+     * @return a MongoInputSplit from a range query
      * @throws IllegalArgumentException if the query conflicts with the chunk bounds, or the either of the bounds are compound keys.
      */
     public MongoInputSplit createRangeQuerySplit(final BasicDBObject chunkLowerBound, final BasicDBObject chunkUpperBound,

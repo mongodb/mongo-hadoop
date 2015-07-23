@@ -115,7 +115,7 @@ public class BSONSplitter extends Configured implements Tool {
      * @param inputFile the file whose splits are contained in the splits file.
      * @param splitFile the Path to the splits file.
      * @throws NoSplitFileException if the splits file is not found.
-     * @throws IOException
+     * @throws IOException when an error occurs reading from the file.
      */
     public void loadSplitsFromSplitFile(final FileStatus inputFile, final Path splitFile) throws NoSplitFileException, IOException {
         ArrayList<BSONFileSplit> splits = new ArrayList<BSONFileSplit>();
@@ -170,7 +170,7 @@ public class BSONSplitter extends Configured implements Tool {
      * splits file.
      *
      * @param file the FileStatus for which to calculate splits.
-     * @throws IOException
+     * @throws IOException when an error occurs reading from the FileSystem
      *
      * @see #readSplits
      */
@@ -201,7 +201,7 @@ public class BSONSplitter extends Configured implements Tool {
      * @param file the FileStatus for which to calculate splits.
      * @return a List of the calculated splits.
      *
-     * @throws IOException
+     * @throws IOException when an error occurs reading from the FileSystem
      */
     protected List<BSONFileSplit> splitFile(final FileStatus file)
       throws IOException {
@@ -270,7 +270,7 @@ public class BSONSplitter extends Configured implements Tool {
      *
      * @see com.mongodb.hadoop.util.MongoConfigUtil#BSON_WRITE_SPLITS
      *
-     * @throws IOException
+     * @throws IOException when an error occurs writing the file
      */
     public void writeSplits() throws IOException {
         if (getConf().getBoolean("bson.split.write_splits", true)) {
@@ -314,7 +314,7 @@ public class BSONSplitter extends Configured implements Tool {
      *
      * @see #readSplitsForFile
      *
-     * @throws IOException
+     * @throws IOException when an error occurs reading from the file
      */
     public void readSplits() throws IOException {
         splitsList = new ArrayList<BSONFileSplit>();
@@ -366,7 +366,7 @@ public class BSONSplitter extends Configured implements Tool {
      *
      * @param split the FileSplit for which to find the starting position.
      * @return the position of the first complete document within the split.
-     * @throws IOException
+     * @throws IOException when an error occurs while reading a file
      */
     public synchronized long getStartingPositionForSplit(final FileSplit split)
       throws IOException {

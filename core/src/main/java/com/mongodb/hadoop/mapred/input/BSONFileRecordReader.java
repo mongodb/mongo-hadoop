@@ -70,7 +70,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
      *
      * @param inputSplit the FileSplit over which to iterate BSONWritables.
      * @param conf the job's Configuration.
-     * @throws IOException
+     * @throws IOException when there is an error opening the file
      */
     public void initialize(final InputSplit inputSplit, final Configuration conf) throws IOException {
         fileSplit = (FileSplit) inputSplit;

@@ -139,6 +139,7 @@ public class BSONWritable implements WritableComparable {
 
     /**
      * Used by child copy constructors.
+     * @param other the Writable to copy.
      */
     protected synchronized void copy(final Writable other) {
         if (other != null) {

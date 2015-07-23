@@ -205,6 +205,7 @@ public class MongoConfig {
 
     /**
      * @deprecated use {@link #setInputURI(MongoClientURI)} instead
+     * @param uri the input URI
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -212,6 +213,10 @@ public class MongoConfig {
         MongoConfigUtil.setInputURI(configuration, uri);
     }
 
+    /**
+     * Set the input URI for the job.
+     * @param uri the input URI
+     */
     public void setInputURI(final MongoClientURI uri) {
         MongoConfigUtil.setInputURI(configuration, uri);
     }
@@ -228,17 +233,28 @@ public class MongoConfig {
         MongoConfigUtil.setOutputURI(configuration, uri);
     }
 
+    /**
+     * @deprecated use {@link #setOutputURI(MongoClientURI)} instead.
+     * @param uri the output URI.
+     */
     @Deprecated
     @SuppressWarnings("deprecation")    
     public void setOutputURI(final MongoURI uri) {
         MongoConfigUtil.setOutputURI(configuration, uri);
     }
+
+    /**
+     * Set the output URI for the job.
+     * @param uri the output URI
+     */
     public void setOutputURI(final MongoClientURI uri) {
         MongoConfigUtil.setOutputURI(configuration, uri);
     }
 
     /**
-     * Set JSON but first validate it's parsable into a BSON Object
+     * Helper to set a JSON string for a given key.
+     * @param key the key
+     * @param value the JSON string
      */
     public void setJSON(final String key, final String value) {
         MongoConfigUtil.setJSON(configuration, key, value);
@@ -320,29 +336,38 @@ public class MongoConfig {
         MongoConfigUtil.setSplitSize(configuration, value);
     }
 
-    /**
-     * if TRUE, Splits will be read by connecting to the individual shard servers, however this really isn't safe unless you know what
-     * you're doing. ( issue has to do with chunks moving / relocating during balancing phases)
-     */
     public boolean canReadSplitsFromShards() {
         return MongoConfigUtil.canReadSplitsFromShards(configuration);
     }
 
+    /**
+     * Set whether the reading directly from shards is enabled.
+     *
+     * When {@code true}, splits are read directly from shards. By default,
+     * splits are read through a mongos router when connected to a sharded
+     * cluster. Note that reading directly from shards can lead to bizarre
+     * results when there are orphaned documents or if the balancer is running.
+     *
+     * @param value enables reading from shards directly
+     *
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-balancing/">Sharding Balancing</a>
+     * @see <a href="http://docs.mongodb.org/manual/reference/command/cleanupOrphaned/#dbcmd.cleanupOrphaned">cleanupOrphaned command</a>
+     */
     public void setReadSplitsFromShards(final boolean value) {
         MongoConfigUtil.setReadSplitsFromShards(configuration, value);
     }
 
-    /**
-     * If sharding is enabled, Use the sharding configured chunks to split up data.
-     */
     public boolean isShardChunkedSplittingEnabled() {
         return MongoConfigUtil.isShardChunkedSplittingEnabled(configuration);
     }
 
+    /**
+     * Set whether using shard chunk splits as InputSplits is enabled.
+     * @param value enables using shard chunk splits as InputSplits.
+     */
     public void setShardChunkSplittingEnabled(final boolean value) {
         MongoConfigUtil.setShardChunkSplittingEnabled(configuration, value);
     }
-
 
     public boolean isRangeQueryEnabled() {
         return MongoConfigUtil.isRangeQueryEnabled(configuration);
@@ -360,22 +385,6 @@ public class MongoConfig {
         MongoConfigUtil.setReadSplitsFromSecondary(configuration, value);
     }
 
-    /**
-     * <p>
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false,
-     * Mongo-Hadoop will attempt to create custom input splits for you.  By
-     * default it will split on {@code _id}, which is a reasonable/sane default.
-     * </p>
-     * <p>
-     * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
-     * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
-     * index on the field, and follow the other rules outlined in the docs.
-     * </p>
-     * <p>
-     * This must be a JSON document, and not just a field name!
-     * </p>
-     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
-     */
     public String getInputSplitKeyPattern() {
         return MongoConfigUtil.getInputSplitKeyPattern(configuration);
     }
@@ -386,20 +395,22 @@ public class MongoConfig {
     }
 
     /**
-     * <p>
-     * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false,
-     * Mongo-Hadoop will attempt to create custom input splits for you.  By
-     * default it will split on {@code _id}, which is a reasonable/sane default.
-     * </p>
-     * <p>
-     * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
-     * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
-     * index on the field, and follow the other rules outlined in the docs.
-     * </p>
-     * <p>
+     * If {@code CREATE_INPUT_SPLITS} is true but {@code SPLITS_USE_CHUNKS} is
+     * false, the connector will attempt to create InputSplits using the
+     * MongoDB {@code splitVector} command. By default it will split on
+     * {@code {"_id": 1}}.
+     *
+     * If you want to customize that split point for efficiency reasons
+     * (such as different distribution) you may set this to any valid field
+     * name. The rules for this field are the same as for MongoDB shard keys.
+     * You must have an index on the field, and follow the other rules outlined
+     * in the docs.
+     *
      * This must be a JSON document, and not just a field name!
-     * </p>
+     * @param pattern the JSON document describing the index to use for
+     *                splitVector.
      * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
+     * @see <a href="http://docs.mongodb.org/manual/reference/command/splitVector/">splitVector</a>
      */
     public void setInputSplitKeyPattern(final String pattern) {
         MongoConfigUtil.setInputSplitKeyPattern(configuration, pattern);
@@ -410,61 +421,31 @@ public class MongoConfig {
         MongoConfigUtil.setInputSplitKey(configuration, key);
     }
 
-    /**
-     * <p>
-     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
-     * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * </p>
-     * <p>
-     * This is {@code true} by default now, but if {@code false}, only one
-     * InputSplit (your whole collection) will be assigned to Hadoop,
-     * severely reducing parallel mapping.
-     * </p>
-     */
     public boolean createInputSplits() {
         return MongoConfigUtil.createInputSplits(configuration);
     }
 
     /**
-     * <p>
-     * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
-     * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * </p>
-     * <p>
-     * This is {@code true} by default now, but if {@code false}, only one
-     * InputSplit (your whole collection) will be assigned to Hadoop,
-     * severely reducing parallel mapping.
-     * </p>
+     * Set whether creating InputSplits is enabled. If {@code true}, the driver
+     * will attempt to split the MongoDB input data (if reading from Mongo)
+     * into multiple InputSplits to allow parallelism when processing within
+     * Hadoop. If {@code false}, only one InputSplit will be created for the
+     * entire input. This option is {@code true} by default.
+     *
+     * @param value enables creating multiple InputSplits.
      */
     public void setCreateInputSplits(final boolean value) {
         MongoConfigUtil.setCreateInputSplits(configuration, value);
     }
 
-    /**
-     * <p>
-     * The MongoDB field to read from for the Mapper Input.
-     * </p>
-     * <p>
-     * This will be fed to your mapper as the "Key" for the input.
-     * </p>
-     * <p>
-     * Defaults to {@code _id}
-     * </p>
-     */
     public String getInputKey() {
         return MongoConfigUtil.getInputKey(configuration);
     }
 
     /**
-     * <p>
-     * The MongoDB field to read from for the Mapper Input.
-     * </p>
-     * <p>
-     * This will be fed to your mapper as the "Key" for the input.
-     * </p>
-     * <p>
-     * Defaults to {@code _id}
-     * </p>
+     * Set the field for each document to use as the Mapper's key.
+     * This is {@code _id} by default.
+     * @param fieldName the field to use as the Mapper key.
      */
     public void setInputKey(final String fieldName) {
         MongoConfigUtil.setInputKey(configuration, fieldName);

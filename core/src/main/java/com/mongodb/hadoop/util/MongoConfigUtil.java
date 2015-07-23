@@ -350,6 +350,9 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #getMongoClientURI(Configuration, String)} instead
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @return the MongoURI stored for the given key
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -361,7 +364,13 @@ public final class MongoConfigUtil {
             return null;
         }
     }
-    
+
+    /**
+     * Retrieve a setting as a {@code MongoClientURI}.
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @return the MongoClientURI stored for the given key
+     */
     public static MongoClientURI getMongoClientURI(final Configuration conf, final String key) {
         final String raw = conf.get(key);
         return raw != null && !raw.trim().isEmpty() ? new MongoClientURI(raw) : null;
@@ -389,12 +398,19 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #getCollection(MongoClientURI)}
+     * @param uri the MongoDB URI
+     * @return the DBCollection in the URI
      */
     @Deprecated
     public static DBCollection getCollection(final MongoURI uri) {
         return getCollection(new MongoClientURI(uri.toString()));
     }
-    
+
+    /**
+     * Retrieve a DBCollection from a MongoDB URI.
+     * @param uri the MongoDB URI
+     * @return the DBCollection in the URI
+     */
     public static DBCollection getCollection(final MongoClientURI uri) {
         try {
             return getMongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
@@ -405,12 +421,21 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #getCollectionWithAuth(MongoClientURI, MongoClientURI)} instead
+     * @param authURI the URI with which to authenticate
+     * @param uri the MongoDB URI
+     * @return the authenticated DBCollection
      */
     @Deprecated
     public static DBCollection getCollectionWithAuth(final MongoURI uri, final MongoURI authURI) {
         return getCollectionWithAuth(new MongoClientURI(uri.toString()), new MongoClientURI(authURI.toString()));
     }
-    
+
+    /**
+     * Get an authenticated DBCollection from a MongodB URI.
+     * @param authURI the URI with which to authenticate
+     * @param uri the MongoDB URI
+     * @return the authenticated DBCollection
+     */
     public static DBCollection getCollectionWithAuth(final MongoClientURI uri, final MongoClientURI authURI) {
         //Make sure auth uri is valid and actually has a username/pw to use
         if (authURI == null || authURI.getUsername() == null || authURI.getPassword() == null) {
@@ -454,6 +479,9 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @param value the value for the setting
      */
     @Deprecated
     public static void setMongoURI(final Configuration conf, final String key, final MongoURI value) {
@@ -461,6 +489,12 @@ public final class MongoConfigUtil {
         // URI object
     }
 
+    /**
+     * Helper for providing a {@code MongoClientURI} as the value for a setting.
+     * @param conf  the Configuration
+     * @param key   the key for the setting
+     * @param value the value for the setting
+     */
     public static void setMongoURI(final Configuration conf, final String key, final MongoClientURI value) {
         conf.set(key, value.toString()); // todo - verify you can toString a
         // URI object
@@ -480,6 +514,8 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #setInputURI(Configuration, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param uri the MongoURI
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -487,6 +523,11 @@ public final class MongoConfigUtil {
         setMongoURI(conf, INPUT_URI, uri);
     }
 
+    /**
+     * Set the input URI for the job.
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
+     */
     public static void setInputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, INPUT_URI, uri);
     }
@@ -502,8 +543,11 @@ public final class MongoConfigUtil {
     public static void setOutputURI(final Configuration conf, final String uri) {
         setMongoURIString(conf, OUTPUT_URI, uri);
     }
-     /**
+
+    /**
      * @deprecated use {@link #setOutputURI(Configuration, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -511,6 +555,11 @@ public final class MongoConfigUtil {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
 
+    /**
+     * Set the output URI for the job.
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
+     */
     public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
@@ -536,7 +585,10 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * Set JSON but first validate it's parsable into a DBObject
+     * Helper for providing a JSON string as a value for a setting.
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @param value the JSON string value
      */
     public static void setJSON(final Configuration conf, final String key, final String value) {
         try {
@@ -572,13 +624,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_QUERY, query);
     }
 
+    /**
+     * Set the query set for the Job using a DBObject.
+     * @param conf the Configuration
+     * @param query the query
+     */
     public static void setQuery(final Configuration conf, final DBObject query) {
         setDBObject(conf, INPUT_QUERY, query);
     }
 
-    /**
-     * Returns the configured query as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getQuery(final Configuration conf) {
         return getDBObject(conf, INPUT_QUERY);
     }
@@ -587,13 +641,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_FIELDS, fields);
     }
 
+    /**
+     * Specify a projection document for documents retrieved from MongoDB.
+     * @param conf the Configuration
+     * @param fields a projection document
+     */
     public static void setFields(final Configuration conf, final DBObject fields) {
         setDBObject(conf, INPUT_FIELDS, fields);
     }
 
-    /**
-     * Returns the configured fields as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getFields(final Configuration conf) {
         return getDBObject(conf, INPUT_FIELDS);
     }
@@ -602,13 +658,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_SORT, sort);
     }
 
+    /**
+     * Specify the sort order as a DBObject.
+     * @param conf the Configuration
+     * @param sort the sort document
+     */
     public static void setSort(final Configuration conf, final DBObject sort) {
         setDBObject(conf, INPUT_SORT, sort);
     }
 
-    /**
-     * Returns the configured sort as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getSort(final Configuration conf) {
         return getDBObject(conf, INPUT_SORT);
     }
@@ -645,38 +703,56 @@ public final class MongoConfigUtil {
         conf.setInt(INPUT_SPLIT_SIZE, value);
     }
 
-    /**
-     * if TRUE, Splits will be queried using $lt/$gt instead of $max and $min. This allows the database's query optimizer to choose the best
-     * index, instead of being forced to use the one in the $max/$min keys. This will only work if the key used for splitting is *not* a
-     * compound key. Make sure that all values under the splitting key are of the same type, or this will cause incomplete results.
-     */
     public static boolean isRangeQueryEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_RANGEQUERY, false);
     }
 
+    /**
+     * Enable using {@code $lt} and {@code $gt} to define InputSplits rather
+     * than {@code $min} and {@code $max}. This allows the database's query
+     * optimizer to choose the best index instead of using the one in the
+     * $max/$min keys. This will only work if the key used for splitting is
+     * *not* a compound key. Make sure that all values under the splitting key
+     * are of the same type, or this will cause incomplete results.
+     *
+     * @param conf the Configuration
+     * @param value enables using {@code $lt} and {@code $gt}
+     */
     public static void setRangeQueryEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_RANGEQUERY, value);
     }
 
-    /**
-     * if TRUE, Splits will be read by connecting to the individual shard servers, Only use this ( issue has to do with chunks moving /
-     * relocating during balancing phases)
-     */
     public static boolean canReadSplitsFromShards(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_SHARDS, false);
     }
 
+    /**
+     * Set whether the reading directly from shards is enabled.
+     *
+     * When {@code true}, splits are read directly from shards. By default,
+     * splits are read through a mongos router when connected to a sharded
+     * cluster. Note that reading directly from shards can lead to bizarre
+     * results when there are orphaned documents or if the balancer is running.
+     *
+     * @param conf the Configuration
+     * @param value enables reading from shards directly
+     *
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-balancing/">Sharding Balancing</a>
+     * @see <a href="http://docs.mongodb.org/manual/reference/command/cleanupOrphaned/#dbcmd.cleanupOrphaned">cleanupOrphaned command</a>
+     */
     public static void setReadSplitsFromShards(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_SHARDS, value);
     }
 
-    /**
-     * If sharding is enabled, Use the sharding configured chunks to split up data.
-     */
     public static boolean isShardChunkedSplittingEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_CHUNKS, true);
     }
 
+    /**
+     * Set whether using shard chunk splits as InputSplits is enabled.
+     * @param conf the Configuration
+     * @param value enables using shard chunk splits as InputSplits.
+     */
     public static void setShardChunkSplittingEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_CHUNKS, value);
     }
@@ -812,9 +888,15 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * Fetch a class by its actual class name, rather than by a key name in the configuration properties. We still need to pass in a
-     * Configuration object here, since the Configuration class maintains an internal cache of class names for performance on some hadoop
-     * versions. It also ensures that the same classloader is used across all keys.
+     * Fetch a class by its name, rather than by a key name in the
+     * Configuration properties. The Configuration class is used for its
+     * internal cache of class names and to ensure that the same ClassLoader is
+     * used across all keys.
+     * @param conf the Configuration
+     * @param className the name of the class
+     * @param xface an interface or superclass of expected class
+     * @param <U> the type of xface
+     * @return the class or {@code null} if not found
      */
     public static <U> Class<? extends U> getClassByName(final Configuration conf,
                                                         final String className,

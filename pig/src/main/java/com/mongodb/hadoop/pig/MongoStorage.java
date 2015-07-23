@@ -87,7 +87,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
      * </code></pre>
      *
      * @param args storage arguments
-     * @throws ParseException
+     * @throws ParseException if the arguments cannot be parsed
      */
     public MongoStorage(final String... args) throws ParseException {
         this.options = MongoStorageOptions.parseArguments(args);
