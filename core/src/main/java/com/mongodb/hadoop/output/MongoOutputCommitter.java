@@ -51,24 +51,28 @@ public class MongoOutputCommitter extends OutputCommitter {
         numberOfHosts = this.collections.size();
     }
 
-    private void cleanupTemporaryFiles(final TaskAttemptContext taskContext) {
+    private void cleanupTemporaryFiles(final TaskAttemptContext taskContext)
+      throws IOException {
         Path tempPath = getTaskAttemptPath(taskContext);
         try {
             FileSystem fs = FileSystem.get(taskContext.getConfiguration());
             fs.delete(tempPath, true);
         } catch (IOException e) {
             LOG.error("Could not delete temporary file " + tempPath, e);
+            throw e;
         }
     }
 
     @Override
-    public void abortTask(final TaskAttemptContext taskContext) {
+    public void abortTask(final TaskAttemptContext taskContext)
+      throws IOException {
         LOG.info("Aborting task.");
         cleanupTemporaryFiles(taskContext);
     }
 
     @Override
-    public void commitTask(final TaskAttemptContext taskContext) {
+    public void commitTask(final TaskAttemptContext taskContext)
+      throws IOException {
         LOG.info("Committing task.");
 
         // Get temporary file.
@@ -83,7 +87,7 @@ public class MongoOutputCommitter extends OutputCommitter {
         } catch (IOException e) {
             LOG.error("Could not open temporary file for committing", e);
             cleanupAfterCommit(inputStream, taskContext);
-            return;
+            throw e;
         }
 
         int maxDocs = MongoConfigUtil.getBatchSize(
@@ -122,8 +126,7 @@ public class MongoOutputCommitter extends OutputCommitter {
                         }
                     }
                 } else {
-                    LOG.error("Unrecognized type: " + mwType);
-                    break;
+                    throw new IOException("Unrecognized type: " + mwType);
                 }
                 filePos = inputStream.getPos();
                 // Write to MongoDB if the batch is full, or if this is the last
@@ -133,7 +136,7 @@ public class MongoOutputCommitter extends OutputCommitter {
                         bulkOp.execute();
                     } catch (MongoException e) {
                         LOG.error("Could not write to MongoDB", e);
-                        break;
+                        throw e;
                     }
                     coll = getDbCollectionByRoundRobin();
                     bulkOp = coll.initializeOrderedBulkOperation();
@@ -145,7 +148,7 @@ public class MongoOutputCommitter extends OutputCommitter {
                 }
             } catch (IOException e) {
                 LOG.error("Error reading from temporary file", e);
-                break;
+                throw e;
             }
         }
 
@@ -158,26 +161,29 @@ public class MongoOutputCommitter extends OutputCommitter {
      * @param inputStream the FSDataInputStream to close.
      */
     private void cleanupAfterCommit(
-      final FSDataInputStream inputStream, final TaskAttemptContext context) {
+      final FSDataInputStream inputStream, final TaskAttemptContext context)
+      throws IOException {
         if (inputStream != null) {
             try {
                 inputStream.close();
             } catch (IOException e) {
                 LOG.error("Could not close input stream", e);
+                throw e;
             }
         }
         cleanupTemporaryFiles(context);
     }
 
     @Override
-    public boolean needsTaskCommit(final TaskAttemptContext taskContext) {
+    public boolean needsTaskCommit(final TaskAttemptContext taskContext)
+      throws IOException {
         try {
             FileSystem fs = FileSystem.get(taskContext.getConfiguration());
             // Commit is only necessary if there was any output.
             return fs.exists(getTaskAttemptPath(taskContext));
         } catch (IOException e) {
             LOG.error("Could not open filesystem", e);
-            return false;
+            throw e;
         }
     }
 

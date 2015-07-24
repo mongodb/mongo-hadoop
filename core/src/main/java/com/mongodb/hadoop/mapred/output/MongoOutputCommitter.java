@@ -24,10 +24,10 @@ import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.hadoop.mapred.TaskAttemptContext;
 
+import java.io.IOException;
 import java.util.List;
 
 public class MongoOutputCommitter extends OutputCommitter {
-    private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
     private final com.mongodb.hadoop.output.MongoOutputCommitter delegate;
 
     public MongoOutputCommitter(final List<DBCollection> collections) {
@@ -36,17 +36,20 @@ public class MongoOutputCommitter extends OutputCommitter {
     }
 
     @Override
-    public void abortTask(final TaskAttemptContext taskContext) {
+    public void abortTask(final TaskAttemptContext taskContext)
+      throws IOException {
         delegate.abortTask(taskContext);
     }
 
     @Override
-    public void commitTask(final TaskAttemptContext taskContext) {
+    public void commitTask(final TaskAttemptContext taskContext)
+      throws IOException {
         delegate.commitTask(taskContext);
     }
 
     @Override
-    public boolean needsTaskCommit(final TaskAttemptContext taskContext) {
+    public boolean needsTaskCommit(final TaskAttemptContext taskContext)
+      throws IOException {
         return delegate.needsTaskCommit(taskContext);
     }
 
