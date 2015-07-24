@@ -239,7 +239,34 @@ configure(subprojects) {
     nexus {
         sign = true
     }
+}
 
+task apidocs {
+    // Depends on "javadoc" task for all projects.
+    dependsOn {
+        subprojects*.getTasksByName("javadoc", true)
+    }
+    // Exclude examples.
+    def noExamples = subprojects.findAll {
+        proj -> !proj.getName().contains("examples/")
+    }
+    noExamples.each {
+        proj -> copy {
+            from new File(proj.docsDir, "javadoc")
+            into new File("${rootDir}/docs", proj.getName())
+        }
+    }
+    // Generate an index.html.
+    new File("docs/index.html").withWriter { writer ->
+        writer.write("<html><head><title>MongoDB Hadoop Connector " +
+                "Modules</title></head><body><h3>MongoDB Hadoop Connector " +
+                "Modules</h3><ul>")
+        noExamples.each { proj ->
+            writer.append("<li><a href='" + proj.getName() + "/index.html' " +
+                    "rel='nofollow'>" + proj.getName() + "</li>")
+        }
+        writer.append("</ul></body></html>")
+    }
 }
 
 idea {
