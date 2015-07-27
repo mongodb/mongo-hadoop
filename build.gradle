@@ -16,6 +16,7 @@ ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
 ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
 ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
+ext.docsHome = "${rootDir}/docs"
 ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongoimport' :
                   '/usr/local/bin/mongoimport';
@@ -250,10 +251,15 @@ task apidocs {
     def noExamples = subprojects.findAll {
         proj -> !proj.getName().contains("examples/")
     }
+    // Create docs directory if it doesn't already exist.
+    def docsHomeDir = new File(docsHome)
+    if (!docsHomeDir.exists()) {
+        docsHomeDir.mkdir()
+    }
     noExamples.each {
         proj -> copy {
             from new File(proj.docsDir, "javadoc")
-            into new File("${rootDir}/docs", proj.getName())
+            into new File(docsHomeDir, proj.getName())
         }
     }
     // Generate an index.html.
