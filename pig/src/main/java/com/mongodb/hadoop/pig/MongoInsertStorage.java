@@ -37,6 +37,7 @@ import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 
 @SuppressWarnings("unchecked")
@@ -123,8 +124,21 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
                     writeField(builder, fields[i], tuple.get(i));
                 }
             } else {
-                for (int i = 0; i < tuple.size(); i++) {
-                    writeField(builder, null, tuple.get(i));
+                // Assume that the tuple contains only a map, as produced by
+                // MongoLoader, for example.
+                if (tuple.size() != 1) {
+                    throw new IOException("Could not retrieve schema, but " +
+                      "tuples did not contain a single item: " + tuple);
+                }
+                Object result = BSONStorage.getTypeForBSON(
+                  tuple.get(0), null, null);
+                if (! (result instanceof Map)) {
+                    throw new IOException("Could not retrieve schema, but " +
+                      "tuples contained something other than a Map: " + tuple);
+                }
+                Map<String, Object> documentMap = (Map<String, Object>) result;
+                for (Map.Entry<String, Object> entry : documentMap.entrySet()) {
+                    builder.add(entry.getKey(), entry.getValue());
                 }
             }
 
@@ -144,18 +158,21 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
         String strSchema = p.getProperty(SCHEMA_SIGNATURE);
         if (strSchema == null) {
-            throw new IOException("Could not find schema in UDF context");
-        }
+            LOG.warn("Could not find schema in UDF context. " +
+                "Interpreting each tuple as containing a single map.");
+        } else {
+            try {
+                // Parse the schema from the string stored in the properties object.
+                schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+            } catch (Exception e) {
+                schema = null;
+                LOG.warn(e.getMessage());
+            }
 
-        try {
-            // Parse the schema from the string stored in the properties object.
-            schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
-        } catch (Exception e) {
-            schema = null;
-            LOG.warn(e.getMessage());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("GOT A SCHEMA " + schema + " " + strSchema);
+            }
         }
-
-        LOG.info("GOT A SCHEMA " + schema + " " + strSchema);
     }
 
     public OutputFormat getOutputFormat() throws IOException {
