@@ -27,7 +27,7 @@ def downloadFile(url) {
 def extract(destination, target, file) {
     if (!new File(target).exists()) {
         new File(destination).mkdirs()
-        println "Extracing ${file} to ${destination}"
+        println "Extracting ${file} to ${destination}"
         copy {
             from(tarTree(file))
             into destination
