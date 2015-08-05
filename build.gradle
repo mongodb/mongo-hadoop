@@ -301,6 +301,30 @@ project(":core") {
     }
 }
 
+project(':spark') {
+    apply plugin: 'scala'
+    archivesBaseName = "mongo-hadoop-spark"
+    dependencies {
+        compile 'org.apache.spark:spark-core_2.11:1.4.1'
+        compile project(':core')
+    }
+
+    jar {
+        from project(':core').sourceSets.main.output
+        from sourceSets.main.output
+
+        configurations.compile.filter {
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
+        }
+    }
+
+    extraArchive {
+        tests = false
+    }
+}
+
 project(':hive') {
     archivesBaseName = 'mongo-hadoop-hive'
 

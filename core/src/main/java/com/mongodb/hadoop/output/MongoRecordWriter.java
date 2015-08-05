@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
@@ -109,6 +110,8 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
                 ((MongoOutput) value).appendAsValue(o);
             } else if (value instanceof BSONObject) {
                 o.putAll((BSONObject) value);
+            } else if (value instanceof Map) {
+                o.putAll((Map) value);
             } else {
                 o.put("value", BSONWritable.toBSON(value));
             }
