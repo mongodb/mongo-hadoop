@@ -181,7 +181,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             String splitKeyString = (new BasicDBObject(splitKey.toMap())).keySet().iterator().next();
             //If splitKeyMin has been used, use it as first boundary.
             if(splitKeyMin.containsField(splitKeyString)) {
-                lastKey = new BasicDBObject("value", splitKeyMin.get(splitKeyString));
+                lastKey = new BasicDBObject(splitKeyMin.toMap());
             }
             for (final Object aSplitData : splitData) {
                 final BasicDBObject currentKey = (BasicDBObject) aSplitData;
@@ -192,7 +192,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             BasicDBObject maxKey = null;
           //If splitKeyMax has been used, use it as last boundary.
             if(splitKeyMax.containsField(splitKeyString)) {
-                maxKey = new BasicDBObject("value", splitKeyMax.get(splitKeyString));
+                maxKey = new BasicDBObject(splitKeyMax.toMap());
             }
             // Last max split
             final MongoInputSplit lastSplit = createSplitFromBounds(lastKey, maxKey);
