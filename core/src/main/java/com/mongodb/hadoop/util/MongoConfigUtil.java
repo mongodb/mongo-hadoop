@@ -17,15 +17,15 @@
 
 package com.mongodb.hadoop.util;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.MongoURI;
-import com.mongodb.hadoop.splitter.MongoSplitter;
-import com.mongodb.util.JSON;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,14 +38,15 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.MongoURI;
+import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.util.JSON;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -150,12 +151,29 @@ public final class MongoConfigUtil {
      * index on the field, and follow the other rules outlined in the docs.
      * </p>
      * <p>
+     * Also if selectivity is intended over the specified index, INPUT_SPLIT_KEY_MIN and INPUT_SPLIT_KEY_MAX can be used 
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
      * </p>
      *
      * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
+    
+    /**
+     * Minimum value tu use over INPUT_SPLIT_KEY_PATTERN. Will make a selection over the collection reducing the amount
+     * of splits and data to be processed. Must be provided along with INPUT_SPLIT_KEY_MAX in order to work. Should be 
+     * a BSONObject stating {@code key} and {@code value}. ie: {@code { x : 10 } }
+     */
+    public static final String INPUT_SPLIT_KEY_MIN = "mongo.input.split.split_key_min";
+    
+    
+    /**
+     * Maximum value tu use over INPUT_SPLIT_KEY_PATTERN. 
+     * refer to INPUT_SPLIT_KEY_MIN for more information. 
+     */
+    public static final String INPUT_SPLIT_KEY_MAX = "mongo.input.split.split_key_max";
 
     /**
      * <p>
@@ -798,8 +816,24 @@ public final class MongoConfigUtil {
             throw new IllegalArgumentException("Provided JSON String is not representable/parsable as a DBObject.", e);
         }
     }
-
-
+    
+    public static DBObject getMinSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MIN);
+    }
+    
+    public static DBObject getMaxSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MAX);
+    }
+    
+    public static void setMinSplitKey(final Configuration conf, String string) {
+        conf.set(INPUT_SPLIT_KEY_MIN, string);
+    }
+    
+    public static void setMaxSplitKey(final Configuration conf, String string) {
+        conf.set(INPUT_SPLIT_KEY_MAX, string);
+    }
+    
+    
     public static void setInputKey(final Configuration conf, final String fieldName) {
         // TODO (bwm) - validate key rules?
         conf.set(INPUT_KEY, fieldName);
@@ -962,4 +996,5 @@ public final class MongoConfigUtil {
             }
             return mongoClient;
         }
+
 }
