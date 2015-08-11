@@ -174,13 +174,11 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                 LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"
                          + " small, try lowering 'mongo.input.split_size' if this is undesirable.");
             }
-            
+
             BasicDBObject lastKey = null; // Lower boundary of the first min split
-            //splitKey is BSONObject of shape { key: 1 }
-            
-            String splitKeyString = (new BasicDBObject(splitKey.toMap())).keySet().iterator().next();
+
             //If splitKeyMin has been used, use it as first boundary.
-            if(splitKeyMin.containsField(splitKeyString)) {
+            if(!splitKeyMin.toMap().isEmpty()) {
                 lastKey = new BasicDBObject(splitKeyMin.toMap());
             }
             for (final Object aSplitData : splitData) {
@@ -190,8 +188,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             }
 
             BasicDBObject maxKey = null;
-          //If splitKeyMax has been used, use it as last boundary.
-            if(splitKeyMax.containsField(splitKeyString)) {
+            //If splitKeyMax has been used, use it as last boundary.
+            if(!splitKeyMax.toMap().isEmpty()) {
                 maxKey = new BasicDBObject(splitKeyMax.toMap());
             }
             // Last max split
