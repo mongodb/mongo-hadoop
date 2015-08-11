@@ -65,6 +65,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
         final DBObject splitKey = MongoConfigUtil.getInputSplitKey(getConfiguration());
+        final DBObject splitKeyMax = MongoConfigUtil.getMaxSplitKey(getConfiguration());
+        final DBObject splitKeyMin = MongoConfigUtil.getMinSplitKey(getConfiguration());
         final int splitSize = MongoConfigUtil.getSplitSize(getConfiguration());
         final MongoClientURI inputURI;
         DBCollection inputCollection = null;
@@ -85,6 +87,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             LOG.info("Running splitvector to check splits against " + inputURI);
             final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)
                                      .add("keyPattern", splitKey)
+                                     .add("min", splitKeyMin)
+                                     .add("max", splitKeyMax)
                                           // force:True is misbehaving it seems
                                      .add("force", false)
                                      .add("maxChunkSize", splitSize)
@@ -167,14 +171,23 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
             BasicDBObject lastKey = null; // Lower boundary of the first min split
 
+            //If splitKeyMin has been used, use it as first boundary.
+            if(!splitKeyMin.toMap().isEmpty()) {
+                lastKey = new BasicDBObject(splitKeyMin.toMap());
+            }
             for (final Object aSplitData : splitData) {
                 final BasicDBObject currentKey = (BasicDBObject) aSplitData;
                 returnVal.add(createSplitFromBounds(lastKey, currentKey));
                 lastKey = currentKey;
             }
 
-            // Last max split, with empty upper boundary
-            final MongoInputSplit lastSplit = createSplitFromBounds(lastKey, null);
+            BasicDBObject maxKey = null;
+            //If splitKeyMax has been used, use it as last boundary.
+            if(!splitKeyMax.toMap().isEmpty()) {
+                maxKey = new BasicDBObject(splitKeyMax.toMap());
+            }
+            // Last max split
+            final MongoInputSplit lastSplit = createSplitFromBounds(lastKey, maxKey);
             returnVal.add(lastSplit);
         } finally {
             if (inputCollection != null) {
