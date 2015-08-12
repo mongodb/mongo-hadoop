@@ -177,7 +177,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
             BasicDBObject lastKey = null; // Lower boundary of the first min split
 
-            //If splitKeyMin has been used, use it as first boundary.
+            // If splitKeyMin was given, use it as first boundary.
             if(!splitKeyMin.toMap().isEmpty()) {
                 lastKey = new BasicDBObject(splitKeyMin.toMap());
             }
@@ -188,7 +188,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             }
 
             BasicDBObject maxKey = null;
-            //If splitKeyMax has been used, use it as last boundary.
+            // If splitKeyMax was given, use it as last boundary.
             if(!splitKeyMax.toMap().isEmpty()) {
                 maxKey = new BasicDBObject(splitKeyMax.toMap());
             }

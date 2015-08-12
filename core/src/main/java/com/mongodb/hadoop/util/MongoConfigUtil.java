@@ -150,7 +150,9 @@ public final class MongoConfigUtil {
      * index on the field, and follow the other rules outlined in the docs.
      * </p>
      * <p>
-     * Also if selectivity is intended over the specified index, INPUT_SPLIT_KEY_MIN and INPUT_SPLIT_KEY_MAX can be used 
+     * To customize the range of the index that is used to create splits, see
+     * the {@link #INPUT_SPLIT_KEY_MIN} and {@link #INPUT_SPLIT_KEY_MAX}
+     * settings.
      * </p>
      * <p>
      * This must be a JSON document, and not just a field name!
@@ -159,18 +161,22 @@ public final class MongoConfigUtil {
      * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
-    
+
     /**
-     * Minimum value tu use over INPUT_SPLIT_KEY_PATTERN. Will make a selection over the collection reducing the amount
-     * of splits and data to be processed. Must be provided along with INPUT_SPLIT_KEY_MAX in order to work. Should be 
-     * a BSONObject stating {@code key} and {@code value}. ie: {@code { x : 10 } }
+     * Lower-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjunction with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MAX}.
      */
     public static final String INPUT_SPLIT_KEY_MIN = "mongo.input.split.split_key_min";
-    
-    
+
     /**
-     * Maximum value tu use over INPUT_SPLIT_KEY_PATTERN. 
-     * refer to INPUT_SPLIT_KEY_MIN for more information. 
+     * Upper-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjuntion with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MIN}.
      */
     public static final String INPUT_SPLIT_KEY_MAX = "mongo.input.split.split_key_max";
 
@@ -815,24 +821,23 @@ public final class MongoConfigUtil {
             throw new IllegalArgumentException("Provided JSON String is not representable/parsable as a DBObject.", e);
         }
     }
-    
+
     public static DBObject getMinSplitKey(final Configuration configuration) {
         return getDBObject(configuration, INPUT_SPLIT_KEY_MIN);
     }
-    
+
     public static DBObject getMaxSplitKey(final Configuration configuration) {
         return getDBObject(configuration, INPUT_SPLIT_KEY_MAX);
     }
-    
+
     public static void setMinSplitKey(final Configuration conf, String string) {
         conf.set(INPUT_SPLIT_KEY_MIN, string);
     }
-    
+
     public static void setMaxSplitKey(final Configuration conf, String string) {
         conf.set(INPUT_SPLIT_KEY_MAX, string);
     }
-    
-    
+
     public static void setInputKey(final Configuration conf, final String fieldName) {
         // TODO (bwm) - validate key rules?
         conf.set(INPUT_KEY, fieldName);
@@ -995,5 +1000,4 @@ public final class MongoConfigUtil {
             }
             return mongoClient;
         }
-
 }

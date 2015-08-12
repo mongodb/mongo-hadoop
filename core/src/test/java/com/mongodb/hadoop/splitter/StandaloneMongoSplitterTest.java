@@ -52,7 +52,8 @@ public class StandaloneMongoSplitterTest {
     }
 
     @Test
-    public void unshardedCollectionMinMax() throws UnknownHostException, SplitFailedException {
+    public void unshardedCollectionMinMax()
+      throws UnknownHostException, SplitFailedException {
         Configuration config = new Configuration();
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
         MongoConfigUtil.setInputURI(config, uri);
@@ -63,7 +64,8 @@ public class StandaloneMongoSplitterTest {
         MongoConfigUtil.setMinSplitKey(config, "{value:100}");
         MongoConfigUtil.setMaxSplitKey(config, "{value:39900}");
         List<InputSplit> inputSplits = splitter.calculateSplits();
-        assertTrue("regularSplits should be bigger than minmaxSplit", regularSplits.size() >= inputSplits.size());
+        assertTrue("should be fewer splits with min/max set",
+          regularSplits.size() >= inputSplits.size());
     }
 
     @Test
