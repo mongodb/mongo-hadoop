@@ -82,7 +82,13 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             returnVal = new ArrayList<InputSplit>();
             final String ns = inputCollection.getFullName();
 
-            LOG.info("Running splitvector to check splits against " + inputURI);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                  String.format(
+                    "Running splitVector on namespace: %s.%s; hosts: %s",
+                    inputURI.getDatabase(), inputURI.getCollection(),
+                    inputURI.getHosts()));
+            }
             final DBObject cmd = BasicDBObjectBuilder.start("splitVector", ns)
                                      .add("keyPattern", splitKey)
                                           // force:True is misbehaving it seems

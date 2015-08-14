@@ -17,6 +17,7 @@
 package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -250,8 +251,15 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
-        LOG.info("Store Location Config: " + config + " For URI: " + location);
-        MongoConfigUtil.setOutputURI(config, location);
+        if (!location.startsWith("mongodb://")) {
+            throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
+        }
+        MongoClientURI locURI = new MongoClientURI(location);
+        LOG.info(String.format(
+            "Store location config: %s; for namespace: %s.%s; hosts: %s",
+            config, locURI.getDatabase(), locURI.getCollection(),
+            locURI.getHosts()));
+        MongoConfigUtil.setOutputURI(config, locURI);
         final Properties properties =
             UDFContext.getUDFContext().getUDFProperties(this.getClass(), new String[]{udfContextSignature});
         config.set(PIG_OUTPUT_SCHEMA, properties.getProperty(PIG_OUTPUT_SCHEMA_UDF_CONTEXT));

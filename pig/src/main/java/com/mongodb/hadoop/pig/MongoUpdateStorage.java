@@ -16,6 +16,7 @@
 
 package com.mongodb.hadoop.pig;
 
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.output.MongoRecordWriter;
@@ -207,13 +208,15 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
     @Override
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
-        LOG.info("Store Location Config: " + config + "; For URI: " + location);
-
         if (!location.startsWith("mongodb://")) {
             throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
         }
-
-        MongoConfigUtil.setOutputURI(config, location);
+        MongoClientURI locURI = new MongoClientURI(location);
+        LOG.info(String.format(
+            "Store location config: %s; for namespace: %s.%s; hosts: %s",
+            config, locURI.getDatabase(), locURI.getCollection(),
+            locURI.getHosts()));
+        MongoConfigUtil.setOutputURI(config, locURI);
     }
 
     @Override

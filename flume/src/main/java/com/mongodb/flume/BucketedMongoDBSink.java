@@ -6,6 +6,7 @@ import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.util.Pair;
 import com.google.common.base.Preconditions;
+import com.mongodb.MongoClientURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +62,13 @@ public class BucketedMongoDBSink extends EventSink.Base {
     }
 
     protected MongoDBSink openWriter(final String url) throws IOException {
-        LOG.info("Opening " + url);
         MongoDBSink w = new MongoDBSink(url);
+        if (LOG.isDebugEnabled()) {
+            MongoClientURI uri = w.getUri();
+            LOG.debug(String.format(
+                "Closing writer on namespace: %s.%s; hosts: %s",
+                uri.getDatabase(), uri.getCollection(), uri.getHosts()));
+        }
         w.open();
         return w;
     }
@@ -75,7 +81,12 @@ public class BucketedMongoDBSink extends EventSink.Base {
     }
 
     protected void closeWriter(final MongoDBSink writer) throws IOException {
-        LOG.info("Closing writer " + writer.getUri());
+        MongoClientURI uri = writer.getUri();
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format(
+                "Closing writer on namespace: %s.%s; hosts: %s",
+                uri.getDatabase(), uri.getCollection(), uri.getHosts()));
+        }
         writer.close();
     }
 

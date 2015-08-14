@@ -50,7 +50,11 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
         //For each input URI that is specified, get the appropriate
         //splitter for each implementation.
         if (inputURIs.size() > 0) {
-            LOG.info("Using global split settings for multiple URIs specified.");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                  "Using global split settings for multiple URIs " +
+                    "specified.");
+            }
             //Get options from the hadoop config.
             //Use these options for all URIs in the list.
 
@@ -68,7 +72,11 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
             }
         } else {
             //Otherwise the user has set options per-collection.
-            LOG.info("Loading multiple input URIs from JSON stored in " + MULTI_COLLECTION_CONF_KEY);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                  "Loading multiple input URIs from JSON stored in " +
+                    MULTI_COLLECTION_CONF_KEY);
+            }
             DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.getConfiguration(), MULTI_COLLECTION_CONF_KEY);
 
             if (!(multiUriConfig instanceof List)) {
@@ -81,7 +89,10 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
                 Configuration confForThisUri;
                 try {
                     configMap = (Map<String, Object>) obj;
-                    LOG.info("building config from " + configMap.toString());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("building config from "
+                            + configMap.toString());
+                    }
                     confForThisUri = MongoConfigUtil.buildConfiguration(configMap);
                     inputURI = MongoConfigUtil.getInputURI(confForThisUri);
                 } catch (ClassCastException e) {
@@ -92,7 +103,14 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
                 Class<? extends MongoSplitter> splitterClass = MongoConfigUtil.getSplitterClass(confForThisUri);
 
                 if (splitterClass != null) {
-                    LOG.info("Using custom splitter class for: " + inputURI + " " + splitterClass);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(
+                          String.format(
+                            "Using custom Splitter class for namespace: %s.%s; " +
+                              "hosts: %s",
+                            inputURI.getDatabase(), inputURI.getCollection(),
+                            inputURI.getHosts()));
+                    }
                     //User wants to use a specific custom class for this URI.
                     //Make sure that the custom class isn't this one
                     if (splitterClass == MultiMongoCollectionSplitter.class) {
@@ -107,7 +125,14 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
                     collectionSplitter.setConfiguration(confForThisUri);
                     splitter = collectionSplitter;
                 } else {
-                    LOG.info("Fetching collection stats for " + inputURI + " to choose splitter implementation.");
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(
+                          String.format(
+                            "Fetching collection stats on namespace: %s.%s; " +
+                              "hosts: %s to choose splitter implementation.",
+                            inputURI.getDatabase(), inputURI.getCollection(),
+                            inputURI.getHosts()));
+                    }
                     //No class was specified, so choose one by looking at
                     //collection stats.
                     splitter = MongoSplitterFactory.getSplitterByStats(inputURI, confForThisUri);

@@ -241,8 +241,15 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
     @Override
     public String toString() {
-        return "MongoInputSplit{URI=" + this.inputURI.toString()
-               + ", authURI=" + this.authURI
+        String result =
+          "MongoInputSplit{inputURI hosts=" + this.inputURI.getHosts()
+            + ", inputURI namespace=" + this.inputURI.getDatabase() + "."
+            + this.inputURI.getCollection();
+        if (authURI != null) {
+            result += "authURI hosts=" + authURI.getHosts()
+              + ", authURI database=" + authURI.getDatabase();
+        }
+        return result
                + ", min=" + this.min + ", max=" + this.max
                + ", query=" + this.query
                + ", sort=" + this.sort

@@ -49,7 +49,14 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
     @Override
     public List<InputSplit> calculateSplits() {
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
-        LOG.info("SingleMongoSplitter calculating splits for " + inputURI);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(
+              String.format(
+                "SingleMongoSplitter calculating splits for namespace: %s.%s; " +
+                  "hosts: %s",
+                inputURI.getDatabase(), inputURI.getCollection(),
+                inputURI.getHosts()));
+        }
         final List<InputSplit> splits = new ArrayList<InputSplit>();
         MongoInputSplit mongoSplit = new MongoInputSplit();
 
