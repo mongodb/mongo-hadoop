@@ -30,6 +30,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -38,6 +41,8 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +51,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -82,7 +88,6 @@ public final class MongoConfigUtil {
     public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
-
 
     /**
      * <p>
@@ -1002,4 +1007,30 @@ public final class MongoConfigUtil {
             }
             return mongoClient;
         }
+
+    /**
+     * Load Properties stored in a .properties file.
+     * @param conf the Configuration
+     * @param filename the path to the properties file
+     * @return the Properties in the file
+     * @throws IOException if there was a problem reading the properties file
+     */
+    public static Properties readPropertiesFromFile(
+      final Configuration conf, final String filename)
+      throws IOException {
+        Path propertiesFilePath = new Path(filename);
+        FileSystem fs = FileSystem.get(URI.create(filename), conf);
+        if (!fs.exists(propertiesFilePath)) {
+            throw new IOException(
+              "Properties file does not exist: " + filename);
+        }
+        FSDataInputStream inputStream = fs.open(propertiesFilePath);
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+        } finally {
+            inputStream.close();
+        }
+        return properties;
+    }
 }

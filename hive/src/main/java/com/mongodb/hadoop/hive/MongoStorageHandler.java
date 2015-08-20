@@ -21,6 +21,9 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.hive.input.HiveMongoInputFormat;
 import com.mongodb.hadoop.hive.output.HiveMongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaHook;
 import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -32,12 +35,13 @@ import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import static java.lang.String.format;
 import static com.mongodb.hadoop.hive.BSONSerDe.MONGO_COLS;
+import static java.lang.String.format;
 
 /**
  * Used to sync documents in some MongoDB collection with
@@ -48,6 +52,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
     public static final String TABLE_LOCATION = "location";
+    // location of properties file
+    public static final String PROPERTIES_FILE_PATH = "mongo.properties.path";
+    private Properties properties = null;
+
+    private static final Log LOG = LogFactory.getLog(MongoStorageHandler.class);
 
     @Override
     public Class<? extends InputFormat<?, ?>> getInputFormatClass() {
@@ -69,6 +78,15 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         return BSONSerDe.class;
     }
 
+    private Properties getProperties(
+      final Configuration conf, final String path) throws IOException {
+        if (properties == null) {
+            properties =
+              MongoConfigUtil.readPropertiesFromFile(conf, path);
+        }
+        return properties;
+    }
+
     /**
      * HiveMetaHook used to define events triggered when a hive table is
      * created and when a hive table is dropped.
@@ -77,8 +95,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         @Override
         public void preCreateTable(final Table tbl) throws MetaException {
             Map<String, String> tblParams = tbl.getParameters();
-            if (!tblParams.containsKey(MONGO_URI)) {
-                throw new MetaException(format("You must specify '%s' in TBLPROPERTIES", MONGO_URI));
+            if (!(tblParams.containsKey(MONGO_URI)
+              || tblParams.containsKey(PROPERTIES_FILE_PATH))) {
+                throw new MetaException(
+                  format("You must specify '%s' or '%s' in TBLPROPERTIES",
+                    MONGO_URI, PROPERTIES_FILE_PATH));
             }
         }
 
@@ -100,16 +121,43 @@ public class MongoStorageHandler extends DefaultStorageHandler {
 
             if (deleteData && !isExternal) {
                 Map<String, String> tblParams = tbl.getParameters();
+                DBCollection coll;
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
-                    DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
+                    coll = MongoConfigUtil.getCollection(
+                      new MongoClientURI(mongoURIStr));
+                } else if (tblParams.containsKey(PROPERTIES_FILE_PATH)) {
+                    String propertiesPathStr =
+                      tblParams.get(PROPERTIES_FILE_PATH);
+                    Properties properties;
                     try {
-                        coll.drop();
-                    } finally {
-                        MongoConfigUtil.close(coll.getDB().getMongo());
+                        properties =
+                          getProperties(getConf(), propertiesPathStr);
+                    } catch (IOException e) {
+                        throw new MetaException(
+                          "Could not read properties file "
+                            + propertiesPathStr + ". Reason: " + e.getMessage());
                     }
+                    if (!properties.containsKey(MONGO_URI)) {
+                        throw new MetaException(
+                          "No URI given in properties file: "
+                            + propertiesPathStr);
+                    }
+                    String uriString = properties.getProperty(MONGO_URI);
+                    coll = MongoConfigUtil.getCollection(
+                      new MongoClientURI(uriString));
                 } else {
-                    throw new MetaException(format("No '%s' property found. Collection not dropped.", MONGO_URI));
+                    throw new MetaException(
+                      format(
+                        "Could not find properties '%s' or '%s'. "
+                          + "At least one must be defined. "
+                          + "Collection not dropped.",
+                        MONGO_URI, PROPERTIES_FILE_PATH));
+                }
+                try {
+                    coll.drop();
+                } finally {
+                    MongoConfigUtil.close(coll.getDB().getMongo());
                 }
             }
         }
@@ -150,6 +198,32 @@ public class MongoStorageHandler extends DefaultStorageHandler {
         }
         if (from.containsKey(TABLE_LOCATION)) {
             to.put(TABLE_LOCATION, (String) from.get(TABLE_LOCATION));
+        }
+
+        // First, merge properties from the given properties file, if there
+        // was one. These can be overwritten by other table properties later.
+        String propertiesFilePathString =
+          from.getProperty(PROPERTIES_FILE_PATH);
+        if (propertiesFilePathString != null) {
+            try {
+                Properties properties =
+                  getProperties(getConf(), propertiesFilePathString);
+                for (Map.Entry<Object, Object> prop : properties.entrySet()) {
+                    String key = (String) prop.getKey();
+                    String value = (String) prop.getValue();
+                    if (key.equals(MONGO_URI)) {
+                        // Copy to input/output URI.
+                        to.put(MongoConfigUtil.INPUT_URI, value);
+                        to.put(MongoConfigUtil.OUTPUT_URI, value);
+                    } else {
+                        to.put(key, value);
+                    }
+                }
+            } catch (IOException e) {
+                LOG.error(
+                  "Error while trying to read properties file "
+                    + propertiesFilePathString, e);
+            }
         }
 
         // Copy general connector properties, such as ones defined in
