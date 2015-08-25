@@ -28,14 +28,23 @@ import org.apache.hadoop.hive.metastore.HiveMetaHook;
 import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.index.IndexPredicateAnalyzer;
+import org.apache.hadoop.hive.ql.index.IndexSearchCondition;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
+import org.apache.hadoop.hive.ql.metadata.HiveStoragePredicateHandler;
+import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
+import org.apache.hadoop.hive.ql.plan.ExprNodeGenericFuncDesc;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.Deserializer;
 import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -47,7 +56,8 @@ import static java.lang.String.format;
  * Used to sync documents in some MongoDB collection with
  * rows in a Hive table
  */
-public class MongoStorageHandler extends DefaultStorageHandler {
+public class MongoStorageHandler extends DefaultStorageHandler
+  implements HiveStoragePredicateHandler {
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
@@ -85,6 +95,36 @@ public class MongoStorageHandler extends DefaultStorageHandler {
               MongoConfigUtil.readPropertiesFromFile(conf, path);
         }
         return properties;
+    }
+
+    @Override
+    public DecomposedPredicate decomposePredicate(
+      final JobConf jobConf,
+      final Deserializer deserializer,
+      final ExprNodeDesc predicate) {
+        BSONSerDe serde = (BSONSerDe) deserializer;
+
+        // Create a new analyzer capable of handling equality and general
+        // binary comparisons (false = "more than just equality").
+        // TODO: The analyzer is only capable of handling binary comparison
+        // expressions, but we could push down more than that in the future by
+        // writing our own analyzer.
+        IndexPredicateAnalyzer analyzer =
+          IndexPredicateAnalyzer.createAnalyzer(false);
+        // Predicate may contain any column.
+        for (String colName : serde.columnNames) {
+            analyzer.allowColumnName(colName);
+        }
+        List<IndexSearchCondition> searchConditions =
+          new LinkedList<IndexSearchCondition>();
+        ExprNodeDesc residual = analyzer.analyzePredicate(
+          predicate, searchConditions);
+
+        DecomposedPredicate decomposed = new DecomposedPredicate();
+        decomposed.pushedPredicate =
+          analyzer.translateSearchConditions(searchConditions);
+        decomposed.residualPredicate = (ExprNodeGenericFuncDesc) residual;
+        return decomposed;
     }
 
     /**
