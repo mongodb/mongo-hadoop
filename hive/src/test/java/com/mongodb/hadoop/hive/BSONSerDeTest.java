@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class BSONSerDeTest {
@@ -152,6 +153,16 @@ public class BSONSerDeTest {
                 assertThat(new BSONWritable(obj), equalTo(serialized));
             }
         }
+    }
+
+    @Test
+    public void testStringToTimestamp() throws SerDeException {
+        String columnNames = "stringTs";
+        String columnTypes = "timestamp";
+        String value = "2015-08-06 07:32:30.062";
+        BSONSerDe serde = new BSONSerDe();
+        Object result = helpDeserialize(serde, columnNames, columnTypes, value);
+        assertEquals(new Timestamp(1438871550062L), result);
     }
 
     @Test

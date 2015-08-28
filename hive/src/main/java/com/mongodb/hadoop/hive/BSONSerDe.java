@@ -408,6 +408,8 @@ public class BSONSerDe implements SerDe {
                     return new Timestamp(((Date) value).getTime());
                 } else if (value instanceof BSONTimestamp) {
                     return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
+                } else if (value instanceof String) {
+                    return Timestamp.valueOf((String) value);
                 } else {
                     return value;
                 }
