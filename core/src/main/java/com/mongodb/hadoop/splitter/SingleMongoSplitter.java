@@ -27,6 +27,8 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.String.format;
+
 /* This implementation of MongoSplitter does not actually
  * do any splitting, it will just create a single input split
  * which represents the entire data set within a collection.
@@ -35,7 +37,7 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
 
     private static final Log LOG = LogFactory.getLog(SingleMongoSplitter.class);
 
-    //Create a single split which consists of a single 
+    //Create a single split which consists of a single
     //a query over the entire collection.
 
 
@@ -50,12 +52,8 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
     public List<InputSplit> calculateSplits() {
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         if (LOG.isDebugEnabled()) {
-            LOG.debug(
-              String.format(
-                "SingleMongoSplitter calculating splits for namespace: %s.%s; " +
-                  "hosts: %s",
-                inputURI.getDatabase(), inputURI.getCollection(),
-                inputURI.getHosts()));
+            LOG.debug(format("SingleMongoSplitter calculating splits for namespace: %s.%s; hosts: %s",
+                inputURI.getDatabase(), inputURI.getCollection(), inputURI.getHosts()));
         }
         final List<InputSplit> splits = new ArrayList<InputSplit>();
         MongoInputSplit mongoSplit = new MongoInputSplit();
@@ -68,7 +66,7 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
         mongoSplit.setSort(MongoConfigUtil.getSort(getConfiguration()));
         mongoSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
 
-        //Not using any index min/max bounds, so range query is 
+        //Not using any index min/max bounds, so range query is
         //meaningless here - don't set it
         //mongoSplit.setUseRangeQuery(...)
 

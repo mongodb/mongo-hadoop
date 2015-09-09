@@ -18,8 +18,6 @@
 package com.mongodb.hadoop.mapred.output;
 
 import com.mongodb.DBCollection;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.hadoop.mapred.TaskAttemptContext;

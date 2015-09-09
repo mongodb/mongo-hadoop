@@ -34,7 +34,6 @@ buildscript {
         mavenCentral()
         jcenter()
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-        maven { url 'https://github.com/ben-manes/gradle-versions-plugin/raw/mvnrepo' }
     }
     dependencies {
         classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'

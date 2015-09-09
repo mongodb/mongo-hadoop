@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2011 10gen Inc.
  *
@@ -44,28 +43,25 @@ import java.util.Properties;
 @SuppressWarnings("unchecked")
 public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
-    private static final Log LOG = LogFactory.getLog(MongoStorage.class);
     // Pig specific settings
     static final String SCHEMA_SIGNATURE = "mongoinsert.pig.output.schema";
+    private static final Log LOG = LogFactory.getLog(MongoStorage.class);
+    private final MongoOutputFormat outputFormat = new MongoOutputFormat();
     //CHECKSTYLE:OFF
     protected ResourceSchema schema = null;
     //CHECKSTYLE:ON
     private RecordWriter out;
-
     private String udfcSignature = null;
     private String idField = null;
-
-    private final MongoOutputFormat outputFormat = new MongoOutputFormat();
 
     public MongoInsertStorage() {
     }
 
     /**
+     * @param idField   the field standing in for {@code _id}
+     * @param useUpsert is parameter is unused
      * @deprecated useUpsert is unused. Use {@link #MongoInsertStorage(String)}
      * instead.
-     *
-     * @param idField the field standing in for {@code _id}
-     * @param useUpsert is parameter is unused
      */
     @Deprecated
     @SuppressWarnings("UnusedParameters")
@@ -75,22 +71,37 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
 
     /**
      * Create a new MongoInsertStorage.
+     *
      * @param idField the field standing in for {@code _id}
      */
     public MongoInsertStorage(final String idField) {
         this.idField = idField;
     }
 
-    protected void writeField(final BasicDBObjectBuilder builder,
-                              final ResourceFieldSchema field,
-                              final Object d) throws IOException {
-        Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
-        if (field.getName() != null && field.getName().equals(idField)) {
-            builder.add("_id", convertedType);
-        } else {
-            builder.add(field.getName(), convertedType);
-        }
+    public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {
+        // Don't convert anything - override to keep base from messing with URI
+        return location;
+    }
 
+    public OutputFormat getOutputFormat() throws IOException {
+        return outputFormat;
+        //final MongoOutputFormat outputFmt = options == null ? new MongoOutputFormat() : new MongoOutputFormat(options.getUpdate().keys,
+        // options.getUpdate().multi);
+        //LOG.info( "OutputFormat... " + outputFmt );
+        //return outputFmt;
+    }
+
+    public void setStoreLocation(final String location, final Job job) throws IOException {
+        final Configuration config = job.getConfiguration();
+        if (!location.startsWith("mongodb://")) {
+            throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
+        }
+        MongoClientURI locURI = new MongoClientURI(location);
+        LOG.info(String.format(
+            "Store location config: %s; for namespace: %s.%s; hosts: %s",
+            config, locURI.getDatabase(), locURI.getCollection(),
+            locURI.getHosts()));
+        MongoConfigUtil.setOutputURI(config, locURI);
     }
 
     @Override
@@ -102,14 +113,30 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         p.setProperty(SCHEMA_SIGNATURE, schema.toString());
     }
 
-    @Override
-    public void storeSchema(final ResourceSchema schema, final String location, final Job job) {
-        // not implemented
-    }
+    public void prepareToWrite(final RecordWriter writer) throws IOException {
+        out = writer;
+        if (out == null) {
+            throw new IOException("Invalid Record Writer");
+        }
 
-    @Override
-    public void storeStatistics(final ResourceStatistics stats, final String location, final Job job) {
-        // not implemented
+        UDFContext udfc = UDFContext.getUDFContext();
+        Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
+        String strSchema = p.getProperty(SCHEMA_SIGNATURE);
+        if (strSchema == null) {
+            LOG.warn("Could not find schema in UDF context. Interpreting each tuple as containing a single map.");
+        } else {
+            try {
+                // Parse the schema from the string stored in the properties object.
+                schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
+            } catch (Exception e) {
+                schema = null;
+                LOG.warn(e.getMessage());
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("GOT A SCHEMA " + schema + " " + strSchema);
+            }
+        }
     }
 
     @Override
@@ -128,14 +155,12 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
                 // Assume that the tuple contains only a map, as produced by
                 // MongoLoader, for example.
                 if (tuple.size() != 1) {
-                    throw new IOException("Could not retrieve schema, but " +
-                      "tuples did not contain a single item: " + tuple);
+                    throw new IOException("Could not retrieve schema, but tuples did not contain a single item: " + tuple);
                 }
                 Object result = BSONStorage.getTypeForBSON(
-                  tuple.get(0), null, null);
-                if (! (result instanceof Map)) {
-                    throw new IOException("Could not retrieve schema, but " +
-                      "tuples contained something other than a Map: " + tuple);
+                    tuple.get(0), null, null);
+                if (!(result instanceof Map)) {
+                    throw new IOException("Could not retrieve schema, but tuples contained something other than a Map: " + tuple);
                 }
                 Map<String, Object> documentMap = (Map<String, Object>) result;
                 for (Map.Entry<String, Object> entry : documentMap.entrySet()) {
@@ -149,63 +174,31 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         }
     }
 
-    public void prepareToWrite(final RecordWriter writer) throws IOException {
-        out = writer;
-        if (out == null) {
-            throw new IOException("Invalid Record Writer");
-        }
-
-        UDFContext udfc = UDFContext.getUDFContext();
-        Properties p = udfc.getUDFProperties(getClass(), new String[]{udfcSignature});
-        String strSchema = p.getProperty(SCHEMA_SIGNATURE);
-        if (strSchema == null) {
-            LOG.warn("Could not find schema in UDF context. " +
-                "Interpreting each tuple as containing a single map.");
-        } else {
-            try {
-                // Parse the schema from the string stored in the properties object.
-                schema = new ResourceSchema(Utils.getSchemaFromString(strSchema));
-            } catch (Exception e) {
-                schema = null;
-                LOG.warn(e.getMessage());
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("GOT A SCHEMA " + schema + " " + strSchema);
-            }
-        }
-    }
-
-    public OutputFormat getOutputFormat() throws IOException {
-        return outputFormat;
-        //final MongoOutputFormat outputFmt = options == null ? new MongoOutputFormat() : new MongoOutputFormat(options.getUpdate().keys,
-        // options.getUpdate().multi);
-        //LOG.info( "OutputFormat... " + outputFmt );
-        //return outputFmt;
-    }
-
-    public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {
-        // Don't convert anything - override to keep base from messing with URI
-        return location;
-    }
-
-    public void setStoreLocation(final String location, final Job job) throws IOException {
-        final Configuration config = job.getConfiguration();
-        if (!location.startsWith("mongodb://")) {
-            throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
-        }
-        MongoClientURI locURI = new MongoClientURI(location);
-        LOG.info(String.format(
-            "Store location config: %s; for namespace: %s.%s; hosts: %s",
-            config, locURI.getDatabase(), locURI.getCollection(),
-            locURI.getHosts()));
-        MongoConfigUtil.setOutputURI(config, locURI);
-    }
-
-
     @Override
     public void setStoreFuncUDFContextSignature(final String signature) {
         udfcSignature = signature;
+    }
+
+    @Override
+    public void storeStatistics(final ResourceStatistics stats, final String location, final Job job) {
+        // not implemented
+    }
+
+    @Override
+    public void storeSchema(final ResourceSchema schema, final String location, final Job job) {
+        // not implemented
+    }
+
+    protected void writeField(final BasicDBObjectBuilder builder,
+                              final ResourceFieldSchema field,
+                              final Object d) throws IOException {
+        Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
+        if (field.getName() != null && field.getName().equals(idField)) {
+            builder.add("_id", convertedType);
+        } else {
+            builder.add(field.getName(), convertedType);
+        }
+
     }
 
 }
