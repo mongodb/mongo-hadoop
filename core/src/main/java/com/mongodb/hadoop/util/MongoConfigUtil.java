@@ -830,11 +830,13 @@ public final class MongoConfigUtil {
         return getDBObject(configuration, INPUT_SPLIT_KEY_MAX);
     }
 
-    public static void setMinSplitKey(final Configuration conf, String string) {
+    public static void setMinSplitKey(
+      final Configuration conf, final String string) {
         conf.set(INPUT_SPLIT_KEY_MIN, string);
     }
 
-    public static void setMaxSplitKey(final Configuration conf, String string) {
+    public static void setMaxSplitKey(
+      final Configuration conf, final String string) {
         conf.set(INPUT_SPLIT_KEY_MAX, string);
     }
 
