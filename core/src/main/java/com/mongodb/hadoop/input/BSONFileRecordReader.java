@@ -24,7 +24,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -37,7 +42,9 @@ import org.bson.BasicBSONDecoder;
 import org.bson.LazyBSONCallback;
 import org.bson.LazyBSONDecoder;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import static com.mongodb.hadoop.mapred.input.BSONFileRecordReader
   .BSON_RR_POSITION_NOT_GIVEN;
@@ -66,7 +73,8 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
 
     private FileSplit fileSplit;
     private BSONObject value;
-    private FSDataInputStream in;
+    private FSDataInputStream inRaw;
+    private InputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
     private long startingPosition;
@@ -74,6 +82,7 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     private BSONCallback callback;
     private BSONDecoder decoder;
     private Configuration configuration;
+    private Decompressor decompressor;
 
     public BSONFileRecordReader() {
         this(BSON_RR_POSITION_NOT_GIVEN);
@@ -92,9 +101,18 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
         }
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(configuration);
-        in = fs.open(file, 16 * 1024 * 1024);
-        in.seek(startingPosition == BSON_RR_POSITION_NOT_GIVEN
-          ? fileSplit.getStart() : startingPosition);
+        CompressionCodec codec = new CompressionCodecFactory(configuration)
+          .getCodec(fileSplit.getPath());
+        inRaw = fs.open(file, 16 * 1024 * 1024);
+        inRaw.seek(
+          startingPosition == BSON_RR_POSITION_NOT_GIVEN
+            ? fileSplit.getStart() : startingPosition);
+        if (codec != null) {
+            decompressor = CodecPool.getDecompressor(codec);
+            in = codec.createInputStream(inRaw, decompressor);
+        } else {
+            in = inRaw;
+        }
 
         if (MongoConfigUtil.getLazyBSON(configuration)) {
             callback = new LazyBSONCallback();
@@ -103,12 +121,14 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
             callback = new BasicBSONCallback();
             decoder = new BasicBSONDecoder();
         }
+
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         try {
-            if (in.getPos() >= fileSplit.getStart() + fileSplit.getLength()) {
+            long pos = ((Seekable) in).getPos();
+            if (pos >= fileSplit.getStart() + fileSplit.getLength()) {
                 try {
                     close();
                 } catch (final Exception e) {
@@ -118,21 +138,36 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
             }
 
             callback.reset();
-            decoder.decode(in, callback);
+            try {
+                decoder.decode(in, callback);
+            } catch (EOFException e) {
+                // Compressed streams do not update position until after sync
+                // marker, so we can hit EOF here.
+                try {
+                    close();
+                } catch (final Exception e2) {
+                    LOG.warn(e.getMessage(), e2);
+                }
+                return false;
+            }
             value = (BSONObject) callback.get();
             numDocsRead++;
             if (numDocsRead % 10000 == 0) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("read %d docs from %s at %d", numDocsRead, fileSplit, in.getPos()));
+                    LOG.debug(
+                      String.format("read %d docs from %s at %d",
+                        numDocsRead, fileSplit, inRaw.getPos()));
                 }
             }
             return true;
         } catch (final Exception e) {
-            LOG.error(format("Error reading key/value from bson file on line %d: %s", numDocsRead, e.getMessage()));
+            LOG.error(
+              format("Error reading key/value from bson file on line %d: %s",
+                numDocsRead, e.getMessage()), e);
             try {
                 close();
             } catch (final Exception e2) {
-                LOG.warn(e.getMessage(), e);
+                LOG.warn(e2.getMessage(), e2);
             }
             return false;
         }
@@ -158,8 +193,9 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
         if (finished) {
             return 1f;
         }
-        if (in != null) {
-            return (float) (in.getPos() - fileSplit.getStart()) / fileSplit.getLength();
+        if (inRaw != null) {
+            return (float) (inRaw.getPos() - fileSplit.getStart())
+              / fileSplit.getLength();
         }
         return 0f;
     }
@@ -167,8 +203,14 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     @Override
     public void close() throws IOException {
         finished = true;
+        if (inRaw != null) {
+            inRaw.close();
+        }
         if (in != null) {
             in.close();
+        }
+        if (decompressor != null) {
+            CodecPool.returnDecompressor(decompressor);
         }
     }
 
