@@ -10,23 +10,33 @@ import org.bson.BSONObject;
 
 import java.io.IOException;
 
-public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWritable>  
+public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWritable>
     implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, MailPair, IntWritable> {
-    @Override
-    public void map(final Object key, final BSONObject val, final Context context)
-        throws IOException, InterruptedException {
 
-        if (val.containsField("headers")) {
-            BSONObject headers = (BSONObject) val.get("headers");
-            if (headers.containsField("From") && headers.containsField("To")) {
-                String from = (String) headers.get("From");
-                String to = (String) headers.get("To");
-                String[] recipients = to.split(",");
-                for (final String recip1 : recipients) {
-                    String recip = recip1.trim();
-                    if (recip.length() > 0) {
-                        context.write(new MailPair(from, recip), new IntWritable(1));
-                    }
+    private final IntWritable intw;
+    private final MailPair mp;
+
+    public EnronMailMapper() {
+        super();
+        intw = new IntWritable(1);
+        mp = new MailPair();
+    }
+
+    @Override
+    public void map(final Object key, final BSONObject val,
+                    final Context context)
+            throws IOException, InterruptedException {
+
+        BSONObject headers = (BSONObject) val.get("headers");
+        String to = (String) headers.get("To");
+        if (null != to) {
+            String[] recipients = to.split(",");
+            for (final String recip1 : recipients) {
+                String recip = recip1.trim();
+                if (recip.length() > 0) {
+                    mp.setFrom((String) key);
+                    mp.setTo(recip);
+                    context.write(mp, intw);
                 }
             }
         }
@@ -35,18 +45,17 @@ public class EnronMailMapper extends Mapper<Object, BSONObject, MailPair, IntWri
     @Override
     public void map(final Object key, final BSONWritable writable, final OutputCollector<MailPair, IntWritable> output,
                     final Reporter reporter) throws IOException {
-        BSONObject value = writable.getDoc();
-        if (value.containsField("headers")) {
-            BSONObject headers = (BSONObject) value.get("headers");
-            if (headers.containsField("From") && headers.containsField("To")) {
-                String from = (String) headers.get("From");
-                String to = (String) headers.get("To");
-                String[] recipients = to.split(",");
-                for (final String recip1 : recipients) {
-                    String recip = recip1.trim();
-                    if (recip.length() > 0) {
-                        output.collect(new MailPair(from, recip), new IntWritable(1));
-                    }
+        BSONObject headers = (BSONObject) writable.getDoc().get("headers");
+        String to = (String) headers.get("To");
+        String from = (String) headers.get("From");
+        if (null != to) {
+            String[] recipients = to.split(",");
+            for (final String recip1 : recipients) {
+                String recip = recip1.trim();
+                if (recip.length() > 0) {
+                    mp.setFrom(from);
+                    mp.setTo(recip);
+                    output.collect(mp, intw);
                 }
             }
         }

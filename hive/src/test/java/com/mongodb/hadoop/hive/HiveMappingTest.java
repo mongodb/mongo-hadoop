@@ -4,13 +4,13 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
-import com.mongodb.hadoop.hive.output.HiveBSONFileOutputFormat;
-import com.mongodb.hadoop.mapred.BSONFileInputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 
-import java.io.File;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +22,13 @@ import static com.mongodb.hadoop.hive.MongoStorageHandler.MONGO_URI;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class HiveMappingTest extends HiveTest {
+
+    private static final Log LOG = LogFactory.getLog(HiveMappingTest.class);
+
     @Test
-    public void nestedObjects() {
+    public void nestedObjects() throws SQLException {
         DBCollection collection = getCollection("hive_addresses");
         collection.drop();
         dropTable("hive_addresses");
@@ -36,9 +38,10 @@ public class HiveMappingTest extends HiveTest {
         collection.insert(user(2, "Don", "Draper", "New York", "NY"));
         collection.insert(user(3, "John", "Elway", "Denver", "CO"));
 
-        MongoClientURI uri = authCheck(new MongoClientURIBuilder()
-                                           .collection("mongo_hadoop", collection.getName())
-                                      ).build();
+        MongoClientURI uri = authCheck(
+          new MongoClientURIBuilder()
+            .collection("mongo_hadoop", collection.getName())
+        ).build();
 
         ColumnMapping map = new ColumnMapping()
                                 .map("id", "_id", "INT")
@@ -48,20 +51,23 @@ public class HiveMappingTest extends HiveTest {
                                 .map("state", "address.state", "STRING");
 
         //, lastName STRING
-        execute(format("CREATE TABLE hive_addresses (id INT, firstName STRING, lastName STRING, city STRING, state STRING)\n"
-                       + "STORED BY '%s'\n"
-                       + "WITH SERDEPROPERTIES('mongo.columns.mapping'='%s')\n"
-                       + "TBLPROPERTIES ('mongo.uri'='%s')",
-                       MongoStorageHandler.class.getName(), map.toSerDePropertiesString(), uri
-                      ));
-        Results execute = execute("SELECT * from hive_addresses");
+        execute(
+          format(
+            "CREATE TABLE hive_addresses (id INT, firstName STRING, lastName STRING, city STRING, state STRING)\n"
+              + "STORED BY '%s'\n"
+              + "WITH SERDEPROPERTIES('mongo.columns.mapping'='%s')\n"
+              + "TBLPROPERTIES ('mongo.uri'='%s')",
+            MongoStorageHandler.class.getName(), map.toSerDePropertiesString(),
+            uri
+          ));
+        Results execute = query("SELECT * from hive_addresses");
         assertEquals("KY", execute.getRow(0).get("state"));
         assertEquals("Don", execute.getRow(1).get("firstname"));
         assertEquals("Denver", execute.getRow(2).get("city"));
     }
 
     @Test
-    public void queryBasedHiveTable() {
+    public void queryBasedHiveTable() throws SQLException {
         String tableName = "filtered";
         DBCollection collection = getCollection(tableName);
         collection.drop();
@@ -90,17 +96,14 @@ public class HiveMappingTest extends HiveTest {
                                        .name(tableName)
                                        .uri(uri)
                                        .tableProperty(MongoConfigUtil.INPUT_QUERY, "{_id : {\"$gte\" : 900 }}");
-        Results results = execute(builder.toString());
+        execute(builder.toString());
 
-        if (results.hasError()) {
-            fail(results.getError().getMessage());
-        }
         assertEquals(format("Should find %d items", size), collection.count(), size);
-        Results execute = execute(format("SELECT * from %s where id=1", tableName));
+        Results execute = query(format("SELECT * from %s where id=1", tableName));
         assertTrue(execute.size() == 0);
         int expected = size - 900;
         assertEquals(format("Should find only %d items", expected),
-                     execute("SELECT count(*) as count from " + tableName).iterator().next().get(0), "" + expected);
+                     query("SELECT count(*) as count from " + tableName).iterator().next().get(0), "" + expected);
     }
 
     private DBObject user(final int id, final String first, final String last, final String city, final String state) {
@@ -112,36 +115,6 @@ public class HiveMappingTest extends HiveTest {
                                .append("state", state)
                           );
     }
-
-    public void loadMailBson() {
-        String name = "messages";
-        DBCollection collection = getCollection(name);
-        collection.drop();
-        dropTable(name);
-
-        loadIntoHDFS(new File(EXAMPLE_DATA_HOME, "dump/enron_mail/messages.bson").getAbsolutePath(), "/user/hive/warehouse/enron");
-
-        ColumnMapping map = new ColumnMapping()
-                                .map("id", "_id", "INT")
-                                .map("subFolder", "subFolder", "STRING");
-        MongoClientURI uri = authCheck(new MongoClientURIBuilder()
-                                           .collection("mongo_hadoop", collection.getName())
-                                      ).build();
-        execute(format("CREATE EXTERNAL TABLE %s (body STRING, subFolder STRING, mailbox STRING, filename STRING)\n"
-                       + "ROW FORMAT SERDE '%s'\n"
-                       + "WITH SERDEPROPERTIES('%s'='%s')\n"
-                       + "STORED AS INPUTFORMAT '%s'\n"
-                       + "OUTPUTFORMAT '%s'\n"
-                       + "LOCATION '%s'", name, BSONSerDe.class.getName(), MONGO_COLS, map, BSONFileInputFormat.class.getName(),
-                       HiveBSONFileOutputFormat.class.getName(), "/user/hive/warehouse/enron/"
-                      ));
-        //        execute(format("LOAD DATA LOCAL INPATH '%s' INTO TABLE %s",
-        //                       new File(PROJECT_HOME, "examples/data/dump/enron_mail/messages.bson").getAbsolutePath(), 
-        // "enron_messages"));
-
-        Results execute = execute(format("SELECT COUNT(*) from %s", name));
-    }
-
 
     private static class ColumnMapping {
         private final List<Column> columns = new ArrayList<Column>();

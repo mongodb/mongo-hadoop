@@ -65,7 +65,9 @@ public class BSONLoader implements Iterable<BSONObject>, Iterator<BSONObject> {
             nextHdr = l;
             hasMore.set(true);
         } catch (Exception e) {
-            LOG.debug("Failed to get next header: " + e, e);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Failed to get next header: " + e, e);
+            }
             hasMore.set(false);
             try {
                 input.close();

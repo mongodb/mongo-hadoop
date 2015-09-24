@@ -79,16 +79,21 @@ public final class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
+    public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
 
 
     /**
+     * <p>
      * The MongoDB field to read from for the Mapper Input.
-     * <p/>
+     * </p>
+     * <p>
      * This will be fed to your mapper as the "Key" for the input.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code _id}
+     * </p>
      */
     public static final String INPUT_KEY = "mongo.input.key";
     public static final String INPUT_NOTIMEOUT = "mongo.input.notimeout";
@@ -101,6 +106,7 @@ public final class MongoConfigUtil {
 
 
     //Settings specific to bson reading/writing.
+    public static final String BSON_SPLITS_PATH = "bson.split.splits_path";
     public static final String BSON_READ_SPLITS = "bson.split.read_splits";
     public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
     public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
@@ -108,44 +114,58 @@ public final class MongoConfigUtil {
 
 
     /**
+     * <p>
      * A username and password to use.
-     * <p/>
+     * </p>
+     * <p>
      * This is necessary when running jobs with a sharded cluster, as access to the config database is needed to get
+     * </p>
      */
     public static final String AUTH_URI = "mongo.auth.uri";
 
 
     /**
+     * <p>
      * When *not* using 'read_from_shards' or 'read_shard_chunks' The number of megabytes per Split to create for the input data.
-     * <p/>
+     * </p>
+     * <p>
      * Currently defaults to 8MB, tweak it as necessary for your code.
-     * <p/>
+     * </p>
+     * <p>
      * This default will likely change as we research better options.
+     * </p>
      */
     public static final String INPUT_SPLIT_SIZE = "mongo.input.split_size";
 
     public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
+     * <p>
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
-     * <p/>
+     * </p>
+     * <p>
      * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
      * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
      * index on the field, and follow the other rules outlined in the docs.
-     * <p/>
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
+     * </p>
      *
-     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
+     * <p>
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * <p/>
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * </p>
+     * <p>
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop,
      * severely reducing parallel mapping.
+     * </p>
      */
     public static final String CREATE_INPUT_SPLITS = "mongo.input.split.create_input_splits";
 
@@ -162,16 +182,22 @@ public final class MongoConfigUtil {
      */
     public static final String SPLITS_USE_CHUNKS = "mongo.input.split.read_shard_chunks";
     /**
+     * <p>
      * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the URI.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
     /**
+     * <p>
      * If true then queries for splits will be constructed using $lt/$gt instead of $min and $max.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
 
@@ -195,10 +221,22 @@ public final class MongoConfigUtil {
 
     /**
      * Shared MongoClient instance cache.
+     * One client per thread
      */
-    private static final Map<MongoClientURI, MongoClient> CLIENTS = new HashMap<MongoClientURI, MongoClient>();
-    
-    private static Map<MongoClient, MongoClientURI> uriMap = new HashMap<MongoClient, MongoClientURI>();
+    private static final ThreadLocal<Map<MongoClientURI, MongoClient>> CLIENTS =
+      new ThreadLocal<Map<MongoClientURI, MongoClient>>() {
+          @Override public Map<MongoClientURI, MongoClient> initialValue() {
+              return new HashMap<MongoClientURI, MongoClient>();
+          }
+      };
+
+    private static final ThreadLocal<Map<MongoClient, MongoClientURI>> URI_MAP =
+      new ThreadLocal<Map<MongoClient, MongoClientURI>>() {
+          @Override
+          public Map<MongoClient, MongoClientURI> initialValue() {
+              return new HashMap<MongoClient, MongoClientURI>();
+          }
+      };
 
     private MongoConfigUtil() {
     }
@@ -314,17 +352,19 @@ public final class MongoConfigUtil {
     }
 
     public static List<MongoClientURI> getMongoURIs(final Configuration conf, final String key) {
-        final String raw = conf.get(key);
+        String raw = conf.get(key);
+        List<MongoClientURI> result = new LinkedList<MongoClientURI>();
         if (raw != null && !raw.trim().isEmpty()) {
-            List<MongoClientURI> result = new LinkedList<MongoClientURI>();
-            String[] split = StringUtils.split(raw, ", ");
-            for (String mongoURI : split) {
-                result.add(new MongoClientURI(mongoURI));
+            for (String connectionString : raw.split("mongodb://")) {
+                // Try to be forgiving with formatting.
+                connectionString = StringUtils.strip(connectionString, ", ");
+                if (!connectionString.isEmpty()) {
+                    result.add(
+                      new MongoClientURI("mongodb://" + connectionString));
+                }
             }
-            return result;
-        } else {
-            return Collections.emptyList();
         }
+        return result;
     }
 
     /**
@@ -492,6 +532,26 @@ public final class MongoConfigUtil {
 
     public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
+    }
+
+    /**
+     * Get the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @return the number of documents
+     */
+    public static int getBatchSize(final Configuration conf) {
+        return conf.getInt(OUTPUT_BATCH_SIZE, 1000);
+    }
+
+    /**
+     * Set the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @param size the number of documents
+     */
+    public static void setBatchSize(final Configuration conf, final int size) {
+        conf.setInt(OUTPUT_BATCH_SIZE, size);
     }
 
     /**
@@ -733,6 +793,15 @@ public final class MongoConfigUtil {
         return conf.getClass(BSON_PATHFILTER, null);
     }
 
+    public static String getBSONSplitsPath(final Configuration conf) {
+        return conf.get(BSON_SPLITS_PATH);
+    }
+
+    public static void setBSONSplitsPath(final Configuration conf, final
+                                         String path) {
+        conf.set(BSON_SPLITS_PATH, path);
+    }
+
     public static Class<? extends MongoSplitter> getSplitterClass(final Configuration conf) {
         return conf.getClass(MONGO_SPLITTER_CLASS, null, MongoSplitter.class);
     }
@@ -810,28 +879,24 @@ public final class MongoConfigUtil {
     }
 
     public static void close(final Mongo client) {
-        synchronized (CLIENTS) {
-            MongoClientURI uri = uriMap.remove(client);
+            MongoClientURI uri = URI_MAP.get().remove(client);
             if (uri != null) {
                 MongoClient remove;
-                remove = CLIENTS.remove(uri);
+                remove = CLIENTS.get().remove(uri);
                 if (remove != client) {
                     throw new IllegalStateException("different clients found");
                 }
             }
             client.close();
-        }
     }
     
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
-        synchronized (CLIENTS) {
-            MongoClient mongoClient = CLIENTS.get(uri);
+        MongoClient mongoClient = CLIENTS.get().get(uri);
             if (mongoClient == null) {
                 mongoClient = new MongoClient(uri);
-                CLIENTS.put(uri, mongoClient);
-                uriMap.put(mongoClient, uri);
+                CLIENTS.get().put(uri, mongoClient);
+                URI_MAP.get().put(mongoClient, uri);
             }
             return mongoClient;
         }
-    }
-}
+	}

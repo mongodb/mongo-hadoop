@@ -88,6 +88,9 @@ public class BSONSerDe implements SerDe {
     // A row represents a row in the Hive table 
     private List<Object> row = new ArrayList<Object>();
 
+    // BSONWritable to hold documents to be serialized.
+    private BSONWritable bsonWritable;
+
     /**
      * Finds out the information of the table, including the column names and types.
      */
@@ -124,6 +127,9 @@ public class BSONSerDe implements SerDe {
             (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI =
             TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
+
+        // Create the BSONWritable instance for future use.
+        bsonWritable = new BSONWritable();
     }
 
 
@@ -228,8 +234,9 @@ public class BSONSerDe implements SerDe {
 
 
     /**
+     * <p>
      * For a given Object value and its supposed TypeInfo determine and return its Hive object representation
-     * <p/>
+     * </p>
      * Map in here must be of the same type, so instead an embedded doc becomes a struct instead. ***
      */
     public Object deserializeField(final Object value, final TypeInfo valueTypeInfo, final String ext) {
@@ -369,18 +376,15 @@ public class BSONSerDe implements SerDe {
             case BOOLEAN:
                 return value;
             case DOUBLE:
-                return value;
+                return ((Number) value).doubleValue();
             case FLOAT:
-                return value;
+                return ((Number) value).floatValue();
             case INT:
-                if (value instanceof Double) {
-                    return ((Double) value).intValue();
-                }
-                return value;
+                return ((Number) value).intValue();
             case LONG:
-                return value;
+                return ((Number) value).longValue();
             case SHORT:
-                return value;
+                return ((Number) value).shortValue();
             case STRING:
                 return value.toString();
             case TIMESTAMP:
@@ -455,7 +459,9 @@ public class BSONSerDe implements SerDe {
     //CHECKSTYLE:OFF
     @Override
     public Writable serialize(final Object obj, final ObjectInspector oi) throws SerDeException {
-        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        bsonWritable.setDoc(
+          (BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        return bsonWritable;
     }
     //CHECKSTYLE:ON
 

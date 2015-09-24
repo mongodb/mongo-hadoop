@@ -33,11 +33,21 @@ import java.util.Date;
 public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable, DoubleWritable>
     implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, IntWritable, DoubleWritable> {
 
+    private final IntWritable keyInt;
+    private final DoubleWritable valueDouble;
+
+    public TreasuryYieldMapper() {
+        super();
+        keyInt = new IntWritable();
+        valueDouble = new DoubleWritable();
+    }
+
     @Override
     @SuppressWarnings("deprecation")
     public void map(final Object pKey, final BSONObject pValue, final Context pContext) throws IOException, InterruptedException {
-        pContext.write(new IntWritable(((Date) pValue.get("_id")).getYear() + 1900),
-                       new DoubleWritable(((Number) pValue.get("bc10Year")).doubleValue()));
+        keyInt.set(((Date) pValue.get("_id")).getYear() + 1900);
+        valueDouble.set(((Number) pValue.get("bc10Year")).doubleValue());
+        pContext.write(keyInt, valueDouble);
     }
 
     @Override
@@ -46,8 +56,9 @@ public class TreasuryYieldMapper extends Mapper<Object, BSONObject, IntWritable,
                     final Reporter reporter)
         throws IOException {
         BSONObject pValue = value.getDoc();
-        output.collect(new IntWritable(((Date) pValue.get("_id")).getYear() + 1900),
-                       new DoubleWritable(((Number) pValue.get("bc10Year")).doubleValue()));
+        keyInt.set(((Date) pValue.get("_id")).getYear() + 1900);
+        valueDouble.set(((Number) pValue.get("bc10Year")).doubleValue());
+        output.collect(keyInt, valueDouble);
     }
 
     @Override

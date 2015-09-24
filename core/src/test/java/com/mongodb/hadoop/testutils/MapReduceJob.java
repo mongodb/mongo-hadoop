@@ -167,7 +167,7 @@ public class MapReduceJob {
 
         Class<? extends MongoTool> jobClass = (Class<? extends MongoTool>) Class.forName(className);
         Configuration conf = new Configuration();
-        MongoTool app = jobClass.getConstructor(new Class[]{Configuration.class})
+        MongoTool app = (MongoTool) jobClass.getConstructor(new Class[]{Configuration.class})
                                 .newInstance(conf);
 
         ToolRunner.run(conf, app, cmd.toArray(new String[cmd.size()]));

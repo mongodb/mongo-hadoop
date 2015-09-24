@@ -18,6 +18,14 @@ import java.util.Iterator;
 
 public class TagsReducer extends Reducer<Text, BSONWritable, NullWritable, MongoUpdateWritable> 
     implements org.apache.hadoop.mapred.Reducer<Text, BSONWritable, NullWritable, MongoUpdateWritable> {
+
+    private MongoUpdateWritable reduceResult;
+
+    public TagsReducer() {
+        super();
+        reduceResult = new MongoUpdateWritable();
+    }
+
     @Override
     protected void reduce(final Text key, final Iterable<BSONWritable> values, final Context context)
         throws IOException, InterruptedException {
@@ -29,7 +37,9 @@ public class TagsReducer extends Reducer<Text, BSONWritable, NullWritable, Mongo
         }
 
         BasicBSONObject update = new BasicBSONObject("$set", new BasicBSONObject("books", books));
-        context.write(null, new MongoUpdateWritable(query, update, true, false));
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        context.write(null, reduceResult);
     }
 
     @Override
@@ -42,7 +52,9 @@ public class TagsReducer extends Reducer<Text, BSONWritable, NullWritable, Mongo
         }
 
         BasicBSONObject update = new BasicBSONObject("$set", new BasicBSONObject("books", books));
-        output.collect(null, new MongoUpdateWritable(query, update, true, false));
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        output.collect(null, reduceResult);
     }
 
     @Override

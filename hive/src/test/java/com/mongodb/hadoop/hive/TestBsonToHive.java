@@ -7,6 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.SQLException;
 import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
@@ -17,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestBsonToHive extends HiveTest {
     @Before
-    public void setUp() {
+    public void setUp() throws SQLException {
         tearDown();
         loadDataIntoBSONHiveTable(true);
         createMongoBackedTable(false);
@@ -32,7 +33,8 @@ public class TestBsonToHive extends HiveTest {
     }
 
 
-    private Results loadDataIntoBSONHiveTable(final boolean withLocation) {
+    private void loadDataIntoBSONHiveTable(final boolean withLocation)
+      throws SQLException {
         loadIntoHDFS(getPath("users.bson"), BSON_HDFS_TEST_PATH);
 
         String cmd = format("CREATE TABLE %s %s\n"
@@ -45,20 +47,21 @@ public class TestBsonToHive extends HiveTest {
         if (withLocation) {
             cmd += format("\nLOCATION '%s'", BSON_HDFS_TEST_PATH);
         }
-        return execute(cmd);
+        execute(cmd);
     }
 
     @Test
-    public void testSameDataMongoAndBSONHiveTables() {
+    public void testSameDataMongoAndBSONHiveTables() throws SQLException {
         testTransfer(BSON_BACKED_TABLE, MONGO_BACKED_TABLE);
     }
 
     @Test
-    public void testSameDataHDFSAndBSONHiveTables() {
+    public void testSameDataHDFSAndBSONHiveTables() throws SQLException {
         testTransfer(BSON_BACKED_TABLE, MONGO_BACKED_TABLE);
     }
 
-    private void testTransfer(final String from, final String to) {
+    private void testTransfer(final String from, final String to)
+      throws SQLException {
         transferData(from, to);
         Awaitility
             .await()

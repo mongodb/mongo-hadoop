@@ -33,16 +33,20 @@ import java.io.IOException;
 import java.util.Map.Entry;
 
 /**
+ * <p>
  * Tool for simplifying the setup and usage of Mongo Hadoop jobs using the Tool / Configured interfaces for use w/ a ToolRunner Primarily
- * useful in cases of XML Config files. <p/> Main will be a necessary method to run the job - suggested implementation template: <p></p>
- * <p/>
- * <pre>
+ * useful in cases of XML Config files.
+ * </p>
+ * <p>
+ * Main will be a necessary method to run the job - suggested implementation template:
+ * </p>
+ * <code>
  * public static void main(String[] args) throws Exception {
- *     System.exit(ToolRunner.run(new &lt;YourClass&gt;(), args));
+ *     System.exit(ToolRunner.run(new &lt;YourClass&gt;, args));
  * }
- * </pre>
+ * </code>
  *
- * @author Brendan W. McAdams <brendan@10gen.com>
+ * @author Brendan W. McAdams (brendan@10gen.com)
  */
 public class MongoTool extends Configured implements Tool {
     private static final Log LOG = LogFactory.getLog(MongoTool.class);
@@ -115,8 +119,10 @@ public class MongoTool extends Configured implements Tool {
         job.setJarByClass(getClass());
         final Class<? extends org.apache.hadoop.mapred.Mapper> mapper = MapredMongoConfigUtil.getMapper(conf);
 
-        LOG.debug("Mapper Class: " + mapper);
-        LOG.debug("Input URI: " + conf.get(MapredMongoConfigUtil.INPUT_URI));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapper Class: " + mapper);
+            LOG.debug("Input URI: " + conf.get(MapredMongoConfigUtil.INPUT_URI));
+        }
         job.setMapperClass(mapper);
         Class<? extends org.apache.hadoop.mapred.Reducer> combiner = MapredMongoConfigUtil.getCombiner(conf);
         if (combiner != null) {
@@ -179,8 +185,10 @@ public class MongoTool extends Configured implements Tool {
         job.setJarByClass(getClass());
         final Class<? extends Mapper> mapper = MongoConfigUtil.getMapper(conf);
 
-        LOG.debug("Mapper Class: " + mapper);
-        LOG.debug("Input URI: " + conf.get(MongoConfigUtil.INPUT_URI));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapper Class: " + mapper);
+            LOG.debug("Input URI: " + conf.get(MongoConfigUtil.INPUT_URI));
+        }
         job.setMapperClass(mapper);
         Class<? extends Reducer> combiner = MongoConfigUtil.getCombiner(conf);
         if (combiner != null) {

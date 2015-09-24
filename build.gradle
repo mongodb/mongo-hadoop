@@ -7,13 +7,13 @@ apply plugin: 'com.github.ben-manes.versions'
 
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
-ext.javaDriverVersion = '2.12.3'
-ext.hiveVersion = '0.12.0'
-ext.pigVersion = '0.13.0'
-ext.hadoopVersion = '2.4.1'
+ext.javaDriverVersion = '3.0.0'
+ext.hiveVersion = '1.1.0'
+ext.pigVersion = '0.14.0'
+ext.hadoopVersion = '2.6.0'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
-ext.hiveHome = "${hadoopBinaries}/hive-${hiveVersion}".toString()
+ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
 ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
@@ -22,6 +22,10 @@ ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport')
 ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore').exists() ?
                   '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
                   '/usr/local/bin/mongorestore';
+ext.mongoURI = System.getenv("MONGO_INPUT_URI")
+ext.mongoAuthURI = System.getenv("MONGO_AUTH_URI")
+ext.mongoUsername = System.getenv("MONGO_USER")
+ext.mongoPassword = System.getenv("MONGO_PASSWORD")
 
 buildscript {
     repositories {
@@ -34,7 +38,7 @@ buildscript {
     dependencies {
         classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
         classpath 'org.zeroturnaround:zt-exec:1.6'
-        
+
         classpath 'com.bmuschko:gradle-nexus-plugin:2.1.1'
         classpath 'me.trnl:clirr-gradle-plugin:0.4'
         classpath 'de.undercouch:gradle-download-task:1.0'
@@ -55,7 +59,7 @@ if(project.hasProperty("clusterVersion")) {
 }
 
 allprojects {
-    version = '1.3.2-SNAPSHOT'
+    version = '1.4.0'
     group = 'org.mongodb.mongo-hadoop'
 }
 
@@ -81,11 +85,11 @@ configure(subprojects) {
     configurations {
         tests
         tests.extendsFrom(testCompile)
-        
+
         provided
         provided.extendsFrom(compile)
     }
-    
+
     sourceSets.main.compileClasspath += configurations.provided
     sourceSets.test.compileClasspath += configurations.provided
     sourceSets.test.runtimeClasspath += configurations.provided
@@ -176,6 +180,9 @@ configure(subprojects) {
         options.links 'http://docs.oracle.com/javase/6/docs/api/'
         options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
         options.links 'http://api.mongodb.org/java/2.12.3/'
+        if (JavaVersion.current().isJava8Compatible()) {
+          options.addStringOption('Xdoclint:none', '-quiet')
+        }
     }
 
     gradle.taskGraph.whenReady { taskGraph ->
@@ -195,12 +202,12 @@ configure(subprojects) {
             name = 'MongoDB Connector for Hadoop'
             description = 'The MongoDB Connector for Hadoop is a plugin for Hadoop that provides the ability to use MongoDB as an input source and/or an output destination.'
             url 'https://github.com/mongodb/mongo-hadoop.git'
-    
+
             scm {
                 url 'https://github.com/mongodb/mongo-hadoop.git'
                 connection 'scm:git:git://github.com/mongodb/mongo-hadoop.git'
             }
-    
+
             licenses {
                 license {
                     name 'The Apache Software License, Version 2.0'
@@ -208,7 +215,7 @@ configure(subprojects) {
                     distribution 'repo'
                 }
             }
-    
+
             developers {
                 developer {
                     name 'Various'
@@ -216,23 +223,23 @@ configure(subprojects) {
                 }
             }
         }
-    
+
         whenConfigured { resultPom ->
             resultPom.dependencies.removeAll { dep -> dep.scope != 'compile' }
             resultPom.dependencies*.scope = null
         }
     }
-    
+
     extraArchive {
         sources = true
         tests = true
         javadoc = true
     }
-    
+
     nexus {
         sign = true
     }
-    
+
 }
 
 idea {
@@ -255,8 +262,8 @@ project(":core") {
     dependencies {
         compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}" 
-        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}" 
+        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
     }
@@ -264,6 +271,17 @@ project(":core") {
 
 project(':hive') {
     archivesBaseName = 'mongo-hadoop-hive'
+
+    configurations {
+        // Dependencies of hive-exec, but not available on Maven.
+        all*.exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+        all*.exclude group: 'eigenbase', module: 'eigenbase-properties'
+    }
+
+    test {
+        onlyIf { JavaVersion.current().isJava7Compatible() }
+    }
+
     dependencies {
         compile project(':core')
 
@@ -272,10 +290,10 @@ project(':hive') {
 
         testCompile "org.apache.hive:hive-cli:${hiveVersion}"
         testCompile "org.apache.hive:hive-service:${hiveVersion}"
+        testCompile "org.apache.hive:hive-jdbc:${hiveVersion}"
 
-//        testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
-        
+
         testCompile("com.nitayjoffe.thirdparty.com.jointhegrid:hive_test:4.0.0")  {
             exclude group: 'org.apache.derby', module: 'derby'
             exclude group: 'org.apache.hadoop', module: 'hadoop-core'
@@ -285,14 +303,17 @@ project(':hive') {
 
 project(":pig") {
     archivesBaseName = "mongo-hadoop-pig"
-    
+
     dependencies {
         compile project(":core")
-        compile "org.apache.pig:pig:${pigVersion}"
+        compile "org.apache.pig:pig:${pigVersion}:h2"
+        compile 'joda-time:joda-time:2.7'
 
         testCompile files(project(':core').sourceSets.main.output)
         testCompile files(project(':core').sourceSets.test.output)
+        testCompile "org.apache.pig:pigunit:${pigVersion}"
         testCompile "org.antlr:antlr:3.5.2"
+        testCompile "org.mockito:mockito-core:1.10.19"
     }
 
     processTestResources {
@@ -301,6 +322,7 @@ project(":pig") {
                 JAVA_DRIVER_JAR : project(':core').configurations.compile.find { it.name.startsWith("mongo-java-driver") }.toString(),
                 PROJECT_VERSION : project(':core').version,
                 PROJECT_HOME    : project.rootDir.getAbsolutePath(),
+                PIG_RESOURCES   : project(':pig').sourceSets.test.output.resourcesDir.toString()
         ]
     }
 
@@ -351,7 +373,7 @@ project(":examples/treasury_yield") {
     uploadArchives.onlyIf { false }
     dependencies {
         compile project(':core')
-        
+
         testCompile files(project(':core').sourceSets.test.output)
         testCompile project(':streaming')
         testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
@@ -372,19 +394,10 @@ project(":examples/sensors") {
     }
 }
 
-project(":integration-tests") {
-    uploadArchives.onlyIf { false }
-    dependencies {
-        testCompile project(":core")
-        testCompile "${group}:mongo-hadoop-streaming:${version}"
-        testCompile 'org.slf4j:slf4j-jdk14:1.7.7'
-    }
+task cleanLogs(type: Delete) {
+    delete fileTree(dir: "logs", exclude: ".keep")
 }
 
-task cleanLogs(type: Delete) {  
-    delete fileTree(dir: "logs", exclude: ".keep")  
-}
-    
 task cleanHadoop(type: Delete, dependsOn: cleanLogs) {
     delete hadoopHome, hiveHome, pigHome
 }

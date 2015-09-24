@@ -41,7 +41,8 @@ task installHadoop() << {
 }
 
 task installHive() << {
-    extract(hadoopBinaries, hiveHome, downloadFile("https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"))
+    extract(hadoopBinaries, hiveHome,
+            downloadFile("https://archive.apache.org/dist/hive/hive-${hiveVersion}/apache-hive-${hiveVersion}-bin.tar.gz"))
 }
 
 task installPig() << {
@@ -67,8 +68,17 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     copy {
         from 'clusterConfigs'
         into hadoopEtc
+        exclude 'hive-site.xml'
         filter ReplaceTokens, tokens: [
                 HADOOP_BINARIES: hadoopBinaries.toString()
+        ]
+    }
+    copy {
+        from 'clusterConfigs'
+        into "hive/build/resources/test"
+        include 'hive-site.xml'
+        filter ReplaceTokens, tokens: [
+                HIVE_HOME: hiveHome.toString()
         ]
     }
 }

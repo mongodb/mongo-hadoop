@@ -12,7 +12,7 @@ buildscript {
 def execute(command, args = [], outStream = null, errStream = null, background = false ) {
     def env = [HADOOP_HOME: hadoopHome]
     env << System.getProperties()
-    
+
     def executor = new org.zeroturnaround.exec.ProcessExecutor().command([command.toString()] + args)
                                                                 .readOutput(true)
                                                                 .environment(env)
@@ -66,13 +66,11 @@ def start() {
     startService('yarn', 'resourcemanager')
     startService('yarn', 'nodemanager')
 
-    print('Starting hiveserver') 
+    print('Creating Hive warehouse directory')
     execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
             ("${rootDir}/build/logs/hiveserver-mkdir.out"))
     execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
                 ("${rootDir}/build/logs/hiveserver-chmod.out"))
-
-    execute("$hiveHome/bin/hive", ["--service", "hiveserver"], new FileOutputStream("${rootDir}/build/logs/hiveserver.log"), null, true)
 }
 
 def stopAll(signal) {
@@ -93,9 +91,8 @@ task startCluster(dependsOn: [copyFiles]) << {
         file("${rootDir}/build/logs/").mkdirs()
     }
 
-    delete {
-        delete fileTree(dir: file("${hadoopBinaries}/hadoop-tmpdir/"))
-    }
+    delete file("${hadoopBinaries}/hadoop-tmpdir")
+
     println "Formatting HDFS"
     execute("${hadoopHome}/bin/hdfs", [ 'namenode', '-format', '-force' ], null,
             new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
@@ -104,7 +101,7 @@ task startCluster(dependsOn: [copyFiles]) << {
 }
 
 task historicalYield(dependsOn: startCluster) << {
-    
+
     exec() {
         commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
                     "examples/treasury_yield/src/main/resources/yield_historical_in.json"
@@ -128,7 +125,14 @@ task sensorData(dependsOn: 'startCluster') << {
 
 task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
     exec() {
-        commandLine mongorestore, "-v", "-d", "mongo_hadoop", "--drop", "${dataHome}/dump/enron_mail"
+        def line = [mongorestore, "-v", "-d", "mongo_hadoop", "--drop"]
+        if (mongoUsername != null && mongoPassword != null) {
+            line += ["--authenticationDatabase", "admin",
+                     "--username", mongoUsername,
+                     "--password", mongoPassword]
+        }
+        line << "${dataHome}/dump/enron_mail"
+        commandLine line
     }
 
     hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
@@ -142,6 +146,13 @@ def hadoop(jar, className, args) {
                 "-Dmongo.input.split_size=8",
                 "-Dmongo.job.verbose=true",
     ]
+    // Allow overriding the input URI with an environment variable.
+    if (mongoURI != null) {
+        line.add("-Dmongo.input.uri=${mongoURI}")
+    }
+    if (mongoAuthURI != null) {
+        line.add("-Dmongo.auth.uri=${mongoAuthURI}")
+    }
     args.each {
         line << "-D${it}"
     }

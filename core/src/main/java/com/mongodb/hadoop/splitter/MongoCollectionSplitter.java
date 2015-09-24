@@ -90,9 +90,6 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
             if (cur != null) {
                 cur.close();
             }
-            if (configDB != null) {
-                MongoConfigUtil.close(configDB.getMongo());
-            }
         }
         return shardsMap;
     }
@@ -218,6 +215,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         split.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
         split.setFields(MongoConfigUtil.getFields(getConfiguration()));
         split.setSort(MongoConfigUtil.getSort(getConfiguration()));
+        split.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
         return split;
     }
 
@@ -281,6 +279,7 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         splitQuery.put(key, rangeObj);
         MongoInputSplit split = new MongoInputSplit();
         split.setQuery(splitQuery);
+        split.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
         return split;
     }
 

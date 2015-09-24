@@ -34,22 +34,20 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * This is <em>not</em> reusable.
- */
-
 @SuppressWarnings("deprecation")
 public class MongoUpdateWritable implements Writable {
 
     private static final Log LOG = LogFactory.getLog(MongoUpdateWritable.class);
+    private final BSONEncoder enc = new BasicBSONEncoder();
+
     private BasicBSONObject query;
     private BasicBSONObject modifiers;
     private boolean upsert;
-
     private boolean multiUpdate;
-    private BSONEncoder enc = new BasicBSONEncoder();
 
-    private BasicOutputBuffer buf = new BasicOutputBuffer();
+    public MongoUpdateWritable() {
+        this(null, null);
+    }
 
     public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers, final boolean upsert,
                                final boolean multiUpdate) {
@@ -80,19 +78,36 @@ public class MongoUpdateWritable implements Writable {
         return multiUpdate;
     }
 
+    public void setQuery(final BasicBSONObject query) {
+        this.query = query;
+    }
+
+    public void setModifiers(final BasicBSONObject modifiers) {
+        this.modifiers = modifiers;
+    }
+
+    public void setUpsert(final boolean upsert) {
+        this.upsert = upsert;
+    }
+
+    public void setMultiUpdate(final boolean multiUpdate) {
+        this.multiUpdate = multiUpdate;
+    }
+
     /**
      * /** {@inheritDoc}
      *
      * @see Writable#write(DataOutput)
      */
     public void write(final DataOutput out) throws IOException {
+        BasicOutputBuffer buf = new BasicOutputBuffer();
         enc.set(buf);
         enc.putObject(query);
         enc.done();
         enc.set(buf);
         enc.putObject(modifiers);
         enc.done();
-        buf.pipe(out);
+        buf.pipe(new DataOutputOutputStreamAdapter(out));
         out.writeBoolean(upsert);
         out.writeBoolean(multiUpdate);
     }
@@ -143,10 +158,17 @@ public class MongoUpdateWritable implements Writable {
         if (upsert != other.upsert || multiUpdate != other.multiUpdate) {
             return false;
         }
-        if (!(query != other.query && (query == null || !query.equals(other.query)))) {
-            return true;
+        if ((query == null && other.query != null)
+                || (other.query == null && query != null)
+                || (!query.equals(other.query))) {
+            return false;
         }
-        return !(modifiers != other.modifiers && (modifiers == null || !modifiers.equals(other.modifiers)));
+        if ((modifiers == null && other.modifiers != null)
+                || (other.modifiers == null && modifiers != null)
+                || (!modifiers.equals(other.modifiers))) {
+            return false;
+        }
+        return true;
     }
 
     @Override

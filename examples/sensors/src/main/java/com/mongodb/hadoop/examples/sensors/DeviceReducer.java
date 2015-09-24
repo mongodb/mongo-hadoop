@@ -17,6 +17,13 @@ import java.util.Iterator;
 public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdateWritable>
     implements org.apache.hadoop.mapred.Reducer<Text, Text, NullWritable, MongoUpdateWritable> {
 
+    private MongoUpdateWritable reduceResult;
+
+    public DeviceReducer() {
+        super();
+        reduceResult = new MongoUpdateWritable();
+    }
+
     @Override
     public void reduce(final Text pKey, final Iterable<Text> pValues, final Context pContext) throws IOException, InterruptedException {
         BasicBSONObject query = new BasicBSONObject("_id", pKey.toString());
@@ -26,7 +33,9 @@ public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdate
         }
 
         BasicBSONObject update = new BasicBSONObject("$pushAll", new BasicBSONObject("devices", devices));
-        pContext.write(null, new MongoUpdateWritable(query, update, true, false));
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        pContext.write(null, reduceResult);
     }
 
     @Override
@@ -40,7 +49,9 @@ public class DeviceReducer extends Reducer<Text, Text, NullWritable, MongoUpdate
         }
 
         BasicBSONObject update = new BasicBSONObject("$pushAll", new BasicBSONObject("devices", devices));
-        output.collect(null, new MongoUpdateWritable(query, update, true, false));
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        output.collect(null, reduceResult);
     }
 
     @Override

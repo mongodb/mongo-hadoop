@@ -17,6 +17,7 @@
 package com.mongodb.hadoop.input;
 
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.hadoop.util.MongoPathRetriever;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -38,22 +39,29 @@ import org.bson.LazyBSONDecoder;
 
 import java.io.IOException;
 
+import static com.mongodb.hadoop.mapred.input.BSONFileRecordReader
+  .BSON_RR_POSITION_NOT_GIVEN;
 import static java.lang.String.format;
 
 /**
- * Copyright (c) 2008 - 2013 10gen, Inc. <http://10gen.com>
- * <p/>
+ * <p>
+ * Copyright (c) 2008 - 2013 10gen, Inc. (http://10gen.com)
+ * </p>
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may
  * obtain a copy of the License at
- * <p/>
+ * </p>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * </p>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
+ * </p>
  */
 
-public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject> {
+public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     private static final Log LOG = LogFactory.getLog(BSONFileRecordReader.class);
 
     private FileSplit fileSplit;
@@ -61,21 +69,32 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     private FSDataInputStream in;
     private int numDocsRead = 0;
     private boolean finished = false;
+    private long startingPosition;
 
     private BSONCallback callback;
     private BSONDecoder decoder;
+    private Configuration configuration;
+
+    public BSONFileRecordReader() {
+        this(BSON_RR_POSITION_NOT_GIVEN);
+    }
+
+    public BSONFileRecordReader(final long startingPosition) {
+        this.startingPosition = startingPosition;
+    }
 
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext context) throws IOException, InterruptedException {
         fileSplit = (FileSplit) inputSplit;
-        final Configuration configuration = context.getConfiguration();
+        configuration = context.getConfiguration();
         if (LOG.isDebugEnabled()) {
             LOG.debug("reading split " + fileSplit);
         }
         Path file = fileSplit.getPath();
         FileSystem fs = file.getFileSystem(configuration);
         in = fs.open(file, 16 * 1024 * 1024);
-        in.seek(fileSplit.getStart());
+        in.seek(startingPosition == BSON_RR_POSITION_NOT_GIVEN
+          ? fileSplit.getStart() : startingPosition);
 
         if (MongoConfigUtil.getLazyBSON(configuration)) {
             callback = new LazyBSONCallback();
@@ -120,8 +139,13 @@ public class BSONFileRecordReader extends RecordReader<NullWritable, BSONObject>
     }
 
     @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-        return NullWritable.get();
+    public Object getCurrentKey() throws IOException, InterruptedException {
+        Object key = null;
+        if (fileSplit instanceof BSONFileSplit) {
+            key = MongoPathRetriever.get(
+              value, ((BSONFileSplit) fileSplit).getKeyField());
+        }
+        return key != null ? key : NullWritable.get();
     }
 
     @Override

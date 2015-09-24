@@ -1,12 +1,9 @@
 package com.mongodb.hadoop.hive;
 
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.metastore.api.Schema;
-import org.apache.hadoop.hive.service.HiveClient;
-import org.apache.thrift.TException;
-
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,32 +13,59 @@ import static java.lang.String.format;
 
 public class Results implements Iterable<List<String>> {
 
-    private List<FieldSchema> fields;
+    public class Field {
+        private final String name;
+        private final String type;
+
+        public Field(final String name, final String type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        public String getName() { return name; }
+
+        public String getType() { return type; }
+
+        //CHECKSTYLE:OFF
+        public boolean equals(final Object other) {
+            if (!(other instanceof Field)) {
+                return false;
+            }
+            Field otherField = (Field) other;
+            return otherField.getName().equals(name)
+              && otherField.getType().equals(type);
+        }
+        //CHECKSTYLE:ON
+    }
+
+    private List<Field> fields;
     private List<List<String>> data = new ArrayList<List<String>>();
     private Exception error;
 
     public Results() {
     }
 
-    public void process(final HiveClient client) throws TException {
-        Schema schema = client.getSchema();
-        fields = schema.getFieldSchemas();
-        List<String> strings = client.fetchAll();
-        for (String string : strings) {
-            data.add(Arrays.asList(string.split("\t")));
+    public void process(final ResultSet resultSet) throws SQLException {
+        final ResultSetMetaData metaData = resultSet.getMetaData();
+        final int numCols = metaData.getColumnCount();
+        fields = new ArrayList<Field>(numCols);
+
+        // Column numbering starts at 1.
+        for (int i = 1; i <= numCols; i++) {
+            String colName = metaData.getColumnName(i);
+            // Column names are in the format <table name>.<column title>,
+            // unless they've been aliased with AS.
+            String[] nameParts = colName.split("\\.", 2);
+            String fieldName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+            fields.add(new Field(fieldName, metaData.getColumnTypeName(i)));
         }
-    }
-
-    public void process(final Exception e) {
-        error = e;
-    }
-
-    public boolean hasError() {
-        return error != null;
-    }
-
-    public Exception getError() {
-        return error;
+        while (resultSet.next()) {
+            List<String> rowData = new ArrayList<String>(numCols);
+            for (int i = 1; i <= numCols; i++) {
+                rowData.add(resultSet.getString(i));
+            }
+            data.add(rowData);
+        }
     }
 
     public int size() {
@@ -52,7 +76,7 @@ public class Results implements Iterable<List<String>> {
         return data.get(i);
     }
 
-    public List<FieldSchema> getFields() {
+    public List<Field> getFields() {
         return fields;
     }
 
@@ -60,8 +84,8 @@ public class Results implements Iterable<List<String>> {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         if (fields != null) {
-            for (FieldSchema fieldSchema : fields) {
-                sb.append(format(" %15s   |", fieldSchema.getName()));
+            for (Field field : fields) {
+                sb.append(format(" %15s   |", field.getName()));
             }
             sb.append("\n");
             for (List<String> row : data) {
@@ -111,7 +135,7 @@ public class Results implements Iterable<List<String>> {
         Map<String, String> map = new LinkedHashMap<String, String>();
         List<String> strings = get(row);
         for (int i = 0; i < fields.size(); i++) {
-            final FieldSchema field = fields.get(i);
+            final Field field = fields.get(i);
             map.put(field.getName(), strings.get(i));
         }
 

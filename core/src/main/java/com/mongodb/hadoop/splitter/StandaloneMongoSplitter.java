@@ -26,6 +26,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoException;
+import com.mongodb.ReadPreference;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -34,7 +35,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,12 +68,19 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
         final int splitSize = MongoConfigUtil.getSplitSize(getConfiguration());
         final BasicDBObject splitMin = (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MIN_KEY);
         final BasicDBObject splitMax = splitMin == null ? null : (BasicDBObject)MongoConfigUtil.getDBObject(getConfiguration(), MongoConfigUtil.SPLITS_MAX_KEY);
-        MongoClientURI inputURI;
+        final MongoClientURI inputURI;
+
         DBCollection inputCollection = null;
         final List<InputSplit> returnVal;
         try {
             inputURI = MongoConfigUtil.getInputURI(getConfiguration());
-            inputCollection = MongoConfigUtil.getCollection(inputURI);
+            MongoClientURI authURI = MongoConfigUtil.getAuthURI(getConfiguration());
+            if (authURI != null) {
+                inputCollection = MongoConfigUtil.getCollectionWithAuth(
+                  inputURI, authURI);
+            } else {
+                inputCollection = MongoConfigUtil.getCollection(inputURI);
+            }
 
             //returnVal = new ArrayList<InputSplit>();
             final String ns = inputCollection.getFullName();
@@ -92,20 +99,18 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
             CommandResult data;
             boolean ok = true;
-            if (authDB == null) {
-                try {
-                    data = inputCollection.getDB().getSisterDB("admin").command(cmd);
-                } catch (MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
-                    data = null;
-                    LOG.info(e.getMessage(), e);
-                    if (e.getMessage().contains("unrecognized command: splitVector")) {
-                        ok = false;
-                    } else {
-                        throw e;
-                    }
+            try {
+                data = inputCollection.getDB()
+                  .getSisterDB("admin")
+                  .command(cmd, ReadPreference.primary());
+            } catch (final MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
+                data = null;
+                LOG.info(e.getMessage(), e);
+                if (e.getMessage().contains("unrecognized command: splitVector")) {
+                    ok = false;
+                } else {
+                    throw e;
                 }
-            } else {
-                data = authDB.command(cmd);
             }
 
             if (data != null) {
@@ -117,23 +122,30 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             }
 
             if (!ok) {
-                CommandResult stats = inputCollection.getStats();
+                final CommandResult stats = inputCollection.getStats();
                 if (stats.containsField("primary")) {
-                    DBCursor shards = inputCollection.getDB().getSisterDB("config")
+                    final DBCursor shards = inputCollection.getDB().getSisterDB("config")
                                                      .getCollection("shards")
                                                      .find(new BasicDBObject("_id", stats.getString("primary")));
                     try {
                         if (shards.hasNext()) {
-                            DBObject shard = shards.next();
-                            String host = ((String) shard.get("host")).replace(shard.get("_id") + "/", "");
-                            MongoClientURI shardHost = new MongoClientURIBuilder(inputURI)
-                                                           .host(host)
-                                                           .build();
+                            final DBObject shard = shards.next();
+                            final String host = ((String) shard.get("host")).replace(
+                              shard.get("_id") + "/", "");
+                            final MongoClientURI shardHost;
+                            if (authURI != null) {
+                                shardHost = new MongoClientURIBuilder(authURI)
+                                  .host(host).build();
+                            } else {
+                                shardHost = new MongoClientURIBuilder(inputURI)
+                                  .host(host).build();
+                            }
                             MongoClient shardClient = null;
                             try {
                                 shardClient = new MongoClient(shardHost);
-                                data = shardClient.getDB("admin").command(cmd);
-                            } catch (UnknownHostException e) {
+                                data = shardClient.getDB("admin")
+                                  .command(cmd, ReadPreference.primary());
+                            } catch (final Exception e) {
                                 LOG.error(e.getMessage(), e);
                             } finally {
                                 if (shardClient != null) {
@@ -146,6 +158,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                     }
                 }
                 if (data != null && !data.get("ok").equals(1.0)) {
+                  System.out.println("Unable to calculate input splits for cmd:" );
+                  System.out.println(""+cmd );
                     throw new SplitFailedException("Unable to calculate input splits: " + data.get("errmsg"));
                 }
 
@@ -153,7 +167,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
 
             // Comes in a format where "min" and "max" are implicit
             // and each entry is just a boundary key; not ranged
-            BasicDBList splitData = (BasicDBList) data.get("splitKeys");
+            final BasicDBList splitData = (BasicDBList) data.get("splitKeys");
 
             if (splitData.size() == 0) {
                 LOG.warn("WARNING: No Input Splits were calculated by the split code. Proceeding with a *single* split. Data may be too"

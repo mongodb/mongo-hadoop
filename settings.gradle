@@ -1,1 +1,1 @@
-include 'core', 'hive', 'pig', 'streaming', 'flume', 'integration-tests', 'examples/treasury_yield', 'examples/enron', 'examples/sensors'
+include 'core', 'hive', 'pig', 'streaming', 'flume', 'examples/treasury_yield', 'examples/enron', 'examples/sensors'
