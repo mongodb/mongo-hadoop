@@ -28,9 +28,17 @@ import java.util.List;
 public class MongoOutputCommitter extends OutputCommitter {
     private final com.mongodb.hadoop.output.MongoOutputCommitter delegate;
 
+    public MongoOutputCommitter() {
+        delegate = new com.mongodb.hadoop.output.MongoOutputCommitter();
+    }
+
+    /**
+     * @deprecated Use the zero-args constructor instead.
+     * @param collections the MongoDB output collections.
+     */
+    @Deprecated
     public MongoOutputCommitter(final List<DBCollection> collections) {
-        delegate =
-          new com.mongodb.hadoop.output.MongoOutputCommitter(collections);
+        this();
     }
 
     @Override

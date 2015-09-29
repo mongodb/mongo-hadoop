@@ -42,13 +42,20 @@ public class MongoOutputCommitter extends OutputCommitter {
 
     public static final String TEMP_DIR_NAME = "_MONGO_OUT_TEMP";
     private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
-    private final List<DBCollection> collections;
-    private final int numberOfHosts;
+    private List<DBCollection> collections;
+    private int numberOfHosts;
     private int roundRobinCounter = 0;
 
+    public MongoOutputCommitter() {
+    }
+
+    /**
+     * @deprecated Use the zero-args constructor instead.
+     * @param collections the MongoDB output collections.
+     */
+    @Deprecated
     public MongoOutputCommitter(final List<DBCollection> collections) {
-        this.collections = collections;
-        numberOfHosts = this.collections.size();
+        this();
     }
 
     /**
@@ -103,6 +110,10 @@ public class MongoOutputCommitter extends OutputCommitter {
     public void commitTask(final TaskAttemptContext taskContext)
         throws IOException {
         LOG.info("Committing task.");
+
+        collections =
+          MongoConfigUtil.getOutputCollections(taskContext.getConfiguration());
+        numberOfHosts = collections.size();
 
         // Get temporary file.
         Path tempFilePath = getTaskAttemptPath(taskContext);
