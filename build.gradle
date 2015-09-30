@@ -178,8 +178,8 @@ configure(subprojects) {
     javadoc {
         options.version = true
         options.links 'http://docs.oracle.com/javase/6/docs/api/'
-        options.links 'http://hadoop.apache.org/docs/r2.4.0/api'
-        options.links 'http://api.mongodb.org/java/2.12.3/'
+        options.links 'http://hadoop.apache.org/docs/r2.6.0/api'
+        options.links 'http://api.mongodb.org/java/3.0/'
         if (JavaVersion.current().isJava8Compatible()) {
           options.addStringOption('Xdoclint:none', '-quiet')
         }
