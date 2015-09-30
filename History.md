@@ -1,3 +1,12 @@
+1.4.1 / 29th of September, 2015
+===============================
+
+This is a minor release that contains minor improvements and bug fixes from 1.4.0.
+
+  * [HADOOP-231] (Python) Streaming reports success but output collection stays empty
+  * [HADOOP-226] HiveException: java.lang.ClassCastException: java.lang.String cannot be cast to java.sql.Timestamp
+  * [HADOOP-219] Do not log the username:password portion of the mongo connection URI to hadoop logs
+
 1.4 / 2nd of July, 2015
 =======================
 
