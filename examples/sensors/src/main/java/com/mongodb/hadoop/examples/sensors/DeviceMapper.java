@@ -13,22 +13,21 @@ import java.io.IOException;
 public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>
     implements org.apache.hadoop.mapred.Mapper<Object, BSONWritable, Text, Text> {
 
-    /*
+    private final Text keyText;
+    private final Text valueText;
 
-        {
-          "_id": ObjectId("51b792d381c3e67b0a18d0de"),
-          "name": "BSGORNaN",
-          "type": "temp",
-          "owner": "Qs7GqRDcn7",
-          "model": 11,
-          "created_at": ISODate("2006-07-09T06:56:58.448-0400")
-        }
-    */
+    public DeviceMapper() {
+        super();
+        keyText = new Text();
+        valueText = new Text();
+    }
 
     @Override
     public void map(final Object key, final BSONObject val, final Context context) throws IOException, InterruptedException {
         String keyOut = (String) val.get("owner") + " " + (String) val.get("type");
-        context.write(new Text(keyOut), new Text(val.get("_id").toString()));
+        keyText.set(keyOut);
+        valueText.set(val.get("_id").toString());
+        context.write(keyText, valueText);
     }
 
     @Override
@@ -37,7 +36,9 @@ public class DeviceMapper extends Mapper<Object, BSONObject, Text, Text>
         BSONObject val = value.getDoc();
         
         String keyOut = (String) val.get("owner") + " " + (String) val.get("type");
-        output.collect(new Text(keyOut), new Text(val.get("_id").toString()));
+        keyText.set(keyOut);
+        valueText.set(val.get("_id").toString());
+        output.collect(keyText, valueText);
     }
 
     @Override

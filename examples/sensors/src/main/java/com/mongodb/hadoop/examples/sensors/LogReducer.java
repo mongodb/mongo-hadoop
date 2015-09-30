@@ -20,6 +20,12 @@ public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUp
     implements org.apache.hadoop.mapred.Reducer<Text, IntWritable, NullWritable, MongoUpdateWritable> {
 
     private static final Log LOG = LogFactory.getLog(LogReducer.class);
+    private MongoUpdateWritable reduceResult;
+
+    public LogReducer() {
+        super();
+        reduceResult = new MongoUpdateWritable();
+    }
 
     @Override
     public void reduce(final Text pKey, final Iterable<IntWritable> pValues, final Context pContext)
@@ -32,9 +38,13 @@ public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUp
 
         BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(pKey.toString()));
         BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
-        LOG.debug("query: " + query);
-        LOG.debug("update: " + update);
-        pContext.write(null, new MongoUpdateWritable(query, update, true, false));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("query: " + query);
+            LOG.debug("update: " + update);
+        }
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        pContext.write(null, reduceResult);
     }
 
     @Override
@@ -47,9 +57,13 @@ public class LogReducer extends Reducer<Text, IntWritable, NullWritable, MongoUp
 
         BasicBSONObject query = new BasicBSONObject("devices", new ObjectId(key.toString()));
         BasicBSONObject update = new BasicBSONObject("$inc", new BasicBSONObject("logs_count", count));
-        LOG.debug("query: " + query);
-        LOG.debug("update: " + update);
-        output.collect(null, new MongoUpdateWritable(query, update, true, false));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("query: " + query);
+            LOG.debug("update: " + update);
+        }
+        reduceResult.setQuery(query);
+        reduceResult.setModifiers(update);
+        output.collect(null, reduceResult);
     }
 
     @Override

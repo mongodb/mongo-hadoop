@@ -38,11 +38,14 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -76,16 +79,21 @@ public final class MongoConfigUtil {
     public static final String INPUT_URI = "mongo.input.uri";
     public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
+    public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
 
 
     /**
+     * <p>
      * The MongoDB field to read from for the Mapper Input.
-     * <p/>
+     * </p>
+     * <p>
      * This will be fed to your mapper as the "Key" for the input.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code _id}
+     * </p>
      */
     public static final String INPUT_KEY = "mongo.input.key";
     public static final String INPUT_NOTIMEOUT = "mongo.input.notimeout";
@@ -98,6 +106,7 @@ public final class MongoConfigUtil {
 
 
     //Settings specific to bson reading/writing.
+    public static final String BSON_SPLITS_PATH = "bson.split.splits_path";
     public static final String BSON_READ_SPLITS = "bson.split.read_splits";
     public static final String BSON_WRITE_SPLITS = "bson.split.write_splits";
     public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
@@ -105,44 +114,81 @@ public final class MongoConfigUtil {
 
 
     /**
+     * <p>
      * A username and password to use.
-     * <p/>
+     * </p>
+     * <p>
      * This is necessary when running jobs with a sharded cluster, as access to the config database is needed to get
+     * </p>
      */
     public static final String AUTH_URI = "mongo.auth.uri";
 
 
     /**
+     * <p>
      * When *not* using 'read_from_shards' or 'read_shard_chunks' The number of megabytes per Split to create for the input data.
-     * <p/>
+     * </p>
+     * <p>
      * Currently defaults to 8MB, tweak it as necessary for your code.
-     * <p/>
+     * </p>
+     * <p>
      * This default will likely change as we research better options.
+     * </p>
      */
     public static final String INPUT_SPLIT_SIZE = "mongo.input.split_size";
 
     public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
+     * <p>
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
-     * <p/>
+     * </p>
+     * <p>
      * If you want to customize that split point for efficiency reasons (such as different distribution) you may set this to any valid field
      * name. The restriction on this key name are the *exact same rules* as when sharding an existing MongoDB Collection.  You must have an
      * index on the field, and follow the other rules outlined in the docs.
-     * <p/>
+     * </p>
+     * <p>
+     * To customize the range of the index that is used to create splits, see
+     * the {@link #INPUT_SPLIT_KEY_MIN} and {@link #INPUT_SPLIT_KEY_MAX}
+     * settings.
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
+     * </p>
      *
-     * @link http://www.mongodb.org/display/DOCS/Sharding+Introduction#ShardingIntroduction-ShardKeys
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
 
     /**
+     * Lower-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjunction with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MAX}.
+     */
+    public static final String INPUT_SPLIT_KEY_MIN = "mongo.input.split.split_key_min";
+
+    /**
+     * Upper-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjuntion with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MIN}.
+     */
+    public static final String INPUT_SPLIT_KEY_MAX = "mongo.input.split.split_key_max";
+
+    /**
+     * <p>
      * If {@code true}, the driver will attempt to split the MongoDB Input data (if reading from Mongo) into multiple InputSplits to allow
      * parallelism/concurrency in processing within Hadoop.  That is to say, Hadoop will assign one InputSplit per mapper.
-     * <p/>
-     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop –
+     * </p>
+     * <p>
+     * This is {@code true} by default now, but if {@code false}, only one InputSplit (your whole collection) will be assigned to Hadoop,
      * severely reducing parallel mapping.
+     * </p>
      */
     public static final String CREATE_INPUT_SPLITS = "mongo.input.split.create_input_splits";
 
@@ -159,18 +205,42 @@ public final class MongoConfigUtil {
      */
     public static final String SPLITS_USE_CHUNKS = "mongo.input.split.read_shard_chunks";
     /**
+     * <p>
      * If true then shards are replica sets run queries on slaves. If set this will override any option passed on the URI.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_SLAVE_OK = "mongo.input.split.allow_read_from_secondaries";
 
     /**
+     * <p>
      * If true then queries for splits will be constructed using $lt/$gt instead of $min and $max.
-     * <p/>
+     * </p>
+     * <p>
      * Defaults to {@code false}
+     * </p>
      */
     public static final String SPLITS_USE_RANGEQUERY = "mongo.input.split.use_range_queries";
+
+    /**
+     * One client per thread
+     */
+    private static final ThreadLocal<Map<MongoClientURI, MongoClient>> CLIENTS =
+      new ThreadLocal<Map<MongoClientURI, MongoClient>>() {
+          @Override public Map<MongoClientURI, MongoClient> initialValue() {
+              return new HashMap<MongoClientURI, MongoClient>();
+          }
+      };
+
+    private static final ThreadLocal<Map<MongoClient, MongoClientURI>> URI_MAP =
+      new ThreadLocal<Map<MongoClient, MongoClientURI>>() {
+          @Override
+          public Map<MongoClient, MongoClientURI> initialValue() {
+              return new HashMap<MongoClient, MongoClientURI>();
+          }
+      };
 
     private MongoConfigUtil() {
     }
@@ -286,21 +356,26 @@ public final class MongoConfigUtil {
     }
 
     public static List<MongoClientURI> getMongoURIs(final Configuration conf, final String key) {
-        final String raw = conf.get(key);
+        String raw = conf.get(key);
+        List<MongoClientURI> result = new LinkedList<MongoClientURI>();
         if (raw != null && !raw.trim().isEmpty()) {
-            List<MongoClientURI> result = new LinkedList<MongoClientURI>();
-            String[] split = StringUtils.split(raw, ", ");
-            for (String mongoURI : split) {
-                result.add(new MongoClientURI(mongoURI));
+            for (String connectionString : raw.split("mongodb://")) {
+                // Try to be forgiving with formatting.
+                connectionString = StringUtils.strip(connectionString, ", ");
+                if (!connectionString.isEmpty()) {
+                    result.add(
+                      new MongoClientURI("mongodb://" + connectionString));
+                }
             }
-            return result;
-        } else {
-            return Collections.emptyList();
         }
+        return result;
     }
 
     /**
      * @deprecated use {@link #getMongoClientURI(Configuration, String)} instead
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @return the MongoURI stored for the given key
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -312,7 +387,13 @@ public final class MongoConfigUtil {
             return null;
         }
     }
-    
+
+    /**
+     * Retrieve a setting as a {@code MongoClientURI}.
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @return the MongoClientURI stored for the given key
+     */
     public static MongoClientURI getMongoClientURI(final Configuration conf, final String key) {
         final String raw = conf.get(key);
         return raw != null && !raw.trim().isEmpty() ? new MongoClientURI(raw) : null;
@@ -340,15 +421,22 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #getCollection(MongoClientURI)}
+     * @param uri the MongoDB URI
+     * @return the DBCollection in the URI
      */
     @Deprecated
     public static DBCollection getCollection(final MongoURI uri) {
         return getCollection(new MongoClientURI(uri.toString()));
     }
-    
+
+    /**
+     * Retrieve a DBCollection from a MongoDB URI.
+     * @param uri the MongoDB URI
+     * @return the DBCollection in the URI
+     */
     public static DBCollection getCollection(final MongoClientURI uri) {
         try {
-            return new MongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            return getMongoClient(uri).getDB(uri.getDatabase()).getCollection(uri.getCollection());
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);
         }
@@ -356,12 +444,21 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #getCollectionWithAuth(MongoClientURI, MongoClientURI)} instead
+     * @param authURI the URI with which to authenticate
+     * @param uri the MongoDB URI
+     * @return the authenticated DBCollection
      */
     @Deprecated
     public static DBCollection getCollectionWithAuth(final MongoURI uri, final MongoURI authURI) {
         return getCollectionWithAuth(new MongoClientURI(uri.toString()), new MongoClientURI(authURI.toString()));
     }
-    
+
+    /**
+     * Get an authenticated DBCollection from a MongodB URI.
+     * @param authURI the URI with which to authenticate
+     * @param uri the MongoDB URI
+     * @return the authenticated DBCollection
+     */
     public static DBCollection getCollectionWithAuth(final MongoClientURI uri, final MongoClientURI authURI) {
         //Make sure auth uri is valid and actually has a username/pw to use
         if (authURI == null || authURI.getUsername() == null || authURI.getPassword() == null) {
@@ -370,7 +467,7 @@ public final class MongoConfigUtil {
 
         DBCollection coll;
         try {
-            Mongo mongo = new MongoClient(authURI);
+            Mongo mongo = getMongoClient(authURI);
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
             return coll;
         } catch (Exception e) {
@@ -404,7 +501,10 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead 
+     * @deprecated use {@link #setMongoURI(Configuration, String, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @param value the value for the setting
      */
     @Deprecated
     public static void setMongoURI(final Configuration conf, final String key, final MongoURI value) {
@@ -412,6 +512,12 @@ public final class MongoConfigUtil {
         // URI object
     }
 
+    /**
+     * Helper for providing a {@code MongoClientURI} as the value for a setting.
+     * @param conf  the Configuration
+     * @param key   the key for the setting
+     * @param value the value for the setting
+     */
     public static void setMongoURI(final Configuration conf, final String key, final MongoClientURI value) {
         conf.set(key, value.toString()); // todo - verify you can toString a
         // URI object
@@ -431,6 +537,8 @@ public final class MongoConfigUtil {
 
     /**
      * @deprecated use {@link #setInputURI(Configuration, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param uri the MongoURI
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -438,6 +546,11 @@ public final class MongoConfigUtil {
         setMongoURI(conf, INPUT_URI, uri);
     }
 
+    /**
+     * Set the input URI for the job.
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
+     */
     public static void setInputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, INPUT_URI, uri);
     }
@@ -453,8 +566,11 @@ public final class MongoConfigUtil {
     public static void setOutputURI(final Configuration conf, final String uri) {
         setMongoURIString(conf, OUTPUT_URI, uri);
     }
-     /**
+
+    /**
      * @deprecated use {@link #setOutputURI(Configuration, MongoClientURI)} instead
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
      */
     @Deprecated
     @SuppressWarnings("deprecation")
@@ -462,12 +578,40 @@ public final class MongoConfigUtil {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
 
+    /**
+     * Set the output URI for the job.
+     * @param conf the Configuration
+     * @param uri the MongoDB URI
+     */
     public static void setOutputURI(final Configuration conf, final MongoClientURI uri) {
         setMongoURI(conf, OUTPUT_URI, uri);
     }
 
     /**
-     * Set JSON but first validate it's parsable into a DBObject
+     * Get the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @return the number of documents
+     */
+    public static int getBatchSize(final Configuration conf) {
+        return conf.getInt(OUTPUT_BATCH_SIZE, 1000);
+    }
+
+    /**
+     * Set the maximum number of documents that should be loaded into memory
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @param size the number of documents
+     */
+    public static void setBatchSize(final Configuration conf, final int size) {
+        conf.setInt(OUTPUT_BATCH_SIZE, size);
+    }
+
+    /**
+     * Helper for providing a JSON string as a value for a setting.
+     * @param conf the Configuration
+     * @param key the key for the setting
+     * @param value the JSON string value
      */
     public static void setJSON(final Configuration conf, final String key, final String value) {
         try {
@@ -503,13 +647,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_QUERY, query);
     }
 
+    /**
+     * Set the query set for the Job using a DBObject.
+     * @param conf the Configuration
+     * @param query the query
+     */
     public static void setQuery(final Configuration conf, final DBObject query) {
         setDBObject(conf, INPUT_QUERY, query);
     }
 
-    /**
-     * Returns the configured query as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getQuery(final Configuration conf) {
         return getDBObject(conf, INPUT_QUERY);
     }
@@ -518,13 +664,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_FIELDS, fields);
     }
 
+    /**
+     * Specify a projection document for documents retrieved from MongoDB.
+     * @param conf the Configuration
+     * @param fields a projection document
+     */
     public static void setFields(final Configuration conf, final DBObject fields) {
         setDBObject(conf, INPUT_FIELDS, fields);
     }
 
-    /**
-     * Returns the configured fields as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getFields(final Configuration conf) {
         return getDBObject(conf, INPUT_FIELDS);
     }
@@ -533,13 +681,15 @@ public final class MongoConfigUtil {
         setJSON(conf, INPUT_SORT, sort);
     }
 
+    /**
+     * Specify the sort order as a DBObject.
+     * @param conf the Configuration
+     * @param sort the sort document
+     */
     public static void setSort(final Configuration conf, final DBObject sort) {
         setDBObject(conf, INPUT_SORT, sort);
     }
 
-    /**
-     * Returns the configured sort as a DBObject... If you want a string call toString() on the returned object. or use JSON.serialize()
-     */
     public static DBObject getSort(final Configuration conf) {
         return getDBObject(conf, INPUT_SORT);
     }
@@ -576,38 +726,56 @@ public final class MongoConfigUtil {
         conf.setInt(INPUT_SPLIT_SIZE, value);
     }
 
-    /**
-     * if TRUE, Splits will be queried using $lt/$gt instead of $max and $min. This allows the database's query optimizer to choose the best
-     * index, instead of being forced to use the one in the $max/$min keys. This will only work if the key used for splitting is *not* a
-     * compound key. Make sure that all values under the splitting key are of the same type, or this will cause incomplete results.
-     */
     public static boolean isRangeQueryEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_RANGEQUERY, false);
     }
 
+    /**
+     * Enable using {@code $lt} and {@code $gt} to define InputSplits rather
+     * than {@code $min} and {@code $max}. This allows the database's query
+     * optimizer to choose the best index instead of using the one in the
+     * $max/$min keys. This will only work if the key used for splitting is
+     * *not* a compound key. Make sure that all values under the splitting key
+     * are of the same type, or this will cause incomplete results.
+     *
+     * @param conf the Configuration
+     * @param value enables using {@code $lt} and {@code $gt}
+     */
     public static void setRangeQueryEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_RANGEQUERY, value);
     }
 
-    /**
-     * if TRUE, Splits will be read by connecting to the individual shard servers, Only use this ( issue has to do with chunks moving /
-     * relocating during balancing phases)
-     */
     public static boolean canReadSplitsFromShards(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_SHARDS, false);
     }
 
+    /**
+     * Set whether the reading directly from shards is enabled.
+     *
+     * When {@code true}, splits are read directly from shards. By default,
+     * splits are read through a mongos router when connected to a sharded
+     * cluster. Note that reading directly from shards can lead to bizarre
+     * results when there are orphaned documents or if the balancer is running.
+     *
+     * @param conf the Configuration
+     * @param value enables reading from shards directly
+     *
+     * @see <a href="http://docs.mongodb.org/manual/core/sharding-balancing/">Sharding Balancing</a>
+     * @see <a href="http://docs.mongodb.org/manual/reference/command/cleanupOrphaned/#dbcmd.cleanupOrphaned">cleanupOrphaned command</a>
+     */
     public static void setReadSplitsFromShards(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_SHARDS, value);
     }
 
-    /**
-     * If sharding is enabled, Use the sharding configured chunks to split up data.
-     */
     public static boolean isShardChunkedSplittingEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_CHUNKS, true);
     }
 
+    /**
+     * Set whether using shard chunk splits as InputSplits is enabled.
+     * @param conf the Configuration
+     * @param value enables using shard chunk splits as InputSplits.
+     */
     public static void setShardChunkSplittingEnabled(final Configuration conf, final boolean value) {
         conf.setBoolean(SPLITS_USE_CHUNKS, value);
     }
@@ -654,6 +822,23 @@ public final class MongoConfigUtil {
         }
     }
 
+    public static DBObject getMinSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MIN);
+    }
+
+    public static DBObject getMaxSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MAX);
+    }
+
+    public static void setMinSplitKey(
+      final Configuration conf, final String string) {
+        conf.set(INPUT_SPLIT_KEY_MIN, string);
+    }
+
+    public static void setMaxSplitKey(
+      final Configuration conf, final String string) {
+        conf.set(INPUT_SPLIT_KEY_MAX, string);
+    }
 
     public static void setInputKey(final Configuration conf, final String fieldName) {
         // TODO (bwm) - validate key rules?
@@ -705,6 +890,15 @@ public final class MongoConfigUtil {
         return conf.getClass(BSON_PATHFILTER, null);
     }
 
+    public static String getBSONSplitsPath(final Configuration conf) {
+        return conf.get(BSON_SPLITS_PATH);
+    }
+
+    public static void setBSONSplitsPath(final Configuration conf, final
+                                         String path) {
+        conf.set(BSON_SPLITS_PATH, path);
+    }
+
     public static Class<? extends MongoSplitter> getSplitterClass(final Configuration conf) {
         return conf.getClass(MONGO_SPLITTER_CLASS, null, MongoSplitter.class);
     }
@@ -734,9 +928,15 @@ public final class MongoConfigUtil {
     }
 
     /**
-     * Fetch a class by its actual class name, rather than by a key name in the configuration properties. We still need to pass in a
-     * Configuration object here, since the Configuration class maintains an internal cache of class names for performance on some hadoop
-     * versions. It also ensures that the same classloader is used across all keys.
+     * Fetch a class by its name, rather than by a key name in the
+     * Configuration properties. The Configuration class is used for its
+     * internal cache of class names and to ensure that the same ClassLoader is
+     * used across all keys.
+     * @param conf the Configuration
+     * @param className the name of the class
+     * @param xface an interface or superclass of expected class
+     * @param <U> the type of xface
+     * @return the class or {@code null} if not found
      */
     public static <U> Class<? extends U> getClassByName(final Configuration conf,
                                                         final String className,
@@ -761,7 +961,7 @@ public final class MongoConfigUtil {
 
     public static Configuration buildConfiguration(final Map<String, Object> data) {
         Configuration newConf = new Configuration();
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
+        for (Entry<String, Object> entry : data.entrySet()) {
             String key = entry.getKey();
             Object val = entry.getValue();
             if (val instanceof String) {
@@ -781,4 +981,25 @@ public final class MongoConfigUtil {
         return newConf;
     }
 
+    public static void close(final Mongo client) {
+            MongoClientURI uri = URI_MAP.get().remove(client);
+            if (uri != null) {
+                MongoClient remove;
+                remove = CLIENTS.get().remove(uri);
+                if (remove != client) {
+                    throw new IllegalStateException("different clients found");
+                }
+            }
+            client.close();
+    }
+    
+    private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
+        MongoClient mongoClient = CLIENTS.get().get(uri);
+            if (mongoClient == null) {
+                mongoClient = new MongoClient(uri);
+                CLIENTS.get().put(uri, mongoClient);
+                URI_MAP.get().put(mongoClient, uri);
+            }
+            return mongoClient;
+        }
 }

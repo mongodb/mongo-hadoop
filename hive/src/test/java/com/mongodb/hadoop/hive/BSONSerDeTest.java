@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class BSONSerDeTest {
@@ -115,6 +116,54 @@ public class BSONSerDeTest {
         assertThat(new BSONWritable(bObject), equalTo(serialized));
     }
 
+    @Test
+    public void testNumericCasts() throws SerDeException {
+        BSONSerDe serde = new BSONSerDe();
+        String colName = "cast";
+        Number[] nums = {42.0D, 42, (short) 42, 42.0f, 42L};
+        Class[] numericClasses = {
+          Double.class, Integer.class, Short.class, Float.class, Long.class};
+
+        for (Number num : nums) {
+            // Double
+            Object result = helpDeserialize(serde, colName, "double", num);
+            assertThat(num.doubleValue(), equalTo(result));
+
+            // Int
+            result = helpDeserialize(serde, colName, "int", num);
+            assertThat(num.intValue(), equalTo(result));
+
+            // Short
+            result = helpDeserialize(serde, colName, "smallint", num);
+            assertThat(num.shortValue(), equalTo(result));
+
+            // Float
+            result = helpDeserialize(serde, colName, "float", num);
+            assertThat(num.floatValue(), equalTo(result));
+
+            // Long
+            result = helpDeserialize(serde, colName, "bigint", num);
+            assertThat(num.longValue(), equalTo(result));
+
+            for (Class klass : numericClasses) {
+                ObjectInspector oi = PrimitiveObjectInspectorFactory
+                  .getPrimitiveObjectInspectorFromClass(klass);
+                BasicBSONObject obj = new BasicBSONObject();
+                Object serialized = helpSerialize(colName, oi, obj, num, serde);
+                assertThat(new BSONWritable(obj), equalTo(serialized));
+            }
+        }
+    }
+
+    @Test
+    public void testStringToTimestamp() throws SerDeException {
+        String columnNames = "stringTs";
+        String columnTypes = "timestamp";
+        String value = "2015-08-06 07:32:30.062";
+        BSONSerDe serde = new BSONSerDe();
+        Object result = helpDeserialize(serde, columnNames, columnTypes, value);
+        assertEquals(Timestamp.valueOf(value), result);
+    }
 
     @Test
     public void testInt() throws SerDeException {

@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_HOME;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.HADOOP_VERSION;
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.PROJECT_HOME;
+import static com.mongodb.hadoop.testutils.BaseHadoopTest.isHadoopV1;
 import static com.mongodb.hadoop.util.MongoConfigUtil.INPUT_URI;
 import static com.mongodb.hadoop.util.MongoConfigUtil.JOB_INPUT_FORMAT;
 import static com.mongodb.hadoop.util.MongoConfigUtil.JOB_OUTPUT_FORMAT;
@@ -165,10 +166,8 @@ public class MapReduceJob {
         LOG.info("Executing hadoop job");
 
         Class<? extends MongoTool> jobClass = (Class<? extends MongoTool>) Class.forName(className);
-        Configuration conf = BaseHadoopTest.getYarnCluster() != null
-                             ? new Configuration(BaseHadoopTest.getYarnCluster().getConfig())
-                             : new Configuration();
-        MongoTool app = jobClass.getConstructor(new Class[]{Configuration.class})
+        Configuration conf = new Configuration();
+        MongoTool app = (MongoTool) jobClass.getConstructor(new Class[]{Configuration.class})
                                 .newInstance(conf);
 
         ToolRunner.run(conf, app, cmd.toArray(new String[cmd.size()]));
@@ -208,7 +207,7 @@ public class MapReduceJob {
             entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, mapredInputFormat.getName()));
         } else {
             String name;
-            if (BaseHadoopTest.CLUSTER_VERSION.startsWith("1.")) {
+            if (BaseHadoopTest.isHadoopV1()) {
                 name = com.mongodb.hadoop.mapred.MongoInputFormat.class.getName();
             } else {
                 name = MongoInputFormat.class.getName();
@@ -224,12 +223,9 @@ public class MapReduceJob {
             LOG.info("Adding output format '%s'", mapredOutputFormat.getName());
             entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, mapredOutputFormat.getName()));
         } else {
-            String name;
-            if (BaseHadoopTest.CLUSTER_VERSION.startsWith("1.")) {
-                name = com.mongodb.hadoop.mapred.MongoOutputFormat.class.getName();
-            } else {
-                name = MongoOutputFormat.class.getName();
-            }
+            String name = isHadoopV1()
+                          ? com.mongodb.hadoop.mapred.MongoOutputFormat.class.getName()
+                          : MongoOutputFormat.class.getName();
             entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, name));
             LOG.info(format("No output format defined.  Defaulting to '%s'", name));
         }
@@ -238,8 +234,7 @@ public class MapReduceJob {
     }
 
     private void copyJars() {
-        String hadoopLib = format(HADOOP_VERSION.startsWith("1") ? HADOOP_HOME + "/lib"
-                                                                 : HADOOP_HOME + "/share/hadoop/common");
+        String hadoopLib = format(isHadoopV1() ? HADOOP_HOME + "/lib" : HADOOP_HOME + "/share/hadoop/common");
         try {
             URLClassLoader classLoader = (URLClassLoader) getClass().getClassLoader();
             for (URL url : classLoader.getURLs()) {

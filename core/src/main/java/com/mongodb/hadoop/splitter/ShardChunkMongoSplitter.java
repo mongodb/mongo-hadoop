@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -54,9 +55,8 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
     // Generate one split per chunk.
     @Override
     public List<InputSplit> calculateSplits() throws SplitFailedException {
-        this.init();
         boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(getConfiguration());
-        DB configDB = this.mongo.getDB("config");
+        DB configDB = getConfigDB();
         DBCollection chunksCollection = configDB.getCollection("chunks");
 
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
@@ -69,7 +69,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
         Map<String, String> shardsMap = null;
         if (targetShards) {
             try {
-                shardsMap = this.getShardsMap();
+                shardsMap = getShardsMap();
             } catch (Exception e) {
                 //Something went wrong when trying to
                 //read the shards data from the config server,
@@ -78,7 +78,7 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
             }
         }
 
-        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(this.getConfiguration());
+        List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(getConfiguration());
         if (targetShards && mongosHostNames.size() > 0) {
             throw new SplitFailedException("Setting both mongo.input.split.read_from_shards and mongo.input.mongos_hosts"
                                            + " does not make sense. ");
@@ -90,47 +90,52 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
 
         Map<String, LinkedList<InputSplit>> shardToSplits = new HashMap<String, LinkedList<InputSplit>>();
 
-        while (cur.hasNext()) {
-            final BasicDBObject row = (BasicDBObject) cur.next();
-            BasicDBObject chunkLowerBound = (BasicDBObject) row.get("min");
-            BasicDBObject chunkUpperBound = (BasicDBObject) row.get("max");
-            MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
-            chunkSplit.setInputURI(inputURI);
-            String shard = (String) row.get("shard");
-            if (targetShards) {
-                //The job is configured to target shards, so replace the
-                //mongos hostname with the host of the shard's servers
-                String shardHosts = shardsMap.get(shard);
-                if (shardHosts == null) {
-                    throw new SplitFailedException("Couldn't find shard ID: " + shard + " in config.shards.");
-                }
+        try {
+            while (cur.hasNext()) {
+                final BasicDBObject row = (BasicDBObject) cur.next();
+                BasicDBObject chunkLowerBound = (BasicDBObject) row.get("min");
+                BasicDBObject chunkUpperBound = (BasicDBObject) row.get("max");
+                MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
+                chunkSplit.setInputURI(inputURI);
+                String shard = (String) row.get("shard");
+                if (targetShards) {
+                    //The job is configured to target shards, so replace the
+                    //mongos hostname with the host of the shard's servers
+                    String shardHosts = shardsMap.get(shard);
+                    if (shardHosts == null) {
+                        throw new SplitFailedException("Couldn't find shard ID: " + shard + " in config.shards.");
+                    }
 
-                MongoClientURI newURI = rewriteURI(inputURI, shardHosts);
-                chunkSplit.setInputURI(newURI);
-            } else if (mongosHostNames.size() > 0) {
-                //Multiple mongos hosts are specified, so
-                //choose a host name in round-robin fashion
-                //and rewrite the URI using that hostname.
-                //This evenly distributes the load to avoid
-                //pegging a single mongos instance.
-                String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
-                MongoClientURI newURI = rewriteURI(inputURI, roundRobinHost);
-                chunkSplit.setInputURI(newURI);
+                    MongoClientURI newURI = rewriteURI(inputURI, shardHosts);
+                    chunkSplit.setInputURI(newURI);
+                } else if (mongosHostNames.size() > 0) {
+                    //Multiple mongos hosts are specified, so
+                    //choose a host name in round-robin fashion
+                    //and rewrite the URI using that hostname.
+                    //This evenly distributes the load to avoid
+                    //pegging a single mongos instance.
+                    String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
+                    MongoClientURI newURI = rewriteURI(inputURI, roundRobinHost);
+                    chunkSplit.setInputURI(newURI);
+                }
+                LinkedList<InputSplit> shardList = shardToSplits.get(shard);
+                if (shardList == null) {
+                    shardList = new LinkedList<InputSplit>();
+                    shardToSplits.put(shard, shardList);
+                }
+                chunkSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
+                shardList.add(chunkSplit);
+                numChunks++;
             }
-            LinkedList<InputSplit> shardList = shardToSplits.get(shard);
-            if (shardList == null) {
-                shardList = new LinkedList<InputSplit>();
-                shardToSplits.put(shard, shardList);
-            }
-            shardList.add(chunkSplit);
-            numChunks++;
+        } finally {
+            MongoConfigUtil.close(configDB.getMongo());
         }
 
         final List<InputSplit> splits = new ArrayList<InputSplit>(numChunks);
         int splitIndex = 0;
         while (splitIndex < numChunks) {
             Set<String> shardSplitsToRemove = new HashSet<String>();
-            for (Map.Entry<String, LinkedList<InputSplit>> shardSplits : shardToSplits.entrySet()) {
+            for (Entry<String, LinkedList<InputSplit>> shardSplits : shardToSplits.entrySet()) {
                 LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
                 InputSplit split = shardSplitsList.pop();
                 splits.add(splitIndex, split);

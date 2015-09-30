@@ -1,0 +1,166 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'org.zeroturnaround', name: 'zt-exec', version: '1.6'
+    }
+}
+
+def execute(command, args = [], outStream = null, errStream = null, background = false ) {
+    def env = [HADOOP_HOME: hadoopHome]
+    env << System.getProperties()
+
+    def executor = new org.zeroturnaround.exec.ProcessExecutor().command([command.toString()] + args)
+                                                                .readOutput(true)
+                                                                .environment(env)
+                                                                .redirectOutput(outStream)
+                                                                .redirectError(errStream != null ? errStream : outStream);
+    if (!background) {
+        try {
+            def result = executor.execute();
+            if (outStream == null) {
+                return result.outputString().split('\n')
+            }
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+    } else {
+        executor.start()
+    }
+}
+
+def stopService(signal, service, name) {
+    for (String process : execute('jps')) {
+        if (process.endsWith(service)) {
+            println("Shutting down ${name}")
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                if (signal == 'TERM') {
+                    execute("taskkill", "/PID", process.split()[0])
+                 } else{
+                    execute("taskkill", "/F", "/PID", process.split()[0])
+                }
+            }else{
+                if (signal == 'TERM'){
+                    execute("kill", process.split()[0])
+                } else {
+                    execute("kill", "-9", process.split()[0])
+                }
+            }
+        }
+    }
+}
+
+def startService(cmd, service) {
+    println "Starting ${service}"
+
+    execute("$hadoopHome/bin/${cmd}", [service], new FileOutputStream("${rootDir}/build/logs/${service}.log"), null, true)
+}
+
+def start() {
+    startService('hdfs', 'namenode')
+    sleep(5000)
+    startService('hdfs', 'datanode')
+    startService('yarn', 'resourcemanager')
+    startService('yarn', 'nodemanager')
+
+    print('Creating Hive warehouse directory')
+    execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
+            ("${rootDir}/build/logs/hiveserver-mkdir.out"))
+    execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
+                ("${rootDir}/build/logs/hiveserver-chmod.out"))
+}
+
+def stopAll(signal) {
+    stopService(signal, 'NodeManager', 'node manager')
+    stopService(signal, 'ResourceManager', 'resource manager')
+    stopService(signal, 'DataNode', 'data node')
+    stopService(signal, 'NameNode', 'name node')
+    stopService(signal, 'RunJar', 'hive server')
+}
+
+task shutdownCluster() << {
+    stopAll('TERM')
+    stopAll('KILL')
+}
+
+task startCluster(dependsOn: [copyFiles]) << {
+    if (!file("${rootDir}/build/logs/").isDirectory()) {
+        file("${rootDir}/build/logs/").mkdirs()
+    }
+
+    delete file("${hadoopBinaries}/hadoop-tmpdir")
+
+    println "Formatting HDFS"
+    execute("${hadoopHome}/bin/hdfs", [ 'namenode', '-format', '-force' ], null,
+            new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
+
+    start()
+}
+
+task historicalYield(dependsOn: startCluster) << {
+
+    exec() {
+        commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
+                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+    }
+
+    hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
+            "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
+            "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
+    ])
+}
+
+task sensorData(dependsOn: 'startCluster') << {
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Devices", [])
+
+    hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
+}
+
+
+task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
+    exec() {
+        def line = [mongorestore, "-v", "-d", "mongo_hadoop", "--drop"]
+        if (mongoUsername != null && mongoPassword != null) {
+            line += ["--authenticationDatabase", "admin",
+                     "--username", mongoUsername,
+                     "--password", mongoPassword]
+        }
+        line << "${dataHome}/dump/enron_mail"
+        commandLine line
+    }
+
+    hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
+           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
+}
+
+def hadoop(jar, className, args) {
+    def line = ["${hadoopHome}/bin/hadoop",
+                "jar", jar, className,
+                //Split settings
+                "-Dmongo.input.split_size=8",
+                "-Dmongo.job.verbose=true",
+    ]
+    // Allow overriding the input URI with an environment variable.
+    if (mongoURI != null) {
+        line.add("-Dmongo.input.uri=${mongoURI}")
+    }
+    if (mongoAuthURI != null) {
+        line.add("-Dmongo.auth.uri=${mongoAuthURI}")
+    }
+    args.each {
+        line << "-D${it}"
+    }
+    println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
+    def hadoopEnv = [:]
+    hadoopEnv.HADOOP_PREFIX=''
+    exec() {
+        environment << hadoopEnv
+        commandLine line
+    }
+}

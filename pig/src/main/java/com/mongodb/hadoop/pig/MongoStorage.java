@@ -17,6 +17,7 @@
 package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -65,15 +66,29 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
     /**
-     * Takes a list of arguments of two types: <ul> <li>A single set of keys to base updating on in the format:<br /> 'update [time, user]'
-     * or 'multi [timer, user] for multi updates</li>
-     * <p/>
-     * <li>Multiple indexes to ensure in the format:<br /> '{time: 1, user: 1},{unique: true}'<br /> (The syntax is exactly like
-     * db.col.ensureIndex())</li> </ul> Example:<br /> STORE Result INTO '$db' USING com.mongodb.hadoop.pig.MongoStorage('update [time,
-     * servername, hostname]', '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}').
+     * <p>
+     * Takes a list of arguments of two types:
+     * </p>
+     * <ul>
+     * <li>A single set of keys to base updating on in the format:
+     * <code>'update [time, user]'</code> or <code>'multi [time, user]'</code> for multi updates</li>
+     * <li>Multiple indexes to ensure in the format:
+     * <code>'{time: 1, user: 1},{unique: true}'</code>
+     * (The syntax is exactly like db.col.ensureIndex())</li>
+     * </ul>
+     * <p>
+     * Example:
+     * </p>
+     * <pre><code>
+     * STORE Result INTO '$db'
+     * USING com.mongodb.hadoop.pig.MongoStorage(
+     *   'update [time, * servername, hostname]',
+     *   '{time : 1, servername : 1, hostname : 1}, {unique:true, dropDups: true}'
+     * )
+     * </code></pre>
      *
      * @param args storage arguments
-     * @throws ParseException
+     * @throws ParseException if the arguments cannot be parsed
      */
     public MongoStorage(final String... args) throws ParseException {
         this.options = MongoStorageOptions.parseArguments(args);
@@ -99,7 +114,9 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
 
     public void putNext(final Tuple tuple) throws IOException {
-        LOG.info("writing " + tuple.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("writing " + tuple.toString());
+        }
         final BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
 
         ResourceFieldSchema[] fields = this.schema.getFields();
@@ -107,7 +124,9 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
             writeField(builder, fields[i], tuple.get(i));
         }
 
-        LOG.info("writing out:" + builder.get().toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("writing out:" + builder.get().toString());
+        }
         //noinspection unchecked
         recordWriter.write(null, builder.get());
     }
@@ -222,9 +241,7 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
     }
 
     public OutputFormat getOutputFormat() throws IOException {
-        return options == null
-               ? new MongoOutputFormat()
-               : new MongoOutputFormat(options.getUpdate().keys, options.getUpdate().multi);
+        return new MongoOutputFormat();
     }
 
     public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {
@@ -234,8 +251,15 @@ public class MongoStorage extends StoreFunc implements StoreMetadata {
 
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
-        LOG.info("Store Location Config: " + config + " For URI: " + location);
-        MongoConfigUtil.setOutputURI(config, location);
+        if (!location.startsWith("mongodb://")) {
+            throw new IllegalArgumentException("Invalid URI Format.  URIs must begin with a mongodb:// protocol string.");
+        }
+        MongoClientURI locURI = new MongoClientURI(location);
+        LOG.info(String.format(
+            "Store location config: %s; for namespace: %s.%s; hosts: %s",
+            config, locURI.getDatabase(), locURI.getCollection(),
+            locURI.getHosts()));
+        MongoConfigUtil.setOutputURI(config, locURI);
         final Properties properties =
             UDFContext.getUDFContext().getUDFProperties(this.getClass(), new String[]{udfContextSignature});
         config.set(PIG_OUTPUT_SCHEMA, properties.getProperty(PIG_OUTPUT_SCHEMA_UDF_CONTEXT));

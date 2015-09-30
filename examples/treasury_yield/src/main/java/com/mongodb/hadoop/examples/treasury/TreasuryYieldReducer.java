@@ -37,6 +37,12 @@ public class TreasuryYieldReducer
     implements org.apache.hadoop.mapred.Reducer<IntWritable, DoubleWritable, IntWritable, BSONWritable> {
 
     private static final Log LOG = LogFactory.getLog(TreasuryYieldReducer.class);
+    private BSONWritable reduceResult;
+
+    public TreasuryYieldReducer() {
+        super();
+        reduceResult = new BSONWritable();
+    }
 
     @Override
     public void reduce(final IntWritable pKey, final Iterable<DoubleWritable> pValues, final Context pContext)
@@ -51,13 +57,16 @@ public class TreasuryYieldReducer
 
         final double avg = sum / count;
 
-        LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Average 10 Year Treasury for " + pKey.get() + " was " + avg);
+        }
 
         BasicBSONObject output = new BasicBSONObject();
         output.put("count", count);
         output.put("avg", avg);
         output.put("sum", sum);
-        pContext.write(pKey, new BSONWritable(output));
+        reduceResult.setDoc(output);
+        pContext.write(pKey, reduceResult);
     }
 
     @Override
@@ -73,13 +82,16 @@ public class TreasuryYieldReducer
 
         final double avg = sum / count;
 
-        LOG.debug("Average 10 Year Treasury for " + key.get() + " was " + avg);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Average 10 Year Treasury for " + key.get() + " was " + avg);
+        }
 
         BasicBSONObject bsonObject = new BasicBSONObject();
         bsonObject.put("count", count);
         bsonObject.put("avg", avg);
         bsonObject.put("sum", sum);
-        output.collect(key, new BSONWritable(bsonObject));
+        reduceResult.setDoc(bsonObject);
+        output.collect(key, reduceResult);
     }
 
     @Override

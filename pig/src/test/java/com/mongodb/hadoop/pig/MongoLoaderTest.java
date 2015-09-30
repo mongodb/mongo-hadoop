@@ -2,21 +2,94 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.hadoop.input.MongoRecordReader;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.Tuple;
+import org.bson.types.Binary;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class MongoLoaderTest {
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testBinaryNoSchema() throws IOException {
+        byte[] data = new byte[] {1, 2, 3};
+        BasicDBObject obj = new BasicDBObject("bytes", new Binary(data));
+        MongoRecordReader rr = mock(MongoRecordReader.class);
+        when(rr.nextKeyValue()).thenReturn(true);
+        when(rr.getCurrentValue()).thenReturn(obj);
+
+        // No explicit schema.
+        MongoLoader ml = new MongoLoader();
+        ml.prepareToRead(rr, null);
+        Tuple result = ml.getNext();
+        // Tuple just contains a Map.
+        Map<String, Object> tupleContents;
+        tupleContents = (Map<String, Object>) result.get(0);
+        // Map contains DataByteArray with binary data.
+        assertArrayEquals(
+          data, ((DataByteArray) tupleContents.get("bytes")).get());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testByteArrayNoSchema() throws IOException {
+        byte[] data = new byte[] {1, 2, 3};
+        BasicDBObject obj = new BasicDBObject("bytes", data);
+        MongoRecordReader rr = mock(MongoRecordReader.class);
+        when(rr.nextKeyValue()).thenReturn(true);
+        when(rr.getCurrentValue()).thenReturn(obj);
+
+        // No explicit schema.
+        MongoLoader ml = new MongoLoader();
+        ml.prepareToRead(rr, null);
+        Tuple result = ml.getNext();
+        // Tuple just contains a Map.
+        Map<String, Object> tupleContents;
+        tupleContents = (Map<String, Object>) result.get(0);
+        // Map contains DataByteArray with binary data.
+        assertArrayEquals(
+          data, ((DataByteArray) tupleContents.get("bytes")).get());
+    }
+
+    @Test
+    public void testSimpleBytearray() throws IOException {
+        byte[] data = new byte[] {1, 2, 3};
+        String userSchema = "d:bytearray";
+        MongoLoader ml = new MongoLoader(userSchema);
+
+        Object result = BSONLoader.readField(data, ml.getFields()[0]);
+        assertArrayEquals(data, ((DataByteArray) result).get());
+    }
+
+    @Test
+    public void testSimpleBinary() throws IOException {
+        byte[] data = new byte[] {1, 2, 3};
+        String userSchema = "d:bytearray";
+        MongoLoader ml = new MongoLoader(userSchema);
+
+        Object result = BSONLoader.readField(
+          new Binary(data), ml.getFields()[0]);
+        assertArrayEquals(data, ((DataByteArray) result).get());
+    }
+
     @Test
     public void testSimpleChararray() throws IOException {
         String userSchema = "d:chararray";
@@ -43,7 +116,19 @@ public class MongoLoaderTest {
         Object result = BSONLoader.readField(1.1D, ml.getFields()[0]);
         assertEquals(1.1F, result);
     }
-    
+
+    @Test
+    public void testSimpleDate() throws IOException {
+        String userSchema = "d:datetime";
+        MongoLoader ml = new MongoLoader(userSchema);
+
+        Calendar calendar = Calendar.getInstance();
+        Date in = calendar.getTime();
+        DateTime out = new DateTime(in);
+        Object result = BSONLoader.readField(in, ml.getFields()[0]);
+        assertEquals(out, result);
+    }
+
     @Test
     public void testSimpleTuple() throws IOException {
         String userSchema = "t:tuple(t1:chararray, t2:chararray)";

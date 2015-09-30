@@ -1,3 +1,41 @@
+1.4.1 / 29th of September, 2015
+===============================
+
+This is a minor release that contains minor improvements and bug fixes from 1.4.0.
+
+  * [HADOOP-231] (Python) Streaming reports success but output collection stays empty
+  * [HADOOP-226] HiveException: java.lang.ClassCastException: java.lang.String cannot be cast to java.sql.Timestamp
+  * [HADOOP-219] Do not log the username:password portion of the mongo connection URI to hadoop logs
+
+1.4 / 2nd of July, 2015
+=======================
+
+  * [HADOOP-206] Update progress inside MongoOutputCommitter so that Hadoop doesn't time out the commit
+
+This stable release also includes all features and fixes from the 1.4-rc0 release described below.
+
+1.4-rc0 / 18th of June, 2015
+============================
+
+  * [HADOOP-204] Allow concurrent access to MongoRecordReader instances
+  * [HADOOP-201] Support mongo.auth.uri in StandaloneMongoSplitter
+  * [HADOOP-196] Update Hadoop dependencies
+  * [HADOOP-195] 3.0 Java driver compatibility
+  * [HADOOP-188] Support MapWritable
+  * [HADOOP-179] When mongo.output.uri has a replica set specified, mongo-hadoop fails
+  * [HADOOP-175] Records dropped due to incorrectly computed file splits
+  * [HADOOP-173] Bulk write support from MongoOutputFormat
+  * [HADOOP-170] Pig integration doesn't call close() on Client
+  * [HADOOP-153] Add capability of BSONLoader.java to parse UUID
+  * [HADOOP-152] NumberFormatExceptions when splitting on a sharded, replica set cluster
+  * [HADOOP-151] Fix MongoUpdateWritable serialization
+  * [HADOOP-150] Use Primary read preference when sending splitVector command in StandaloneMongoSplitter
+  * [HADOOP-143] MongoConfigUtil.getCollection() creates orphaned MongoClients
+  * [HADOOP-110] Add non-args constructor for all spiltters for multi-collection input
+  * [HADOOP-98] handle binary types in pig schema mode
+  * [HADOOP-94] BSONLoader failing to parse binary data
+  * [HADOOP-93] Processing GUID data when importing data from mongo to HDFS using Pig
+  * [HADOOP-82] Use OutputCommitter with MongoOutputFormat
 
 1.0.0 / 2012-04-09 
 ==================

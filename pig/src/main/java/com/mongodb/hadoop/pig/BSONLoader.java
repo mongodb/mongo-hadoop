@@ -15,6 +15,7 @@ import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.BagFactory;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.DataByteArray;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -22,12 +23,15 @@ import org.apache.pig.impl.util.Utils;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.types.BasicBSONList;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class BSONLoader extends LoadFunc {
 
@@ -128,6 +132,8 @@ public class BSONLoader extends LoadFunc {
                     return BSONLoader.convertBSONtoPigType(obj);
                 case DataType.CHARARRAY:
                     return obj.toString();
+                case DataType.DATETIME:
+                    return new DateTime(obj);
                 case DataType.TUPLE:
                     ResourceSchema s = field.getSchema();
                     ResourceFieldSchema[] fs = s.getFields();
@@ -200,6 +206,8 @@ public class BSONLoader extends LoadFunc {
             return ((Date) o).getTime();
         } else if (o instanceof ObjectId) {
             return o.toString();
+        } else if (o instanceof UUID) {
+            return o.toString();
         } else if (o instanceof BasicBSONList) {
             BasicBSONList bl = (BasicBSONList) o;
             Tuple t = tupleFactory.newTuple(bl.size());
@@ -215,6 +223,10 @@ public class BSONLoader extends LoadFunc {
                 pigMap.put(field.getKey(), convertBSONtoPigType(field.getValue()));
             }
             return pigMap;
+        } else if (o instanceof byte[]) {
+            return new DataByteArray((byte[]) o);
+        } else if (o instanceof Binary) {
+            return new DataByteArray(((Binary) o).getData());
         } else {
             return o;
         }

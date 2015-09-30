@@ -1,89 +1,56 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
-task generateScripts() << {
-    def python
-    if(System.env.WORKSPACE == null) {
-        python = '/usr/bin/python'
-    } else { 
-        python = '/mnt/jenkins/languages/python/r2.7/bin/python'
-    }
-    copy {
-        from 'bin/templates/hadoop-template.py'
-        filter ReplaceTokens, tokens: [
-                PROJECT_HOME   : project.rootDir.getAbsolutePath(),
-
-                HADOOP_HOME    : "${hadoopBinaries}/hadoop-${hadoopVersion}".toString(),
-                HIVE_HOME      : "${hadoopBinaries}/hive-${hiveVersion}".toString(),
-                PIG_HOME       : "${hadoopBinaries}/pig-${pigVersion}".toString(),
-
-
-                HADOOP_VERSION : hadoopVersion.toString(),
-                HIVE_VERSION   : hiveVersion.toString(),
-
-                HADOOP_BINARIES: hadoopBinaries.toString(),
-                BIN            : hadoopVersion.startsWith("1.") ? 'hadoop' : 'hdfs',
-                PYTHON_BIN     : python
-        ]
-        into "build/"
-        rename {
-            it.replace("-template", '')
-        }
-    }
-}
-
-task installHadoop() << {
-    new File(hadoopHome).getParentFile().mkdirs()
-
-    def url = "http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"
-
-    download(url, hadoopBinaries, hadoopHome)
-}
-
-def download(url, destination, target) {
-    def file = new URL(url).getPath()
-    file = "${destination}/${file.substring(file.lastIndexOf('/') + 1)}"
+def downloadFile(url) {
+    def tmpDir = new File(System.properties['java.io.tmpdir'])
+    def file = new File(tmpDir, new File(new URL(url).getPath()).getName())
+    
     def count = 0;
-    while (!(new File(target + "/bin").exists())) {
+    while (!file.exists()) {
         try {
-            if(!new File(file).exists()) {
-                println "${target} not found.  Downloading from ${url} to ${file}"
-            }
+            println "Downloading from ${url} to ${file}."
             download {
                 src url
-                dest destination
+                dest file
                 onlyIfNewer true
-            }
-
-            if(!new File(destination).exists()) {
-                println "Extracting ${file}"
-            }
-            copy {
-                from(tarTree(resources.gzip(file)))
-                into destination
             }
         } catch (Exception e) {
             println "Extraction failed: " + e.getMessage()
-            println "Trying again"
-            new File(target).deleteDir()
-            new File(file).delete()
+            file.delete()
         }
         if(count++ > 3) {
             throw new GradleException("Failed to download after 3 attempts: ${url}");
         }
     }
+    return file
+}
+
+def extract(destination, target, file) {
+    if (!new File(target).exists()) {
+        new File(destination).mkdirs()
+        println "Extracting ${file} to ${destination}"
+        copy {
+            from(tarTree(file))
+            into destination
+        }
+    }
+}
+
+task installHadoop() << {
+    extract(hadoopBinaries, hadoopHome,
+            downloadFile("http://archive.apache.org/dist/hadoop/common/hadoop-${hadoopVersion}/hadoop-${hadoopVersion}.tar.gz"))
 }
 
 task installHive() << {
-    def url = "https://archive.apache.org/dist/hive/hive-${hiveVersion}/hive-${hiveVersion}.tar.gz"
-
-    download(url, hadoopBinaries, hiveHome)
-
+    extract(hadoopBinaries, hiveHome,
+            downloadFile("https://archive.apache.org/dist/hive/hive-${hiveVersion}/apache-hive-${hiveVersion}-bin.tar.gz"))
 }
 
 task installPig() << {
-    def url = "https://archive.apache.org/dist/pig/pig-${pigVersion}/pig-${pigVersion}.tar.gz"
+    extract(hadoopBinaries, pigHome, downloadFile("https://archive.apache.org/dist/pig/pig-${pigVersion}/pig-${pigVersion}.tar.gz"))
+}
 
-    download(url, hadoopBinaries, pigHome)
+task downloadEnronEmails() << {
+    extract(dataHome, dataHome, downloadFile('https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'))
 }
 
 task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
@@ -101,30 +68,23 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     copy {
         from 'clusterConfigs'
         into hadoopEtc
+        exclude 'hive-site.xml'
+        filter ReplaceTokens, tokens: [
+                HADOOP_BINARIES: hadoopBinaries.toString()
+        ]
+    }
+    copy {
+        from 'clusterConfigs'
+        into "hive/build/resources/test"
+        include 'hive-site.xml'
+        filter ReplaceTokens, tokens: [
+                HIVE_HOME: hiveHome.toString()
+        ]
     }
 }
 
 def findJar(String proj, String filter) {
     project(proj).configurations.compile.find { it.name.startsWith(filter) }
-}
-
-task configureCluster(dependsOn: copyFiles) << {
-    println "Configuring ${hadoopVersion} hadoop cluster"
-    def env = [:]
-    env['HADOOP_HOME']="${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
-    exec {
-        environment << env
-        commandLine 'build/hadoop.py'
-        args 'start', '-format'
-    }
-}
-
-task shutdownCluster << {
-    println "Shutting down hadoop cluster"
-    exec {
-        commandLine 'build/hadoop.py'
-        args 'shutdown'
-    }
 }
 
 def safeCopy(fromPath, toPath, newName) {

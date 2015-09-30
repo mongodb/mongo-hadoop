@@ -88,6 +88,9 @@ public class BSONSerDe implements SerDe {
     // A row represents a row in the Hive table 
     private List<Object> row = new ArrayList<Object>();
 
+    // BSONWritable to hold documents to be serialized.
+    private BSONWritable bsonWritable;
+
     /**
      * Finds out the information of the table, including the column names and types.
      */
@@ -124,6 +127,9 @@ public class BSONSerDe implements SerDe {
             (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI =
             TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
+
+        // Create the BSONWritable instance for future use.
+        bsonWritable = new BSONWritable();
     }
 
 
@@ -228,9 +234,11 @@ public class BSONSerDe implements SerDe {
 
 
     /**
-     * For a given Object value and its supposed TypeInfo determine and return its Hive object representation
-     * <p/>
-     * Map in here must be of the same type, so instead an embedded doc becomes a struct instead. ***
+     * Get the Hive representation for a value given its {@code TypeInfo}.
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @param ext the field name
+     * @return the Hive representation of the value
      */
     public Object deserializeField(final Object value, final TypeInfo valueTypeInfo, final String ext) {
         if (value != null) {
@@ -259,6 +267,10 @@ public class BSONSerDe implements SerDe {
 
     /**
      * Deserialize a List with the same listElemTypeInfo for its elements
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @param ext the field name
+     * @return the Hive representation of the value
      */
     private Object deserializeList(final Object value, final ListTypeInfo valueTypeInfo, final String ext) {
         BasicBSONList list = (BasicBSONList) value;
@@ -273,6 +285,10 @@ public class BSONSerDe implements SerDe {
 
     /**
      * deserialize the struct stored in 'value' ext : the hive mapping(s) seen so far before 'value' is encountered.
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @param ext the field name
+     * @return the Hive representation of the value
      */
     @SuppressWarnings("unchecked")
     private Object deserializeStruct(final Object value, final StructTypeInfo valueTypeInfo, final String ext) {
@@ -346,6 +362,10 @@ public class BSONSerDe implements SerDe {
 
     /**
      * Also deserialize a Map with the same mapElemTypeInfo
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @param ext the field name
+     * @return the Hive representation of the value
      */
     private Object deserializeMap(final Object value, final MapTypeInfo valueTypeInfo, final String ext) {
         BasicBSONObject b = (BasicBSONObject) value;
@@ -361,6 +381,9 @@ public class BSONSerDe implements SerDe {
 
     /**
      * Most primitives are included, but some are specific to Mongo instances
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @return the Hive representation of the value
      */
     private Object deserializePrimitive(final Object value, final PrimitiveTypeInfo valueTypeInfo) {
         switch (valueTypeInfo.getPrimitiveCategory()) {
@@ -369,18 +392,15 @@ public class BSONSerDe implements SerDe {
             case BOOLEAN:
                 return value;
             case DOUBLE:
-                return value;
+                return ((Number) value).doubleValue();
             case FLOAT:
-                return value;
+                return ((Number) value).floatValue();
             case INT:
-                if (value instanceof Double) {
-                    return ((Double) value).intValue();
-                }
-                return value;
+                return ((Number) value).intValue();
             case LONG:
-                return value;
+                return ((Number) value).longValue();
             case SHORT:
-                return value;
+                return ((Number) value).shortValue();
             case STRING:
                 return value.toString();
             case TIMESTAMP:
@@ -388,6 +408,8 @@ public class BSONSerDe implements SerDe {
                     return new Timestamp(((Date) value).getTime());
                 } else if (value instanceof BSONTimestamp) {
                     return new Timestamp(((BSONTimestamp) value).getTime() * 1000L);
+                } else if (value instanceof String) {
+                    return Timestamp.valueOf((String) value);
                 } else {
                     return value;
                 }
@@ -399,6 +421,8 @@ public class BSONSerDe implements SerDe {
 
     /**
      * For Mongo Specific types, return the most appropriate java types
+     * @param value the value for which to get the Hive representation
+     * @return the Hive representation of the value
      */
     private Object deserializeMongoType(final Object value) {
         if (value instanceof Symbol) {
@@ -413,6 +437,9 @@ public class BSONSerDe implements SerDe {
 
     /**
      * Parses an ObjectId into the corresponding struct declared in Hive
+     * @param value the value for which to get the Hive representation
+     * @param valueTypeInfo a description of the value's type
+     * @return the Hive representation of the value
      */
     private Object deserializeObjectId(final Object value, final StructTypeInfo valueTypeInfo) {
         ArrayList<String> structNames = valueTypeInfo.getAllStructFieldNames();
@@ -455,7 +482,9 @@ public class BSONSerDe implements SerDe {
     //CHECKSTYLE:OFF
     @Override
     public Writable serialize(final Object obj, final ObjectInspector oi) throws SerDeException {
-        return new BSONWritable((BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        bsonWritable.setDoc(
+          (BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+        return bsonWritable;
     }
     //CHECKSTYLE:ON
 
@@ -498,7 +527,11 @@ public class BSONSerDe implements SerDe {
 
 
     /**
-     * Turn struct obj into a BasicBSONObject
+     * Turn a Hive struct into a BasicBSONObject.
+     * @param obj the Hive struct
+     * @param structOI an {@code ObjectInspector} for the struct
+     * @param ext the field name
+     * @return a BasicBSONObject representing the Hive struct
      */
     private Object serializeStruct(final Object obj, final StructObjectInspector structOI, final String ext) {
         if (ext.length() > 0 && isObjectIdStruct(obj, structOI)) {
@@ -551,7 +584,10 @@ public class BSONSerDe implements SerDe {
     }
 
     /**
-     * Given a struct, look to se if it contains the fields that a ObjectId struct should contain
+     * Determine whether a Hive struct should be serialized as an ObjectId.
+     * @param obj the Hive struct
+     * @param structOI an {@code ObjectInspector} for the struct
+     * @return {@code true} if the struct should be interpreted as an ObjectId
      */
     private boolean isObjectIdStruct(final Object obj, final StructObjectInspector structOI) {
         List<? extends StructField> fields = structOI.getAllStructFieldRefs();
@@ -578,7 +614,11 @@ public class BSONSerDe implements SerDe {
 
 
     /**
-     * For a map of <String, Object> convert to an embedded document
+     * Serialize a Hive Map into a BSONObject.
+     * @param obj the Hive Map.
+     * @param mapOI an {@code ObjectInspector} for the Hive Map.
+     * @param ext the field name
+     * @return a BSONObject representing the Hive Map
      */
     private Object serializeMap(final Object obj, final MapObjectInspector mapOI, final String ext) {
         BasicBSONObject bsonObject = new BasicBSONObject();
@@ -594,7 +634,10 @@ public class BSONSerDe implements SerDe {
     }
 
     /**
-     * For primitive types, depending on the primitive type, cast it to types that Mongo supports
+     * Serialize a Hive primitive type into a BSON type.
+     * @param obj the primitive Hive object
+     * @param oi an {@code ObjectInspector} for the Hive primitive
+     * @return a BSON primitive object
      */
     private Object serializePrimitive(final Object obj, final PrimitiveObjectInspector oi) {
         switch (oi.getPrimitiveCategory()) {

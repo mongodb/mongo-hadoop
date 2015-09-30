@@ -2,11 +2,11 @@ package com.mongodb.hadoop.hive;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 
@@ -17,13 +17,13 @@ import static org.junit.Assert.assertTrue;
 public class TestHDFSToMongoDB extends HiveTest {
 
     @Before
-    public void setUp() {
+    public void setUp() throws SQLException {
         loadDataIntoHDFSHiveTable();
         loadDataIntoMongoDBHiveTable(false);
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws SQLException {
         dropTable(MONGO_BACKED_TABLE);
         dropTable(HDFS_BACKED_TABLE);
     }
@@ -49,14 +49,14 @@ public class TestHDFSToMongoDB extends HiveTest {
         List<String> t = results.get(new Random().nextInt(size));
         DBObject toDelete = new BasicDBObject();
         int i = 0;
-        for (FieldSchema schema : results.getFields()) {
+        for (Results.Field field : results.getFields()) {
             // add more types as necessary
-            if (schema.getType().equals("int")) {
-                toDelete.put(schema.getName(), Integer.valueOf(t.get(i)));
-            } else if (schema.getType().equals("string")) {
-                toDelete.put(schema.getName(), t.get(i));
+            if (field.getType().equals("int")) {
+                toDelete.put(field.getName(), Integer.valueOf(t.get(i)));
+            } else if (field.getType().equals("string")) {
+                toDelete.put(field.getName(), t.get(i));
             } else {
-                toDelete.put(schema.getName(), t.get(i));
+                toDelete.put(field.getName(), t.get(i));
             }
             i++;
         }

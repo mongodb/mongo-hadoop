@@ -27,6 +27,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
+import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.OutputFormat;
@@ -36,6 +37,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import static java.lang.String.format;
+import static com.mongodb.hadoop.hive.BSONSerDe.MONGO_COLS;
 
 /**
  * Used to sync documents in some MongoDB collection with
@@ -101,7 +103,11 @@ public class MongoStorageHandler extends DefaultStorageHandler {
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
                     DBCollection coll = MongoConfigUtil.getCollection(new MongoClientURI(mongoURIStr));
-                    coll.drop();
+                    try {
+                        coll.drop();
+                    } finally {
+                        MongoConfigUtil.close(coll.getDB().getMongo());
+                    }
                 } else {
                     throw new MetaException(format("No '%s' property found. Collection not dropped.", MONGO_URI));
                 }
@@ -129,12 +135,35 @@ public class MongoStorageHandler extends DefaultStorageHandler {
      * Helper function to copy properties
      */
     private void copyJobProperties(final Properties from, final Map<String, String> to) {
-        for (Entry<Object, Object> e : from.entrySet()) {
-            to.put((String) e.getKey(), (String) e.getValue());
+        // Copy Hive-specific properties used directly by
+        // HiveMongoInputFormat, BSONSerDe.
+        if (from.containsKey(serdeConstants.LIST_COLUMNS)) {
+            to.put(serdeConstants.LIST_COLUMNS,
+                    (String) from.get(serdeConstants.LIST_COLUMNS));
+        }
+        if (from.containsKey(serdeConstants.LIST_COLUMN_TYPES)) {
+            to.put(serdeConstants.LIST_COLUMN_TYPES,
+                    (String) from.get(serdeConstants.LIST_COLUMN_TYPES));
+        }
+        if (from.containsKey(MONGO_COLS)) {
+            to.put(MONGO_COLS, (String) from.get(MONGO_COLS));
+        }
+        if (from.containsKey(TABLE_LOCATION)) {
+            to.put(TABLE_LOCATION, (String) from.get(TABLE_LOCATION));
         }
 
-        if (to.containsKey(MONGO_URI)) {
-            String mongoURIStr = to.get(MONGO_URI);
+        // Copy general connector properties, such as ones defined in
+        // MongoConfigUtil. These are all prefixed with "mongo.".
+        for (Entry<Object, Object> entry : from.entrySet()) {
+            String key = (String) entry.getKey();
+            if (key.startsWith("mongo.")) {
+                to.put(key, (String) from.get(key));
+            }
+        }
+
+        // Update the keys for MONGO_URI per MongoConfigUtil.
+        if (from.containsKey(MONGO_URI)) {
+            String mongoURIStr = (String) from.get(MONGO_URI);
             to.put(MongoConfigUtil.INPUT_URI, mongoURIStr);
             to.put(MongoConfigUtil.OUTPUT_URI, mongoURIStr);
         }

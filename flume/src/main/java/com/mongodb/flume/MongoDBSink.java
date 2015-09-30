@@ -48,6 +48,7 @@ public class MongoDBSink extends EventSink.Base {
 
     /**
      * Constructs a new instance against the given URI
+     * @param uriString the MongoDB URI
      */
     public MongoDBSink(final String uriString) {
         uri = new MongoClientURI(uriString);
@@ -134,9 +135,8 @@ public class MongoDBSink extends EventSink.Base {
         return collection;
     }
 
-    /**
-     * Special function used by Flume's SourceFactory to pull this class in and use it as a plugin Sink
-     */
+     // Special function used by Flume's SourceFactory to pull this class in
+     // and use it as a plugin Sink
     public static List<Pair<String, SinkBuilder>> getSinkBuilders() {
         List<Pair<String, SinkBuilder>> builders = new ArrayList<Pair<String, SinkBuilder>>();
         builders.add(new Pair<String, SinkBuilder>("mongoDBSink", builder()));

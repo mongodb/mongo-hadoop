@@ -72,6 +72,8 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
      * @param o        object representing pig type to convert to BSON-like object
      * @param field    field to place o in
      * @param toIgnore name of field in Object o to ignore
+     * @return an Object that can be stored as BSON.
+     * @throws IOException if no schema is available from the field
      */
     public static Object getTypeForBSON(final Object o, final ResourceFieldSchema field, final String toIgnore)
         throws IOException {
@@ -279,7 +281,10 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     @Override
     public void setStoreLocation(final String location, final Job job) throws IOException {
         final Configuration config = job.getConfiguration();
-        config.set("mapred.output.file", location);
+        // Old property.
+        config.set("mapred.output.dir", location);
+        // Modern property.
+        config.set("mapreduce.output.fileoutputformat.outputdir", location);
     }
 
 

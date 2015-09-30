@@ -49,6 +49,7 @@ import org.bson.io.Bits;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Map;
 
 @SuppressWarnings("deprecation")
 public class BSONWritable implements WritableComparable {
@@ -91,7 +92,7 @@ public class BSONWritable implements WritableComparable {
         enc.set(buf);
         enc.putObject(doc);
         enc.done();
-        buf.pipe(out);
+        buf.pipe(new DataOutputOutputStreamAdapter(out));
     }
 
 
@@ -138,6 +139,7 @@ public class BSONWritable implements WritableComparable {
 
     /**
      * Used by child copy constructors.
+     * @param other the Writable to copy.
      */
     protected synchronized void copy(final Writable other) {
         if (other != null) {
@@ -175,6 +177,15 @@ public class BSONWritable implements WritableComparable {
         LOG.info("Byte Dump: " + sb);
     }
 
+    /**
+     * Unwrap a (usually Writable) Object, getting back a value suitable for
+     * putting into a BSONObject. If the given object is not Writable, then
+     * simply return the Object back.
+     *
+     * @param x the Object to turn into BSON.
+     * @return the BSON representation of the Object.
+     */
+    @SuppressWarnings("unchecked")
     public static Object toBSON(final Object x) {
         if (x == null) {
             return null;
@@ -187,14 +198,27 @@ public class BSONWritable implements WritableComparable {
         }
         if (x instanceof Writable) {
             if (x instanceof AbstractMapWritable) {
-                throw new IllegalArgumentException("ERROR: MapWritables are not presently supported for MongoDB Serialization.");
+                if (!(x instanceof Map)) {
+                    throw new IllegalArgumentException(
+                      String.format("Cannot turn %s into BSON, since it does "
+                                      + "not implement java.util.Map.",
+                                    x.getClass().getName()));
+                }
+                Map<Writable, Writable> map = (Map<Writable, Writable>) x;
+                BasicBSONObject bson = new BasicBSONObject();
+                for (Map.Entry<Writable, Writable> entry : map.entrySet()) {
+                    bson.put(entry.getKey().toString(),
+                             toBSON(entry.getValue()));
+                }
+                return bson;
             }
-            if (x instanceof ArrayWritable) { // TODO - test me
+            if (x instanceof ArrayWritable) {
                 Writable[] o = ((ArrayWritable) x).get();
                 Object[] a = new Object[o.length];
                 for (int i = 0; i < o.length; i++) {
                     a[i] = toBSON(o[i]);
                 }
+                return a;
             }
             if (x instanceof NullWritable) {
                 return null;

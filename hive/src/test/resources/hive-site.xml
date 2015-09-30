@@ -1,6 +1,0 @@
-<configuration>
-    <property>
-        <name>dfs.datanode.address</name>
-        <value>50010</value>
-    </property>    
-</configuration>

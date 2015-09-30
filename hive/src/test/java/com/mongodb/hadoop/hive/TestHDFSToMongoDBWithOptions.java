@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,13 +17,13 @@ import static org.junit.Assert.assertTrue;
 
 public class TestHDFSToMongoDBWithOptions extends HiveTest {
     @Before
-    public void setUp() {
+    public void setUp() throws SQLException {
         loadDataIntoHDFSHiveTable();
         loadDataIntoMongoDBHiveTable(true);
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws SQLException {
         dropTable(MONGO_BACKED_TABLE);
         dropTable(HDFS_BACKED_TABLE);
     }
