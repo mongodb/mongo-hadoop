@@ -53,7 +53,7 @@ Using EMR with the MongoDB Connector for Hadoop allows you to run MapReduce jobs
 Submitting jobs using the MongoDB Connector for Hadoop to EMR simply requires that the bootstrap actions fetch the dependencies (mongoDB 
 java driver, mongo-hadoop-core libs, etc.) and place them into the hadoop distributions `lib` folders.
 
-For a full example (running the enron example on Elastic MapReduce) please see [here](examples/elastic-mapreduce/README.md).
+For a full example (running the enron example on Elastic MapReduce) please see [here](https://github.com/mongodb/mongo-hadoop/wiki/Enron-Emails-Example).
 
 ## Notes for Contributors
 
