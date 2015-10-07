@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -31,6 +32,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.bson.BSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ import java.util.List;
 import static com.mongodb.hadoop.splitter.BSONSplitter.getSplitsFilePath;
 
 
-public class BSONFileInputFormat extends FileInputFormat {
+public class BSONFileInputFormat extends FileInputFormat<NullWritable, BSONObject> {
 
     private static final Log LOG = LogFactory.getLog(BSONFileInputFormat.class);
 

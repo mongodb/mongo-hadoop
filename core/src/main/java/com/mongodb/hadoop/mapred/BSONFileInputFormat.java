@@ -31,6 +31,7 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
+import org.bson.BSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ import java.util.List;
 import static com.mongodb.hadoop.splitter.BSONSplitter.getSplitsFilePath;
 import static java.lang.String.format;
 
-public class BSONFileInputFormat extends FileInputFormat {
+public class BSONFileInputFormat extends FileInputFormat<NullWritable, BSONObject> {
 
     @Override
     protected boolean isSplitable(final FileSystem fs, final Path filename) {
