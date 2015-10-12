@@ -1,6 +1,8 @@
 package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.ListIndexesIterable;
@@ -107,6 +109,30 @@ public class PigTest extends BaseHadoopTest {
           new org.apache.pig.pigunit.PigTest(
             getClass().getResource("/pig/pig_uuid.pig").getPath());
         test.assertOutput(new String[]{"(" + uuid.toString() + ")"});
+    }
+
+    @Test
+    public void testPigProjection() throws IOException, ParseException {
+        DBCollection collection = mongoClient
+          .getDB("mongo_hadoop").getCollection("projection_test");
+        String[] expected = new String[100];
+        for (int i = 0; i < expected.length; ++i) {
+            String letter = String.valueOf((char) ('a' + (i % 26)));
+            // {"_id": ObjectId(...), "i": <int>,
+            //  "d": {"s": <string>, "j": <int>, "k": <int>}}
+            collection.insert(
+              new BasicDBObjectBuilder()
+                .add("i", i).push("d")
+                .add("s", letter)
+                .add("j", i + 1)
+                .add("k", i % 5).pop().get());
+            expected[i] = "(" + i + "," + letter + "," + i % 5 + ")";
+        }
+
+        org.apache.pig.pigunit.PigTest test =
+          new org.apache.pig.pigunit.PigTest(
+            getClass().getResource("/pig/projection.pig").getPath());
+        test.assertOutput(expected);
     }
 
     @Test
