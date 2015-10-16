@@ -73,7 +73,8 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             LOG.info("Writing to temporary file: " + outputPath.toString());
             outputStream = fs.create(outputPath, true);
         } catch (IOException e) {
-            LOG.error(
+            // TODO: re-throw IOException the next time API can be changed.
+            throw new RuntimeException(
               "Could not open temporary file for buffering Mongo output", e);
         }
     }
