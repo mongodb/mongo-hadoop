@@ -17,6 +17,8 @@ import org.junit.Test;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import static com.mongodb.hadoop.splitter.MongoSplitterTestUtils.assertSplitBounds;
+import static com.mongodb.hadoop.splitter.MongoSplitterTestUtils.assertSplitsCount;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -24,20 +26,20 @@ import static org.junit.Assert.assertTrue;
 public class StandaloneMongoSplitterTest {
 
     private static MongoClientURI uri;
+    private static DBCollection collection;
 
     @BeforeClass
     public static void setUp() {
         MongoClient client = new MongoClient("localhost", 27017);
         uri = new MongoClientURIBuilder()
-                                 .collection("mongo_hadoop", "splitter_test")
-                                 .build();
-        DBCollection collection = client.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+          .collection("mongo_hadoop", "splitter_test")
+          .build();
+        collection =
+          client.getDB(uri.getDatabase()).getCollection(uri.getCollection());
         collection.drop();
         collection.createIndex("value");
         for (int i = 0; i < 40000; i++) {
-            collection.insert(new BasicDBObject("_id", i)
-                                  .append("value", i)
-                             );
+            collection.insert(new BasicDBObject("_id", i).append("value", i));
         }
     }
 
@@ -106,5 +108,45 @@ public class StandaloneMongoSplitterTest {
         MongoInputSplit split = splitter.createSplitFromBounds(lowerBound, upperBound);
         assertEquals(0, split.getMin().get("a"));
         assertEquals(10, split.getMax().get("a"));
+    }
+
+    @Test
+    public void testFilterEmptySplitsNoQuery() throws SplitFailedException {
+        Configuration config = new Configuration();
+        MongoConfigUtil.setInputURI(config, uri);
+        MongoConfigUtil.setEnableFilterEmptySplits(config, true);
+        MongoConfigUtil.setSplitSize(config, 1);
+
+        StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
+        List<InputSplit> splits = splitter.calculateSplits();
+
+        // No splits should be elided, because there's no query.
+        assertEquals(4, splits.size());
+        assertSplitsCount(collection.count(), splits);
+    }
+
+    @Test
+    public void testFilterEmptySplits() throws SplitFailedException {
+        Configuration config = new Configuration();
+        DBObject query = new BasicDBObjectBuilder()
+          .push("value").push("$not").add("$gte", 20000).add("$lte", 35000)
+          .pop().pop().get();
+        MongoConfigUtil.setInputURI(config, uri);
+        MongoConfigUtil.setEnableFilterEmptySplits(config, true);
+        MongoConfigUtil.setQuery(config, query);
+        // 1 MB per document results in 4 splits; the 3rd one is empty per
+        // the above query.
+        MongoConfigUtil.setSplitSize(config, 1);
+        StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
+        List<InputSplit> splits = splitter.calculateSplits();
+
+        // Splits that have no documents due to query are omitted.
+        assertEquals(3, splits.size());
+        assertSplitBounds((MongoInputSplit) splits.get(0), null, 10922);
+        assertSplitBounds((MongoInputSplit) splits.get(1), 10922, 21845);
+        // Third split was filtered out.
+        assertSplitBounds((MongoInputSplit) splits.get(2), 32768, null);
+        // Splits completely cover the query.
+        assertSplitsCount(collection.count(query), splits);
     }
 }

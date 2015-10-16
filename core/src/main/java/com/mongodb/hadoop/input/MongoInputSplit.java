@@ -27,6 +27,7 @@ import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.bson.BSONCallback;
@@ -60,6 +61,28 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     //CHECKSTYLE:ON
 
     public MongoInputSplit() {
+    }
+
+    public MongoInputSplit(final MongoInputSplit other) {
+        setFields(other.getFields());
+        setAuthURI(other.getAuthURI());
+        setInputURI(other.getInputURI());
+        setKeyField(other.getKeyField());
+        setMax(other.getMax());
+        setMin(other.getMin());
+        setNoTimeout(other.getNoTimeout());
+        setQuery(other.getQuery());
+        setSort(other.getSort());
+    }
+
+    public MongoInputSplit(final Configuration conf) {
+        setFields(MongoConfigUtil.getFields(conf));
+        setAuthURI(MongoConfigUtil.getAuthURI(conf));
+        setInputURI(MongoConfigUtil.getInputURI(conf));
+        setKeyField(MongoConfigUtil.getInputKey(conf));
+        setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
+        setQuery(MongoConfigUtil.getQuery(conf));
+        setSort(MongoConfigUtil.getSort(conf));
     }
 
     public void setInputURI(final MongoClientURI inputURI) {

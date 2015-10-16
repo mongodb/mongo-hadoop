@@ -149,6 +149,9 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
             }
         }
 
+        if (MongoConfigUtil.isFilterEmptySplitsEnabled(getConfiguration())) {
+            return filterEmptySplits(splits);
+        }
         return splits;
     }
 

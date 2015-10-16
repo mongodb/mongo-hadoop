@@ -63,6 +63,9 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
             // getShardsMap() creates a client to a config server. Close it now.
             MongoConfigUtil.close(getConfigDB().getMongo());
         }
+        if (MongoConfigUtil.isFilterEmptySplitsEnabled(getConfiguration())) {
+            return filterEmptySplits(returnVal);
+        }
         return returnVal;
     }
 

@@ -145,6 +145,36 @@ public final class MongoConfigUtil {
     public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
+     * When {@code true}, MongoSplitter implementations will check for and
+     * remove empty splits before returning them from {@code calculateSplits}.
+     * This requires pulling a small amount of data from MongoDB but avoids
+     * starting tasks that don't have any data to process.
+     *
+     * This option is useful when providing a query to {@link #INPUT_QUERY},
+     * and that query selects a subset of the documents in the collection
+     * that are clustered in the same range of the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. If the query selects documents
+     * throughout the index, consider using
+     * {@link com.mongodb.hadoop.splitter.MongoPaginatingSplitter} and setting
+     * {@link #INPUT_SPLIT_MIN_DOCS} instead.
+     */
+    public static final String ENABLE_FILTER_EMPTY_SPLITS =
+      "mongo.input.splits.filter_empty";
+
+    /**
+     * When {@link #SPLITS_USE_RANGEQUERY} is enabled, this option sets the
+     * minimum number of documents to be contained in each MongoInputSplit
+     * (does not apply to BSON). This option only applies when using
+     * {@link com.mongodb.hadoop.splitter.MongoPaginatingSplitter} as the
+     * splitter implementation.
+     *
+     * This value defaults to {@link #DEFAULT_INPUT_SPLIT_MIN_DOCS}.
+     */
+    public static final String INPUT_SPLIT_MIN_DOCS =
+      "mongo.input.splits.min_docs";
+    public static final int DEFAULT_INPUT_SPLIT_MIN_DOCS = 1000;
+
+    /**
      * <p>
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
@@ -729,6 +759,28 @@ public final class MongoConfigUtil {
 
     public static void setSplitSize(final Configuration conf, final int value) {
         conf.setInt(INPUT_SPLIT_SIZE, value);
+    }
+
+    public static void setEnableFilterEmptySplits(
+      final Configuration conf, final boolean value) {
+        conf.setBoolean(ENABLE_FILTER_EMPTY_SPLITS, value);
+    }
+
+    public static boolean isFilterEmptySplitsEnabled(final Configuration conf) {
+        return conf.getBoolean(ENABLE_FILTER_EMPTY_SPLITS, false);
+    }
+
+    public static void setInputSplitMinDocs(
+      final Configuration conf, final int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException(
+              INPUT_SPLIT_MIN_DOCS + " must be greater than 0.");
+        }
+        conf.setInt(INPUT_SPLIT_MIN_DOCS, value);
+    }
+
+    public static int getInputSplitMinDocs(final Configuration conf) {
+        return conf.getInt(INPUT_SPLIT_MIN_DOCS, DEFAULT_INPUT_SPLIT_MIN_DOCS);
     }
 
     public static boolean isRangeQueryEnabled(final Configuration conf) {

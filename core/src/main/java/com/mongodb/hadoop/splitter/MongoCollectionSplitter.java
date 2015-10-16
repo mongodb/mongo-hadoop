@@ -154,9 +154,11 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
     }
 
     /**
-     * Create an instance of MongoInputSplit that represents a view of this splitter's input URI between the given lower/upper bounds. If
-     * this splitter has range queries enabled, it will attempt to use $gt/$lte clauses in the query construct to create the split,
-     * otherwise it will use min/max index boundaries (default behavior)
+     * Create an instance of MongoInputSplit that represents a view of this
+     * splitter's input URI between the given lower/upper bounds. If this
+     * splitter has range queries enabled, it will attempt to use $gte/$lt
+     * clauses in the query construct to create the split, otherwise it will use
+     * min/max index boundaries (default behavior).
      *
      * @param lowerBound the lower bound of the collection
      * @param upperBound the upper bound of the collection
@@ -195,38 +197,28 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
 
         MongoInputSplit split = null;
 
-        //If enabled, attempt to build the split using $gt/$lte
-        DBObject query = MongoConfigUtil.getQuery(getConfiguration());
+        // If enabled, attempt to build the split using $gte/$lt.
         if (MongoConfigUtil.isRangeQueryEnabled(getConfiguration())) {
             try {
-                query = MongoConfigUtil.getQuery(getConfiguration());
+                DBObject query = MongoConfigUtil.getQuery(getConfiguration());
                 split = createRangeQuerySplit(lowerBound, upperBound, query);
             } catch (Exception e) {
                 throw new SplitFailedException("Couldn't use range query to create split: " + e.getMessage());
             }
         }
         if (split == null) {
-            split = new MongoInputSplit();
-            BasicDBObject splitQuery = new BasicDBObject();
-            if (query != null) {
-                splitQuery.putAll(query);
-            }
-            split.setQuery(splitQuery);
+            split = new MongoInputSplit(getConfiguration());
             split.setMin(splitMin);
             split.setMax(splitMax);
         }
-        split.setInputURI(MongoConfigUtil.getInputURI(getConfiguration()));
-        split.setAuthURI(MongoConfigUtil.getAuthURI(getConfiguration()));
-        split.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
-        split.setFields(MongoConfigUtil.getFields(getConfiguration()));
-        split.setSort(MongoConfigUtil.getSort(getConfiguration()));
-        split.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
         return split;
     }
 
     /**
-     * Creates an instance of {@link MongoInputSplit} whose upper and lower bounds are restricted by adding $gt/$lte clauses to the query
-     * filter. This requires that the boundaries are not compound keys, and that the query does not contain any keys used in the split key.
+     * Creates an instance of {@link MongoInputSplit} whose upper and lower
+     * bounds are restricted by adding $gte/$lt clauses to the query
+     * filter. This requires that the boundaries are not compound keys, and that
+     * the query does not contain any keys used in the split key.
      *
      * @param chunkLowerBound the lower bound of the chunk (min)
      * @param chunkUpperBound the upper bound of the chunk (max)
@@ -242,13 +234,12 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         if (chunkLowerBound == null && chunkUpperBound == null) {
             DBObject splitQuery = new BasicDBObject();
             splitQuery.putAll(query);
-            MongoInputSplit split = new MongoInputSplit();
+            MongoInputSplit split = new MongoInputSplit(getConfiguration());
             split.setQuery(splitQuery);
             return split;
         }
 
-        //The boundaries are not empty, so try to build
-        //a split using $gt/$lte.
+        // The boundaries are not empty, so try to build a split using $gte/$lt.
 
         //First check that the split contains no compound keys.
         // e.g. this is valid: { _id : "foo" }
@@ -284,9 +275,8 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         DBObject splitQuery = new BasicDBObject();
         splitQuery.putAll(query);
         splitQuery.put(key, rangeObj);
-        MongoInputSplit split = new MongoInputSplit();
+        MongoInputSplit split = new MongoInputSplit(getConfiguration());
         split.setQuery(splitQuery);
-        split.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
         return split;
     }
 

@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -50,29 +50,14 @@ public class SingleMongoSplitter extends MongoCollectionSplitter {
 
     @Override
     public List<InputSplit> calculateSplits() {
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         if (LOG.isDebugEnabled()) {
+            MongoClientURI inputURI =
+              MongoConfigUtil.getInputURI(getConfiguration());
             LOG.debug(format("SingleMongoSplitter calculating splits for namespace: %s.%s; hosts: %s",
                 inputURI.getDatabase(), inputURI.getCollection(), inputURI.getHosts()));
         }
-        final List<InputSplit> splits = new ArrayList<InputSplit>();
-        MongoInputSplit mongoSplit = new MongoInputSplit();
-
-        mongoSplit.setInputURI(MongoConfigUtil.getInputURI(getConfiguration()));
-        mongoSplit.setAuthURI(MongoConfigUtil.getAuthURI(getConfiguration()));
-        mongoSplit.setQuery(MongoConfigUtil.getQuery(getConfiguration()));
-        mongoSplit.setNoTimeout(MongoConfigUtil.isNoTimeout(getConfiguration()));
-        mongoSplit.setFields(MongoConfigUtil.getFields(getConfiguration()));
-        mongoSplit.setSort(MongoConfigUtil.getSort(getConfiguration()));
-        mongoSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
-
-        //Not using any index min/max bounds, so range query is
-        //meaningless here - don't set it
-        //mongoSplit.setUseRangeQuery(...)
-
-
-        splits.add(mongoSplit);
-        return splits;
+        return Collections.singletonList(
+          (InputSplit) new MongoInputSplit(getConfiguration()));
     }
 
 }

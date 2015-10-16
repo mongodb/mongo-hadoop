@@ -202,7 +202,9 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             }
         }
 
+        if (MongoConfigUtil.isFilterEmptySplitsEnabled(getConfiguration())) {
+            return filterEmptySplits(returnVal);
+        }
         return returnVal;
     }
-
 }
