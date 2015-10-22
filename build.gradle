@@ -323,6 +323,10 @@ project(':spark') {
     extraArchive {
         tests = false
     }
+
+    test {
+        dependsOn.remove('testsJar')
+    }
 }
 
 project(':hive') {
