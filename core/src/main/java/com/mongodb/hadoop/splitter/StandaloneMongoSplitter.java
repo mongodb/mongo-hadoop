@@ -104,7 +104,7 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
             boolean ok = true;
             try {
                 data = inputCollection.getDB()
-                  .getSisterDB("admin")
+                  .getSisterDB(inputURI.getDatabase())
                   .command(cmd, ReadPreference.primary());
             } catch (final MongoException e) {  // 2.0 servers throw exceptions rather than info in a CommandResult
                 data = null;
@@ -146,7 +146,8 @@ public class StandaloneMongoSplitter extends MongoCollectionSplitter {
                             MongoClient shardClient = null;
                             try {
                                 shardClient = new MongoClient(shardHost);
-                                data = shardClient.getDB("admin")
+                                data = shardClient
+                                  .getDB(shardHost.getDatabase())
                                   .command(cmd, ReadPreference.primary());
                             } catch (final Exception e) {
                                 LOG.error(e.getMessage(), e);
