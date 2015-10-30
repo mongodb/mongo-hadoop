@@ -52,7 +52,7 @@ public class HiveQueryTest extends HiveTest {
             + "'{\"id\":\"_id\"}') "
             + "TBLPROPERTIES(\"mongo.uri\"="
             + "\"mongodb://localhost:27017/mongo_hadoop.hive_query\","
-            + "\"mongo.input.query\"='{\"j\":{\"$eq\":0}}')");
+            + "\"mongo.input.query\"='{\"j\":0}')");
         Results results = query("SELECT * FROM querytest WHERE i > 20");
         assertEquals(195, results.size());
 
