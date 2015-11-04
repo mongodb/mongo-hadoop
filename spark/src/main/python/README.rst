@@ -1,8 +1,9 @@
 ``pymongo-spark`` integrates `PyMongo`_, the Python driver for MongoDB, with
 `PySpark`_, the Python front-end for `Apache Spark`_. It is designed to be used
-in tandem with ``mongo-hadoop-spark.jar``, which can be obtained from Maven
-Central, from the `releases page`_, or `compiled yourself
-<https://github.com/mongodb/mongo-hadoop#building>`_
+in tandem with ``mongo-hadoop-spark.jar``, which can be found under
+``spark/build/libs`` after compiling mongo-hadoop (the jar will be available for
+download when 1.5 is officially released). For instructions on how to compile
+mongo-hadoop, please see the main project's README.
 
 .. _PyMongo: https://pypi.python.org/pypi/pymongo
 .. _PySpark: http://spark.apache.org/docs/latest/api/python/pyspark.html
