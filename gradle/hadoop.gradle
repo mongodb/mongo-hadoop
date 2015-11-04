@@ -126,7 +126,7 @@ task sensorData(dependsOn: 'startCluster') << {
 task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
     // Create BSON file input directory.
     exec() {
-        commandLine "hdfs", "dfs", "-mkdir", "-p", "/messages"
+        commandLine "${hadoopHome}/bin/hdfs", "dfs", "-mkdir", "-p", "/messages"
     }
     // Split messages.bson and upload to HDFS.
     hadoop("core/build/libs/mongo-hadoop-core-${project(':core').version}.jar",
