@@ -127,14 +127,17 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         try {
-            long pos = ((Seekable) in).getPos();
-            if (pos >= fileSplit.getStart() + fileSplit.getLength()) {
-                try {
-                    close();
-                } catch (final Exception e) {
-                    LOG.warn(e.getMessage(), e);
+            // Cannot rely on getPos() from a CompressionInputStream.
+            if (null == decompressor) {
+                long pos = ((Seekable) in).getPos();
+                if (pos >= fileSplit.getStart() + fileSplit.getLength()) {
+                    try {
+                        close();
+                    } catch (final Exception e) {
+                        LOG.warn(e.getMessage(), e);
+                    }
+                    return false;
                 }
-                return false;
             }
 
             callback.reset();

@@ -25,6 +25,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputSplit;
@@ -43,7 +45,9 @@ public class BSONFileInputFormat extends FileInputFormat {
 
     @Override
     protected boolean isSplitable(final FileSystem fs, final Path filename) {
-        return true;
+        CompressionCodec codec =
+          new CompressionCodecFactory(fs.getConf()).getCodec(filename);
+        return null == codec;
     }
 
     @Override
@@ -54,6 +58,19 @@ public class BSONFileInputFormat extends FileInputFormat {
         FileStatus[] inputFiles = listStatus(job);
         List<FileSplit> results = new ArrayList<FileSplit>();
         for (FileStatus file : inputFiles) {
+            if (!isSplitable(FileSystem.get(job), file.getPath())) {
+                LOG.info(
+                  "File " + file.getPath() + " is compressed so "
+                    + "cannot be split.");
+                org.apache.hadoop.mapreduce.lib.input.FileSplit delegate =
+                  splitter.createFileSplit(
+                    file, FileSystem.get(job), 0L, file.getLen());
+                results.add(
+                  new BSONFileSplit(
+                    delegate.getPath(), delegate.getStart(),
+                    delegate.getLength(), delegate.getLocations()));
+                continue;
+            }
             splitter.setInputPath(file.getPath());
 
             Path splitFilePath = getSplitsFilePath(file.getPath(), job);
@@ -90,14 +107,15 @@ public class BSONFileInputFormat extends FileInputFormat {
     public RecordReader<NullWritable, BSONWritable> getRecordReader(final InputSplit split, final JobConf job, final Reporter reporter)
         throws IOException {
 
-        if (split instanceof BSONFileSplit) {
+        FileSplit fileSplit = (FileSplit) split;
+        if (split instanceof BSONFileSplit
+          || !isSplitable(FileSystem.get(job), fileSplit.getPath())) {
             BSONFileRecordReader reader = new BSONFileRecordReader();
             reader.initialize(split, job);
             return reader;
         }
 
         // Split was not created by BSONSplitter.
-        FileSplit fileSplit = (FileSplit) split;
         BSONSplitter splitter = new BSONSplitter();
         splitter.setConf(job);
         splitter.setInputPath(fileSplit.getPath());
