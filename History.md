@@ -1,3 +1,10 @@
+1.4.2 / 16th of November, 2015
+==============================
+
+This is a minor release that contains small improvements and bug fixes from 1.4.1.
+
+  * [HADOOP-238] Run the 'splitVector' command on the same database from which we want the splits.
+
 1.4.1 / 29th of September, 2015
 ===============================
 
