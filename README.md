@@ -83,6 +83,7 @@ Luke Lovett (luke.lovett@mongodb.com)
 * Thomas Millar
 * Justin Lee
 * Luke Lovett
+* Mariano Semelman
 
 ### Support
 
