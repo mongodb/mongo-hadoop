@@ -1,2 +1,2 @@
 include 'core', 'hive', 'pig', 'streaming', 'flume',
-        'spark', 'examples/treasury_yield', 'examples/enron', 'examples/sensors'
+        'spark', 'examples/treasury_yield', 'examples/enron', 'examples/enron/spark', 'examples/sensors'

@@ -447,6 +447,31 @@ project(":examples/enron") {
     }
 }
 
+project(":examples/enron/spark") {
+    archivesBaseName = "mongo-spark-enron"
+
+    dependencies {
+        compile project(":core")
+        compile project(":spark")
+        compile 'org.apache.spark:spark-sql_2.10:1.4.1'
+
+        testCompile files(project(':core').sourceSets.main.output)
+        testCompile files(project(':core').sourceSets.test.output)
+
+    }
+
+    jar {
+        from sourceSets.main.output
+        from project(':spark').sourceSets.main.output
+
+        configurations.compile.filter {
+            it.name.startsWith('mongo-java-driver')
+        }.each {
+            from zipTree(it)
+        }
+    }
+}
+
 project(":examples/sensors") {
     uploadArchives.onlyIf { false }
     dependencies {
