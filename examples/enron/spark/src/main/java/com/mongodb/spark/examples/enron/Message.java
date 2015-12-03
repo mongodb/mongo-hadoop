@@ -3,32 +3,33 @@ package com.mongodb.spark.examples.enron;
 /**
  * Created by bryan on 12/3/15.
  */
+
 public class Message {
 
     private String id;
     private String body;
     private String mailbox;
     private String filename;
-    private String X_cc;
-    private String Subject;
-    private String X_Folder;
-    private String Content_Transfer_Encoding;
-    private String X_bcc;
-    private String To;
-    private String X_Origin;
-    private String X_FileName;
-    private String X_From;
-    private String Date;
-    private String X_To;
-    private String Message_ID;
-    private String Content_Type;
-    private String Mime_Version;
+    private String xCC;
+    private String subject;
+    private String xFolder;
+    private String contentTransferEncoding;
+    private String xBcc;
+    private String to;
+    private String xOrigin;
+    private String xFilename;
+    private String xFrom;
+    private String date;
+    private String xTo;
+    private String messageID;
+    private String contentType;
+    private String mimeVersion;
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(final String id) {
         this.id = id;
     }
 
@@ -36,7 +37,7 @@ public class Message {
         return body;
     }
 
-    public void setBody(String body) {
+    public void setBody(final String body) {
         this.body = body;
     }
 
@@ -44,7 +45,7 @@ public class Message {
         return mailbox;
     }
 
-    public void setMailbox(String mailbox) {
+    public void setMailboxfinal(final String mailbox) {
         this.mailbox = mailbox;
     }
 
@@ -52,119 +53,119 @@ public class Message {
         return filename;
     }
 
-    public void setFilename(String filename) {
+    public void setFilename(final String filename) {
         this.filename = filename;
     }
 
-    public String getX_cc() {
-        return X_cc;
+    public String getxCC() {
+        return xCC;
     }
 
-    public void setX_cc(String x_cc) {
-        X_cc = x_cc;
+    public void setxCC(final String xCC) {
+        this.xCC = xCC;
     }
 
     public String getSubject() {
-        return Subject;
+        return subject;
     }
 
-    public void setSubject(String subject) {
-        Subject = subject;
+    public void setSubject(final String subject) {
+        this.subject = subject;
     }
 
-    public String getX_Folder() {
-        return X_Folder;
+    public String getxFolder() {
+        return xFolder;
     }
 
-    public void setX_Folder(String x_Folder) {
-        X_Folder = x_Folder;
+    public void setxFolder(final String xFolder) {
+        this.xFolder = xFolder;
     }
 
-    public String getContent_Transfer_Encoding() {
-        return Content_Transfer_Encoding;
+    public String getContentTransferEncoding() {
+        return contentTransferEncoding;
     }
 
-    public void setContent_Transfer_Encoding(String content_Transfer_Encoding) {
-        Content_Transfer_Encoding = content_Transfer_Encoding;
+    public void setContentTransferEncoding(final String contentTransferEncoding) {
+        this.contentTransferEncoding = contentTransferEncoding;
     }
 
-    public String getX_bcc() {
-        return X_bcc;
+    public String getxBcc() {
+        return xBcc;
     }
 
-    public void setX_bcc(String x_bcc) {
-        X_bcc = x_bcc;
+    public void setxBcc(final String xBcc) {
+        this.xBcc = xBcc;
     }
 
     public String getTo() {
-        return To;
+        return to;
     }
 
-    public void setTo(String to) {
-        To = to;
+    public void setTo(final String to) {
+        this.to = to;
     }
 
-    public String getX_Origin() {
-        return X_Origin;
+    public String getxOrigin() {
+        return xOrigin;
     }
 
-    public void setX_Origin(String x_Origin) {
-        X_Origin = x_Origin;
+    public void setxOrigin(final String xOrigin) {
+        this.xOrigin = xOrigin;
     }
 
-    public String getX_FileName() {
-        return X_FileName;
+    public String getxFilename() {
+        return xFilename;
     }
 
-    public void setX_FileName(String x_FileName) {
-        X_FileName = x_FileName;
+    public void setxFilename(final String xFilename) {
+        this.xFilename = xFilename;
     }
 
-    public String getX_From() {
-        return X_From;
+    public String getxFrom() {
+        return xFrom;
     }
 
-    public void setX_From(String x_From) {
-        X_From = x_From;
+    public void setxFrom(final String xFrom) {
+        this.xFrom = xFrom;
     }
 
     public String getDate() {
-        return Date;
+        return date;
     }
 
-    public void setDate(String date) {
-        Date = date;
+    public void setDate(final String date) {
+        this.date = date;
     }
 
-    public String getX_To() {
-        return X_To;
+    public String getxTo() {
+        return xTo;
     }
 
-    public void setX_To(String x_To) {
-        X_To = x_To;
+    public void setxTo(final String xTo) {
+        this.xTo = xTo;
     }
 
-    public String getMessage_ID() {
-        return Message_ID;
+    public String getMessageID() {
+        return messageID;
     }
 
-    public void setMessage_ID(String message_ID) {
-        Message_ID = message_ID;
+    public void setMessageID(final String messageID) {
+        this.messageID = messageID;
     }
 
-    public String getContent_Type() {
-        return Content_Type;
+    public String getContentType() {
+        return contentType;
     }
 
-    public void setContent_Type(String content_Type) {
-        Content_Type = content_Type;
+    public void setContentType(final String contentType) {
+        this.contentType = contentType;
     }
 
-    public String getMime_Version() {
-        return Mime_Version;
+    public String getMimeVersion() {
+        return mimeVersion;
     }
 
-    public void setMime_Version(String mime_Version) {
-        Mime_Version = mime_Version;
+    public void setMimeVersion(final String mimeVersion) {
+        this.mimeVersion = mimeVersion;
     }
 }

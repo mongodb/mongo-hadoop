@@ -23,9 +23,9 @@ import scala.Tuple2;
  * Created by bryan on 12/3/15.
  */
 public class DataframeExample {
-        public static void main ( String[] args ) {
+        public static void main(final String[] args) {
 
-            JavaSparkContext sc = new JavaSparkContext( new SparkConf() );
+            JavaSparkContext sc = new JavaSparkContext(new SparkConf());
             // Set configuration options for the MongoDB Hadoop Connector.
             Configuration mongodbConfig = new Configuration();
             // MongoInputFormat allows us to read from a live MongoDB instance.
@@ -50,14 +50,14 @@ public class DataframeExample {
 
                     new Function<Tuple2<Object, BSONObject>, Message>() {
 
-                        public Message call(Tuple2<Object, BSONObject> tuple) {
+                        public Message call(final Tuple2<Object, BSONObject> tuple) {
                             Message m = new Message();
                             BSONObject header = (BSONObject) tuple._2.get("headers");
 
-                            m.setTo( (String) header.get("To") );
-                            m.setX_From( (String) header.get("From") );
-                            m.setMessage_ID( (String) header.get( "Message-ID" ) );
-                            m.setBody( (String) tuple._2.get( "body" ) );
+                            m.setTo((String) header.get("To"));
+                            m.setxFrom((String) header.get("From"));
+                            m.setMessageID((String) header.get("Message-ID"));
+                            m.setBody((String) tuple._2.get("body"));
 
                             return m;
                         }
@@ -69,10 +69,9 @@ public class DataframeExample {
             DataFrame messagesSchema = sqlContext.createDataFrame(messages, Message.class);
             messagesSchema.registerTempTable("messages");
 
-            DataFrame ericsMessages = sqlContext.sql("SELECT to, body FROM messages WHERE to = \"eric.bass@enron.com\" " );
+            DataFrame ericsMessages = sqlContext.sql("SELECT to, body FROM messages WHERE to = \"eric.bass@enron.com\"");
 
             ericsMessages.show();
-
 
             messagesSchema.printSchema();
         }

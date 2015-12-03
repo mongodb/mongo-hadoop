@@ -24,9 +24,9 @@ import java.util.List;
  */
 public class Enron {
 
-    public static void main ( String[] args ) {
+    public static void main(final String[] args) {
 
-        JavaSparkContext sc = new JavaSparkContext( new SparkConf() );
+        JavaSparkContext sc = new JavaSparkContext(new SparkConf());
         // Set configuration options for the MongoDB Hadoop Connector.
         Configuration mongodbConfig = new Configuration();
         // MongoInputFormat allows us to read from a live MongoDB instance.
@@ -49,26 +49,27 @@ public class Enron {
 
         JavaRDD<String> edges = documents.flatMap(
 
-                new FlatMapFunction<Tuple2<Object, BSONObject>, String >() {
+                new FlatMapFunction<Tuple2<Object, BSONObject>, String>() {
 
                     @Override
-                    public Iterable<String> call(Tuple2<Object, BSONObject> t) throws Exception {
+                    public Iterable<String> call(final Tuple2<Object, BSONObject> t) throws Exception {
 
                         BSONObject header = (BSONObject) t._2.get("headers");
                         String to = (String) header.get("To");
                         String from = (String) header.get("From");
 
                         // each tuple in the set is an individual from|to pair
-                        //JavaPairRDD< String, Integer > tuples = new JavaPairRDD<String, Integer>();
+                        //JavaPairRDD<String, Integer> tuples = new JavaPairRDD<String, Integer>();
                         List<String> tuples = new ArrayList<String>();
 
-                        if ( to != null && !to.isEmpty() )
+                        if (to != null && !to.isEmpty()) {
                             for (String recipient : to.split(",")) {
                                 String s = recipient.trim();
                                 if (s.length() > 0) {
-                                    tuples.add( from + "|" + s );
+                                    tuples.add(from + "|" + s);
                                 }
                             }
+                        }
                         return tuples;
                     }
                 }
@@ -76,7 +77,7 @@ public class Enron {
 
         JavaPairRDD<String, Integer> pairs = edges.mapToPair(
                 new PairFunction<String, String, Integer>() {
-                    public Tuple2<String, Integer> call(String s) {
+                    public Tuple2<String, Integer> call(final String s) {
                         return new Tuple2<String, Integer>(s, 1);
                     }
                 }
@@ -84,7 +85,7 @@ public class Enron {
 
         JavaPairRDD<String, Integer> counts = pairs.reduceByKey(
                 new Function2<Integer, Integer, Integer>() {
-                    public Integer call(Integer a, Integer b) {
+                    public Integer call(final Integer a, final Integer b) {
                         return a + b;
                     }
                 }
