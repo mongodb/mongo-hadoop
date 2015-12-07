@@ -11,6 +11,8 @@ ext.javaDriverVersion = '3.0.0'
 ext.hiveVersion = '1.1.0'
 ext.pigVersion = '0.14.0'
 ext.hadoopVersion = '2.6.0'
+ext.sparkVersion = '1.4.1'
+ext.scalaVersion = '2.11'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
 ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
@@ -305,7 +307,7 @@ project(':spark') {
     apply plugin: 'scala'
     archivesBaseName = "mongo-hadoop-spark"
     dependencies {
-        compile 'org.apache.spark:spark-core_2.11:1.4.1'
+        compile "org.apache.spark:spark-core_${scalaVersion}:${sparkVersion}"
         compile project(':core')
     }
 
@@ -453,16 +455,13 @@ project(":examples/enron/spark") {
     dependencies {
         compile project(":core")
         compile project(":spark")
-        compile 'org.apache.spark:spark-sql_2.10:1.4.1'
-
-        testCompile files(project(':core').sourceSets.main.output)
-        testCompile files(project(':core').sourceSets.test.output)
-
+        compile "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
     }
 
     jar {
         from sourceSets.main.output
         from project(':spark').sourceSets.main.output
+        from project(':core').sourceSets.main.output
 
         configurations.compile.filter {
             it.name.startsWith('mongo-java-driver')

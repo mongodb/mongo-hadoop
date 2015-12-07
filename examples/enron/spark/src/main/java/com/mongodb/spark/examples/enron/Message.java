@@ -1,8 +1,5 @@
 package com.mongodb.spark.examples.enron;
 
-/**
- * Created by bryan on 12/3/15.
- */
 
 public class Message {
 
