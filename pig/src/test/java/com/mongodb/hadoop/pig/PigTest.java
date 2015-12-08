@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +61,14 @@ public class PigTest extends BaseHadoopTest {
         pigTest.unoverride("STORE");
 
         pigTest.assertOutput(alias, expected);
+    }
+
+    public static void runScript(final String scriptName)
+      throws IOException, ParseException {
+        org.apache.pig.pigunit.PigTest pigTest = new org.apache.pig.pigunit
+          .PigTest(PigTest.class.getResource(scriptName).getPath());
+        pigTest.unoverride("STORE");
+        pigTest.runScript();
     }
 
     private boolean indexExists(
@@ -112,6 +121,25 @@ public class PigTest extends BaseHadoopTest {
     }
 
     @Test
+    public void testDates() throws IOException, ParseException {
+        mongoClient
+          .getDatabase(URI.getDatabase())
+          .getCollection(URI.getCollection()).insertOne(new Document(
+            "today", new Date()));
+        MongoCollection<Document> outputCollection = mongoClient
+          .getDatabase("mongo_hadoop")
+          .getCollection("datetests");
+        PigTest.runScript("/pig/datestest.pig");
+
+        for (Document doc : outputCollection.find()) {
+            Object today = doc.get("today");
+            assertTrue(
+              "Expected a Date, but got a " + today.getClass().getName(),
+              today instanceof Date);
+        }
+    }
+
+    @Test
     public void testPigProjection() throws IOException, ParseException {
         DBCollection collection = mongoClient
           .getDB("mongo_hadoop").getCollection("projection_test");
@@ -158,11 +186,7 @@ public class PigTest extends BaseHadoopTest {
         }
         db.getCollection("pig.schemaless").insertMany(documents);
 
-        org.apache.pig.pigunit.PigTest test =
-          new org.apache.pig.pigunit.PigTest(
-            getClass().getResource("/pig/schemaless.pig").getPath());
-        test.unoverride("STORE");
-        test.runScript();
+        runScript("/pig/schemaless.pig");
 
         assertEquals(1000, db.getCollection("pig.schemaless.out").count());
         assertNotNull(
@@ -185,11 +209,7 @@ public class PigTest extends BaseHadoopTest {
     @Test
     public void testMongoStorageEnsureIndex()
       throws IOException, ParseException {
-        org.apache.pig.pigunit.PigTest test =
-          new org.apache.pig.pigunit.PigTest(
-            getClass().getResource("/pig/ensure_index.pig").getPath());
-        test.unoverride("STORE");
-        test.runScript();
+        runScript("/pig/ensure_index.pig");
 
         MongoClient client = new MongoClient("localhost:27017");
         // There should be an index on the "last" field, ascending.
@@ -202,11 +222,7 @@ public class PigTest extends BaseHadoopTest {
         coll.dropIndex("last_1");
 
         // Run the second pig script, which ensures a different index.
-        org.apache.pig.pigunit.PigTest secondTest =
-          new org.apache.pig.pigunit.PigTest(
-            getClass().getResource("/pig/ensure_index_2.pig").getPath());
-        secondTest.unoverride("STORE");
-        secondTest.runScript();
+        runScript("/pig/ensure_index_2.pig");
 
         assertTrue("Should have the index \"first_1\"",
           indexExists(coll, "first_1"));
