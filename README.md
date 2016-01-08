@@ -32,9 +32,9 @@ it will be generated in the `core/build/libs` directory.
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the
 following locations, depending on which Hadoop release you are using:
 
-* `$HADOOP_HOME/lib/`
-* `$HADOOP_HOME/share/hadoop/mapreduce/`
-* `$HADOOP_HOME/share/hadoop/lib/`
+* `$HADOOP_PREFIX/lib/`
+* `$HADOOP_PREFIX/share/hadoop/mapreduce/`
+* `$HADOOP_PREFIX/share/hadoop/lib/`
 
 mongo-hadoop should work on any distribution of hadoop.  Should you run in to an issue, please file a 
 [Jira](https://jira.mongodb.org/browse/HADOOP/) ticket.
