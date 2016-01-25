@@ -1046,8 +1046,8 @@ public final class MongoConfigUtil {
                 if (remove != client) {
                     throw new IllegalStateException("different clients found");
                 }
+                client.close();
             }
-            client.close();
     }
     
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
