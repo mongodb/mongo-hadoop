@@ -109,7 +109,8 @@ public class BSONFileInputFormat extends FileInputFormat {
                     + "cannot be split.");
                 splits.add(
                   splitter.createFileSplit(
-                    file, FileSystem.get(config), 0L, file.getLen()));
+                    file, FileSystem.get(file.getPath().toUri(), config),
+                    0L, file.getLen()));
                 continue;
             } else if (LOG.isDebugEnabled()) {
                 LOG.debug("processing file " + file.getPath());

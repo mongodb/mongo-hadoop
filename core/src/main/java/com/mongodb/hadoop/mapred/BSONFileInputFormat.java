@@ -58,13 +58,13 @@ public class BSONFileInputFormat extends FileInputFormat {
         FileStatus[] inputFiles = listStatus(job);
         List<FileSplit> results = new ArrayList<FileSplit>();
         for (FileStatus file : inputFiles) {
-            if (!isSplitable(FileSystem.get(job), file.getPath())) {
+            FileSystem fs = FileSystem.get(file.getPath().toUri(), job);
+            if (!isSplitable(fs, file.getPath())) {
                 LOG.info(
                   "File " + file.getPath() + " is compressed so "
                     + "cannot be split.");
                 org.apache.hadoop.mapreduce.lib.input.FileSplit delegate =
-                  splitter.createFileSplit(
-                    file, FileSystem.get(job), 0L, file.getLen());
+                  splitter.createFileSplit(file, fs, 0L, file.getLen());
                 results.add(
                   new BSONFileSplit(
                     delegate.getPath(), delegate.getStart(),
@@ -108,8 +108,9 @@ public class BSONFileInputFormat extends FileInputFormat {
         throws IOException {
 
         FileSplit fileSplit = (FileSplit) split;
+        FileSystem fs = FileSystem.get(fileSplit.getPath().toUri(), job);
         if (split instanceof BSONFileSplit
-          || !isSplitable(FileSystem.get(job), fileSplit.getPath())) {
+          || !isSplitable(fs, fileSplit.getPath())) {
             BSONFileRecordReader reader = new BSONFileRecordReader();
             reader.initialize(split, job);
             return reader;
