@@ -7,11 +7,11 @@ apply plugin: 'com.github.ben-manes.versions'
 
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
-ext.javaDriverVersion = '3.0.0'
-ext.hiveVersion = '1.1.0'
-ext.pigVersion = '0.14.0'
-ext.hadoopVersion = '2.6.0'
-ext.sparkVersion = '1.4.1'
+ext.javaDriverVersion = '3.2.1'
+ext.hiveVersion = '1.2.1'
+ext.pigVersion = '0.15.0'
+ext.hadoopVersion = '2.7.2'
+ext.sparkVersion = '1.6.0'
 ext.scalaVersion = '2.11'
 
 ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
@@ -19,11 +19,11 @@ ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
 ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.docsHome = "${rootDir}/docs"
-ext.mongoimport = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongoimport').exists() ?
-                  '/mnt/jenkins/mongodb/26/26-release/bin/mongoimport' :
+ext.mongoimport = new File('/mnt/jenkins/mongodb/32/32-release/bin/mongoimport').exists() ?
+                  '/mnt/jenkins/mongodb/32/32-release/bin/mongoimport' :
                   '/usr/local/bin/mongoimport';
-ext.mongorestore = new File('/mnt/jenkins/mongodb/26/26-release/bin/mongorestore').exists() ?
-                  '/mnt/jenkins/mongodb/26/26-release/bin/mongorestore' :
+ext.mongorestore = new File('/mnt/jenkins/mongodb/32/32-release/bin/mongorestore').exists() ?
+                  '/mnt/jenkins/mongodb/32/32-release/bin/mongorestore' :
                   '/usr/local/bin/mongorestore';
 ext.mongoURI = System.getenv("MONGO_INPUT_URI")
 ext.mongoAuthURI = System.getenv("MONGO_AUTH_URI")
@@ -179,9 +179,9 @@ configure(subprojects) {
 
     javadoc {
         options.version = true
-        options.links 'http://docs.oracle.com/javase/6/docs/api/'
-        options.links 'http://hadoop.apache.org/docs/r2.6.0/api'
-        options.links 'http://api.mongodb.org/java/3.0/'
+        options.links 'http://docs.oracle.com/javase/8/docs/api/'
+        options.links 'http://hadoop.apache.org/docs/r2.7.2/api'
+        options.links 'http://api.mongodb.org/java/3.2/'
         if (JavaVersion.current().isJava8Compatible()) {
           options.addStringOption('Xdoclint:none', '-quiet')
         }
