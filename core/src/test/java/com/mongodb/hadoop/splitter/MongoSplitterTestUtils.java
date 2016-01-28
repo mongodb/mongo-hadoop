@@ -16,19 +16,6 @@ public final class MongoSplitterTestUtils {
     private MongoSplitterTestUtils() {}
 
     /**
-     * Assert that a split has the expected bounds using $min/$max.
-     * @param split an instance of MongoInputSplit
-     * @param min the min bound
-     * @param max the max bound
-     */
-    public static void assertSplitBounds(
-      final MongoInputSplit split, final Integer min, final Integer max) {
-        assertEquals(min, split.getMin().get("_id"));
-        assertEquals(max, split.getMax().get("_id"));
-
-    }
-
-    /**
      * Assert that a split has the expected bounds using a range query.
      * @param split an instance of MongoInputSplit
      * @param min the min bound

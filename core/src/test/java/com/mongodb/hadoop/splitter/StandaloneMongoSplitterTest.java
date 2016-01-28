@@ -17,10 +17,10 @@ import org.junit.Test;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import static com.mongodb.hadoop.splitter.MongoSplitterTestUtils.assertSplitBounds;
 import static com.mongodb.hadoop.splitter.MongoSplitterTestUtils.assertSplitsCount;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class StandaloneMongoSplitterTest {
@@ -121,16 +121,20 @@ public class StandaloneMongoSplitterTest {
         List<InputSplit> splits = splitter.calculateSplits();
 
         // No splits should be elided, because there's no query.
-        assertEquals(4, splits.size());
+        for (InputSplit split : splits) {
+            assertNotEquals(
+              0, (((MongoInputSplit) split).getCursor().itcount()));
+        }
         assertSplitsCount(collection.count(), splits);
     }
 
     @Test
     public void testFilterEmptySplits() throws SplitFailedException {
         Configuration config = new Configuration();
-        DBObject query = new BasicDBObjectBuilder()
-          .push("value").push("$not").add("$gte", 20000).add("$lte", 35000)
-          .pop().pop().get();
+        DBObject query = new BasicDBObject(
+          "$or", new BasicDBObject[]{
+            new BasicDBObject("value", new BasicDBObject("$lt", 20000)),
+            new BasicDBObject("value", new BasicDBObject("$gt", 35000))});
         MongoConfigUtil.setInputURI(config, uri);
         MongoConfigUtil.setEnableFilterEmptySplits(config, true);
         MongoConfigUtil.setQuery(config, query);
@@ -140,13 +144,11 @@ public class StandaloneMongoSplitterTest {
         StandaloneMongoSplitter splitter = new StandaloneMongoSplitter(config);
         List<InputSplit> splits = splitter.calculateSplits();
 
-        // Splits that have no documents due to query are omitted.
-        assertEquals(3, splits.size());
-        assertSplitBounds((MongoInputSplit) splits.get(0), null, 10922);
-        assertSplitBounds((MongoInputSplit) splits.get(1), 10922, 21845);
-        // Third split was filtered out.
-        assertSplitBounds((MongoInputSplit) splits.get(2), 32768, null);
-        // Splits completely cover the query.
+        // No splits are empty.
+        for (InputSplit split : splits) {
+            assertNotEquals(
+              0, (((MongoInputSplit) split).getCursor().itcount()));
+        }
         assertSplitsCount(collection.count(query), splits);
     }
 }

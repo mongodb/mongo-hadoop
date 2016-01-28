@@ -1,7 +1,7 @@
 package com.mongodb.hadoop.splitter;
 
 
-import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
@@ -44,10 +44,10 @@ public class MongoPaginatingSplitterTest {
         MongoConfigUtil.setInputURI(conf, uri);
         MongoConfigUtil.setRangeQueryEnabled(conf, true);
         MongoConfigUtil.setInputSplitMinDocs(conf, 5000);
-        DBObject query = new BasicDBObjectBuilder()
-          .push("value").push("$not")
-          .add("$gte", 25000).add("$lt", 31000)
-          .pop().pop().get();
+        DBObject query = new BasicDBObject(
+          "$or", new BasicDBObject[]{
+            new BasicDBObject("value", new BasicDBObject("$lt", 25000)),
+            new BasicDBObject("value", new BasicDBObject("$gte", 31000))});
         MongoConfigUtil.setQuery(conf, query);
 
         MongoPaginatingSplitter splitter = new MongoPaginatingSplitter(conf);
