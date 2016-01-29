@@ -146,8 +146,9 @@ public class StandaloneMongoSplitterTest {
 
         // No splits are empty.
         for (InputSplit split : splits) {
-            assertNotEquals(
-              0, (((MongoInputSplit) split).getCursor().itcount()));
+            // Cursor is closed on the split, so copy it to create a new one.
+            MongoInputSplit mis = new MongoInputSplit((MongoInputSplit) split);
+            assertNotEquals(0, mis.getCursor().itcount());
         }
         assertSplitsCount(collection.count(query), splits);
     }
