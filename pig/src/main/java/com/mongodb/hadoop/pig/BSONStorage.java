@@ -80,6 +80,9 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
       throws IOException {
         byte dataType;
         ResourceSchema fieldInnerSchema = null;
+        if (null == o) {
+            return null;
+        }
         if (null == field || DataType.UNKNOWN == field.getType()) {
             dataType = DataType.findType(o);
         } else {
