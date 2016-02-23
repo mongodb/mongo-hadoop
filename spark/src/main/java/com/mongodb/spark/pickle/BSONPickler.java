@@ -215,7 +215,7 @@ public class BSONPickler implements IObjectPickler {
     /**
      * Write the Python "pickle" representation of a BSON type.
      *
-     * @param o the object to be pickled
+     * @param obj the object to be pickled
      * @param out the OutputStream to which to write
      * @param currentPickler the current Pickler instance
      * @throws PickleException if an issue is encountered while serializing a
