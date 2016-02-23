@@ -1,3 +1,21 @@
+1.5.0 / 23rd of February, 2016
+==============================
+
+This release features major improvements to Pig, Hive, and Spark. Pig and Hive
+both have the ability to push down simple queries and projections to MongoDB,
+potentially saving time and memory when running MapReduce jobs. New included
+UDFs allow writing MongoDB-specific types from Pig jobs and extracting timestamp
+information from ObjectIds. A new "pymongo-spark" library (under
+spark/src/main/python) allows using PyMongo objects with the connector, greatly
+simplifying the Python interface to Spark when running with MongoDB.
+
+For a complete list of tickets resolved in this release, see the release notes
+on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/15466
+
+Changes from rc0:
+
+   * [HADOOP-255] Return null early in getTypeForBSON if input is null.
+
 1.5.0-rc0 / 1st of Febuary, 2016
 ================================
 
