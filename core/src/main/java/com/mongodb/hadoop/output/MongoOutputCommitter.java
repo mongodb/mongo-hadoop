@@ -199,12 +199,12 @@ public class MongoOutputCommitter extends OutputCommitter {
     public void abortTask(final TaskAttemptContext taskContext)
         throws IOException {
         LOG.info("Aborting task.");
-        cleanupTemporaryFiles(taskContext);
+        cleanupResources(taskContext);
     }
 
     /**
-     * Helper method to close an FSDataInputStream and clean up any files
-     * still left around from map/reduce tasks.
+     * Helper method to close MongoClients and FSDataInputStream and clean up
+     * any files still left around from map/reduce tasks.
      *
      * @param inputStream the FSDataInputStream to close.
      */
@@ -219,10 +219,10 @@ public class MongoOutputCommitter extends OutputCommitter {
                 throw e;
             }
         }
-        cleanupTemporaryFiles(context);
+        cleanupResources(context);
     }
 
-    private void cleanupTemporaryFiles(final TaskAttemptContext taskContext)
+    private void cleanupResources(final TaskAttemptContext taskContext)
         throws IOException {
         Path tempPath = getTaskAttemptPath(taskContext);
         try {
@@ -231,6 +231,11 @@ public class MongoOutputCommitter extends OutputCommitter {
         } catch (IOException e) {
             LOG.error("Could not delete temporary file " + tempPath, e);
             throw e;
+        }
+        if (collections != null) {
+            for (DBCollection collection : collections) {
+                MongoConfigUtil.close(collection.getDB().getMongo());
+            }
         }
     }
 

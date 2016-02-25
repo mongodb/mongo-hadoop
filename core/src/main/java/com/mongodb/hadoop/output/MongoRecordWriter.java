@@ -23,6 +23,7 @@ import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.io.MongoWritableTypes;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -87,6 +88,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             } catch (IOException e) {
                 LOG.error("Could not close output stream", e);
             }
+        }
+        for (DBCollection collection : collections) {
+            MongoConfigUtil.close(collection.getDB().getMongo());
         }
     }
 
