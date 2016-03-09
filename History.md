@@ -1,3 +1,13 @@
+1.5.1 / 9th of March, 2016
+==========================
+
+This release features a few fixes from 1.5.0, including patching a few MongoDB
+connection leaks, avoiding a warning when using MongoUpdateStorage with Pig, and
+allowing a limit to be set on MongoInputSplits.
+
+For complete details on the issues resolved in 1.5.1, consult the release notes
+on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/16544
+
 1.5.0 / 23rd of February, 2016
 ==============================
 
