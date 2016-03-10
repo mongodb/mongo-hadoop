@@ -124,22 +124,22 @@ task sensorData(dependsOn: 'startCluster') << {
 
 
 task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
+    // Create BSON file input directory.
     exec() {
-        def line = [mongorestore, "-v", "-d", "mongo_hadoop", "--drop"]
-        if (mongoUsername != null && mongoPassword != null) {
-            line += ["--authenticationDatabase", "admin",
-                     "--username", mongoUsername,
-                     "--password", mongoPassword]
-        }
-        line << "${dataHome}/dump/enron_mail"
-        commandLine line
+        commandLine "${hadoopHome}/bin/hdfs", "dfs", "-mkdir", "-p", "/messages"
     }
-
+    // Split messages.bson and upload to HDFS.
+    hadoop("core/build/libs/mongo-hadoop-core-${project(':core').version}.jar",
+            "com.mongodb.hadoop.splitter.BSONSplitter", [],
+            ["file://${dataHome}/dump/enron_mail/messages.bson",
+             "-c", "org.apache.hadoop.io.compress.BZip2Codec",
+             "-o", "hdfs://localhost:8020/messages"])
+    // MR job
     hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.enron.EnronMail", ["mongo.input.split_size=64"])
+           "com.mongodb.hadoop.examples.enron.EnronMail", [])
 }
 
-def hadoop(jar, className, args) {
+def hadoop(jar, className, args, commandArgs = []) {
     def line = ["${hadoopHome}/bin/hadoop",
                 "jar", jar, className,
                 //Split settings
@@ -155,6 +155,9 @@ def hadoop(jar, className, args) {
     }
     args.each {
         line << "-D${it}"
+    }
+    commandArgs.each {
+        line << "${it}"
     }
     println "Executing hadoop job:\n ${line.join(' \\\n\t')}"
     def hadoopEnv = [:]

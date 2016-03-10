@@ -22,8 +22,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -42,6 +45,23 @@ import static com.mongodb.hadoop.splitter.BSONSplitter.getSplitsFilePath;
 public class BSONFileInputFormat extends FileInputFormat {
 
     private static final Log LOG = LogFactory.getLog(BSONFileInputFormat.class);
+
+    /**
+     * Determine if the given file is splittable. If the file is compressed,
+     * it cannot be split.
+     * @param context the current JobContext
+     * @param filename the input file name
+     * @return {@code true} if the file is splittable, {@code false} otherwise
+     */
+    @Override
+    protected boolean isSplitable(
+      final JobContext context, final Path filename) {
+        CompressionCodec codec =
+          new CompressionCodecFactory(
+            context.getConfiguration()).getCodec(filename);
+        // If BSON is compressed, it cannot be split.
+        return null == codec;
+    }
 
     @Override
     public RecordReader createRecordReader(final InputSplit split, final TaskAttemptContext context)
@@ -83,10 +103,17 @@ public class BSONFileInputFormat extends FileInputFormat {
                     LOG.debug(String.format("skipping file %s not matched path filter.", file.getPath()));
                 }
                 continue;
-            } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("processing file " + file.getPath());
-                }
+            } else if (!isSplitable(context, file.getPath())) {
+                LOG.info(
+                  "File " + file.getPath() + " is compressed so "
+                    + "cannot be split.");
+                splits.add(
+                  splitter.createFileSplit(
+                    file, FileSystem.get(file.getPath().toUri(), config),
+                    0L, file.getLen()));
+                continue;
+            } else if (LOG.isDebugEnabled()) {
+                LOG.debug("processing file " + file.getPath());
             }
 
             splitter.setInputPath(file.getPath());

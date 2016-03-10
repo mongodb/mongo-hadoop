@@ -27,6 +27,7 @@ import com.mongodb.MongoURI;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.bson.BSONCallback;
@@ -52,6 +53,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     protected DBObject sort;
     protected DBObject min;
     protected DBObject max;
+    protected Integer limit;
     protected boolean notimeout = false;
     protected transient DBCursor cursor;
 
@@ -60,6 +62,30 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     //CHECKSTYLE:ON
 
     public MongoInputSplit() {
+    }
+
+    public MongoInputSplit(final MongoInputSplit other) {
+        setFields(other.getFields());
+        setAuthURI(other.getAuthURI());
+        setInputURI(other.getInputURI());
+        setKeyField(other.getKeyField());
+        setMax(other.getMax());
+        setMin(other.getMin());
+        setNoTimeout(other.getNoTimeout());
+        setQuery(other.getQuery());
+        setSort(other.getSort());
+        setLimit(other.getLimit());
+    }
+
+    public MongoInputSplit(final Configuration conf) {
+        setFields(MongoConfigUtil.getFields(conf));
+        setAuthURI(MongoConfigUtil.getAuthURI(conf));
+        setInputURI(MongoConfigUtil.getInputURI(conf));
+        setKeyField(MongoConfigUtil.getInputKey(conf));
+        setNoTimeout(MongoConfigUtil.isNoTimeout(conf));
+        setQuery(MongoConfigUtil.getQuery(conf));
+        setSort(MongoConfigUtil.getSort(conf));
+        setLimit(MongoConfigUtil.getLimit(conf));
     }
 
     public void setInputURI(final MongoClientURI inputURI) {
@@ -160,19 +186,28 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         this.notimeout = notimeout;
     }
 
+    public Integer getLimit() {
+        return limit;
+    }
+
+    public void setLimit(final Integer limit) {
+        this.limit = limit;
+    }
+
     @Override
     public void write(final DataOutput out) throws IOException {
         BSONObject spec = BasicDBObjectBuilder.start()
-                                              .add("inputURI", getInputURI().toString())
-                                              .add("authURI", getAuthURI() != null ? getAuthURI().toString() : null)
-                                              .add("keyField", getKeyField())
-                                              .add("fields", getFields())
-                                              .add("query", getQuery())
-                                              .add("sort", getSort())
-                                              .add("min", getMin())
-                                              .add("max", getMax())
-                                              .add("notimeout", getNoTimeout())
-                                              .get();
+          .add("inputURI", getInputURI().toString())
+          .add("authURI", getAuthURI() != null ? getAuthURI().toString() : null)
+          .add("keyField", getKeyField())
+          .add("fields", getFields())
+          .add("query", getQuery())
+          .add("sort", getSort())
+          .add("min", getMin())
+          .add("max", getMax())
+          .add("notimeout", getNoTimeout())
+          .add("limit", limit)
+          .get();
         byte[] buf = _bsonEncoder.encode(spec);
         out.write(buf);
     }
@@ -213,6 +248,8 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         temp = (BSONObject) spec.get("max");
         setMax(temp != null ? new BasicDBObject(temp.toMap()) : null);
 
+        setLimit((Integer) spec.get("limit"));
+
         setNoTimeout((Boolean) spec.get("notimeout"));
     }
 
@@ -235,6 +272,9 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
             if (this.max != null) {
                 this.cursor.addSpecial("$max", this.max);
             }
+            if (limit != null) {
+                cursor = cursor.limit(limit);
+            }
         }
         return this.cursor;
     }
@@ -250,11 +290,12 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
               + ", authURI database=" + authURI.getDatabase();
         }
         return result
-               + ", min=" + this.min + ", max=" + this.max
-               + ", query=" + this.query
-               + ", sort=" + this.sort
-               + ", fields=" + this.fields
-               + ", notimeout=" + this.notimeout + '}';
+          + ", min=" + this.min + ", max=" + this.max
+          + ", query=" + this.query
+          + ", sort=" + this.sort
+          + ", fields=" + this.fields
+          + ", limit=" + this.limit
+          + ", notimeout=" + this.notimeout + '}';
     }
 
     @Override
@@ -266,6 +307,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         result = 31 * result + (this.min != null ? this.min.hashCode() : 0);
         result = 31 * result + (this.sort != null ? this.sort.hashCode() : 0);
         result = 31 * result + (this.notimeout ? 1 : 0);
+        result = 31 * result + (this.limit != null ? this.limit.hashCode() : 0);
         return result;
     }
 
@@ -298,6 +340,10 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
             return false;
         }
         if (getMin() != null ? !getMin().equals(that.getMin()) : that.getMin() != null) {
+            return false;
+        }
+        if (limit == null && that.getLimit() != null
+          || !limit.equals(that.getLimit())) {
             return false;
         }
         return true;

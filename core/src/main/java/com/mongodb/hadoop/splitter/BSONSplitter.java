@@ -21,6 +21,7 @@ import com.mongodb.hadoop.input.BSONFileSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.BlockLocation;
@@ -30,7 +31,13 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionOutputStream;
+import org.apache.hadoop.io.compress.Compressor;
+import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.bson.BSONObject;
@@ -46,7 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BSONSplitter extends Configured implements Tool {
-
+    private static final String CORE_JAR = "mongo-hadoop-core.jar";
     private static final Log LOG = LogFactory.getLog(BSONSplitter.class);
 
     private ArrayList<BSONFileSplit> splitsList;
@@ -326,14 +333,6 @@ public class BSONSplitter extends Configured implements Tool {
         readSplitsForFile(file);
     }
 
-    @Override
-    public int run(final String[] args) throws Exception {
-        setInputPath(new Path(getConf().get("mapred.input.dir", "")));
-        readSplits();
-        writeSplits();
-        return 0;
-    }
-
     /**
      * Get the index of the block within the given BlockLocations that
      * contains the given offset. Raises IllegalArgumentException if the
@@ -441,6 +440,139 @@ public class BSONSplitter extends Configured implements Tool {
             return new Path(filePath.getParent(), splitsFileName);
         }
         return new Path(splitsPath, splitsFileName);
+    }
+
+    private void printUsage() {
+        // CHECKSTYLE:OFF
+        System.err.println(
+          "USAGE: hadoop jar " + CORE_JAR + " "
+            + getClass().getName()
+            + " <fileName> [-c compressionCodec] [-o outputDirectory]\n\n"
+            + "Make sure to use the full path, including scheme, for "
+            + "input and output paths.");
+        // CHECKSTYLE:ON
+    }
+
+    /**
+     * When run as a Tool, BSONSplitter can be used to pre-split and compress
+     * BSON files. This can be especially useful before uploading large BSON
+     * files to HDFS to save time. The compressed splits are written to the
+     * given output path or to the directory containing the input file, if
+     * the output path is unspecified. A ".splits" file is not generated, since
+     * each output file is expected to be its own split.
+     *
+     * @param args command-line arguments. Run with zero arguments to see usage.
+     * @return exit status
+     * @throws Exception
+     */
+    @Override
+    public int run(final String[] args) throws Exception {
+        if (args.length < 1) {
+            printUsage();
+            return 1;
+        }
+        // Parse command-line arguments.
+        Path filePath = new Path(args[0]);
+        String compressorName = null, outputDirectoryStr = null;
+        Path outputDirectory;
+        CompressionCodec codec;
+        Compressor compressor;
+
+        for (int i = 1; i < args.length; ++i) {
+            if ("-c".equals(args[i]) && args.length > i) {
+                compressorName = args[++i];
+            } else if ("-o".equals(args[i]) && args.length > i) {
+                outputDirectoryStr = args[++i];
+            } else {
+                // CHECKSTYLE:OFF
+                System.err.println("unrecognized option: " + args[i]);
+                // CHECKSTYLE:ON
+                printUsage();
+                return 1;
+            }
+        }
+
+        // Supply default values for unspecified arguments.
+        if (null == outputDirectoryStr) {
+            outputDirectory = filePath.getParent();
+        } else {
+            outputDirectory = new Path(outputDirectoryStr);
+        }
+        if (null == compressorName) {
+            codec = new DefaultCodec();
+        } else {
+            Class<?> codecClass = Class.forName(compressorName);
+            codec = (CompressionCodec)
+              ReflectionUtils.newInstance(codecClass, getConf());
+        }
+        if (codec instanceof Configurable) {
+            ((Configurable) codec).setConf(getConf());
+        }
+
+        // Do not write a .splits file so as not to confuse BSONSplitter.
+        // Each compressed file will be its own split.
+        MongoConfigUtil.setBSONWriteSplits(getConf(), false);
+
+        // Open the file.
+        FileSystem inputFS =
+          FileSystem.get(filePath.toUri(), getConf());
+        FileSystem outputFS =
+          FileSystem.get(outputDirectory.toUri(), getConf());
+        FSDataInputStream inputStream = inputFS.open(filePath);
+
+        // Use BSONSplitter to split the file.
+        Path splitFilePath = getSplitsFilePath(filePath, getConf());
+        try {
+            loadSplitsFromSplitFile(
+              inputFS.getFileStatus(filePath), splitFilePath);
+        } catch (NoSplitFileException e) {
+            LOG.info("did not find .splits file in " + splitFilePath.toUri());
+            setInputPath(filePath);
+            readSplits();
+        }
+        List<BSONFileSplit> splits = getAllSplits();
+        LOG.info("compressing " + splits.size() + " splits.");
+
+        byte[] buf = new byte[1024 * 1024];
+        for (int i = 0; i < splits.size(); ++i) {
+            // e.g., hdfs:///user/hive/warehouse/mongo/OutputFile-42.bz2
+            Path splitOutputPath = new Path(
+              outputDirectory,
+              filePath.getName()
+                + "-" + i
+                + codec.getDefaultExtension());
+
+            // Compress the split into a new file.
+            compressor = CodecPool.getCompressor(codec);
+            CompressionOutputStream compressionOutputStream = null;
+            try {
+                compressionOutputStream = codec.createOutputStream(
+                  outputFS.create(splitOutputPath),
+                  compressor);
+                int totalBytes = 0, bytesRead = 0;
+                BSONFileSplit split = splits.get(i);
+                inputStream.seek(split.getStart());
+                LOG.info("writing " + splitOutputPath.toUri() + ".");
+                while (totalBytes < split.getLength() && bytesRead >= 0) {
+                    bytesRead = inputStream.read(
+                      buf,
+                      0,
+                      (int) Math.min(buf.length, split.getLength() - totalBytes));
+                    if (bytesRead > 0) {
+                        compressionOutputStream.write(buf, 0, bytesRead);
+                        totalBytes += bytesRead;
+                    }
+                }
+            } finally {
+                if (compressionOutputStream != null) {
+                    compressionOutputStream.close();
+                }
+                CodecPool.returnCompressor(compressor);
+            }
+        }
+        LOG.info("done.");
+
+        return 0;
     }
 
     public static void main(final String[] args) throws Exception {

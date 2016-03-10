@@ -31,6 +31,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -39,6 +42,8 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +52,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -83,7 +89,6 @@ public final class MongoConfigUtil {
     public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
-
 
     /**
      * <p>
@@ -151,6 +156,36 @@ public final class MongoConfigUtil {
     public static final int DEFAULT_SPLIT_SIZE = 8; // 8 mb per manual (non-sharding) split
 
     /**
+     * When {@code true}, MongoSplitter implementations will check for and
+     * remove empty splits before returning them from {@code calculateSplits}.
+     * This requires pulling a small amount of data from MongoDB but avoids
+     * starting tasks that don't have any data to process.
+     *
+     * This option is useful when providing a query to {@link #INPUT_QUERY},
+     * and that query selects a subset of the documents in the collection
+     * that are clustered in the same range of the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. If the query selects documents
+     * throughout the index, consider using
+     * {@link com.mongodb.hadoop.splitter.MongoPaginatingSplitter} and setting
+     * {@link #INPUT_SPLIT_MIN_DOCS} instead.
+     */
+    public static final String ENABLE_FILTER_EMPTY_SPLITS =
+      "mongo.input.splits.filter_empty";
+
+    /**
+     * When {@link #SPLITS_USE_RANGEQUERY} is enabled, this option sets the
+     * minimum number of documents to be contained in each MongoInputSplit
+     * (does not apply to BSON). This option only applies when using
+     * {@link com.mongodb.hadoop.splitter.MongoPaginatingSplitter} as the
+     * splitter implementation.
+     *
+     * This value defaults to {@link #DEFAULT_INPUT_SPLIT_MIN_DOCS}.
+     */
+    public static final String INPUT_SPLIT_MIN_DOCS =
+      "mongo.input.splits.min_docs";
+    public static final int DEFAULT_INPUT_SPLIT_MIN_DOCS = 1000;
+
+    /**
      * <p>
      * If CREATE_INPUT_SPLITS is true but SPLITS_USE_CHUNKS is false, Mongo-Hadoop will attempt to create custom input splits for you.  By
      * default it will split on {@code _id}, which is a reasonable/sane default.
@@ -161,12 +196,35 @@ public final class MongoConfigUtil {
      * index on the field, and follow the other rules outlined in the docs.
      * </p>
      * <p>
+     * To customize the range of the index that is used to create splits, see
+     * the {@link #INPUT_SPLIT_KEY_MIN} and {@link #INPUT_SPLIT_KEY_MAX}
+     * settings.
+     * </p>
+     * <p>
      * This must be a JSON document, and not just a field name!
      * </p>
      *
      * @see <a href="http://docs.mongodb.org/manual/core/sharding-shard-key/">Shard Keys</a>
      */
     public static final String INPUT_SPLIT_KEY_PATTERN = "mongo.input.split.split_key_pattern";
+
+    /**
+     * Lower-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjunction with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MAX}.
+     */
+    public static final String INPUT_SPLIT_KEY_MIN = "mongo.input.split.split_key_min";
+
+    /**
+     * Upper-bound for splits created using the index described by
+     * {@link #INPUT_SPLIT_KEY_PATTERN}. This value must be set to a JSON
+     * string that describes a point in the index. This setting must be used
+     * in conjuntion with {@code INPUT_SPLIT_KEY_PATTERN} and
+     * {@link #INPUT_SPLIT_KEY_MIN}.
+     */
+    public static final String INPUT_SPLIT_KEY_MAX = "mongo.input.split.split_key_max";
 
     /**
      * <p>
@@ -729,6 +787,28 @@ public final class MongoConfigUtil {
         conf.setInt(INPUT_SPLIT_SIZE, value);
     }
 
+    public static void setEnableFilterEmptySplits(
+      final Configuration conf, final boolean value) {
+        conf.setBoolean(ENABLE_FILTER_EMPTY_SPLITS, value);
+    }
+
+    public static boolean isFilterEmptySplitsEnabled(final Configuration conf) {
+        return conf.getBoolean(ENABLE_FILTER_EMPTY_SPLITS, false);
+    }
+
+    public static void setInputSplitMinDocs(
+      final Configuration conf, final int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException(
+              INPUT_SPLIT_MIN_DOCS + " must be greater than 0.");
+        }
+        conf.setInt(INPUT_SPLIT_MIN_DOCS, value);
+    }
+
+    public static int getInputSplitMinDocs(final Configuration conf) {
+        return conf.getInt(INPUT_SPLIT_MIN_DOCS, DEFAULT_INPUT_SPLIT_MIN_DOCS);
+    }
+
     public static boolean isRangeQueryEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_RANGEQUERY, false);
     }
@@ -825,6 +905,23 @@ public final class MongoConfigUtil {
         }
     }
 
+    public static DBObject getMinSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MIN);
+    }
+
+    public static DBObject getMaxSplitKey(final Configuration configuration) {
+        return getDBObject(configuration, INPUT_SPLIT_KEY_MAX);
+    }
+
+    public static void setMinSplitKey(
+      final Configuration conf, final String string) {
+        conf.set(INPUT_SPLIT_KEY_MIN, string);
+    }
+
+    public static void setMaxSplitKey(
+      final Configuration conf, final String string) {
+        conf.set(INPUT_SPLIT_KEY_MAX, string);
+    }
 
     public static void setInputKey(final Configuration conf, final String fieldName) {
         // TODO (bwm) - validate key rules?
@@ -975,8 +1072,8 @@ public final class MongoConfigUtil {
                 if (remove != client) {
                     throw new IllegalStateException("different clients found");
                 }
+                client.close();
             }
-            client.close();
     }
     
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
@@ -988,4 +1085,30 @@ public final class MongoConfigUtil {
             }
             return mongoClient;
         }
+
+    /**
+     * Load Properties stored in a .properties file.
+     * @param conf the Configuration
+     * @param filename the path to the properties file
+     * @return the Properties in the file
+     * @throws IOException if there was a problem reading the properties file
+     */
+    public static Properties readPropertiesFromFile(
+      final Configuration conf, final String filename)
+      throws IOException {
+        Path propertiesFilePath = new Path(filename);
+        FileSystem fs = FileSystem.get(URI.create(filename), conf);
+        if (!fs.exists(propertiesFilePath)) {
+            throw new IOException(
+              "Properties file does not exist: " + filename);
+        }
+        FSDataInputStream inputStream = fs.open(propertiesFilePath);
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+        } finally {
+            inputStream.close();
+        }
+        return properties;
+    }
 }

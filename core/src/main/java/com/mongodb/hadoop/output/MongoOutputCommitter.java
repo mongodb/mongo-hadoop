@@ -40,40 +40,80 @@ import java.util.List;
 
 public class MongoOutputCommitter extends OutputCommitter {
 
-    private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
-    private int roundRobinCounter = 0;
-    private final List<DBCollection> collections;
-    private final int numberOfHosts;
     public static final String TEMP_DIR_NAME = "_MONGO_OUT_TEMP";
+    private static final Log LOG = LogFactory.getLog(MongoOutputCommitter.class);
+    private List<DBCollection> collections;
+    private int numberOfHosts;
+    private int roundRobinCounter = 0;
 
-    public MongoOutputCommitter(final List<DBCollection> collections) {
-        this.collections = collections;
-        numberOfHosts = this.collections.size();
+    public MongoOutputCommitter() {
     }
 
-    private void cleanupTemporaryFiles(final TaskAttemptContext taskContext)
-      throws IOException {
-        Path tempPath = getTaskAttemptPath(taskContext);
+    /**
+     * @deprecated Use the zero-args constructor instead.
+     * @param collections the MongoDB output collections.
+     */
+    @Deprecated
+    public MongoOutputCommitter(final List<DBCollection> collections) {
+        this();
+    }
+
+    /**
+     * Get the Path to where temporary files should be stored for a
+     * TaskAttempt, whose TaskAttemptContext is provided.
+     *
+     * @param context the TaskAttemptContext.
+     * @return the Path to the temporary file for the TaskAttempt.
+     */
+    public static Path getTaskAttemptPath(final TaskAttemptContext context) {
+        Configuration config = context.getConfiguration();
+        // Try to use the following base temporary directories, in this order:
+        // 1. New-style option for task tmp dir
+        // 2. Old-style option for task tmp dir
+        // 3. Hadoop system-wide tmp dir
+        // 4. /tmp
+        String basePath = config.get(
+            "mapreduce.task.tmp.dir",
+            config.get(
+                "mapred.child.tmp",
+                config.get("hadoop.tmp.dir", "/tmp")));
+        // Hadoop Paths always use "/" as a directory separator.
+        return new Path(
+            String.format("%s/%s/%s/_out",
+                          basePath, context.getTaskAttemptID().toString(), TEMP_DIR_NAME));
+    }
+
+    @Override
+    public void setupJob(final JobContext jobContext) {
+        LOG.info("Setting up job.");
+    }
+
+    @Override
+    public void setupTask(final TaskAttemptContext taskContext) {
+        LOG.info("Setting up task.");
+    }
+
+    @Override
+    public boolean needsTaskCommit(final TaskAttemptContext taskContext)
+        throws IOException {
         try {
             FileSystem fs = FileSystem.get(taskContext.getConfiguration());
-            fs.delete(tempPath, true);
+            // Commit is only necessary if there was any output.
+            return fs.exists(getTaskAttemptPath(taskContext));
         } catch (IOException e) {
-            LOG.error("Could not delete temporary file " + tempPath, e);
+            LOG.error("Could not open filesystem", e);
             throw e;
         }
     }
 
     @Override
-    public void abortTask(final TaskAttemptContext taskContext)
-      throws IOException {
-        LOG.info("Aborting task.");
-        cleanupTemporaryFiles(taskContext);
-    }
-
-    @Override
     public void commitTask(final TaskAttemptContext taskContext)
-      throws IOException {
+        throws IOException {
         LOG.info("Committing task.");
+
+        collections =
+          MongoConfigUtil.getOutputCollections(taskContext.getConfiguration());
+        numberOfHosts = collections.size();
 
         // Get temporary file.
         Path tempFilePath = getTaskAttemptPath(taskContext);
@@ -91,7 +131,7 @@ public class MongoOutputCommitter extends OutputCommitter {
         }
 
         int maxDocs = MongoConfigUtil.getBatchSize(
-          taskContext.getConfiguration());
+            taskContext.getConfiguration());
         int curBatchSize = 0;
         DBCollection coll = getDbCollectionByRoundRobin();
         BulkWriteOperation bulkOp = coll.initializeOrderedBulkOperation();
@@ -111,7 +151,7 @@ public class MongoOutputCommitter extends OutputCommitter {
                     muw.readFields(inputStream);
                     DBObject query = new BasicDBObject(muw.getQuery().toMap());
                     DBObject modifiers =
-                      new BasicDBObject(muw.getModifiers().toMap());
+                        new BasicDBObject(muw.getModifiers().toMap());
                     if (muw.isMultiUpdate()) {
                         if (muw.isUpsert()) {
                             bulkOp.find(query).upsert().update(modifiers);
@@ -155,14 +195,22 @@ public class MongoOutputCommitter extends OutputCommitter {
         cleanupAfterCommit(inputStream, taskContext);
     }
 
+    @Override
+    public void abortTask(final TaskAttemptContext taskContext)
+        throws IOException {
+        LOG.info("Aborting task.");
+        cleanupResources(taskContext);
+    }
+
     /**
-     * Helper method to close an FSDataInputStream and clean up any files
-     * still left around from map/reduce tasks.
+     * Helper method to close MongoClients and FSDataInputStream and clean up
+     * any files still left around from map/reduce tasks.
+     *
      * @param inputStream the FSDataInputStream to close.
      */
     private void cleanupAfterCommit(
-      final FSDataInputStream inputStream, final TaskAttemptContext context)
-      throws IOException {
+        final FSDataInputStream inputStream, final TaskAttemptContext context)
+        throws IOException {
         if (inputStream != null) {
             try {
                 inputStream.close();
@@ -171,55 +219,24 @@ public class MongoOutputCommitter extends OutputCommitter {
                 throw e;
             }
         }
-        cleanupTemporaryFiles(context);
+        cleanupResources(context);
     }
 
-    @Override
-    public boolean needsTaskCommit(final TaskAttemptContext taskContext)
-      throws IOException {
+    private void cleanupResources(final TaskAttemptContext taskContext)
+        throws IOException {
+        Path tempPath = getTaskAttemptPath(taskContext);
         try {
             FileSystem fs = FileSystem.get(taskContext.getConfiguration());
-            // Commit is only necessary if there was any output.
-            return fs.exists(getTaskAttemptPath(taskContext));
+            fs.delete(tempPath, true);
         } catch (IOException e) {
-            LOG.error("Could not open filesystem", e);
+            LOG.error("Could not delete temporary file " + tempPath, e);
             throw e;
         }
-    }
-
-    @Override
-    public void setupJob(final JobContext jobContext) {
-        LOG.info("Setting up job.");
-    }
-
-    @Override
-    public void setupTask(final TaskAttemptContext taskContext) {
-        LOG.info("Setting up task.");
-    }
-
-    /**
-     * Get the Path to where temporary files should be stored for a
-     * TaskAttempt, whose TaskAttemptContext is provided.
-     *
-     * @param context the TaskAttemptContext.
-     * @return the Path to the temporary file for the TaskAttempt.
-     */
-    public static Path getTaskAttemptPath(final TaskAttemptContext context) {
-        Configuration config = context.getConfiguration();
-        // Try to use the following base temporary directories, in this order:
-        // 1. New-style option for task tmp dir
-        // 2. Old-style option for task tmp dir
-        // 3. Hadoop system-wide tmp dir
-        // 4. /tmp
-        String basePath = config.get(
-          "mapreduce.task.tmp.dir",
-          config.get(
-            "mapred.child.tmp",
-            config.get("hadoop.tmp.dir", "/tmp")));
-        // Hadoop Paths always use "/" as a directory separator.
-        return new Path(
-          String.format("%s/%s/%s/_out",
-            basePath, context.getTaskAttemptID().toString(), TEMP_DIR_NAME));
+        if (collections != null) {
+            for (DBCollection collection : collections) {
+                MongoConfigUtil.close(collection.getDB().getMongo());
+            }
+        }
     }
 
     private DBCollection getDbCollectionByRoundRobin() {

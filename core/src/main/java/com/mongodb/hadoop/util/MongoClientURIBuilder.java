@@ -114,12 +114,17 @@ public class MongoClientURIBuilder {
         if (userName != null) {
             uri.append(format("%s:%s@", userName, password));
         }
-        for (int i = 0; i < hosts.size(); i++) {
-            final String host = hosts.get(i);
-            if (i != 0) {
-                uri.append(",");
+        // Use localhost by default if no host is provided.
+        if (hosts.isEmpty()) {
+            uri.append("localhost");
+        } else {
+            for (int i = 0; i < hosts.size(); i++) {
+                final String host = hosts.get(i);
+                if (i != 0) {
+                    uri.append(",");
+                }
+                uri.append(host);
             }
-            uri.append(host);
         }
         if (database != null) {
             uri.append(format("/%s.%s", database, collection));

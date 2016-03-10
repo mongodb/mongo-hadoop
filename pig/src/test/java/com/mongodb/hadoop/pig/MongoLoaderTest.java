@@ -2,25 +2,36 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.input.MongoRecordReader;
+import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.util.JSON;
+import org.apache.pig.LoadPushDown;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataByteArray;
+import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
+import org.apache.pig.impl.logicalLayer.FrontendException;
+import org.apache.pig.impl.util.UDFContext;
 import org.bson.types.Binary;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -310,5 +321,34 @@ public class MongoLoaderTest {
         Tuple t2 = (Tuple) m.get("v2");
         assertEquals("t21 value", t2.get(0));
         */
+    }
+
+    @Test
+    public void testPushProjection() throws FrontendException {
+        String userSchema = "a:int, m:[]";
+        MongoLoader ml = new MongoLoader(userSchema);
+        ml.setUDFContextSignature("signature");
+
+        LoadPushDown.RequiredField aField =
+          new LoadPushDown.RequiredField("a", 0, null, DataType.INTEGER);
+        List<LoadPushDown.RequiredField> mSubFields =
+          Collections.singletonList(
+            new LoadPushDown.RequiredField(
+              "x", 0, null, DataType.INTEGER));
+        LoadPushDown.RequiredField mField =
+          new LoadPushDown.RequiredField("m", 1, mSubFields, DataType.MAP);
+        LoadPushDown.RequiredFieldList requiredFields =
+          new LoadPushDown.RequiredFieldList(Arrays.asList(aField, mField));
+
+        LoadPushDown.RequiredFieldResponse response =
+          ml.pushProjection(requiredFields);
+        assertTrue(response.getRequiredFieldResponse());
+
+        Properties props = UDFContext.getUDFContext().getUDFProperties(
+          MongoLoader.class, new String[]{"signature"});
+        assertEquals(
+          new BasicDBObjectBuilder()
+            .add("a", true).add("m.x", true).add("_id", false).get(),
+          JSON.parse(props.getProperty(MongoConfigUtil.INPUT_FIELDS)));
     }
 }

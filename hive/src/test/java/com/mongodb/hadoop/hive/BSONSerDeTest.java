@@ -162,7 +162,7 @@ public class BSONSerDeTest {
         String value = "2015-08-06 07:32:30.062";
         BSONSerDe serde = new BSONSerDe();
         Object result = helpDeserialize(serde, columnNames, columnTypes, value);
-        assertEquals(new Timestamp(1438871550062L), result);
+        assertEquals(Timestamp.valueOf(value), result);
     }
 
     @Test

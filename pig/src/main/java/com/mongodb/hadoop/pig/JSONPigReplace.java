@@ -172,10 +172,13 @@ public class JSONPigReplace {
         BasicBSONObject[] res = new BasicBSONObject[ins.length];
 
         for (int i = 0; i < res.length; i++) {
-            try {
-                res[i] = replaceAll(ins[i], reps);
-            } catch (Exception e) {
-                LOG.error(e.getMessage(), e);
+            BasicBSONObject template = ins[i];
+            if (template != null) {
+                try {
+                    res[i] = replaceAll(template, reps);
+                } catch (Exception e) {
+                    LOG.error(e.getMessage(), e);
+                }
             }
         }
         return res;

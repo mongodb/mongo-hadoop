@@ -32,9 +32,9 @@ it will be generated in the `core/build/libs` directory.
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the
 following locations, depending on which Hadoop release you are using:
 
-* `$HADOOP_HOME/lib/`
-* `$HADOOP_HOME/share/hadoop/mapreduce/`
-* `$HADOOP_HOME/share/hadoop/lib/`
+* `$HADOOP_PREFIX/lib/`
+* `$HADOOP_PREFIX/share/hadoop/mapreduce/`
+* `$HADOOP_PREFIX/share/hadoop/lib/`
 
 mongo-hadoop should work on any distribution of hadoop.  Should you run in to an issue, please file a 
 [Jira](https://jira.mongodb.org/browse/HADOOP/) ticket.
@@ -53,7 +53,7 @@ Using EMR with the MongoDB Connector for Hadoop allows you to run MapReduce jobs
 Submitting jobs using the MongoDB Connector for Hadoop to EMR simply requires that the bootstrap actions fetch the dependencies (mongoDB 
 java driver, mongo-hadoop-core libs, etc.) and place them into the hadoop distributions `lib` folders.
 
-For a full example (running the enron example on Elastic MapReduce) please see [here](examples/elastic-mapreduce/README.md).
+For a full example (running the enron example on Elastic MapReduce) please see [here](https://github.com/mongodb/mongo-hadoop/wiki/Enron-Emails-Example).
 
 ## Notes for Contributors
 
@@ -83,6 +83,7 @@ Luke Lovett (luke.lovett@mongodb.com)
 * Thomas Millar
 * Justin Lee
 * Luke Lovett
+* Mariano Semelman
 
 ### Support
 

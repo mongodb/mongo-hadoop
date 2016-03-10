@@ -18,6 +18,7 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.BSONFileOutputFormat;
+import com.mongodb.hadoop.pig.udf.types.PigBoxedBSONValue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,12 +37,12 @@ import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -76,27 +77,17 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
      * @throws IOException if no schema is available from the field
      */
     public static Object getTypeForBSON(final Object o, final ResourceFieldSchema field, final String toIgnore)
-        throws IOException {
-        byte dataType = field != null ? field.getType() : DataType.UNKNOWN;
-        ResourceSchema s = null;
-        if (field == null) {
-            if (o instanceof Map) {
-                dataType = DataType.MAP;
-            } else if (o instanceof List) {
-                dataType = DataType.BAG;
-            } else {
-                dataType = DataType.UNKNOWN;
-            }
+      throws IOException {
+        byte dataType;
+        ResourceSchema fieldInnerSchema = null;
+        if (null == o) {
+            return null;
+        }
+        if (null == field || DataType.UNKNOWN == field.getType()) {
+            dataType = DataType.findType(o);
         } else {
-            s = field.getSchema();
-            if (dataType == DataType.UNKNOWN) {
-                if (o instanceof Map) {
-                    dataType = DataType.MAP;
-                }
-                if (o instanceof List) {
-                    dataType = DataType.BAG;
-                }
-            }
+            dataType = field.getType();
+            fieldInnerSchema = field.getSchema();
         }
 
         if (dataType == DataType.BYTEARRAY && o instanceof Map) {
@@ -112,62 +103,53 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
             case DataType.DOUBLE:
                 return o;
             case DataType.BYTEARRAY:
+                if (o instanceof PigBoxedBSONValue) {
+                    return ((PigBoxedBSONValue) o).getObject();
+                }
                 return o.toString();
             case DataType.CHARARRAY:
                 return o;
-
+            case DataType.DATETIME:
+                return ((DateTime) o).toDate();
             //Given a TUPLE, create a Map so BSONEncoder will eat it
             case DataType.TUPLE:
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                          + field.getName());
+                // If there is no inner schema, just return the Tuple.
+                // BasicBSONEncoder will consume it as an Iterable.
+                if (fieldInnerSchema == null) {
+                    return o;
                 }
-                ResourceFieldSchema[] fs = s.getFields();
+
+                // If there was an inner schema, create a Map from the Tuple.
+                ResourceFieldSchema[] fs = fieldInnerSchema.getFields();
+                // check if fs[0] should be 'unnamed', in which case, we create
+                // an array of 'inner' elements.
+                // For example, {("a"),("b")} becomes ["a","b"] if/
+                // unnamedStr == "t" and schema for bag is {<*>:(t:chararray)}/
+                // <*> -> can be any string since the field name of the tuple in
+                // a bag should be ignored
+                if (1 == fs.length && fs[0].getName().equals(toIgnore)) {
+                    return getTypeForBSON(((Tuple) o).get(0), fs[0], toIgnore);
+                }
+                // If there is more than one field in the tuple or no fields
+                // to ignore, treat the Tuple as a Map.
                 Map<String, Object> m = new LinkedHashMap<String, Object>();
                 for (int j = 0; j < fs.length; j++) {
                     m.put(fs[j].getName(), getTypeForBSON(((Tuple) o).get(j), fs[j], toIgnore));
                 }
                 return m;
-
             // Given a BAG, create an Array so BSONEncoder will eat it.
             case DataType.BAG:
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                          + field);
+                // If there is no inner schema, just return the Bag.
+                // BasicBSONEncoder will consume it as an Iterable.
+                if (null == fieldInnerSchema) {
+                    return o;
                 }
-                fs = s.getFields();
-                if (fs.length != 1 || fs[0].getType() != DataType.TUPLE) {
-                    throw new IOException("Found a bag without a tuple inside!");
+                fs = fieldInnerSchema.getFields();
+                ArrayList<Object> bagList = new ArrayList<Object>();
+                for (Tuple t : (DataBag) o) {
+                    bagList.add(getTypeForBSON(t, fs[0], toIgnore));
                 }
-                // Drill down the next level to the tuple's schema.
-                s = fs[0].getSchema();
-                if (s == null) {
-                    throw new IOException("Schemas must be fully specified to use this storage function.  No schema found for field "
-                                          + field.getName());
-                }
-                fs = s.getFields();
-                ArrayList<Object> a = new ArrayList<Object>();
-
-                // check if fs[0] should be 'unnamed', in which case, we create an array
-                // of 'inner' elements.
-                // For example, {("a"),("b")} becomes ["a","b"] if
-                // unnamedStr == "t" and schema for bag is {<*>:(t:chararray)}
-                // <*> -> can be any string since the field name of the tuple in a bag should be ignored 
-                if (fs.length == 1 && fs[0].getName().equals(toIgnore)) {
-                    for (Tuple t : (DataBag) o) {
-                        a.add(t.get(0));
-                    }
-                } else {
-                    for (Tuple t : (DataBag) o) {
-                        Map<String, Object> ma = new LinkedHashMap<String, Object>();
-                        for (int j = 0; j < fs.length; j++) {
-                            ma.put(fs[j].getName(), t.get(j));
-                        }
-                        a.add(ma);
-                    }
-                }
-
-                return a;
+                return bagList;
             case DataType.MAP:
                 if (o == null) {
                     return null;

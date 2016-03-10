@@ -2,6 +2,7 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBRef;
 import com.mongodb.hadoop.BSONFileInputFormat;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -108,6 +109,14 @@ public class BSONLoader extends LoadFunc {
 
     }
 
+    /**
+     * Convert an object from a MongoDB document into a type that Pig can
+     * understand, based on the expectations of the given schema.
+     * @param obj object from a MongoDB document
+     * @param field the schema describing this field
+     * @return an object appropriate for Pig
+     * @throws IOException
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected static Object readField(final Object obj, final ResourceFieldSchema field) throws IOException {
         if (obj == null) {
@@ -171,18 +180,24 @@ public class BSONLoader extends LoadFunc {
                 case DataType.MAP:
                     s = field.getSchema();
                     fs = s != null ? s.getFields() : null;
-                    BasicBSONObject inputMap = (BasicBSONObject) obj;
-
                     Map outputMap = new HashMap();
-                    for (String key : inputMap.keySet()) {
-                        if (fs != null) {
-                            outputMap.put(key, readField(inputMap.get(key), fs[0]));
-                        } else {
-                            outputMap.put(key, readField(inputMap.get(key), null));
+                    if (obj instanceof BSONObject) {
+                        BasicBSONObject inputMap = (BasicBSONObject) obj;
+                        for (String key : inputMap.keySet()) {
+                            if (fs != null) {
+                                outputMap.put(key,
+                                  readField(inputMap.get(key), fs[0]));
+                            } else {
+                                outputMap.put(key,
+                                  readField(inputMap.get(key), null));
+                            }
                         }
+                    } else if (obj instanceof DBRef) {
+                        DBRef ref = (DBRef) obj;
+                        outputMap.put("$ref", ref.getCollectionName());
+                        outputMap.put("$id", ref.getId().toString());
                     }
                     return outputMap;
-
                 default:
                     LOG.info("asfkjabskfjbsaf default for " + field.getName());
                     return BSONLoader.convertBSONtoPigType(obj);
@@ -197,6 +212,13 @@ public class BSONLoader extends LoadFunc {
     }
 
 
+    /**
+     * Convert an object from a MongoDB document into a type that Pig can
+     * understand, based on the type of the input object.
+     * @param o object from a MongoDB document
+     * @return object appropriate for pig
+     * @throws ExecException for lower-level Pig errors
+     */
     public static Object convertBSONtoPigType(final Object o) throws ExecException {
         if (o == null) {
             return null;
@@ -227,6 +249,11 @@ public class BSONLoader extends LoadFunc {
             return new DataByteArray((byte[]) o);
         } else if (o instanceof Binary) {
             return new DataByteArray(((Binary) o).getData());
+        } else if (o instanceof DBRef) {
+            HashMap<String, String> pigMap = new HashMap<String, String>(2);
+            pigMap.put("$ref", ((DBRef) o).getCollectionName());
+            pigMap.put("$id", ((DBRef) o).getId().toString());
+            return pigMap;
         } else {
             return o;
         }

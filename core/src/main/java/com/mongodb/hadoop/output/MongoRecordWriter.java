@@ -23,6 +23,7 @@ import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.io.MongoWritableTypes;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
@@ -72,7 +74,8 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             LOG.info("Writing to temporary file: " + outputPath.toString());
             outputStream = fs.create(outputPath, true);
         } catch (IOException e) {
-            LOG.error(
+            // TODO: re-throw IOException the next time API can be changed.
+            throw new RuntimeException(
               "Could not open temporary file for buffering Mongo output", e);
         }
     }
@@ -85,6 +88,9 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
             } catch (IOException e) {
                 LOG.error("Could not close output stream", e);
             }
+        }
+        for (DBCollection collection : collections) {
+            MongoConfigUtil.close(collection.getDB().getMongo());
         }
     }
 
@@ -109,6 +115,8 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
                 ((MongoOutput) value).appendAsValue(o);
             } else if (value instanceof BSONObject) {
                 o.putAll((BSONObject) value);
+            } else if (value instanceof Map) {
+                o.putAll((Map) value);
             } else {
                 o.put("value", BSONWritable.toBSON(value));
             }

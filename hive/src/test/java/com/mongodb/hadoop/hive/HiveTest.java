@@ -5,6 +5,8 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
+import org.apache.hadoop.hive.ql.exec.ColumnInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -41,6 +43,12 @@ public class HiveTest extends BaseHadoopTest {
                                      .collection("mongo_hadoop", MONGO_COLLECTION)
                                 ).build();
 
+    }
+
+    public class SimpleMockColumnInfo extends ColumnInfo {
+        public SimpleMockColumnInfo(final String colName) {
+            super(colName, TypeInfoFactory.intTypeInfo, "test_tab", false);
+        }
     }
 
     @BeforeClass

@@ -34,17 +34,24 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
     public MongoOutputFormat() {
     }
 
+    @Override
     public void checkOutputSpecs(final FileSystem ignored, final JobConf job) throws IOException {
         if (MongoConfigUtil.getOutputURIs(job).isEmpty()) {
             throw new IOException("No output URI is specified. You must set mongo.output.uri.");
         }
     }
 
+    /**
+     * @deprecated This method is unused.
+     * @param context the current task's context.
+     * @return an instance of {@link MongoOutputCommitter}
+     */
+    @Deprecated
     public OutputCommitter getOutputCommitter(final TaskAttemptContext context) {
-        return new MongoOutputCommitter(
-          MongoConfigUtil.getOutputCollections(context.getJobConf()));
+        return new MongoOutputCommitter();
     }
 
+    @Override
     public RecordWriter<K, V> getRecordWriter(
       final FileSystem ignored, final JobConf job, final String name,
       final Progressable progress) {

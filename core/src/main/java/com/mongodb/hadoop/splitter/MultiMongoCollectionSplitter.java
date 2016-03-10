@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.String.format;
+
 public class MultiMongoCollectionSplitter extends MongoSplitter {
 
     public static final String MULTI_COLLECTION_CONF_KEY = "mongo.input.multi_uri.json";
@@ -51,9 +53,7 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
         //splitter for each implementation.
         if (inputURIs.size() > 0) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug(
-                  "Using global split settings for multiple URIs " +
-                    "specified.");
+                LOG.debug("Using global split settings for multiple URIs specified.");
             }
             //Get options from the hadoop config.
             //Use these options for all URIs in the list.
@@ -73,9 +73,7 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
         } else {
             //Otherwise the user has set options per-collection.
             if (LOG.isDebugEnabled()) {
-                LOG.debug(
-                  "Loading multiple input URIs from JSON stored in " +
-                    MULTI_COLLECTION_CONF_KEY);
+                LOG.debug("Loading multiple input URIs from JSON stored in " + MULTI_COLLECTION_CONF_KEY);
             }
             DBObject multiUriConfig = MongoConfigUtil.getDBObject(this.getConfiguration(), MULTI_COLLECTION_CONF_KEY);
 
@@ -104,12 +102,8 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
 
                 if (splitterClass != null) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug(
-                          String.format(
-                            "Using custom Splitter class for namespace: %s.%s; " +
-                              "hosts: %s",
-                            inputURI.getDatabase(), inputURI.getCollection(),
-                            inputURI.getHosts()));
+                        LOG.debug(format("Using custom Splitter class for namespace: %s.%s; hosts: %s",
+                            inputURI.getDatabase(), inputURI.getCollection(), inputURI.getHosts()));
                     }
                     //User wants to use a specific custom class for this URI.
                     //Make sure that the custom class isn't this one
@@ -126,12 +120,8 @@ public class MultiMongoCollectionSplitter extends MongoSplitter {
                     splitter = collectionSplitter;
                 } else {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug(
-                          String.format(
-                            "Fetching collection stats on namespace: %s.%s; " +
-                              "hosts: %s to choose splitter implementation.",
-                            inputURI.getDatabase(), inputURI.getCollection(),
-                            inputURI.getHosts()));
+                        LOG.debug(format("Fetching collection stats on namespace: %s.%s; hosts: %s to choose splitter implementation.",
+                              inputURI.getDatabase(), inputURI.getCollection(), inputURI.getHosts()));
                     }
                     //No class was specified, so choose one by looking at
                     //collection stats.

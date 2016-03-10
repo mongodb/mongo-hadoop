@@ -16,9 +16,12 @@
 
 package com.mongodb.hadoop.splitter;
 
+import com.mongodb.hadoop.input.MongoInputSplit;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class MongoSplitter {
@@ -40,5 +43,26 @@ public abstract class MongoSplitter {
 
     public Configuration getConfiguration() {
         return configuration;
+    }
+
+    /**
+     * Get a list of nonempty input splits only.
+     *
+     * @param splits a list of input splits
+     * @return a new list of nonempty input splits
+     */
+    public static List<InputSplit> filterEmptySplits(
+      final List<InputSplit> splits) {
+        List<InputSplit> results = new ArrayList<InputSplit>(splits.size());
+        for (InputSplit split : splits) {
+            MongoInputSplit mis = (MongoInputSplit) split;
+            if (mis.getCursor().hasNext()) {
+                results.add(mis);
+            } else {
+                MongoConfigUtil.close(
+                  mis.getCursor().getCollection().getDB().getMongo());
+            }
+        }
+        return results;
     }
 }
