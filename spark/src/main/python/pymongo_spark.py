@@ -31,7 +31,8 @@ _PICKLE_BSON_TYPES = (
     'org.bson.types.MinKey',
     'org.bson.types.BSONTimestamp',
     'com.mongodb.DBRef',
-    'java.util.regex.Pattern'
+    'java.util.regex.Pattern',
+    'java.util.Date'
 )
 
 
@@ -68,6 +69,19 @@ def _ensure_pickles(self):
                     jvm.java.lang.Class.forName(
                         'com.mongodb.spark.pickle.%sConstructor' % unpc[1])
                     .newInstance())
+
+            # Register CalendarTransformer with the Java driver so that we can
+            # encode java.util.GregorianCalendar objects. GregorianCalendar is
+            # what is constructed out of pickled datetime objects.
+            # We can't create a custom IObjectConstructor like we do for other
+            # BSON types, because the Razorvine library already has a
+            # constructor for datetimes.
+            jvm.org.bson.BSON.addEncodingHook(
+                # SyntaxError to access ".class" attribute.
+                jvm.java.lang.Class.forName('java.util.GregorianCalendar'),
+                jvm.java.lang.Class.forName(
+                    'com.mongodb.spark.pickle.CalendarTransformer')
+                .newInstance())
             self.__registered_picklers = True
         except py4j.protocol.Py4JError:
             orig_t, orig_v, orig_tb = sys.exc_info()

@@ -16,6 +16,10 @@ import org.bson.types.ObjectId;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 /**
@@ -212,6 +216,31 @@ public class BSONPickler implements IObjectPickler {
         out.write(Opcodes.BUILD);
     }
 
+    private void pickleDate(
+      final Date date, final OutputStream out, final Pickler currentPickler)
+      throws IOException {
+        Calendar calendar = GregorianCalendar.getInstance();
+        calendar.setTime(date);
+        // Assume raw Dates from MongoDB are in UTC.
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        out.write(Opcodes.GLOBAL);
+        out.write("datetime\ndatetime\n".getBytes());
+        out.write(Opcodes.MARK);
+        currentPickler.save(calendar.get(Calendar.YEAR));
+        currentPickler.save(calendar.get(Calendar.MONTH) + 1);
+        currentPickler.save(calendar.get(Calendar.DAY_OF_MONTH));
+        currentPickler.save(calendar.get(Calendar.HOUR_OF_DAY));
+        currentPickler.save(calendar.get(Calendar.MINUTE));
+        currentPickler.save(calendar.get(Calendar.SECOND));
+        currentPickler.save(calendar.get(Calendar.MILLISECOND) * 1000);
+        // Do not save TimeZone information, so that Python datetimes are
+        // timezone-naive (default Pickler will always save timezone
+        // information).
+        out.write(Opcodes.TUPLE);
+        out.write(Opcodes.REDUCE);
+    }
+
     /**
      * Write the Python "pickle" representation of a BSON type.
      *
@@ -251,6 +280,8 @@ public class BSONPickler implements IObjectPickler {
             // Since the Hadoop connector is in Java, regular expressions will
             // be of this class, rather than scala.util.matching.Regex.
             pickleRegex((Pattern) o, out, currentPickler);
+        } else if (o instanceof Date) {
+            pickleDate((Date) o, out, currentPickler);
         } else {
             throw new PickleException("Can't pickle this: " + o);
         }
