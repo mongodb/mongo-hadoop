@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import os
 import re
 import shutil
@@ -45,8 +46,10 @@ class TestPyMongoSpark(unittest.TestCase):
 
     def test_read_from_mongo(self):
         # Insert a document that contains one of each BSON type.
+        tzinfo = bson.tz_util.FixedOffset(120, 'test-offset')
         self.coll.insert_one({
             '_id': bson.objectid.ObjectId(),
+            'datetime': datetime.datetime.now(tzinfo),
             'binary': bson.binary.Binary('i am a binary', 42),
             'dbref': bson.dbref.DBRef('collectionname', 12),
             'maxkey': bson.max_key.MaxKey(),
@@ -62,6 +65,7 @@ class TestPyMongoSpark(unittest.TestCase):
         actual = self.sc.mongoRDD(CONNECTION_STRING).first()
         self.assertEqual(self.coll.find_one(), actual)
         self.assertIsInstance(actual['_id'], bson.objectid.ObjectId)
+        self.assertIsInstance(actual['datetime'], datetime.datetime)
         self.assertIsInstance(actual['binary'], bson.binary.Binary)
         self.assertIsInstance(actual['dbref'], bson.dbref.DBRef)
         self.assertIsInstance(actual['maxkey'], bson.max_key.MaxKey)
@@ -75,8 +79,10 @@ class TestPyMongoSpark(unittest.TestCase):
                          self.sc.mongoPairRDD(CONNECTION_STRING).first()[1])
 
     def test_save_to_mongo(self):
+        tzinfo = bson.tz_util.FixedOffset(160, 'test-offset')
         self.coll.insert_one({
             '_id': bson.objectid.ObjectId('55c8d60a6e32aba68881faae'),
+            'datetime': datetime.datetime.now(tzinfo),
             'binary': bson.binary.Binary('i am a binary', 42),
             'dbref': bson.dbref.DBRef('collectionname', 12),
             'maxkey': bson.max_key.MaxKey(),
