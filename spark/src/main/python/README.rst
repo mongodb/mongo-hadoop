@@ -23,6 +23,9 @@ Installation
      cd mongo-hadoop/spark/src/main/python
      python setup.py install
 
+3. Install `pymongo <https://pypi.python.org/pypi/pymongo>`_ on each machine in
+   your Spark cluster.
+
 You'll also need to put ``mongo-hadoop-spark.jar`` (see above for instructions
 on how to obtain this) somewhere on Spark's ``CLASSPATH`` prior to using this
 package.
