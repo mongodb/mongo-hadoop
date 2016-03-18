@@ -14,87 +14,7 @@
 
 __version__ = '0.1'
 
-import sys
-
-import py4j
 import pyspark
-
-
-# These types need special pickling to work correctly with PyMongo.
-_PICKLE_BSON_TYPES = (
-    'org.bson.types.ObjectId',
-    'org.bson.types.Binary',
-    'org.bson.types.Code',
-    'org.bson.types.CodeWScope',
-    'org.bson.types.CodeWithScope',
-    'org.bson.types.MaxKey',
-    'org.bson.types.MinKey',
-    'org.bson.types.BSONTimestamp',
-    'com.mongodb.DBRef',
-    'java.util.regex.Pattern',
-    'java.util.Date'
-)
-
-
-# Register Constructors for unpickling.
-# (module, class)
-_UNPICKLE_CONSTRUCTORS = (
-    ('bson.binary', 'Binary'),
-    ('bson.code', 'Code'),
-    ('bson.dbref', 'DBRef'),
-    ('bson.int64', 'Int64'),
-    ('bson.max_key', 'MaxKey'),
-    ('bson.min_key', 'MinKey'),
-    ('bson.timestamp', 'Timestamp'),
-    ('bson.regex', 'Regex'),
-    ('bson.objectid', 'ObjectId')
-)
-
-
-def _ensure_pickles(self):
-    if not getattr(self, '__registered_picklers', False):
-        try:
-            jvm = self._jvm
-            pickler = jvm.net.razorvine.pickle.Pickler
-            bson_pickler = jvm.com.mongodb.spark.pickle.BSONPickler()
-
-            for pbt in _PICKLE_BSON_TYPES:
-                pickler.registerCustomPickler(
-                    jvm.java.lang.Class.forName(pbt), bson_pickler)
-
-            unpickler = jvm.net.razorvine.pickle.Unpickler
-            for unpc in _UNPICKLE_CONSTRUCTORS:
-                unpickler.registerConstructor(
-                    unpc[0], unpc[1],
-                    jvm.java.lang.Class.forName(
-                        'com.mongodb.spark.pickle.%sConstructor' % unpc[1])
-                    .newInstance())
-
-            # Register CalendarTransformer with the Java driver so that we can
-            # encode java.util.GregorianCalendar objects. GregorianCalendar is
-            # what is constructed out of pickled datetime objects.
-            # We can't create a custom IObjectConstructor like we do for other
-            # BSON types, because the Razorvine library already has a
-            # constructor for datetimes.
-            jvm.org.bson.BSON.addEncodingHook(
-                # SyntaxError to access ".class" attribute.
-                jvm.java.lang.Class.forName('java.util.GregorianCalendar'),
-                jvm.java.lang.Class.forName(
-                    'com.mongodb.spark.pickle.CalendarTransformer')
-                .newInstance())
-            self.__registered_picklers = True
-        except py4j.protocol.Py4JError:
-            orig_t, orig_v, orig_tb = sys.exc_info()
-            try:
-                # Try to guess most common cause of failure.
-                raise (py4j.protocol.Py4JError,
-                       "Error while communicating with the JVM. "
-                       "Is the MongoDB Spark jar on Spark's CLASSPATH? : " +
-                       str(orig_v),
-                       orig_tb)
-            finally:
-                # Avoid circular reference with traceback.
-                del orig_tb
 
 
 def saveToMongoDB(self, connection_string, config=None):
@@ -112,7 +32,7 @@ def saveToMongoDB(self, connection_string, config=None):
         keyClass = 'org.apache.hadoop.io.NullWritable'
     to_save.saveAsNewAPIHadoopFile(
         'file:///this-is-unused',
-        outputFormatClass='com.mongodb.hadoop.MongoOutputFormat',
+        outputFormatClass='com.mongodb.spark.PySparkMongoOutputFormat',
         keyClass=keyClass,
         valueClass='com.mongodb.hadoop.io.BSONWritable',
         keyConverter='com.mongodb.spark.pickle.NoopConverter',
@@ -132,7 +52,7 @@ def saveToBSON(self, file_path, config=None):
         keyClass = 'org.apache.hadoop.io.NullWritable'
     to_save.saveAsNewAPIHadoopFile(
         file_path,
-        outputFormatClass='com.mongodb.hadoop.BSONFileOutputFormat',
+        outputFormatClass='com.mongodb.spark.PySparkBSONFileOutputFormat',
         keyClass=keyClass,
         valueClass='com.mongodb.hadoop.io.BSONWritable',
         keyConverter='com.mongodb.spark.pickle.NoopConverter',
@@ -143,10 +63,9 @@ def saveToBSON(self, file_path, config=None):
 
 def BSONFilePairRDD(self, file_path, config=None):
     """Create a pair RDD backed by a BSON file."""
-    _ensure_pickles(self)
     return self.newAPIHadoopFile(
         file_path,
-        inputFormatClass='com.mongodb.hadoop.BSONFileInputFormat',
+        inputFormatClass='com.mongodb.spark.PySparkBSONFileInputFormat',
         keyClass='com.mongodb.hadoop.io.BSONWritable',
         valueClass='com.mongodb.hadoop.io.BSONWritable',
         conf=config)
@@ -154,12 +73,11 @@ def BSONFilePairRDD(self, file_path, config=None):
 
 def mongoPairRDD(self, connection_string, config=None):
     """Create a pair RDD backed by MongoDB."""
-    _ensure_pickles(self)
     conf = {'mongo.input.uri': connection_string}
     if config:
         conf.update(config)
     return self.newAPIHadoopRDD(
-        inputFormatClass='com.mongodb.hadoop.MongoInputFormat',
+        inputFormatClass='com.mongodb.spark.PySparkMongoInputFormat',
         keyClass='com.mongodb.hadoop.io.BSONWritable',
         valueClass='com.mongodb.hadoop.io.BSONWritable',
         conf=conf)
