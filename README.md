@@ -22,12 +22,48 @@ Check out the [releases](https://github.com/mongodb/mongo-hadoop/releases) page 
 * Works with BSON/MongoDB documents in other Hadoop tools such as [**Pig**][pig-usage] and [**Hive**][hive-usage].
 
 ## Download
-See the [release](https://github.com/mongodb/mongo-hadoop/releases) page.
+
+The best way to install the Hadoop connector is through a dependency management system like Maven:
+
+    <dependency>
+        <groupId>org.mongodb.mongo-hadoop</groupId>
+        <artifactId>mongo-hadoop-core</artifactId>
+        <version>1.5.1</version>
+    </dependency>
+
+or Gradle:
+
+    compile 'org.mongodb.mongo-hadoop:mongo-hadoop-core:1.5.1'
+
+You can also download the jars files yourself from the [Maven Central Repository](http://search.maven.org/).
+
+New releases are announced on the [releases](https://github.com/mongodb/mongo-hadoop/releases) page.
+
+## Requirements
+
+#### Version Compatibility
+
+These are the minimum versions tested with the Hadoop connector. Earlier
+versions may work, but haven't been tested.
+
+- *Hadoop*: 2.4
+- *Hive*: 1.1
+- *Pig*: 0.11
+- *Spark*: 2.4
+- *MongoDB*: 2.2
+
+#### Dependencies
+
+You must have at least version 3.0.0 of the
+[MongoDB Java Driver](https://mongodb.github.io/mongo-java-driver/) installed in
+order to use the Hadoop connector.
 
 ## Building
 
 Run `./gradlew jar` to build the jars.  The jars will be placed in to `build/libs` for each module.  e.g. for the core module, 
 it will be generated in the `core/build/libs` directory.
+
+The Hadoop connector will build against the versions of Hadoop, Hive, Pig, etc. as specified in `build.gradle`.
 
 After successfully building, you must copy the jars to the lib directory on each node in your hadoop cluster. This is usually one of the
 following locations, depending on which Hadoop release you are using:
@@ -36,7 +72,7 @@ following locations, depending on which Hadoop release you are using:
 * `$HADOOP_PREFIX/share/hadoop/mapreduce/`
 * `$HADOOP_PREFIX/share/hadoop/lib/`
 
-mongo-hadoop should work on any distribution of hadoop.  Should you run in to an issue, please file a 
+mongo-hadoop should work on any distribution of Hadoop.  Should you run in to an issue, please file a 
 [Jira](https://jira.mongodb.org/browse/HADOOP/) ticket.
 
 ## Documentation
