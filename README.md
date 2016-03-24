@@ -49,7 +49,7 @@ versions may work, but haven't been tested.
 - *Hadoop*: 2.4
 - *Hive*: 1.1
 - *Pig*: 0.11
-- *Spark*: 2.4
+- *Spark*: 1.4
 - *MongoDB*: 2.2
 
 #### Dependencies
