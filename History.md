@@ -1,3 +1,14 @@
+1.5.2 / 28th of March, 2016
+===========================
+
+This release fixes a couple issues when using the "pymongo-spark" library,
+including a bug where datetimes were being decoded to
+java.util.GregorianCalendar and another bug where pymongo-was not working
+in non-local Spark setups.
+
+For complete details on the issues resolved in 1.5.2, consult the release notes
+on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/16602
+
 1.5.1 / 9th of March, 2016
 ==========================
 
