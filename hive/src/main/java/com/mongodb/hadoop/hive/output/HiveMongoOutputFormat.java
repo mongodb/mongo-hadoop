@@ -16,10 +16,10 @@
 
 package com.mongodb.hadoop.hive.output;
 
-import com.mongodb.DBCollection;
 import com.mongodb.hadoop.io.BSONWritable;
-import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
-import com.mongodb.hadoop.mapred.output.MongoRecordWriter;
+import com.mongodb.hadoop.output.MongoOutputCommitter;
+import com.mongodb.hadoop.output.MongoRecordWriter;
+import com.mongodb.hadoop.util.CompatUtils;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -28,12 +28,9 @@ import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptContext;
-import org.apache.hadoop.mapred.TaskAttemptContextImpl;
-import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Properties;
 
 /*
@@ -49,7 +46,7 @@ public class HiveMongoOutputFormat implements HiveOutputFormat<BSONWritable, BSO
                                             final boolean isCompressed,
                                             final Properties tableProperties,
                                             final Progressable progress) throws IOException {
-        return new HiveMongoRecordWriter(MongoConfigUtil.getOutputCollections(conf), conf);
+        return new HiveMongoRecordWriter(conf);
     }
 
 
@@ -73,16 +70,18 @@ public class HiveMongoOutputFormat implements HiveOutputFormat<BSONWritable, BSO
         extends MongoRecordWriter<Object, BSONWritable>
         implements RecordWriter {
 
-        private final TaskAttemptContext context;
+        private final CompatUtils.TaskAttemptContext context;
         private final MongoOutputCommitter committer;
 
-        public HiveMongoRecordWriter(final List<DBCollection> ls, final JobConf conf) {
-            super(conf);
-            context = new TaskAttemptContextImpl(
-              conf, TaskAttemptID.forName(conf.get("mapred.task.id")));
-            // Hive doesn't use an OutputCommitter, so we'll need to do this
-            // manually.
-            committer = new MongoOutputCommitter(ls);
+        public HiveMongoRecordWriter(final JobConf conf) {
+            super(
+              MongoConfigUtil.getOutputCollection(conf),
+              CompatUtils.getTaskAttemptContext(
+                conf, conf.get("mapred.task.id")));
+            context =
+              CompatUtils.getTaskAttemptContext(
+                conf, conf.get("mapred.task.id"));
+            committer = new MongoOutputCommitter();
         }
 
         @Override

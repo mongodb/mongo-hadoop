@@ -8,15 +8,16 @@ apply plugin: 'com.github.ben-manes.versions'
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '3.2.1'
-ext.hiveVersion = '1.2.1'
-ext.pigVersion = '0.15.0'
-ext.hadoopVersion = '2.7.2'
-ext.sparkVersion = '1.6.0'
-ext.scalaVersion = '2.11'
+ext.hiveVersion = System.getenv("HIVE_VERSION") ?: '1.2.1'
+ext.pigVersion = System.getenv("PIG_VERSION") ?: '0.15.0'
+ext.hadoopVersion = System.getenv("HADOOP_VERSION") ?: '2.7.2'
+ext.sparkVersion = System.getenv("SPARK_VERSION") ?: '1.6.0'
+ext.scalaVersion = System.getenv("SCALA_VERSION") ?: '2.11'
+ext.isHadoopV1 = "$hadoopVersion".startsWith("1.")
 
-ext.hadoopHome = "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
-ext.hiveHome = "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
-ext.pigHome = "${hadoopBinaries}/pig-${pigVersion}".toString()
+ext.hadoopHome = System.getenv("HADOOP_HOME") ?: "${hadoopBinaries}/hadoop-${hadoopVersion}".toString()
+ext.hiveHome = System.getenv("HIVE_HOME") ?: "${hadoopBinaries}/apache-hive-${hiveVersion}-bin".toString()
+ext.pigHome = System.getenv("PIG_HOME") ?: "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.docsHome = "${rootDir}/docs"
 ext.mongoimport = new File('/mnt/jenkins/mongodb/32/32-release/bin/mongoimport').exists() ?
@@ -106,11 +107,15 @@ configure(subprojects) {
         testCompile 'com.jayway.awaitility:awaitility:1.6.0'
         testCompile 'commons-daemon:commons-daemon:1.0.15'
 
-        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
-        testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
-        testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
+        if (isHadoopV1) {
+            testCompile "org.apache.hadoop:hadoop-test:${hadoopVersion}"
+        } else {
+            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}"
+            testCompile "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-common:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVersion}:tests"
+            testCompile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}:tests"
+        }
     }
 
     /* Compiling */
@@ -294,13 +299,18 @@ project(":core") {
     archivesBaseName = "mongo-hadoop-core"
 
     dependencies {
-        compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
-
+        if (isHadoopV1) {
+            compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-client:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-tools:${hadoopVersion}"
+        } else {
+            compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
+            compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
+        }
         testCompile "org.mockito:mockito-core:1.10.19"
     }
 }
@@ -370,7 +380,11 @@ project(":pig") {
 
     dependencies {
         compile project(":core")
-        compile "org.apache.pig:pig:${pigVersion}:h2"
+        if (isHadoopV1) {
+            compile "org.apache.pig:pig:${pigVersion}"
+        } else {
+            compile "org.apache.pig:pig:${pigVersion}:h2"
+        }
         compile 'joda-time:joda-time:2.7'
 
         testCompile files(project(':core').sourceSets.main.output)

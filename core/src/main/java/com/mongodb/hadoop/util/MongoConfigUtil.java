@@ -529,14 +529,6 @@ public final class MongoConfigUtil {
         }
     }
 
-    public static List<DBCollection> getOutputCollections(final Configuration conf) {
-        try {
-            return getCollections(getOutputURIs(conf), getAuthURI(conf));
-        } catch (final Exception e) {
-            throw new IllegalArgumentException("Unable to connect to MongoDB Output Collection.", e);
-        }
-    }
-
     public static DBCollection getInputCollection(final Configuration conf) {
         try {
             return getCollection(getInputURI(conf));

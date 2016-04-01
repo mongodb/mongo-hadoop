@@ -23,6 +23,7 @@ import com.mongodb.hadoop.MongoOutput;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.io.MongoWritableTypes;
+import com.mongodb.hadoop.util.CompatUtils;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,36 +35,21 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.bson.BSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 
 public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
 
     private static final Log LOG = LogFactory.getLog(MongoRecordWriter.class);
-    private final List<DBCollection> collections;
-    private final TaskAttemptContext context;
+    private final DBCollection collection;
+    private final CompatUtils.TaskAttemptContext context;
     private final BSONWritable bsonWritable;
     private FSDataOutputStream outputStream;
 
-    /**
-     * Create a MongoRecordWriter targeting a single DBCollection.
-     * @param c a DBCollection
-     * @param ctx the TaskAttemptContext
-     */
-    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
-        this(Arrays.asList(c), ctx);
-    }
-
-    /**
-     * Create a MongoRecordWriter that targets multiple DBCollections.
-     * @param c a list of DBCollections
-     * @param ctx the TaskAttemptContext
-     */
-    public MongoRecordWriter(final List<DBCollection> c, final TaskAttemptContext ctx) {
-        collections = new ArrayList<DBCollection>(c);
+    public MongoRecordWriter(
+      final DBCollection c,
+      final com.mongodb.hadoop.util.CompatUtils.TaskAttemptContext ctx) {
+        collection = c;
         context = ctx;
         bsonWritable = new BSONWritable();
 
@@ -80,6 +66,15 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
     }
 
+    /**
+     * Create a MongoRecordWriter targeting a single DBCollection.
+     * @param c a DBCollection
+     * @param ctx the TaskAttemptContext
+     */
+    public MongoRecordWriter(final DBCollection c, final TaskAttemptContext ctx) {
+        this(c, CompatUtils.getTaskAttemptContext(ctx));
+    }
+
     @Override
     public void close(final TaskAttemptContext context) {
         if (outputStream != null) {
@@ -89,9 +84,7 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
                 LOG.error("Could not close output stream", e);
             }
         }
-        for (DBCollection collection : collections) {
-            MongoConfigUtil.close(collection.getDB().getMongo());
-        }
+        MongoConfigUtil.close(collection.getDB().getMongo());
     }
 
     @Override
@@ -126,7 +119,6 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
         }
     }
 
-
     /**
      * Add an index to be ensured before the Job starts running.
      * @param index a DBObject describing the keys of the index.
@@ -134,15 +126,6 @@ public class MongoRecordWriter<K, V> extends RecordWriter<K, V> {
      *                the index.
      */
     public void ensureIndex(final DBObject index, final DBObject options) {
-        // just do it on one mongod
-        collections.get(0).createIndex(index, options);
-    }
-
-    /**
-     * Get the TaskAttemptContext associated with this MongoRecordWriter.
-     * @return the TaskAttemptContext
-     */
-    public TaskAttemptContext getContext() {
-        return context;
+        collection.createIndex(index, options);
     }
 }

@@ -59,29 +59,53 @@ def startService(cmd, service) {
     execute("$hadoopHome/bin/${cmd}", [service], new FileOutputStream("${rootDir}/build/logs/${service}.log"), null, true)
 }
 
-def start() {
+def createHiveWarehouse() {
+    print('Creating Hive warehouse directory')
+    execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
+            ("${rootDir}/build/logs/hiveserver-mkdir.out"))
+    execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
+            ("${rootDir}/build/logs/hiveserver-chmod.out"))
+}
+
+
+def startYarn() {
     startService('hdfs', 'namenode')
     sleep(5000)
     startService('hdfs', 'datanode')
     startService('yarn', 'resourcemanager')
     startService('yarn', 'nodemanager')
+    createHiveWarehouse()
+}
 
-    print('Creating Hive warehouse directory')
-    execute("$hadoopHome/bin/hadoop", ["fs", "-mkdir", "-p", "hdfs:///user/hive/warehouse"], new FileOutputStream
-            ("${rootDir}/build/logs/hiveserver-mkdir.out"))
-    execute("$hadoopHome/bin/hadoop", ["fs", "-chmod", "g+w", "hdfs:///user/hive/warehouse"], new FileOutputStream
-                ("${rootDir}/build/logs/hiveserver-chmod.out"))
+def startHadoop() {
+    println "Starting HDFS"
+    // Use hadoop-deamon.sh directly instead of wrapper scripts to avoid
+    // needing to SSH in Jenkins.
+    execute("${hadoopHome}/bin/hadoop-daemon.sh", ["start", "namenode"],
+            new FileOutputStream("${rootDir}/build/logs/start-namenode.out"))
+    execute("${hadoopHome}/bin/hadoop-daemon.sh", ["start", "datanode"],
+            new FileOutputStream("${rootDir}/build/logs/start-datanode.out"))
+    println "Starting MapReduce"
+    execute("${hadoopHome}/bin/hadoop-daemon.sh", ["start", "jobtracker"],
+            new FileOutputStream("${rootDir}/build/logs/start-jobtracker.out"))
+    execute("${hadoopHome}/bin/hadoop-daemon.sh", ["start", "tasktracker"],
+            new FileOutputStream("${rootDir}/build/logs/start-tasktracker.out"))
+    createHiveWarehouse()
 }
 
 def stopAll(signal) {
+    println "shutting down Hadoop"
     stopService(signal, 'NodeManager', 'node manager')
     stopService(signal, 'ResourceManager', 'resource manager')
     stopService(signal, 'DataNode', 'data node')
     stopService(signal, 'NameNode', 'name node')
     stopService(signal, 'RunJar', 'hive server')
+    stopService(signal, 'JobTracker', 'job tracker')
+    stopService(signal, 'TaskTracker', 'task tracker')
 }
 
 task shutdownCluster() << {
+    println "shutdownCluster"
     stopAll('TERM')
     stopAll('KILL')
 }
@@ -94,10 +118,20 @@ task startCluster(dependsOn: [copyFiles]) << {
     delete file("${hadoopBinaries}/hadoop-tmpdir")
 
     println "Formatting HDFS"
-    execute("${hadoopHome}/bin/hdfs", [ 'namenode', '-format', '-force' ], null,
+    def hdfs
+    if (isHadoopV1) {
+        hdfs = "${hadoopHome}/bin/hadoop"
+    } else {
+        hdfs = "${hadoopHome}/bin/hdfs"
+    }
+    execute(hdfs, ['namenode', '-format', '-force'], null,
             new FileOutputStream("${rootDir}/build/logs/namenode-format.out"))
 
-    start()
+    if (isHadoopV1) {
+        startHadoop()
+    } else {
+        startYarn()
+    }
 }
 
 task historicalYield(dependsOn: startCluster) << {

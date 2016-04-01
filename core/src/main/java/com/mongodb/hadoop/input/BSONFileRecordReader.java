@@ -92,10 +92,10 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
         this.startingPosition = startingPosition;
     }
 
-    @Override
-    public void initialize(final InputSplit inputSplit, final TaskAttemptContext context) throws IOException, InterruptedException {
+    public void init(final InputSplit inputSplit, final Configuration configuration)
+      throws IOException, InterruptedException {
+        this.configuration = configuration;
         fileSplit = (FileSplit) inputSplit;
-        configuration = context.getConfiguration();
         if (LOG.isDebugEnabled()) {
             LOG.debug("reading split " + fileSplit);
         }
@@ -122,6 +122,11 @@ public class BSONFileRecordReader extends RecordReader<Object, BSONObject> {
             decoder = new BasicBSONDecoder();
         }
 
+    }
+
+    @Override
+    public void initialize(final InputSplit inputSplit, final TaskAttemptContext context) throws IOException, InterruptedException {
+        init(inputSplit, context.getConfiguration());
     }
 
     @Override

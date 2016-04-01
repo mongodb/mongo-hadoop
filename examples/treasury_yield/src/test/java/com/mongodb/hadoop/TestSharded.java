@@ -8,6 +8,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
+import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
 import com.mongodb.hadoop.testutils.MapReduceJob;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import org.junit.Test;
@@ -27,11 +28,14 @@ public class TestSharded extends BaseShardedTest {
 
     @Test
     public void testBasicInputSource() {
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
-            .jar(JOBJAR_PATH)
-            .inputUris(getInputUri())
-            .outputUris(getOutputUri())
-            .execute(isRunTestInVm());
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+          .jar(JOBJAR_PATH)
+          .inputUris(getInputUri())
+          .outputUri(getOutputUri());
+        if (isHadoopV1()) {
+            job.outputCommitter(MongoOutputCommitter.class);
+        }
+        job.execute(isRunTestInVm());
         compareResults(getMongos().getDB("mongo_hadoop")
           .getCollection("yield_historical.out"), getReference());
     }
@@ -39,27 +43,15 @@ public class TestSharded extends BaseShardedTest {
     @Test
     public void testMultiMongos() {
         MongoClientURI outputUri = getOutputUri();
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
-            .jar(JOBJAR_PATH)
-            .param(INPUT_MONGOS_HOSTS, "localhost:27017 localhost:27018")
-            .inputUris(getInputUri())
-            .outputUris(outputUri)
-            .execute(isRunTestInVm());
-        compareResults(getMongos().getDB(outputUri.getDatabase())
-          .getCollection(outputUri.getCollection()), getReference());
-    }
-
-    @Test
-    public void testMultiOutputs() {
-        MongoClientURI outputUri = getOutputUri();
-
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
-            .jar(JOBJAR_PATH)
-            .inputUris(getInputUri())
-            .outputUris(outputUri,
-              new MongoClientURIBuilder(outputUri).port(27018).build())
-            .execute(isRunTestInVm());
-
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+          .jar(JOBJAR_PATH)
+          .param(INPUT_MONGOS_HOSTS, "localhost:27017 localhost:27018")
+          .inputUris(getInputUri())
+          .outputUri(outputUri);
+        if (isHadoopV1()) {
+            job.outputCommitter(MongoOutputCommitter.class);
+        }
+        job.execute(isRunTestInVm());
         compareResults(getMongos().getDB(outputUri.getDatabase())
           .getCollection(outputUri.getCollection()), getReference());
     }
@@ -70,10 +62,13 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
-                               .jar(JOBJAR_PATH)
-                               .inputUris(getInputUri())
-                               .outputUris(getOutputUri())
-                               .param(SPLITS_USE_RANGEQUERY, "true");
+          .jar(JOBJAR_PATH)
+          .inputUris(getInputUri())
+          .outputUri(getOutputUri())
+          .param(SPLITS_USE_RANGEQUERY, "true");
+        if (isHadoopV1()) {
+            job.outputCommitter(MongoOutputCommitter.class);
+        }
         job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
@@ -102,24 +97,33 @@ public class TestSharded extends BaseShardedTest {
             destination.insert(doc, WriteConcern.UNACKNOWLEDGED);
         }
 
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+        MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .jar(JOBJAR_PATH)
             .param(SPLITS_SLAVE_OK, "true")
             .param(SPLITS_USE_SHARDS, "true")
             .param(SPLITS_USE_CHUNKS, "false")
-            .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
-            .execute(isRunTestInVm());
+            .inputUris(
+              new MongoClientURIBuilder(getInputUri())
+                .readPreference(ReadPreference.secondary()).build());
+        if (isHadoopV1()) {
+            job.outputCommitter(MongoOutputCommitter.class);
+        }
+        job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());
         collection.drop();
 
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+        MapReduceJob jobWithChunks =
+          new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .jar(JOBJAR_PATH)
             .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
             .param(SPLITS_SLAVE_OK, "true")
             .param(SPLITS_USE_SHARDS, "true")
-            .param(SPLITS_USE_CHUNKS, "true")
-            .execute(isRunTestInVm());
+            .param(SPLITS_USE_CHUNKS, "true");
+        if (isHadoopV1()) {
+            jobWithChunks.outputCommitter(MongoOutputCommitter.class);
+        }
+        jobWithChunks.execute(isRunTestInVm());
         compareResults(collection, getReference());
     }
 
@@ -129,10 +133,13 @@ public class TestSharded extends BaseShardedTest {
         collection.drop();
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
-                               .jar(JOBJAR_PATH)
-                               .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
-                               .outputUris(getOutputUri())
-                               .param(SPLITS_USE_RANGEQUERY, "true");
+          .jar(JOBJAR_PATH)
+          .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
+          .outputUri(getOutputUri())
+          .param(SPLITS_USE_RANGEQUERY, "true");
+        if (isHadoopV1()) {
+            job.outputCommitter(MongoOutputCommitter.class);
+        }
         job.execute(isRunTestInVm());
 
         compareResults(collection, getReference());

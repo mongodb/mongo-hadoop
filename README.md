@@ -46,7 +46,8 @@ New releases are announced on the [releases](https://github.com/mongodb/mongo-ha
 These are the minimum versions tested with the Hadoop connector. Earlier
 versions may work, but haven't been tested.
 
-- *Hadoop*: 2.4
+- *Hadoop 1.X*: 1.2
+- *Hadoop 2.X*: 2.4
 - *Hive*: 1.1
 - *Pig*: 0.11
 - *Spark*: 1.4

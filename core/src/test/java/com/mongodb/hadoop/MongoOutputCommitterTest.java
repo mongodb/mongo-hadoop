@@ -1,10 +1,8 @@
 package com.mongodb.hadoop;
 
 import com.mongodb.hadoop.output.MongoOutputCommitter;
+import com.mongodb.hadoop.util.CompatUtils;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -18,8 +16,8 @@ public class MongoOutputCommitterTest {
         String taskName = "attempt_local138413205_0007_m_000000_0";
         String suffix = String.format(
           "/%s/%s/_out", taskName, MongoOutputCommitter.TEMP_DIR_NAME);
-        TaskAttemptContext context = new TaskAttemptContextImpl(
-          conf, TaskAttemptID.forName(taskName));
+        CompatUtils.TaskAttemptContext context =
+          CompatUtils.getTaskAttemptContext(conf, taskName);
         conf.clear();
 
         // /tmp
