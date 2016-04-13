@@ -134,6 +134,7 @@ public class MongoOutputCommitter extends OutputCommitter {
             taskContext.getConfiguration());
         int curBatchSize = 0;
         DBCollection coll = getDbCollectionByRoundRobin();
+        // TODO: unorderedBulkOperation support?
         BulkWriteOperation bulkOp = coll.initializeOrderedBulkOperation();
 
         // Read Writables out of the temporary file.
@@ -245,4 +246,3 @@ public class MongoOutputCommitter extends OutputCommitter {
     }
 
 }
-
