@@ -105,11 +105,13 @@ public class JSONPigReplace {
             } else if (s instanceof ResourceSchema) {
                 schema = (ResourceSchema) s;
             } else {
-                throw new IllegalArgumentException("Schema must be represented either by a string or a Schema object");
+                throw new IllegalArgumentException(
+                  "Schema must be represented either by a string or a Schema "
+                    + "object, not " + s);
             }
             fields = schema.getFields();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid Schema Format");
+            throw new IllegalArgumentException("Invalid Schema Format", e);
         }
 
         // Make Tuple t into BSONObject using schema provided and store result in pObj

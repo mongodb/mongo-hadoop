@@ -17,7 +17,9 @@
 package com.mongodb.hadoop.output;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BulkUpdateRequestBuilder;
 import com.mongodb.BulkWriteOperation;
+import com.mongodb.BulkWriteRequestBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
@@ -152,17 +154,23 @@ public class MongoOutputCommitter extends OutputCommitter {
                     DBObject query = new BasicDBObject(muw.getQuery().toMap());
                     DBObject modifiers =
                         new BasicDBObject(muw.getModifiers().toMap());
-                    if (muw.isMultiUpdate()) {
-                        if (muw.isUpsert()) {
-                            bulkOp.find(query).upsert().update(modifiers);
+                    BulkWriteRequestBuilder writeBuilder = bulkOp.find(query);
+                    if (muw.isReplace()) {
+                        writeBuilder.replaceOne(modifiers);
+                    } else if (muw.isUpsert()) {
+                        BulkUpdateRequestBuilder updateBuilder =
+                          writeBuilder.upsert();
+                        if (muw.isMultiUpdate()) {
+                            updateBuilder.update(modifiers);
                         } else {
-                            bulkOp.find(query).update(modifiers);
+                            updateBuilder.updateOne(modifiers);
                         }
                     } else {
-                        if (muw.isUpsert()) {
-                            bulkOp.find(query).upsert().updateOne(modifiers);
+                        // No-upsert update.
+                        if (muw.isMultiUpdate()) {
+                            writeBuilder.update(modifiers);
                         } else {
-                            bulkOp.find(query).updateOne(modifiers);
+                            writeBuilder.updateOne(modifiers);
                         }
                     }
                 } else {
