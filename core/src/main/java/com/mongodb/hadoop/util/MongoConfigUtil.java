@@ -86,6 +86,7 @@ public final class MongoConfigUtil {
     public static final String INPUT_MONGOS_HOSTS = "mongo.input.mongos_hosts";
     public static final String OUTPUT_URI = "mongo.output.uri";
     public static final String OUTPUT_BATCH_SIZE = "mongo.output.batch.size";
+    public static final String OUTPUT_BULK_ORDERED = "mongo.output.bulk.ordered";
 
     public static final String MONGO_SPLITTER_CLASS = "mongo.splitter.class";
 
@@ -633,6 +634,25 @@ public final class MongoConfigUtil {
     }
 
     /**
+     * Get whether or not bulk writes will be ordered
+     * and sent in a batch to MongoDB as the output of a job.
+     * @param conf the Configuration
+     * @return true if bulk writes will be ordered, false otherwise
+     */
+    public static boolean isBulkOrdered(final Configuration conf) {
+        return conf.getBoolean(OUTPUT_BULK_ORDERED, true);
+    }
+
+    /**
+     * Set whether or not bulk writes should be ordered.
+     * @param conf the Configuration
+     * @param ordered true if bulk writes should be ordered, false otherwise
+     */
+    public static void setBulkOrdered(final Configuration conf, final boolean ordered) {
+        conf.setBoolean(OUTPUT_BULK_ORDERED, ordered);
+    }
+
+    /**
      * Set the maximum number of documents that should be loaded into memory
      * and sent in a batch to MongoDB as the output of a job.
      * @param conf the Configuration
@@ -1049,7 +1069,7 @@ public final class MongoConfigUtil {
                 client.close();
             }
     }
-    
+
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
         MongoClient mongoClient = CLIENTS.get().get(uri);
             if (mongoClient == null) {

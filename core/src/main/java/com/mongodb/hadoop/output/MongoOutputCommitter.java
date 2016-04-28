@@ -134,7 +134,13 @@ public class MongoOutputCommitter extends OutputCommitter {
             taskContext.getConfiguration());
         int curBatchSize = 0;
         DBCollection coll = getDbCollectionByRoundRobin();
-        BulkWriteOperation bulkOp = coll.initializeOrderedBulkOperation();
+
+        BulkWriteOperation bulkOp;
+        if (MongoConfigUtil.isBulkOrdered(taskContext.getConfiguration())) {
+            bulkOp = coll.initializeOrderedBulkOperation();
+        } else {
+            bulkOp = coll.initializeUnorderedBulkOperation();
+        }
 
         // Read Writables out of the temporary file.
         BSONWritable bw = new BSONWritable();
@@ -245,4 +251,3 @@ public class MongoOutputCommitter extends OutputCommitter {
     }
 
 }
-
