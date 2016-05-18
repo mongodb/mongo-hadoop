@@ -118,6 +118,14 @@ public final class MongoConfigUtil {
     public static final String BSON_OUTPUT_BUILDSPLITS = "bson.output.build_splits";
     public static final String BSON_PATHFILTER = "bson.pathfilter.class";
 
+    // Settings specific to reading from GridFS.
+    public static final String GRIDFS_DELIMITER_PATTERN =
+      "mongo.gridfs.delimiter.pattern";
+    public static final String GRIDFS_DEFAULT_DELIMITER = "(\n|\r\n)";
+    public static final String GRIDFS_WHOLE_FILE_SPLIT =
+      "mongo.gridfs.whole_file";
+    public static final String GRIDFS_READ_BINARY =
+      "mongo.gridfs.read_binary";
 
     /**
      * <p>
@@ -486,7 +494,9 @@ public final class MongoConfigUtil {
      */
     @Deprecated
     public static DBCollection getCollectionWithAuth(final MongoURI uri, final MongoURI authURI) {
-        return getCollectionWithAuth(new MongoClientURI(uri.toString()), new MongoClientURI(authURI.toString()));
+        return getCollectionWithAuth(
+          new MongoClientURI(uri.toString()),
+          new MongoClientURI(authURI.toString()));
     }
 
     /**
@@ -924,6 +934,33 @@ public final class MongoConfigUtil {
 
     public static String getInputKey(final Configuration conf) {
         return conf.get(INPUT_KEY, "_id");
+    }
+
+    public static String getGridFSDelimiterPattern(final Configuration conf) {
+        return conf.get(GRIDFS_DELIMITER_PATTERN, GRIDFS_DEFAULT_DELIMITER);
+    }
+
+    public static void setGridFSDelimiterPattern(
+      final Configuration conf, final String pattern) {
+        conf.set(GRIDFS_DELIMITER_PATTERN, pattern);
+    }
+
+    public static boolean isGridFSWholeFileSplit(final Configuration conf) {
+        return conf.getBoolean(GRIDFS_WHOLE_FILE_SPLIT, false);
+    }
+
+    public static void setGridFSWholeFileSplit(
+      final Configuration conf, final boolean split) {
+        conf.setBoolean(GRIDFS_WHOLE_FILE_SPLIT, split);
+    }
+
+    public static boolean isGridFSReadBinary(final Configuration conf) {
+        return conf.getBoolean(GRIDFS_READ_BINARY, false);
+    }
+
+    public static void setGridFSReadBinary(
+      final Configuration conf, final boolean readBinary) {
+        conf.setBoolean(GRIDFS_READ_BINARY, readBinary);
     }
 
     public static void setNoTimeout(final Configuration conf, final boolean value) {

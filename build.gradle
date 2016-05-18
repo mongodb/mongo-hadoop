@@ -300,6 +300,8 @@ project(":core") {
         compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
         compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
+
+        testCompile "org.mockito:mockito-core:1.10.19"
     }
 }
 
@@ -472,6 +474,13 @@ project(":examples/enron/spark") {
 }
 
 project(":examples/sensors") {
+    uploadArchives.onlyIf { false }
+    dependencies {
+        compile project(":core")
+    }
+}
+
+project(":examples/shakespeare") {
     uploadArchives.onlyIf { false }
     dependencies {
         compile project(":core")

@@ -53,6 +53,11 @@ task downloadEnronEmails() << {
     extract(dataHome, dataHome, downloadFile('https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'))
 }
 
+task downloadShakespeare() << {
+    // Download complete works from Project Gutenberg.
+    downloadFile('http://www.gutenberg.org/cache/epub/100/pg100.txt')
+}
+
 task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     def hadoopEtc = "${hadoopHome}/etc/hadoop"
     def hadoopLib = "${hadoopHome}/share/hadoop/common"

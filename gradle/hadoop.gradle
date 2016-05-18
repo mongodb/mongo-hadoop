@@ -139,6 +139,19 @@ task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
            "com.mongodb.hadoop.examples.enron.EnronMail", [])
 }
 
+task shakespeare(dependsOn: [downloadShakespeare, startCluster]) << {
+    // Split up complete works by title and upload to GridFS.
+    def filePath = new File(System.properties['java.io.tmpdir'], "pg100.txt")
+    hadoop("examples/shakespeare/build/libs/shakespeare-${project(':core').version}.jar",
+            "com.mongodb.hadoop.examples.shakespeare.PrepareShakespeare", [],
+            [filePath.toString(),
+             "mongodb://localhost:27017/mongo_hadoop.shakespeare"])
+
+    // MR job
+    hadoop("examples/shakespeare/build/libs/shakespeare-${project(':core').version}.jar",
+            "com.mongodb.hadoop.examples.shakespeare.Shakespeare", [])
+}
+
 def hadoop(jar, className, args, commandArgs = []) {
     def line = ["${hadoopHome}/bin/hadoop",
                 "jar", jar, className,
