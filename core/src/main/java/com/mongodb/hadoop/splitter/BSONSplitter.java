@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -95,12 +94,10 @@ public class BSONSplitter extends Configured implements Tool {
 
             // This code is based off of org.apache.hadoop.mapreduce.lib
             // .input.FileInputFormat.getSplits()
-            if (inFile instanceof LocatedFileStatus) {
-                blkLocations = ((LocatedFileStatus) inFile).getBlockLocations();
-            } else {
-                blkLocations = fs.getFileBlockLocations(
+
+			blkLocations = fs.getFileBlockLocations(
                   inFile, splitStart, splitLen);
-            }
+
 
             int blockIndex = getBlockIndex(blkLocations, splitStart);
             split = new BSONFileSplit(
