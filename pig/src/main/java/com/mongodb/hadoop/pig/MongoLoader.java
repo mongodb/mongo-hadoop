@@ -129,7 +129,7 @@ public class MongoLoader extends LoadFunc
                 boolean include = (Boolean) entry.getValue();
                 // Add the name of the outer-level field if this is a nested
                 // field. Pig will take care of pulling out the inner field.
-                String key = StringUtils.split(entry.getKey(), '.')[0];
+                String key = StringUtils.split(entry.getKey(), '\\', '.')[0];
                 if (include && !visitedKeys.contains(key)) {
                     projectedFields.add(key);
                     visitedKeys.add(key);
