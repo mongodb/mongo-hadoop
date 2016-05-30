@@ -23,8 +23,8 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 
 import java.io.IOException;
 
@@ -61,7 +61,7 @@ public class BSONFileRecordReader implements RecordReader<NullWritable, BSONWrit
               new BSONFileSplit(
                 fileSplit.getPath(), fileSplit.getStart(),
                 fileSplit.getLength(), fileSplit.getLocations()),
-              new TaskAttemptContextImpl(conf, new TaskAttemptID()));
+              new TaskAttemptContext(conf, new TaskAttemptID()));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

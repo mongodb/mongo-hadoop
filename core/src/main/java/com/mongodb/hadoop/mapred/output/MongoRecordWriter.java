@@ -21,8 +21,8 @@ import com.mongodb.DBCollection;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.TaskAttemptContextImpl;
 import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +39,7 @@ public class MongoRecordWriter<K, V>
     public MongoRecordWriter(final JobConf conf) {
         super(
           Collections.<DBCollection>emptyList(),
-          new TaskAttemptContextImpl(
+          new TaskAttemptContext(
             conf, TaskAttemptID.forName(conf.get("mapred.task.id"))));
         configuration = conf;
     }

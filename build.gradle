@@ -10,7 +10,7 @@ ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '3.2.1'
 ext.hiveVersion = '1.2.1'
 ext.pigVersion = '0.15.0'
-ext.hadoopVersion = '2.7.2'
+ext.hadoopVersion = '1.2.1'
 ext.sparkVersion = '1.6.0'
 ext.scalaVersion = '2.11'
 
@@ -294,12 +294,10 @@ project(":core") {
     archivesBaseName = "mongo-hadoop-core"
 
     dependencies {
-        compile "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}"
-        compile "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-core:${hadoopVersion}"
+        compile "org.apache.hadoop:hadoop-client:${hadoopVersion}"
+        compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.20'
+
     }
 }
 

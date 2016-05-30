@@ -3,6 +3,7 @@ package com.mongodb.hadoop.pig;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBRef;
+import com.mongodb.MongoClient;
 import com.mongodb.hadoop.BSONFileInputFormat;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -14,15 +15,11 @@ import org.apache.pig.ResourceSchema;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
 import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
-import org.apache.pig.data.BagFactory;
-import org.apache.pig.data.DataBag;
-import org.apache.pig.data.DataByteArray;
-import org.apache.pig.data.DataType;
-import org.apache.pig.data.Tuple;
-import org.apache.pig.data.TupleFactory;
+import org.apache.pig.data.*;
 import org.apache.pig.impl.util.Utils;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
+import org.bson.codecs.Encoder;
 import org.bson.types.BasicBSONList;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
@@ -39,6 +36,7 @@ public class BSONLoader extends LoadFunc {
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
     private static final Log LOG = LogFactory.getLog(BSONLoader.class);
+	private static final Encoder dbObjectCodec = new MyDBObjectCodec(MongoClient.getDefaultCodecRegistry());
     private final BSONFileInputFormat inputFormat = new BSONFileInputFormat();
     //CHECKSTYLE:OFF
     protected RecordReader in = null;
@@ -140,7 +138,7 @@ public class BSONLoader extends LoadFunc {
                 case DataType.BYTEARRAY:
                     return BSONLoader.convertBSONtoPigType(obj);
                 case DataType.CHARARRAY:
-                    return obj.toString();
+                    return toChararray(obj);
                 case DataType.DATETIME:
                     return new DateTime(obj);
                 case DataType.TUPLE:
@@ -210,6 +208,17 @@ public class BSONLoader extends LoadFunc {
         }
 
     }
+
+	@SuppressWarnings("unchecked")
+	protected static String toChararray(Object obj) {
+		if (obj instanceof BasicDBObject) {
+			return ((BasicDBObject) obj).toJson(dbObjectCodec);
+		} else if (obj.equals(Float.NaN) || obj.equals(Double.NaN)) {
+			return "\"NaN\"";
+		} else {
+			return obj.toString();
+		}
+	}
 
 
     /**

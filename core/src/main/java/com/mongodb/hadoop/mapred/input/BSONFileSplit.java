@@ -20,7 +20,7 @@ public class BSONFileSplit extends FileSplit {
         super(file, start, length, hosts);
     }
 
-    public BSONFileSplit() { super(); }
+    public BSONFileSplit() { super(null, 0, 0, (String[]) null); }
 
     public String getKeyField() { return keyField; }
 
