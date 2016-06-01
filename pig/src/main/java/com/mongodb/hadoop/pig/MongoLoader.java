@@ -50,6 +50,10 @@ public class MongoLoader extends LoadFunc
     private List<String> projectedFields;
     private String idAlias = null;
     private String signature;
+    private String[] inputFields;
+    
+    private String query = null;
+
 
     public MongoLoader() {
         LOG.info("Initializing MongoLoader in dynamic schema mode.");
@@ -70,6 +74,18 @@ public class MongoLoader extends LoadFunc
             throw new IllegalArgumentException("Invalid Schema Format");
         }
     }
+    
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFields) {
+    	this(userSchema, idAlias);
+        this.inputFields = inputFields.split(",");
+        if (fields != null && fields.length != this.inputFields.length)
+        	throw new IllegalArgumentException("Input fields should have the same amount of fields as user schema");
+    }
+
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFields, final String query) {
+     	this(userSchema, idAlias, inputFields);
+     	this.query = query;
+     }
 
     @Override
     public void setUDFContextSignature(final String signature) {
@@ -186,7 +202,9 @@ public class MongoLoader extends LoadFunc
                         fieldSchema = schemaMapping.get(fieldTemp);
                     }
                 }
-                t.set(i, BSONLoader.readField(val.get(fieldTemp), fieldSchema));
+                if (inputFields != null)
+                	fieldTemp = inputFields[i];
+                t.set(i, BSONLoader.readField(val.get(fieldTemp), fields[i]));
             }
         }
         return t;

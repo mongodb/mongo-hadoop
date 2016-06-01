@@ -43,6 +43,7 @@ public class BSONLoader extends LoadFunc {
 
     private ResourceFieldSchema[] fields;
     protected ResourceSchema schema = null;
+    private String[] inputFields;
     //CHECKSTYLE:ON
     private String idAlias = null;
 
@@ -60,6 +61,13 @@ public class BSONLoader extends LoadFunc {
         }
     }
 
+    public BSONLoader(final String idAlias, final String userSchema, final String inputFields) {
+        this(idAlias, userSchema);
+    	this.inputFields = inputFields.split(",");
+        if (fields != null && fields.length != this.inputFields.length)
+        	throw new IllegalArgumentException("Input fields should have the same amount of fields as user schema");
+    }
+    
     @Override
     public void setLocation(final String location, final Job job) throws IOException {
         BSONFileInputFormat.setInputPaths(job, location);
@@ -97,6 +105,8 @@ public class BSONLoader extends LoadFunc {
                     if (this.idAlias != null && this.idAlias.equals(fieldTemp)) {
                         fieldTemp = "_id";
                     }
+                    if (inputFields != null)
+                    	fieldTemp = inputFields[i];
                     t.set(i, BSONLoader.readField(val.get(fieldTemp), fields[i]));
                 }
             }
