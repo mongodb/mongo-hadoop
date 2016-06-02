@@ -47,7 +47,7 @@ public class MongoUpdateWritable implements Writable {
     private boolean replace;
 
     public MongoUpdateWritable() {
-        this(null, null);
+        this(new BasicBSONObject(), new BasicBSONObject());
     }
 
     public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers) {
