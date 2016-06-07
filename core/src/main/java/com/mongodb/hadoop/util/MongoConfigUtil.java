@@ -502,8 +502,11 @@ public final class MongoConfigUtil {
 
         DBCollection coll;
         try {
+
+            LOG.info("Connecting to Mongo");
             Mongo mongo = getMongoClient(authURI);
             coll = mongo.getDB(uri.getDatabase()).getCollection(uri.getCollection());
+            LOG.info("Got Mongo connection");
             return coll;
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't connect and authenticate to get collection", e);

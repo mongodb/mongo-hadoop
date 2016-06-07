@@ -45,16 +45,20 @@ public class MongoLoader extends LoadFunc
     private ResourceSchema schema = null;
     private RecordReader in = null;
     private final MongoInputFormat inputFormat = new MongoInputFormat();
-    private ResourceFieldSchema[] fields;
+    private ResourceFieldSchema[] fields = null;
     private HashMap<String, ResourceFieldSchema> schemaMapping;
     private List<String> projectedFields;
     private String idAlias = null;
     private String signature;
+    private Map<String, String> inputFieldNames;
+    
+    private String query = null;
+
 
     public MongoLoader() {
         LOG.info("Initializing MongoLoader in dynamic schema mode.");
         schema = null;
-        fields = null;
+        inputFieldNames = null;
     }
 
     public MongoLoader(final String userSchema) {
@@ -70,6 +74,22 @@ public class MongoLoader extends LoadFunc
             throw new IllegalArgumentException("Invalid Schema Format");
         }
     }
+    
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFieldNamesStr) {
+    	this(userSchema, idAlias);
+        String[] inputFieldNamesArray = inputFieldNamesStr.split(",");
+        if (fields != null && fields.length != inputFieldNamesArray.length)
+        	throw new IllegalArgumentException("Input field names should have the same amount of fields as user schema");
+        inputFieldNames = new HashMap<String, String>(fields.length);
+        for (int i = 0; i < fields.length; i++) {
+        	inputFieldNames.put(fields[i].getName(), inputFieldNamesArray[i]);
+        }
+    }
+
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFields, final String query) {
+     	this(userSchema, idAlias, inputFields);
+     	this.query = query;
+     }
 
     @Override
     public void setUDFContextSignature(final String signature) {
@@ -129,7 +149,7 @@ public class MongoLoader extends LoadFunc
                 boolean include = (Boolean) entry.getValue();
                 // Add the name of the outer-level field if this is a nested
                 // field. Pig will take care of pulling out the inner field.
-                String key = StringUtils.split(entry.getKey(), '.')[0];
+                String key = StringUtils.split(entry.getKey(), '\\', '.')[0];
                 if (include && !visitedKeys.contains(key)) {
                     projectedFields.add(key);
                     visitedKeys.add(key);
@@ -186,6 +206,8 @@ public class MongoLoader extends LoadFunc
                         fieldSchema = schemaMapping.get(fieldTemp);
                     }
                 }
+                if (inputFieldNames != null)
+                	fieldTemp = inputFieldNames.get(fieldTemp);
                 t.set(i, BSONLoader.readField(val.get(fieldTemp), fieldSchema));
             }
         }
@@ -249,7 +271,7 @@ public class MongoLoader extends LoadFunc
         boolean needId = false;
         for (RequiredField field : requiredFieldList.getFields()) {
             String fieldName = field.getAlias();
-            if (idAlias != null && idAlias.equals(fieldName)) {
+            if (inputFieldNames == null && idAlias != null && idAlias.equals(fieldName)) {
                 fieldName = "_id";
                 needId = true;
             }
@@ -264,7 +286,7 @@ public class MongoLoader extends LoadFunc
             }
         }
         // Turn off _id unless asked for.
-        if (!needId) {
+        if (inputFieldNames == null && !needId) {
             projection.put("_id", false);
         }
 
