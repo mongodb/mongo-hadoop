@@ -45,12 +45,12 @@ public class MongoLoader extends LoadFunc
     private ResourceSchema schema = null;
     private RecordReader in = null;
     private final MongoInputFormat inputFormat = new MongoInputFormat();
-    private ResourceFieldSchema[] fields;
+    private ResourceFieldSchema[] fields = null;
     private HashMap<String, ResourceFieldSchema> schemaMapping;
     private List<String> projectedFields;
     private String idAlias = null;
     private String signature;
-    private String[] inputFields;
+    private Map<String, String> inputFieldNames;
     
     private String query = null;
 
@@ -58,7 +58,7 @@ public class MongoLoader extends LoadFunc
     public MongoLoader() {
         LOG.info("Initializing MongoLoader in dynamic schema mode.");
         schema = null;
-        fields = null;
+        inputFieldNames = null;
     }
 
     public MongoLoader(final String userSchema) {
@@ -75,11 +75,15 @@ public class MongoLoader extends LoadFunc
         }
     }
     
-    public MongoLoader(final String userSchema, final String idAlias, final String inputFields) {
+    public MongoLoader(final String userSchema, final String idAlias, final String inputFieldNamesStr) {
     	this(userSchema, idAlias);
-        this.inputFields = inputFields.split(",");
-        if (fields != null && fields.length != this.inputFields.length)
-        	throw new IllegalArgumentException("Input fields should have the same amount of fields as user schema");
+        String[] inputFieldNamesArray = inputFieldNamesStr.split(",");
+        if (fields != null && fields.length != inputFieldNamesArray.length)
+        	throw new IllegalArgumentException("Input field names should have the same amount of fields as user schema");
+        inputFieldNames = new HashMap<String, String>(fields.length);
+        for (int i = 0; i < fields.length; i++) {
+        	inputFieldNames.put(fields[i].getName(), inputFieldNamesArray[i]);
+        }
     }
 
     public MongoLoader(final String userSchema, final String idAlias, final String inputFields, final String query) {
@@ -202,9 +206,9 @@ public class MongoLoader extends LoadFunc
                         fieldSchema = schemaMapping.get(fieldTemp);
                     }
                 }
-                if (inputFields != null)
-                	fieldTemp = inputFields[i];
-                t.set(i, BSONLoader.readField(val.get(fieldTemp), fields[i]));
+                if (inputFieldNames != null)
+                	fieldTemp = inputFieldNames.get(fieldTemp);
+                t.set(i, BSONLoader.readField(val.get(fieldTemp), fieldSchema));
             }
         }
         return t;
@@ -267,7 +271,7 @@ public class MongoLoader extends LoadFunc
         boolean needId = false;
         for (RequiredField field : requiredFieldList.getFields()) {
             String fieldName = field.getAlias();
-            if (idAlias != null && idAlias.equals(fieldName)) {
+            if (inputFieldNames == null && idAlias != null && idAlias.equals(fieldName)) {
                 fieldName = "_id";
                 needId = true;
             }
@@ -282,7 +286,7 @@ public class MongoLoader extends LoadFunc
             }
         }
         // Turn off _id unless asked for.
-        if (!needId) {
+        if (inputFieldNames == null && !needId) {
             projection.put("_id", false);
         }
 
