@@ -61,7 +61,7 @@ if(project.hasProperty("clusterVersion")) {
 }
 
 allprojects {
-    version = '1.5.2'
+    version = '1.5.4'
     group = 'org.mongodb.mongo-hadoop'
 }
 
@@ -391,7 +391,7 @@ project(":pig") {
         from sourceSets.main.output
 
         configurations.compile.filter {
-            it.name.startsWith('mongo-java-driver')
+            //it.name.startsWith('mongo-java-driver')
         }.each {
             from zipTree(it)
         }
