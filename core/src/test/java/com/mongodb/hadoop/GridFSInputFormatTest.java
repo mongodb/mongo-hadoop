@@ -251,7 +251,11 @@ public class GridFSInputFormatTest extends BaseHadoopTest {
               new GridFSInputFormat.GridFSBinaryRecordReader();
             reader.initialize(split, taskContext);
             for (; reader.nextKeyValue(); ++i) {
-                buff = reader.getCurrentValue().copyBytes();
+                buff = new byte[reader.getCurrentValue().getLength()];
+                // BytesWritable.copyBytes does not exist in Hadoop 1.2
+                System.arraycopy(
+                  reader.getCurrentValue().getBytes(), 0,
+                  buff, 0, buff.length);
             }
         }
         // Only one record to read on the split.
