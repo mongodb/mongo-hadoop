@@ -25,6 +25,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.hadoop.splitter.SampleSplitter;
 import com.mongodb.util.JSON;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -848,6 +849,17 @@ public final class MongoConfigUtil {
 
     public static boolean isShardChunkedSplittingEnabled(final Configuration conf) {
         return conf.getBoolean(SPLITS_USE_CHUNKS, true);
+    }
+
+    public static int getSamplesPerSplit(final Configuration conf) {
+        return conf.getInt(
+          SampleSplitter.SAMPLES_PER_SPLIT,
+          SampleSplitter.DEFAULT_SAMPLES_PER_SPLIT);
+    }
+
+    public static void setSamplesPerSplit(
+      final Configuration conf, final int samples) {
+        conf.setInt(SampleSplitter.SAMPLES_PER_SPLIT, samples);
     }
 
     /**

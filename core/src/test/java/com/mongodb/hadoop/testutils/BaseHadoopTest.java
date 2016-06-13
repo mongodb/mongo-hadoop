@@ -82,6 +82,22 @@ public abstract class BaseHadoopTest {
         }
     }
 
+    public int[] getServerVersion(final MongoClientURI uri) {
+        List versionArray = (List) getClient(uri).getDB("admin")
+          .command("buildinfo").get("versionArray");
+        int[] versionDigits = new int[versionArray.size()];
+        for (int i = 0; i < versionArray.size(); ++i) {
+            versionDigits[i] = (Integer) versionArray.get(i);
+        }
+        return versionDigits;
+    }
+
+    public boolean isSampleOperatorSupported(final MongoClientURI uri) {
+        int[] serverVersion = getServerVersion(uri);
+        return (serverVersion[0] > 3
+          || (serverVersion[0] == 3 && serverVersion[1] >= 2));
+    }
+
     protected static String loadProperty(final String name, final String defaultValue) {
         String property = System.getProperty(name, System.getenv(name.toUpperCase()));
         if (property == null) {

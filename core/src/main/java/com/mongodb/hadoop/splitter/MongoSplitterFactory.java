@@ -25,6 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ReflectionUtils;
 
+import java.util.List;
+
 /**
  * Examines a collection and dynamically chooses which implementation of MongoSplitter to use, based on our configuration and the
  * collection's properties.
@@ -63,6 +65,7 @@ public final class MongoSplitterFactory {
             MongoClientURI authURI = MongoConfigUtil.getAuthURI(config);
             CommandResult stats;
             DBCollection coll = null;
+            CommandResult buildInfo;
             try {
                 if (authURI != null) {
                     coll = MongoConfigUtil.getCollectionWithAuth(uri, authURI);
@@ -72,6 +75,7 @@ public final class MongoSplitterFactory {
                     coll = MongoConfigUtil.getCollection(uri);
                     stats = coll.getStats();
                 }
+                buildInfo = coll.getDB().command("buildinfo");
             } finally {
                 if (coll != null) {
                     MongoConfigUtil.close(coll.getDB().getMongo());
@@ -83,7 +87,17 @@ public final class MongoSplitterFactory {
             }
 
             if (!stats.getBoolean("sharded", false)) {
-                returnVal = new StandaloneMongoSplitter(config);
+                // Prefer SampleSplitter.
+                List versionArray = (List) buildInfo.get("versionArray");
+                boolean sampleOperatorSupported = (
+                  (Integer) versionArray.get(0) > 3
+                    || ((Integer) versionArray.get(0) == 3
+                    && (Integer) versionArray.get(1) >= 2));
+                if (sampleOperatorSupported) {
+                    returnVal = new SampleSplitter(config);
+                } else {
+                    returnVal = new StandaloneMongoSplitter(config);
+                }
             } else {
                 // Collection is sharded
                 if (MongoConfigUtil.isShardChunkedSplittingEnabled(config)) {
