@@ -194,7 +194,7 @@ public class MongoLoader extends LoadFunc
                 if (null == projectedFields) {
                     fieldTemp = fields[i].getName();
                     fieldSchema = fields[i];
-                    if (idAlias != null && idAlias.equals(fieldTemp)) {
+                    if (inputFieldNames == null && idAlias != null && idAlias.equals(fieldTemp)) {
                         fieldTemp = "_id";
                     }
                 } else {
@@ -206,7 +206,7 @@ public class MongoLoader extends LoadFunc
                         fieldSchema = schemaMapping.get(fieldTemp);
                     }
                 }
-                if (inputFieldNames != null)
+                if (inputFieldNames != null && inputFieldNames.containsKey(fieldTemp))
                 	fieldTemp = inputFieldNames.get(fieldTemp);
                 t.set(i, BSONLoader.readField(val.get(fieldTemp), fieldSchema));
             }
@@ -290,7 +290,7 @@ public class MongoLoader extends LoadFunc
             projection.put("_id", false);
         }
 
-        LOG.debug("projection: " + projection);
+        LOG.info("projection: " + projection);
 
         // Store projection to be retrieved later and stored into the job
         // configuration.
