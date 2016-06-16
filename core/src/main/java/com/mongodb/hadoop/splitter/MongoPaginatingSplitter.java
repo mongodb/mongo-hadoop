@@ -56,6 +56,12 @@ public class MongoPaginatingSplitter extends MongoCollectionSplitter {
                 + "compound key.");
         }
         String splitKey = splitKeys.iterator().next();
+
+        DBObject splitKeyProjection = new BasicDBObject(splitKey, 1);
+        if (!splitKey.equals("_id")) {
+            splitKeyProjection.put("_id", 0);
+        }
+
         int minDocs = MongoConfigUtil.getInputSplitMinDocs(conf);
         DBCollection inputCollection =
           MongoConfigUtil.getInputCollection(conf);
@@ -68,7 +74,7 @@ public class MongoPaginatingSplitter extends MongoCollectionSplitter {
         try {
             do {
                 if (null == minBound) {
-                    cursor = inputCollection.find(query);
+                    cursor = inputCollection.find(query, splitKeyProjection);
                 } else {
                     if (null == rangeObj) {
                         rangeObj =
@@ -79,7 +85,7 @@ public class MongoPaginatingSplitter extends MongoCollectionSplitter {
                         ((DBObject) rangeObj.get(splitKey))
                           .put("$gte", minBound);
                     }
-                    cursor = inputCollection.find(rangeObj);
+                    cursor = inputCollection.find(rangeObj, splitKeyProjection);
                 }
                 cursor = cursor.sort(splitKeyObj).skip(minDocs).limit(1);
 
