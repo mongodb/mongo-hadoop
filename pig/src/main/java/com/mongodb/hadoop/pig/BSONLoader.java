@@ -243,7 +243,7 @@ public class BSONLoader extends LoadFunc {
             }
             return "[]";
 		} else {
-            if (addQuotes) {
+            if (addQuotes && !(obj instanceof Number)) {
                 return "\"" + obj.toString() + "\"";
             } else {
                 return obj.toString();
