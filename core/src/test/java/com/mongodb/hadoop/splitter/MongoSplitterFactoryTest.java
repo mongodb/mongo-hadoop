@@ -2,6 +2,7 @@ package com.mongodb.hadoop.splitter;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.testutils.BaseHadoopTest;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
@@ -25,6 +26,19 @@ public class MongoSplitterFactoryTest extends BaseHadoopTest {
         client.getDatabase(uri.getDatabase())
           .getCollection(uri.getCollection()).insertOne(
           new Document("this collection exists now", true));
+
+        // Shard the collection if we're connected to a sharded cluster.
+        Document isMaster = client.getDatabase("admin")
+          .runCommand(new Document("ismaster", 1));
+        if (isMaster.get("msg") != null && isMaster.get("msg").equals("isdbgrid")) {
+            String ns = uri.getDatabase() + "." + uri.getCollection();
+            MongoDatabase adminDB = client.getDatabase("admin");
+            adminDB.runCommand(
+              new Document("enableSharding", uri.getDatabase()));
+            adminDB.runCommand(
+              new Document("shardCollection", ns)
+                .append("key", new Document("_id", 1)));
+        }
     }
 
     @AfterClass
@@ -38,8 +52,10 @@ public class MongoSplitterFactoryTest extends BaseHadoopTest {
         MongoConfigUtil.setInputURI(conf, uri);
         MongoSplitter defaultSplitter = MongoSplitterFactory.getSplitter(conf);
         if (isSharded(uri)) {
-            assertTrue(defaultSplitter instanceof ShardChunkMongoSplitter);
+            assertTrue(
+              defaultSplitter instanceof ShardChunkMongoSplitter);
 
+            MongoConfigUtil.setShardChunkSplittingEnabled(conf, false);
             MongoConfigUtil.setReadSplitsFromShards(conf, true);
             assertTrue(
               MongoSplitterFactory.getSplitter(conf)
