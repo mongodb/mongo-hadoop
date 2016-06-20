@@ -42,8 +42,8 @@ public class MongoSplitterFactoryTest extends BaseHadoopTest {
 
             MongoConfigUtil.setReadSplitsFromShards(conf, true);
             assertTrue(
-              MongoSplitterFactory.getSplitter(conf) instanceof
-                ShardMongoSplitter);
+              MongoSplitterFactory.getSplitter(conf)
+                instanceof ShardMongoSplitter);
         } else {
             if (isSampleOperatorSupported(uri)) {
                 assertTrue(defaultSplitter instanceof SampleSplitter);
