@@ -235,6 +235,7 @@ public class BSONLoader extends LoadFunc {
         	Matcher m = ARRAY_JSON_PATTERN.matcher(s);
         	if (m.matches())
         		return m.group(1);
+        	LOG.warn("Could not parse object into array using regex: " + s);
 		} else if (obj.equals(Float.NaN) || obj.equals(Double.NaN)) {
             return "\"NaN\"";
         } 
