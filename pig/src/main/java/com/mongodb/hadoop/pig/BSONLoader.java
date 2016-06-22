@@ -30,6 +30,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BSONLoader extends LoadFunc {
 
@@ -214,41 +216,29 @@ public class BSONLoader extends LoadFunc {
             String fieldName = field.getName() == null ? "" : field.getName();
             String type = DataType.genTypeToNameMap().get(field.getType());
             LOG.warn("Type " + type + " for field " + fieldName + " can not be applied to " + obj.getClass().toString());
+            LOG.warn(e.toString());
             return null;
         }
 
     }
 
-    @SuppressWarnings("unchecked")
-    protected static String toChararray(Object obj) {
-        return toChararray(obj, false);
-    }
-
+    private static final Pattern ARRAY_JSON_PATTERN = Pattern.compile("\\{\\s*\\\"key\\\"\\s*:\\s*(\\[.*\\])\\s*\\}");
+    
 	@SuppressWarnings("unchecked")
-	protected static String toChararray(Object obj, boolean addQuotes) {
+	protected static String toChararray(Object obj) {
 		if (obj instanceof BasicDBObject) {
 			return ((BasicDBObject) obj).toJson(dbObjectCodec);
+		} else if (obj instanceof BasicDBList) {
+            BasicDBList list = (BasicDBList) obj;
+        	BasicDBObject bdo = new BasicDBObject("key", list);
+        	String s = bdo.toJson(dbObjectCodec);
+        	Matcher m = ARRAY_JSON_PATTERN.matcher(s);
+        	if (m.matches())
+        		return m.group(1);
 		} else if (obj.equals(Float.NaN) || obj.equals(Double.NaN)) {
             return "\"NaN\"";
-        } else if (obj instanceof BasicDBList) {
-            BasicDBList list = (BasicDBList) obj;
-            if (list.size() > 0) {
-                StringBuilder listJson = new StringBuilder("[");
-                for (Object innerObj : list) {
-                    listJson.append(toChararray(innerObj, true)).append(",");
-                }
-                listJson.setLength(listJson.length() - 1);
-                listJson.append("]");
-                return listJson.toString();
-            }
-            return "[]";
-		} else {
-            if (addQuotes && !(obj instanceof Number)) {
-                return "\"" + obj.toString() + "\"";
-            } else {
-                return obj.toString();
-            }
-		}
+        } 
+        return obj.toString();
 	}
 
 
