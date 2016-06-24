@@ -134,7 +134,7 @@ public class TestSharded extends BaseShardedTest {
 
         MapReduceJob job = new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
           .jar(JOBJAR_PATH)
-          .inputUris(new MongoClientURIBuilder(getInputUri()).readPreference(ReadPreference.secondary()).build())
+          .inputUris(getInputUri())
           .outputUri(getOutputUri())
           .param(SPLITS_USE_RANGEQUERY, "true");
         if (isHadoopV1()) {
@@ -149,6 +149,6 @@ public class TestSharded extends BaseShardedTest {
            .inputUris(getInputUri())
            .execute(isRunTestInVm());
         // Make sure that this fails when rangequery is used with a query that conflicts
-        assertEquals(collection.count(), 0);
+        assertEquals(0, collection.count());
     }
 }

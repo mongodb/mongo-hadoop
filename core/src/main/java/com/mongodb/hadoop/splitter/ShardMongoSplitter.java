@@ -48,12 +48,12 @@ public class ShardMongoSplitter extends MongoCollectionSplitter {
 
         MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
 
-        Map<String, String> shardsMap;
+        Map<String, List<String>> shardsMap;
         try {
             shardsMap = getShardsMap();
 
-            for (Entry<String, String> entry : shardsMap.entrySet()) {
-                String shardHosts = entry.getValue();
+            for (Entry<String, List<String>> entry : shardsMap.entrySet()) {
+                List<String> shardHosts = entry.getValue();
 
                 MongoInputSplit chunkSplit = createSplitFromBounds(null, null);
                 chunkSplit.setInputURI(rewriteURI(inputURI, shardHosts));
