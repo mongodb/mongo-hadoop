@@ -53,6 +53,8 @@ public class MongoLoader extends LoadFunc
     private Map<String, String> inputFieldNames;
     
     private String query = null;
+    
+    private final static String PROJECTION_INPUT_FIELDS = MongoConfigUtil.INPUT_FIELDS + ".projection";
 
 
     public MongoLoader() {
@@ -107,7 +109,7 @@ public class MongoLoader extends LoadFunc
 
     private BasicBSONObject getProjection() {
         String projectionStr =
-          getUDFProperties().getProperty(MongoConfigUtil.INPUT_FIELDS);
+          getUDFProperties().getProperty(PROJECTION_INPUT_FIELDS);
         return (BasicBSONObject) JSON.parse(projectionStr);
     }
 
@@ -307,7 +309,8 @@ public class MongoLoader extends LoadFunc
         // Store projection to be retrieved later and stored into the job
         // configuration.
         getUDFProperties().setProperty(
-          MongoConfigUtil.INPUT_FIELDS, JSON.serialize(projectionForQuery));
+                MongoConfigUtil.INPUT_FIELDS, JSON.serialize(projectionForQuery));
+        getUDFProperties().setProperty(PROJECTION_INPUT_FIELDS, JSON.serialize(projection));
 
         // Return a response indicating that we can honor the projection.
         return new RequiredFieldResponse(true);
