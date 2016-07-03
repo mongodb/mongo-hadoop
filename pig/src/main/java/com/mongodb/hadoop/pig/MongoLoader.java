@@ -175,7 +175,7 @@ public class MongoLoader extends LoadFunc
         } catch (Exception ie) {
             throw new IOException(ie);
         }
-
+        
         Tuple t;
         if (fields == null) {
             // dynamic schema mode - just output a tuple with a single element,
@@ -274,10 +274,13 @@ public class MongoLoader extends LoadFunc
         }
 
         BSONObject projection = new BasicBSONObject();
+        BSONObject projectionForQuery = new BasicBSONObject();
         boolean needId = false;
         for (RequiredField field : requiredFieldList.getFields()) {
             String fieldName = field.getAlias();
-            if (inputFieldNames == null && idAlias != null && idAlias.equals(fieldName)) {
+            if (inputFieldNames != null && inputFieldNames.containsKey(fieldName)) {
+            	projectionForQuery.put(inputFieldNames.get(fieldName), true);            	
+            } else if (idAlias != null && idAlias.equals(fieldName)) {
                 fieldName = "_id";
                 needId = true;
             }
@@ -297,11 +300,14 @@ public class MongoLoader extends LoadFunc
         }
 
         LOG.info("projection: " + projection);
+        LOG.info("projectionForQuery: " + projectionForQuery);
 
+        
+        
         // Store projection to be retrieved later and stored into the job
         // configuration.
         getUDFProperties().setProperty(
-          MongoConfigUtil.INPUT_FIELDS, JSON.serialize(projection));
+          MongoConfigUtil.INPUT_FIELDS, JSON.serialize(projectionForQuery));
 
         // Return a response indicating that we can honor the projection.
         return new RequiredFieldResponse(true);
