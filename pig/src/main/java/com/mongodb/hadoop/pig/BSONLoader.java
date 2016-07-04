@@ -4,6 +4,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBRef;
 import com.mongodb.MongoClient;
+import com.mongodb.util.JSON;
 import com.mongodb.hadoop.BSONFileInputFormat;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,28 +18,37 @@ import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.*;
 import org.apache.pig.impl.util.Utils;
+import org.bson.BSONException;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.codecs.Encoder;
+import org.bson.codecs.EncoderContext;
+import org.bson.json.JsonWriterSettings;
 import org.bson.types.BasicBSONList;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
+import org.bson.BsonTimestamp;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.SimpleTimeZone;
+
 
 public class BSONLoader extends LoadFunc {
 
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
     private static final Log LOG = LogFactory.getLog(BSONLoader.class);
-	private static final Encoder dbObjectCodec = new MyDBObjectCodec(MongoClient.getDefaultCodecRegistry());
     private final BSONFileInputFormat inputFormat = new BSONFileInputFormat();
     //CHECKSTYLE:OFF
     protected RecordReader in = null;
@@ -222,26 +232,21 @@ public class BSONLoader extends LoadFunc {
 
     }
 
-    private static final Pattern ARRAY_JSON_PATTERN = Pattern.compile("\\{\\s*\\\"key\\\"\\s*:\\s*(\\[.*\\])\\s*\\}");
-    
 	@SuppressWarnings("unchecked")
 	protected static String toChararray(Object obj) {
-		if (obj instanceof BasicDBObject) {
-			return ((BasicDBObject) obj).toJson(dbObjectCodec);
-		} else if (obj instanceof BasicDBList) {
-            BasicDBList list = (BasicDBList) obj;
-        	BasicDBObject bdo = new BasicDBObject("key", list);
-        	String s = bdo.toJson(dbObjectCodec);
-        	Matcher m = ARRAY_JSON_PATTERN.matcher(s);
-        	if (m.matches())
-        		return m.group(1);
-        	LOG.warn("Could not parse object into array using regex: " + s);
+		if (obj instanceof BasicDBObject || obj instanceof BasicDBList) {
+			return toJson(obj);
 		} else if (obj.equals(Float.NaN) || obj.equals(Double.NaN)) {
             return "\"NaN\"";
         } 
         return obj.toString();
 	}
-
+	
+	protected static String toJson(Object obj) {
+		StringBuilder buf = new StringBuilder();
+		JSONSerializers.getLegacy().serialize(obj, buf);
+		return buf.toString();
+	}
 
     /**
      * Convert an object from a MongoDB document into a type that Pig can
