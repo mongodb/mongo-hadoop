@@ -232,8 +232,6 @@ public class BSONLoader extends LoadFunc {
 
     }
 
-    private static final Pattern ARRAY_JSON_PATTERN = Pattern.compile("\\{\\s*\\\"key\\\"\\s*:\\s*(\\[.*\\])\\s*\\}");
-    
 	@SuppressWarnings("unchecked")
 	protected static String toChararray(Object obj) {
 		if (obj instanceof BasicDBObject || obj instanceof BasicDBList) {
