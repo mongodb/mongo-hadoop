@@ -121,10 +121,14 @@ public class MongoLoader extends LoadFunc
           getUDFProperties().getProperty(MongoConfigUtil.INPUT_FIELDS);
         if (inputFieldsStr != null) {
             conf.set(MongoConfigUtil.INPUT_FIELDS, inputFieldsStr);
+        } else if (inputFieldNames != null){
+        	conf.unset(MongoConfigUtil.INPUT_FIELDS);
         }
         try {
         	if (query != null)
-        		MongoConfigUtil.setQuery( job.getConfiguration(), query );
+        		MongoConfigUtil.setQuery( conf, query );
+        	 else 
+             	conf.unset(MongoConfigUtil.INPUT_QUERY);             
         } catch (Throwable e) {
         	throw new IllegalArgumentException("Could not set query.", e);
         }
