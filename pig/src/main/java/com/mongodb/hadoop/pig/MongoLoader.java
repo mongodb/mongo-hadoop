@@ -121,7 +121,7 @@ public class MongoLoader extends LoadFunc
           getUDFProperties().getProperty(MongoConfigUtil.INPUT_FIELDS);
         if (inputFieldsStr != null) {
             conf.set(MongoConfigUtil.INPUT_FIELDS, inputFieldsStr);
-        } else if (inputFieldNames != null){
+        } else {
         	conf.unset(MongoConfigUtil.INPUT_FIELDS);
         }
         try {
