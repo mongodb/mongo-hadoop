@@ -215,17 +215,31 @@ public class MongoOutputCommitter extends OutputCommitter {
     private void cleanupResources(
       final CompatUtils.TaskAttemptContext taskContext)
         throws IOException {
-        Path tempPath = getTaskAttemptPath(taskContext);
-        try {
-            FileSystem fs = FileSystem.get(taskContext.getConfiguration());
-            fs.delete(tempPath, true);
-        } catch (IOException e) {
-            LOG.error("Could not delete temporary file " + tempPath, e);
-            throw e;
+        Path currentPath = getTaskAttemptPath(taskContext);
+        Path tempDirectory = getTempDirectory(taskContext.getConfiguration());
+        FileSystem fs = FileSystem.get(taskContext.getConfiguration());
+        while (!currentPath.equals(tempDirectory)) {
+            try {
+                fs.delete(currentPath, true);
+            } catch (IOException e) {
+                LOG.error("Could not delete temporary file: " + currentPath, e);
+                throw e;
+            }
+            currentPath = currentPath.getParent();
         }
+
         if (collection != null) {
             MongoConfigUtil.close(collection.getDB().getMongo());
         }
+    }
+
+    private static Path getTempDirectory(final Configuration config) {
+        String basePath = config.get(
+          "mapreduce.task.tmp.dir",
+          config.get(
+            "mapred.child.tmp",
+            config.get("hadoop.tmp.dir", "/tmp")));
+        return new Path(basePath);
     }
 
     /**
@@ -243,15 +257,11 @@ public class MongoOutputCommitter extends OutputCommitter {
         // 2. Old-style option for task tmp dir
         // 3. Hadoop system-wide tmp dir
         // 4. /tmp
-        String basePath = config.get(
-          "mapreduce.task.tmp.dir",
-          config.get(
-            "mapred.child.tmp",
-            config.get("hadoop.tmp.dir", "/tmp")));
         // Hadoop Paths always use "/" as a directory separator.
         return new Path(
           String.format("%s/%s/%s/_out",
-            basePath, context.getTaskAttemptID().toString(), TEMP_DIR_NAME));
+            getTempDirectory(config),
+            context.getTaskAttemptID().toString(), TEMP_DIR_NAME));
     }
 
 }
