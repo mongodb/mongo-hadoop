@@ -17,20 +17,15 @@
 
 package com.mongodb.hadoop.mapred.output;
 
-import com.mongodb.DBCollection;
+import com.mongodb.hadoop.util.CompatUtils;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.TaskAttemptContextImpl;
-import org.apache.hadoop.mapred.TaskAttemptID;
-
-import java.util.Collections;
-import java.util.List;
 
 public class MongoRecordWriter<K, V>
   extends com.mongodb.hadoop.output.MongoRecordWriter<K, V>
   implements RecordWriter<K, V> {
-    private final JobConf configuration;
 
     /**
      * Create a new MongoRecordWriter.
@@ -38,30 +33,13 @@ public class MongoRecordWriter<K, V>
      */
     public MongoRecordWriter(final JobConf conf) {
         super(
-          Collections.<DBCollection>emptyList(),
-          new TaskAttemptContextImpl(
-            conf, TaskAttemptID.forName(conf.get("mapred.task.id"))));
-        configuration = conf;
-    }
-
-    /**
-     * @deprecated MongoRecordWriter doesn't use DBCollections directly.
-     * Please use {@link #MongoRecordWriter(JobConf)} instead.
-     * @param c the DBCollection
-     * @param conf the job configuration
-     */
-    @Deprecated
-    public MongoRecordWriter(final List<DBCollection> c, final JobConf conf) {
-        this(conf);
+          MongoConfigUtil.getOutputCollection(conf),
+          CompatUtils.getTaskAttemptContext(conf, conf.get("mapred.task.id")));
     }
 
     @Override
     public void close(final Reporter reporter) {
-        super.close(getContext());
-    }
-
-    public JobConf getConf() {
-        return configuration;
+        super.close(null);
     }
 
 }

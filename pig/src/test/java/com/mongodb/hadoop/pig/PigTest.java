@@ -2,7 +2,9 @@ package com.mongodb.hadoop.pig;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.ListIndexesIterable;
@@ -32,16 +34,18 @@ public class PigTest extends BaseHadoopTest {
     private static final MongoClientURI URI =
       new MongoClientURI("mongodb://localhost:27017/mongo_hadoop.pigtests");
     private MongoClient mongoClient;
+    private DB db;
 
     @Before
     public void setup() throws UnknownHostException {
         mongoClient = new MongoClient(URI);
-        mongoClient.getDB("mongo_hadoop").dropDatabase();
+        db = mongoClient.getDB("mongo_hadoop");
+        db.dropDatabase();
     }
 
     @After
     public void tearDown() {
-        mongoClient.getDB("mongo_hadoop").dropDatabase();
+        db.dropDatabase();
         mongoClient.close();
     }
 
@@ -111,8 +115,7 @@ public class PigTest extends BaseHadoopTest {
     public void testPigUUID() throws IOException, ParseException {
         UUID uuid = UUID.randomUUID();
         BasicDBObject doc = new BasicDBObject("uuid", uuid);
-        mongoClient.getDB("mongo_hadoop")
-          .getCollection("uuid_test").insert(doc);
+        db.getCollection("uuid_test").insert(doc);
 
         org.apache.pig.pigunit.PigTest test =
           new org.apache.pig.pigunit.PigTest(
@@ -228,5 +231,19 @@ public class PigTest extends BaseHadoopTest {
           indexExists(coll, "first_1"));
         assertFalse("Should not have the index \"last_1\"",
           indexExists(coll, "last_1"));
+    }
+
+    @Test
+    public void testPigUpdateReplace() throws IOException, ParseException {
+        DBCollection replaceCollection = db.getCollection("replace_test");
+        for (int i = 0; i < 10; ++i) {
+            replaceCollection.insert(new BasicDBObject("i", i));
+        }
+        runScript("/pig/replace_mus.pig");
+        DBCursor cursor =
+          replaceCollection.find().sort(new BasicDBObject("i", 1));
+        for (int i = 1; i <= 10; ++i) {
+            assertEquals(i, cursor.next().get("i"));
+        }
     }
 }

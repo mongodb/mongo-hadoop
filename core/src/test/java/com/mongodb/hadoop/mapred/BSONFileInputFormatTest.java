@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 
 import static com.mongodb.hadoop.testutils.BaseHadoopTest.EXAMPLE_DATA_HOME;
-import static org.apache.hadoop.mapreduce.lib.input.FileInputFormat.INPUT_DIR;
 import static org.junit.Assert.assertEquals;
 
 public class BSONFileInputFormatTest {
@@ -20,7 +19,13 @@ public class BSONFileInputFormatTest {
     public void enronEmails() throws IOException {
         BSONFileInputFormat inputFormat = new BSONFileInputFormat();
         JobConf job = new JobConf();
-        job.set(INPUT_DIR, new File(EXAMPLE_DATA_HOME, "/dump/enron_mail/messages.bson").getAbsoluteFile().toURI().toString());
+        String inputDirectory =
+          new File(EXAMPLE_DATA_HOME, "/dump/enron_mail/messages.bson")
+            .getAbsoluteFile().toURI().toString();
+        // Hadoop 2.X
+        job.set("mapreduce.input.fileinputformat.inputdir", inputDirectory);
+        // Hadoop 1.2.X
+        job.set("mapred.input.dir", inputDirectory);
         FileSplit[] splits = inputFormat.getSplits(job, 5);
         int count = 0;
         BSONWritable writable = new BSONWritable();

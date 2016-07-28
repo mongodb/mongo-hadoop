@@ -44,21 +44,23 @@ public class MongoUpdateWritable implements Writable {
     private BasicBSONObject modifiers;
     private boolean upsert;
     private boolean multiUpdate;
+    private boolean replace;
 
     public MongoUpdateWritable() {
-        this(null, null);
+        this(new BasicBSONObject(), new BasicBSONObject());
+    }
+
+    public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers) {
+        this(query, modifiers, true, false, false);
     }
 
     public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers, final boolean upsert,
-                               final boolean multiUpdate) {
+                               final boolean multiUpdate, final boolean replace) {
         this.query = query;
         this.modifiers = modifiers;
         this.upsert = upsert;
         this.multiUpdate = multiUpdate;
-    }
-
-    public MongoUpdateWritable(final BasicBSONObject query, final BasicBSONObject modifiers) {
-        this(query, modifiers, true, false);
+        this.replace = replace;
     }
 
     public BasicBSONObject getQuery() {
@@ -73,9 +75,16 @@ public class MongoUpdateWritable implements Writable {
         return upsert;
     }
 
-
     public boolean isMultiUpdate() {
         return multiUpdate;
+    }
+
+    public boolean isReplace() {
+        return replace;
+    }
+
+    public void setReplace(final boolean replace) {
+        this.replace = replace;
     }
 
     public void setQuery(final BasicBSONObject query) {
@@ -110,6 +119,7 @@ public class MongoUpdateWritable implements Writable {
         buf.pipe(new DataOutputOutputStreamAdapter(out));
         out.writeBoolean(upsert);
         out.writeBoolean(multiUpdate);
+        out.writeBoolean(replace);
     }
 
     /**
@@ -139,6 +149,7 @@ public class MongoUpdateWritable implements Writable {
             modifiers = (BasicBSONObject) cb.get();
             upsert = in.readBoolean();
             multiUpdate = in.readBoolean();
+            replace = in.readBoolean();
         } catch (Exception e) {
             /* If we can't read another length it's not an error, just return quietly. */
             // TODO - Figure out how to gracefully mark this as an empty
@@ -155,7 +166,8 @@ public class MongoUpdateWritable implements Writable {
             return false;
         }
         final MongoUpdateWritable other = (MongoUpdateWritable) obj;
-        if (upsert != other.upsert || multiUpdate != other.multiUpdate) {
+        if (upsert != other.upsert || multiUpdate != other.multiUpdate
+          || replace != other.replace) {
             return false;
         }
         if ((query == null && other.query != null)
@@ -177,6 +189,7 @@ public class MongoUpdateWritable implements Writable {
         hashCode ^= modifiers.hashCode();
         hashCode ^= (upsert ? 1 : 0) << 1;
         hashCode ^= (multiUpdate ? 1 : 0) << 2;
+        hashCode ^= (replace ? 1 : 0) << 3;
         return hashCode;
     }
 }

@@ -16,15 +16,12 @@
 
 package com.mongodb.hadoop.mapred;
 
-import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
 import com.mongodb.hadoop.mapred.output.MongoRecordWriter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.hadoop.mapred.OutputFormat;
 import org.apache.hadoop.mapred.RecordWriter;
-import org.apache.hadoop.mapred.TaskAttemptContext;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.IOException;
@@ -39,16 +36,6 @@ public class MongoOutputFormat<K, V> implements OutputFormat<K, V> {
         if (MongoConfigUtil.getOutputURIs(job).isEmpty()) {
             throw new IOException("No output URI is specified. You must set mongo.output.uri.");
         }
-    }
-
-    /**
-     * @deprecated This method is unused.
-     * @param context the current task's context.
-     * @return an instance of {@link MongoOutputCommitter}
-     */
-    @Deprecated
-    public OutputCommitter getOutputCommitter(final TaskAttemptContext context) {
-        return new MongoOutputCommitter();
     }
 
     @Override

@@ -18,6 +18,7 @@ package com.mongodb.hadoop.splitter;
 
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.input.BSONFileSplit;
+import com.mongodb.hadoop.util.CompatUtils;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,7 +30,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -87,16 +87,25 @@ public class BSONSplitter extends Configured implements Tool {
         return createFileSplit(inputFile, fs, start, splitLen);
     }
 
-    public BSONFileSplit createFileSplit(final FileStatus inFile, final
-    FileSystem fs, final long splitStart, final long splitLen) {
+    public BSONFileSplit createFileSplit(
+      final FileStatus inFile, final FileSystem fs, final long splitStart,
+      final long splitLen) {
         BSONFileSplit split;
         try {
             BlockLocation[] blkLocations;
 
             // This code is based off of org.apache.hadoop.mapreduce.lib
             // .input.FileInputFormat.getSplits()
-            if (inFile instanceof LocatedFileStatus) {
-                blkLocations = ((LocatedFileStatus) inFile).getBlockLocations();
+            boolean isLocatedFileStatus = CompatUtils.isInstance(
+              inFile,
+              "org.apache.hadoop.fs.LocatedFileStatus",
+              getConf(),
+              FileStatus.class);
+            if (isLocatedFileStatus) {
+                blkLocations =
+                  (BlockLocation[]) CompatUtils.invokeMethod(
+                    FileStatus.class, inFile, "getBlockLocations",
+                    new Object[]{}, new Class[]{});
             } else {
                 blkLocations = fs.getFileBlockLocations(
                   inFile, splitStart, splitLen);

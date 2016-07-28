@@ -4,8 +4,6 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
 import com.mongodb.ReadPreference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,8 +14,6 @@ import java.util.Map.Entry;
 import static java.lang.String.format;
 
 public class MongoClientURIBuilder {
-    private static final Logger LOG = LoggerFactory.getLogger(MongoClientURIBuilder.class);
-
     private MongoClientOptions options;
     private MongoCredential credentials;
     private final List<String> hosts = new ArrayList<String>();

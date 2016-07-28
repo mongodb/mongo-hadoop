@@ -144,20 +144,22 @@ public class MongoUpdateStorage extends StoreFunc implements StoreMetadata {
             BasicBSONObject q = toUpdate[0];
             // 'update' JSON
             BasicBSONObject u = toUpdate[1];
-
-            // multi and upsert 'options' JSON
+            // update options
+            BasicBSONObject mu = toUpdate.length > 2 ? toUpdate[2] : null;
             boolean isUpsert = true;
             boolean isMulti = false;
-            BasicBSONObject mu = toUpdate.length > 2 ? toUpdate[2] : null;
+            boolean isReplace = false;
             if (mu != null) {
-                isUpsert = !mu.containsField("upsert") || mu.getBoolean("upsert");
-                isMulti = mu.containsField("multi") && mu.getBoolean("multi");
+                isUpsert = mu.getBoolean("upsert", true);
+                isMulti = mu.getBoolean("multi", false);
+                isReplace = mu.getBoolean("replace", false);
             }
 
             muw.setQuery(q);
             muw.setModifiers(u);
             muw.setUpsert(isUpsert);
             muw.setMultiUpdate(isMulti);
+            muw.setReplace(isReplace);
             recordWriter.write(null, muw);
         } catch (Exception e) {
             throw new IOException("Couldn't convert tuple to bson: ", e);

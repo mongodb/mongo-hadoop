@@ -46,7 +46,8 @@ New releases are announced on the [releases](https://github.com/mongodb/mongo-ha
 These are the minimum versions tested with the Hadoop connector. Earlier
 versions may work, but haven't been tested.
 
-- *Hadoop*: 2.4
+- *Hadoop 1.X*: 1.2
+- *Hadoop 2.X*: 2.4
 - *Hive*: 1.1
 - *Pig*: 0.11
 - *Spark*: 1.4
@@ -101,25 +102,7 @@ and we will try to help.  _Note_: Until findbugs updates its dependencies, runni
 Luke Lovett (luke.lovett@mongodb.com)
 
 ### Contributors
-* Mike O'Brien (mikeo@10gen.com)
-* Brendan McAdams brendan@10gen.com
-* Eliot Horowitz erh@10gen.com
-* Ryan Nitz ryan@10gen.com
-* Russell Jurney (@rjurney) (Lots of significant Pig improvements)
-* Sarthak Dudhara sarthak.83@gmail.com (BSONWritable comparable interface)
-* Priya Manda priyakanth024@gmail.com (Test Harness Code)
-* Rushin Shah rushin10@gmail.com (Test Harness Code)
-* Joseph Shraibman jks@iname.com (Sharded Input Splits)
-* Sumin Xia xiasumin1984@gmail.com (Sharded Input Splits)
-* Jeremy Karn
-* bpfoster
-* Ross Lawley
-* Carsten Hufe
-* Asya Kamsky
-* Thomas Millar
-* Justin Lee
-* Luke Lovett
-* Mariano Semelman
+See [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ### Support
 

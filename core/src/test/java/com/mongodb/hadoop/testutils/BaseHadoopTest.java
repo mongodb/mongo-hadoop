@@ -30,7 +30,7 @@ public abstract class BaseHadoopTest {
 
     public static final String HADOOP_HOME;
     public static final String PROJECT_VERSION = loadProperty("project"
-            + ".version", "1.5.2");
+            + ".version", "2.0.0-SNAPSHOT");
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.7.2");
 
 //    public static final String HIVE_HOME;
@@ -80,6 +80,22 @@ public abstract class BaseHadoopTest {
         } catch (final IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    public int[] getServerVersion(final MongoClientURI uri) {
+        List versionArray = (List) getClient(uri).getDB("admin")
+          .command("buildinfo").get("versionArray");
+        int[] versionDigits = new int[versionArray.size()];
+        for (int i = 0; i < versionArray.size(); ++i) {
+            versionDigits[i] = (Integer) versionArray.get(i);
+        }
+        return versionDigits;
+    }
+
+    public boolean isSampleOperatorSupported(final MongoClientURI uri) {
+        int[] serverVersion = getServerVersion(uri);
+        return (serverVersion[0] > 3
+          || (serverVersion[0] == 3 && serverVersion[1] >= 2));
     }
 
     protected static String loadProperty(final String name, final String defaultValue) {

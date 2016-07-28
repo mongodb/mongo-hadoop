@@ -10,8 +10,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotEquals;
 
 public class MongoUpdateWritableTest {
@@ -19,7 +17,8 @@ public class MongoUpdateWritableTest {
     public void testSerialization() throws Exception {
         BasicDBObject query = new BasicDBObject("_id", new ObjectId());
         BasicDBObject modifiers = new BasicDBObject("$set", new BasicDBObject("foo", "bar"));
-        MongoUpdateWritable writable = new MongoUpdateWritable(query, modifiers, true, false);
+        MongoUpdateWritable writable =
+          new MongoUpdateWritable(query, modifiers, true, false, true);
 
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -33,14 +32,9 @@ public class MongoUpdateWritableTest {
         ByteArrayInputStream bais = new ByteArrayInputStream(serializedBytes);
         DataInputStream in = new DataInputStream(bais);
 
-        writable = new MongoUpdateWritable(null, null, false, true);
-
-        writable.readFields(in);
-
-        assertEquals(query, writable.getQuery());
-        assertEquals(modifiers, writable.getModifiers());
-        assertTrue(writable.isUpsert());
-        assertFalse(writable.isMultiUpdate());
+        MongoUpdateWritable blank = new MongoUpdateWritable();
+        blank.readFields(in);
+        assertEquals(writable, blank);
     }
 
     @Test
@@ -52,30 +46,40 @@ public class MongoUpdateWritableTest {
         BasicDBObject modifiers2 = new BasicDBObject("$set", new
                 BasicDBObject("bar", "baz"));
         MongoUpdateWritable writable = new MongoUpdateWritable(query1,
-                modifiers1, true, false);
+                modifiers1, true, false, false);
 
         // Not equal because queries differ.
         MongoUpdateWritable diffQuery = new MongoUpdateWritable(query2,
-                modifiers1, true, false);
+                modifiers1, true, false, false);
         assertNotEquals(writable, diffQuery);
 
         // Not equal because modifiers differ.
         MongoUpdateWritable diffModifier = new MongoUpdateWritable(query1,
-                modifiers2, true, false);
+                modifiers2, true, false, false);
         assertNotEquals(writable, diffModifier);
 
         // Not equal because upsert flag differs.
         MongoUpdateWritable diffUpsert = new MongoUpdateWritable(query1,
-                modifiers1, false, false);
+                modifiers1, false, false, false);
         assertNotEquals(writable, diffUpsert);
 
         // Not equal because multi flag differs.
         MongoUpdateWritable diffMulti = new MongoUpdateWritable(query1,
-                modifiers1, true, true);
+                modifiers1, true, true, false);
         assertNotEquals(writable, diffMulti);
 
+        // Not equal because replace flag differs.
+        MongoUpdateWritable diffReplace = new MongoUpdateWritable(query1,
+          modifiers1, true, false, true);
+        assertNotEquals(writable, diffReplace);
+
         MongoUpdateWritable same = new MongoUpdateWritable(query1, modifiers1,
-                true, false);
+                true, false, false);
         assertEquals(writable, same);
+
+        // Test defaults for simple constructor.
+        MongoUpdateWritable simpleConstructor =
+          new MongoUpdateWritable(query1, modifiers1);
+        assertEquals(writable, simpleConstructor);
     }
 }

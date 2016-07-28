@@ -529,10 +529,6 @@ public final class MapredMongoConfigUtil {
         return MongoConfigUtil.getOutputCollection(conf);
     }
 
-    public static List<DBCollection> getOutputCollections(final Configuration conf) {
-        return MongoConfigUtil.getOutputCollections(conf);
-    }
-
     public static DBCollection getInputCollection(final Configuration conf) {
         return MongoConfigUtil.getInputCollection(conf);
     }

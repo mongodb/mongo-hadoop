@@ -2,6 +2,7 @@ package com.mongodb.hadoop;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig;
+import com.mongodb.hadoop.mapred.output.MongoOutputCommitter;
 import com.mongodb.hadoop.splitter.MultiMongoCollectionSplitter;
 import com.mongodb.hadoop.splitter.SingleMongoSplitter;
 import com.mongodb.hadoop.testutils.MapReduceJob;
@@ -41,13 +42,16 @@ public class TestStandalone extends TreasuryTest {
     @Test
     public void testBasicInputSource() {
         LOG.info("testing basic input source");
-        LOG.info("WHAT?");
-        new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
+        MapReduceJob treasuryJob =
+          new MapReduceJob(TreasuryYieldXMLConfig.class.getName())
             .jar(JOBJAR_PATH)
             .param("mongo.input.notimeout", "true")
             .inputUris(getInputUri())
-            .outputUris(getOutputUri())
-            .execute(isRunTestInVm());
+            .outputUri(getOutputUri());
+        if (isHadoopV1()) {
+            treasuryJob.outputCommitter(MongoOutputCommitter.class);
+        }
+        treasuryJob.execute(isRunTestInVm());
         compareResults(getClient(getInputUri()).getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection()),
                        getReference());
     }
@@ -56,12 +60,16 @@ public class TestStandalone extends TreasuryTest {
     @Test
     public void testTreasuryJsonConfig() {
         mongoImport("yield_historical.in3", TREASURY_JSON_PATH);
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        MapReduceJob treasuryJob =
+          new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .jar(JOBJAR_PATH)
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .param(MULTI_COLLECTION_CONF_KEY, collectionSettings().toString())
-            .outputUris(getOutputUri())
-            .execute(isRunTestInVm());
+            .outputUri(getOutputUri());
+        if (isHadoopV1()) {
+            treasuryJob.outputCommitter(MongoOutputCommitter.class);
+        }
+        treasuryJob.execute(isRunTestInVm());
 
         compareDoubled(getClient(getInputUri()).getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection()));
     }
@@ -70,12 +78,16 @@ public class TestStandalone extends TreasuryTest {
     public void testMultipleCollectionSupport() {
         mongoImport(getInputUri().getCollection(), TREASURY_JSON_PATH);
         mongoImport(inputUri2.getCollection(), TREASURY_JSON_PATH);
-        new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
+        MapReduceJob treasuryJob =
+          new MapReduceJob("com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig")
             .jar(JOBJAR_PATH)
             .param(MONGO_SPLITTER_CLASS, MultiMongoCollectionSplitter.class.getName())
             .inputUris(getInputUri(), inputUri2)
-            .outputUris(getOutputUri())
-            .execute(isRunTestInVm());
+            .outputUri(getOutputUri());
+        if (isHadoopV1()) {
+            treasuryJob.outputCommitter(MongoOutputCommitter.class);
+        }
+        treasuryJob.execute(isRunTestInVm());
 
         compareDoubled(getClient(getInputUri()).getDB(getOutputUri().getDatabase()).getCollection(getOutputUri().getCollection()));
     }

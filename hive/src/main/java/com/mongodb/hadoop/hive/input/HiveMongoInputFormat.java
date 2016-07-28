@@ -139,7 +139,7 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
             String columnNamesStr =
               conf.get(ColumnProjectionUtils.READ_COLUMN_NAMES_CONF_STR);
             String[] columnNames =
-              StringUtils.split(columnNamesStr, StringUtils.COMMA);
+              StringUtils.split(columnNamesStr, '\\', StringUtils.COMMA);
             for (String colName : columnNames) {
                 analyzer.allowColumnName(colName);
             }
@@ -190,7 +190,7 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
             String columnNamesStr =
               conf.get(ColumnProjectionUtils.READ_COLUMN_NAMES_CONF_STR);
             String[] columnNames =
-              StringUtils.split(columnNamesStr, StringUtils.COMMA);
+              StringUtils.split(columnNamesStr, '\\', StringUtils.COMMA);
             boolean foundId = false;
             mongoProjection = new BasicDBObject();
             for (String col : columnNames) {

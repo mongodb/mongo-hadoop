@@ -8,6 +8,7 @@ import com.mongodb.hadoop.util.MongoTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
@@ -46,12 +47,13 @@ public class MapReduceJob {
     private final String className;
 
     private final List<String> inputUris = new ArrayList<String>();
-    private final List<String> outputUris = new ArrayList<String>();
+    private MongoClientURI outputUri;
     private File jarPath;
     private Class<? extends InputFormat> inputFormat;
     private Class<? extends OutputFormat> outputFormat;
     private Class<? extends org.apache.hadoop.mapred.InputFormat> mapredInputFormat;
     private Class<? extends org.apache.hadoop.mapred.OutputFormat> mapredOutputFormat;
+    private Class<? extends OutputCommitter> outputCommitter;
 
     public MapReduceJob(final String className) {
         this.className = className;
@@ -69,10 +71,8 @@ public class MapReduceJob {
         return this;
     }
 
-    public MapReduceJob outputUris(final MongoClientURI... outputUris) {
-        for (MongoClientURI outputUri : outputUris) {
-            this.outputUris.add(outputUri.getURI());
-        }
+    public MapReduceJob outputUri(final MongoClientURI uri) {
+        this.outputUri = uri;
         return this;
     }
 
@@ -83,10 +83,9 @@ public class MapReduceJob {
         return this;
     }
 
-    public MapReduceJob outputUris(final URI... outputUris) {
-        for (URI outputUri : outputUris) {
-            this.outputUris.add(outputUri.toString());
-        }
+    public MapReduceJob outputCommitter(
+      final Class<? extends OutputCommitter> outputCommitter) {
+        this.outputCommitter = outputCommitter;
         return this;
     }
 
@@ -190,17 +189,10 @@ public class MapReduceJob {
             entries.add(new Pair<String, String>(INPUT_URI, inputUri.toString()));
         }
 
-        if (!outputUris.isEmpty()) {
-            StringBuilder outputUri = new StringBuilder();
-            for (String uri : outputUris) {
-                if (outputUri.length() != 0) {
-                    outputUri.append(",");
-                }
-                outputUri.append(uri);
-            }
-            entries.add(new Pair<String, String>(OUTPUT_URI, outputUri.toString()));
+        if (outputUri != null) {
+            entries.add(
+              new Pair<String, String>(OUTPUT_URI, outputUri.toString()));
         }
-        
         if (inputFormat != null) {
             entries.add(new Pair<String, String>(JOB_INPUT_FORMAT, inputFormat.getName()));
         } else if (mapredInputFormat != null) {
@@ -228,6 +220,12 @@ public class MapReduceJob {
                           : MongoOutputFormat.class.getName();
             entries.add(new Pair<String, String>(JOB_OUTPUT_FORMAT, name));
             LOG.info(format("No output format defined.  Defaulting to '%s'", name));
+        }
+
+        if (outputCommitter != null) {
+            entries.add(
+              new Pair<String, String>(
+                "mapred.output.committer.class", outputCommitter.getName()));
         }
 
         return entries;

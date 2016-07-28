@@ -19,7 +19,7 @@ package com.mongodb.hadoop.splitter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.util.MongoConfigUtil;
@@ -30,12 +30,8 @@ import org.apache.hadoop.mapreduce.InputSplit;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * This class is an implementation of MongoSplitter which can be used on sharded collections. It gets the chunks information from the
@@ -52,107 +48,103 @@ public class ShardChunkMongoSplitter extends MongoCollectionSplitter {
         super(conf);
     }
 
-    // Generate one split per chunk.
-    @Override
-    public List<InputSplit> calculateSplits() throws SplitFailedException {
+    /**
+     * Get a list of InputSplits based on a list of MongoDB shard chunks, the shard key, and a
+     * mapping of shard names to host names. This is used internally by {@link #calculateSplits()}.
+     *
+     * @param chunks Chunk documents from the config.chunks collection.
+     * @param shardsMap A map of shard name -> an array of hostnames.
+     * @return A list of InputSplits.
+     */
+    List<InputSplit> calculateSplitsFromChunks(
+      final List<DBObject> chunks, final Map<String, List<String>> shardsMap)
+      throws SplitFailedException {
+
         boolean targetShards = MongoConfigUtil.canReadSplitsFromShards(getConfiguration());
-        DB configDB = getConfigDB();
-        DBCollection chunksCollection = configDB.getCollection("chunks");
-
-        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
-        String inputNS = inputURI.getDatabase() + "." + inputURI.getCollection();
-
-        DBCursor cur = chunksCollection.find(new BasicDBObject("ns", inputNS));
-
-        int numChunks = 0;
-
-        Map<String, String> shardsMap = null;
-        if (targetShards) {
-            try {
-                shardsMap = getShardsMap();
-            } catch (Exception e) {
-                //Something went wrong when trying to
-                //read the shards data from the config server,
-                //so abort the splitting
-                throw new SplitFailedException("Couldn't get shards information from config server", e);
-            }
-        }
-
         List<String> mongosHostNames = MongoConfigUtil.getInputMongosHosts(getConfiguration());
+        MongoClientURI inputURI = MongoConfigUtil.getInputURI(getConfiguration());
         if (targetShards && mongosHostNames.size() > 0) {
             throw new SplitFailedException("Setting both mongo.input.split.read_from_shards and mongo.input.mongos_hosts"
-                                           + " does not make sense. ");
+              + " does not make sense. ");
         }
-
+        Map<String, String> mongosMap = null;
         if (mongosHostNames.size() > 0) {
-            LOG.info("Using multiple mongos instances (round robin) for reading input.");
+            // Build a map of host -> mongos host string (incl. port)
+            mongosMap = new HashMap<String, String>();
+            for (String mongosHostName : mongosHostNames) {
+                String[] hostAndPort = mongosHostName.split(":");
+                mongosMap.put(hostAndPort[0], mongosHostName);
+            }
         }
 
-        Map<String, LinkedList<InputSplit>> shardToSplits = new HashMap<String, LinkedList<InputSplit>>();
+        List<InputSplit> splits = new ArrayList<InputSplit>(chunks.size());
+        for (DBObject chunk : chunks) {
+            BasicDBObject chunkLowerBound = (BasicDBObject) chunk.get("min");
+            BasicDBObject chunkUpperBound = (BasicDBObject) chunk.get("max");
+            MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
+            chunkSplit.setInputURI(inputURI);
+            String shard = (String) chunk.get("shard");
+            if (targetShards) {
+                //The job is configured to target shards, so replace the
+                //mongos hostname with the host of the shard's servers
+                List<String> shardHosts = shardsMap.get(shard);
+                if (shardHosts == null) {
+                    throw new SplitFailedException(
+                      "Couldn't find shard ID: " + shard + " in config.shards.");
+                }
 
-        try {
-            while (cur.hasNext()) {
-                final BasicDBObject row = (BasicDBObject) cur.next();
-                BasicDBObject chunkLowerBound = (BasicDBObject) row.get("min");
-                BasicDBObject chunkUpperBound = (BasicDBObject) row.get("max");
-                MongoInputSplit chunkSplit = createSplitFromBounds(chunkLowerBound, chunkUpperBound);
-                chunkSplit.setInputURI(inputURI);
-                String shard = (String) row.get("shard");
-                if (targetShards) {
-                    //The job is configured to target shards, so replace the
-                    //mongos hostname with the host of the shard's servers
-                    String shardHosts = shardsMap.get(shard);
-                    if (shardHosts == null) {
-                        throw new SplitFailedException("Couldn't find shard ID: " + shard + " in config.shards.");
+                MongoClientURI newURI = rewriteURI(inputURI, shardHosts);
+                chunkSplit.setInputURI(newURI);
+            } else if (mongosMap != null) {
+                // Try to use a mongos collocated with one of the shard hosts for the input
+                // split. If the user has their Hadoop/MongoDB clusters configured correctly,
+                // this will allow for reading without having to transfer data over a network.
+                // Note that MongoInputSplit.getLocations() just returns the hostnames from its
+                // input URI.
+                List<String> chunkHosts = shardsMap.get(shard);
+                String mongosHost = null;
+                for (String chunkHost : chunkHosts) {
+                    String[] hostAndPort = chunkHost.split(":");
+                    mongosHost = mongosMap.get(hostAndPort[0]);
+                    if (mongosHost != null) {
+                        break;
                     }
-
-                    MongoClientURI newURI = rewriteURI(inputURI, shardHosts);
-                    chunkSplit.setInputURI(newURI);
-                } else if (mongosHostNames.size() > 0) {
-                    //Multiple mongos hosts are specified, so
-                    //choose a host name in round-robin fashion
-                    //and rewrite the URI using that hostname.
-                    //This evenly distributes the load to avoid
-                    //pegging a single mongos instance.
-                    String roundRobinHost = mongosHostNames.get(numChunks % mongosHostNames.size());
-                    MongoClientURI newURI = rewriteURI(inputURI, roundRobinHost);
-                    chunkSplit.setInputURI(newURI);
                 }
-                LinkedList<InputSplit> shardList = shardToSplits.get(shard);
-                if (shardList == null) {
-                    shardList = new LinkedList<InputSplit>();
-                    shardToSplits.put(shard, shardList);
-                }
-                chunkSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
-                shardList.add(chunkSplit);
-                numChunks++;
-            }
-        } finally {
-            MongoConfigUtil.close(configDB.getMongo());
-        }
-
-        final List<InputSplit> splits = new ArrayList<InputSplit>(numChunks);
-        int splitIndex = 0;
-        while (splitIndex < numChunks) {
-            Set<String> shardSplitsToRemove = new HashSet<String>();
-            for (Entry<String, LinkedList<InputSplit>> shardSplits : shardToSplits.entrySet()) {
-                LinkedList<InputSplit> shardSplitsList = shardSplits.getValue();
-                InputSplit split = shardSplitsList.pop();
-                splits.add(splitIndex, split);
-                splitIndex++;
-                if (shardSplitsList.isEmpty()) {
-                    shardSplitsToRemove.add(shardSplits.getKey());
+                if (null == mongosHost) {
+                    // Fall back just to using the given input URI.
+                    chunkSplit.setInputURI(inputURI);
+                } else {
+                    LOG.info("Will read split " + chunkSplit + " from mongos " + mongosHost);
+                    chunkSplit.setInputURI(rewriteURI(inputURI, mongosHost));
                 }
             }
-            for (String shardName : shardSplitsToRemove) {
-                shardToSplits.remove(shardName);
-            }
+            // Add this split to the list for the current shard.
+            chunkSplit.setKeyField(MongoConfigUtil.getInputKey(getConfiguration()));
+            splits.add(chunkSplit);
         }
 
         if (MongoConfigUtil.isFilterEmptySplitsEnabled(getConfiguration())) {
             return filterEmptySplits(splits);
         }
         return splits;
+    }
+
+    // Generate one split per chunk.
+    @Override
+    public List<InputSplit> calculateSplits() throws SplitFailedException {
+        DB configDB = getConfigDB();
+        DBCollection chunksCollection = configDB.getCollection("chunks");
+        Map<String, List<String>> shardsMap;
+        try {
+            shardsMap = getShardsMap();
+        } catch (Exception e) {
+            //Something went wrong when trying to
+            //read the shards data from the config server,
+            //so abort the splitting
+            throw new SplitFailedException("Couldn't get shards information from config server", e);
+        }
+
+        return calculateSplitsFromChunks(chunksCollection.find().toArray(), shardsMap);
     }
 
 }
