@@ -1,3 +1,23 @@
+2.0.0 / 15th of August, 2016
+============================
+
+This is a major release touting several new features. As a major release, it
+removes several deprecated methods and objects, breaking API in ways that should
+not affect most users of Hadoop tools.
+
+Some of the major new features introduced in this version include:
+
+* Ability to collocate Hadoop nodes and MongoDB shards for data locality (HADOOP-202)
+* Add GridFSInputFormat (HADOOP-272)
+* Add MongoSampleSplitter (HADOOP-283)
+* Support document replacement (HADOOP-263)
+* Add back support for Hadoop 1.2.x (HADOOP-246)
+
+For complete details on the issues resolved in 2.0.0, consult the release notes
+on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/15622
+
+This version is identical to 2.0.0-rc0.
+
 2.0.0-rc0 / 26th of June, 2016
 ==============================
 
@@ -15,6 +35,8 @@ Some of the major new features introduced in this version include:
 
 For complete details on the issues resolved in 2.0.0, consult the release notes
 on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/15622
+
+This release candidate became the stable 2.0.0 version.
 
 1.5.2 / 28th of March, 2016
 ===========================
