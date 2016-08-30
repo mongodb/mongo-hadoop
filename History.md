@@ -1,3 +1,10 @@
+2.0.1 / 30th of August, 2016
+============================
+
+This is a patch-level release that adds the noTimeout option to the cursor
+used by MongoPaginatingSplitter. More details of the issue can be found
+on the ticket's Jira page: https://jira.mongodb.org/browse/HADOOP-295
+
 2.0.0 / 15th of August, 2016
 ============================
 
