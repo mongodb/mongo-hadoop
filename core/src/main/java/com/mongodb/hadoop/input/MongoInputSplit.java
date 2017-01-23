@@ -54,6 +54,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     protected DBObject min;
     protected DBObject max;
     protected Integer limit;
+    protected Integer skip;
     protected boolean notimeout = false;
     protected transient DBCursor cursor;
 
@@ -75,6 +76,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         setQuery(other.getQuery());
         setSort(other.getSort());
         setLimit(other.getLimit());
+        setSkip(other.getSkip());
     }
 
     public MongoInputSplit(final Configuration conf) {
@@ -86,6 +88,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         setQuery(MongoConfigUtil.getQuery(conf));
         setSort(MongoConfigUtil.getSort(conf));
         setLimit(MongoConfigUtil.getLimit(conf));
+        setSkip(MongoConfigUtil.getSkip(conf));
     }
 
     public void setInputURI(final MongoClientURI inputURI) {
@@ -194,6 +197,14 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         this.limit = limit;
     }
 
+    public Integer getSkip() {
+        return skip;
+    }
+
+    public void setSkip(final Integer skip) {
+        this.skip = skip;
+    }
+
     @Override
     public void write(final DataOutput out) throws IOException {
         BSONObject spec = BasicDBObjectBuilder.start()
@@ -207,6 +218,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
           .add("max", getMax())
           .add("notimeout", getNoTimeout())
           .add("limit", limit)
+          .add("skip", skip)
           .get();
         byte[] buf = _bsonEncoder.encode(spec);
         out.write(buf);
@@ -250,6 +262,8 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
 
         setLimit((Integer) spec.get("limit"));
 
+        setSkip((Integer) spec.get("skip"));
+
         setNoTimeout((Boolean) spec.get("notimeout"));
     }
 
@@ -271,6 +285,9 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
             }
             if (this.max != null) {
                 this.cursor.addSpecial("$max", this.max);
+            }
+            if (skip != null) {
+                cursor = cursor.skip(skip);
             }
             if (limit != null) {
                 cursor = cursor.limit(limit);
@@ -295,6 +312,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
           + ", sort=" + this.sort
           + ", fields=" + this.fields
           + ", limit=" + this.limit
+          + ", skip=" + this.skip
           + ", notimeout=" + this.notimeout + '}';
     }
 
@@ -308,6 +326,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         result = 31 * result + (this.sort != null ? this.sort.hashCode() : 0);
         result = 31 * result + (this.notimeout ? 1 : 0);
         result = 31 * result + (this.limit != null ? this.limit.hashCode() : 0);
+        result = 31 * result + (this.skip != null ? this.skip.hashCode() : 0);
         return result;
     }
 
@@ -344,6 +363,10 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
         }
         if (limit == null && that.getLimit() != null
           || !limit.equals(that.getLimit())) {
+            return false;
+        }
+        if (skip == null && that.getSkip() != null
+          || !skip.equals(that.getSkip())) {
             return false;
         }
         return true;
