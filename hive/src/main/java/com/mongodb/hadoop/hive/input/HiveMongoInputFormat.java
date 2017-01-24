@@ -228,6 +228,12 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
         }
         String mapped = colNameMapping.get(colName);
         if (null == mapped) {
+            // Check to see if the column name is a prefix for a name in the column name mapping.
+            for (Map.Entry<String, String> entry : colNameMapping.entrySet()) {
+                if (entry.getKey().startsWith(colName + ".")) {
+                    return entry.getValue().split("\\.")[0];
+                }
+            }
             return colName;
         }
         return mapped;
