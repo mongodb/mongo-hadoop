@@ -30,7 +30,7 @@ public abstract class BaseHadoopTest {
 
     public static final String HADOOP_HOME;
     public static final String PROJECT_VERSION = loadProperty("project"
-            + ".version", "2.0.1");
+            + ".version", "2.0.2.dev");
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.7.2");
 
 //    public static final String HIVE_HOME;
