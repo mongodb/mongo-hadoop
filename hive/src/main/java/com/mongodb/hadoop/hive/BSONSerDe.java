@@ -304,7 +304,7 @@ public class BSONSerDe implements SerDe {
             List<Object> struct = new ArrayList<Object>(structNames.size());
 
             for (int i = 0; i < structNames.size(); i++) {
-                String fieldName = structNames.get(i);
+                String fieldName = structNames.get(i).toLowerCase();
 
                 // hiveMapping -> prefixed by parent struct names. 
                 // For example, in {"wife":{"name":{"first":"Sydney"}}},

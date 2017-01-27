@@ -6,12 +6,14 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import com.mongodb.util.JSON;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,6 +28,50 @@ import static org.junit.Assert.assertTrue;
 public class HiveMappingTest extends HiveTest {
 
     private static final Log LOG = LogFactory.getLog(HiveMappingTest.class);
+
+    @Test
+    public void nestedColumns() throws SQLException {
+        DBCollection collection = getCollection("hive_addresses");
+        collection.drop();
+        dropTable("hive_addresses");
+
+        collection.insert(user(1, "Jim", "Beam", "Clermont", "KY"));
+        collection.insert(user(2, "Don", "Draper", "New York", "NY"));
+        collection.insert(user(3, "John", "Elway", "Denver", "CO"));
+
+        MongoClientURI uri = authCheck(
+          new MongoClientURIBuilder()
+            .collection("mongo_hadoop", collection.getName())
+        ).build();
+
+        Map<String, String> map = new HashMap<String, String>() {
+            {
+                put("id", "_id");
+                put("firstName", "firstName");
+                put("lastName", "lastName");
+                put("place.municipality", "address.city");
+                put("place.region", "address.state");
+            }
+        };
+
+        execute(
+          format(
+            "CREATE TABLE hive_addresses "
+              + "(id INT, firstName STRING, lastName STRING, "
+              + "place STRUCT<municipality:STRING, region:STRING>)\n"
+              + "STORED BY '%s'\n"
+              + "WITH SERDEPROPERTIES('mongo.columns.mapping'='%s')\n"
+              + "TBLPROPERTIES ('mongo.uri'='%s')",
+            MongoStorageHandler.class.getName(),
+            JSON.serialize(map),
+            uri
+          ));
+        // Alias inner fields to avoid retrieving entire struct as a String.
+        Results execute = query("SELECT place.municipality AS city, place.region AS state, firstname from hive_addresses");
+        assertEquals("KY", execute.getRow(0).get("state"));
+        assertEquals("Don", execute.getRow(1).get("firstname"));
+        assertEquals("Denver", execute.getRow(2).get("city"));
+    }
 
     @Test
     public void nestedObjects() throws SQLException {
