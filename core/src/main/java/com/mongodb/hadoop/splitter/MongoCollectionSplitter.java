@@ -222,6 +222,8 @@ public abstract class MongoCollectionSplitter extends MongoSplitter {
         }
         if (split == null) {
             split = new MongoInputSplit(getConfiguration());
+            split.setMin(splitMin);
+            split.setMax(splitMax);
         }
         return split;
     }
