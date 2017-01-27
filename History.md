@@ -1,3 +1,16 @@
+2.0.2 / 27th of January, 2017
+=============================
+
+This is a patch-level release that fixes two issues:
+
+* Allow "skip" to be set on MongoInputSplit (HADOOP-304)
+* Correctly handle renaming nested fields in Hive (HADOOP-303)
+
+Thanks to mkrstic for the patch for HADOOP-304!
+
+For complete details on the issues resolved in 2.0.2, consult the release notes
+on Jira: https://jira.mongodb.org/browse/HADOOP/fixforversion/17932
+
 2.0.1 / 30th of August, 2016
 ============================
 
