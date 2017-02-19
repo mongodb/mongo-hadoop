@@ -271,19 +271,16 @@ public final class MongoConfigUtil {
           }
       };
 
-    private static final TrustManager[] trustAllCerts = new TrustManager[]{
-            new X509TrustManager(){
-                public X509Certificate[] getAcceptedIssuers(){ return null; }
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-            }
-    };
     private static SSLContext sslContext = null;
 
     static {
         try {
             sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new SecureRandom());
+            sslContext.init(null, new TrustManager[] { new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers(){ return null; }
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            } }, new SecureRandom());
         } catch (Exception e) {
             e.printStackTrace();
         }
