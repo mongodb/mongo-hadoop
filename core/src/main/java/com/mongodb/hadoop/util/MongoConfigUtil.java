@@ -17,13 +17,7 @@
 
 package com.mongodb.hadoop.util;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.MongoURI;
+import com.mongodb.*;
 import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.util.JSON;
 import org.apache.commons.lang.StringUtils;
@@ -50,14 +44,8 @@ import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
 
 /**
  * Configuration helper tool for MongoDB related Map/Reduce jobs
@@ -283,25 +271,24 @@ public final class MongoConfigUtil {
           }
       };
 
-    static {
-        TrustManager[] trustAllCerts = new TrustManager[]{
-              new X509TrustManager(){
-                  public X509Certificate[] getAcceptedIssuers(){ return null; }
-                  public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                  public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-              }
-        };
+    private static final TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager(){
+                public X509Certificate[] getAcceptedIssuers(){ return null; }
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            }
+    };
+    private static SSLContext sslContext = null;
 
-        SSLContext sslContext = null;
+    static {
         try {
             sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustAllCerts, new SecureRandom());
-            SSLContext.setDefault(sslContext);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
+
 
     private MongoConfigUtil() {
     }
@@ -1082,7 +1069,24 @@ public final class MongoConfigUtil {
     private static MongoClient getMongoClient(final MongoClientURI uri) throws UnknownHostException {
         MongoClient mongoClient = CLIENTS.get().get(uri);
             if (mongoClient == null) {
-                mongoClient = new MongoClient(uri);
+                if (uri.getOptions().isSslEnabled()) {
+                    MongoClientOptions options = MongoClientOptions.builder(uri.getOptions()).socketFactory(sslContext.getSocketFactory()).build();
+                    final List<ServerAddress> seedList;
+                    if (uri.getHosts().size() == 1) {
+                        seedList = Collections.singletonList(new ServerAddress(uri.getHosts().get(0)));
+                    } else {
+                        seedList = new ArrayList<ServerAddress>(uri.getHosts().size());
+                        for (final String host : uri.getHosts()) {
+                            seedList.add(new ServerAddress(host));
+                        }
+                    }
+                    List<MongoCredential> credentials = uri.getCredentials() != null ?
+                            Collections.singletonList(uri.getCredentials()) :
+                            Collections.<MongoCredential>emptyList();
+                    mongoClient =  new MongoClient(seedList, credentials, options);
+                } else {
+                    mongoClient = new MongoClient(uri);
+                }
                 CLIENTS.get().put(uri, mongoClient);
                 URI_MAP.get().put(mongoClient, uri);
             }
