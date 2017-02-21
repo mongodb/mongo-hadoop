@@ -240,10 +240,20 @@ public class JSONPigReplace {
         if (convertedType instanceof Map) {
             //noinspection unchecked
             for (Entry<String, Object> entry : ((Map<String, Object>) convertedType).entrySet()) {
-                builder.add(entry.getKey(), entry.getValue());
+                builder.add(getRealKey(entry.getKey()), entry.getValue());
             }
         } else {
-            builder.add(field.getName(), convertedType);
+            builder.add(getRealKey(field.getName()), convertedType);
+        }
+    }
+
+    private String getRealKey(String key) {
+        if (key != null && key.startsWith("underscore_")) {
+            return key.replace("underscore", "");
+        } else if (key != null) {
+            return key;
+        } else {
+            return "value";
         }
     }
 }
