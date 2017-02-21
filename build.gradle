@@ -61,7 +61,7 @@ if(project.hasProperty("clusterVersion")) {
 }
 
 allprojects {
-    version = '1.5.11'
+    version = '1.5.13'
     group = 'org.mongodb.mongo-hadoop'
 }
 

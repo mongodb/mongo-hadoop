@@ -195,6 +195,8 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
         Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
         if (field.getName() != null && field.getName().equals(idField)) {
             builder.add("_id", convertedType);
+        } else if (field.getName() != null && field.getName().startsWith("underscore_")) {
+            builder.add(field.getName().replace("underscore", ""), convertedType);
         } else {
             builder.add(field.getName(), convertedType);
         }
