@@ -168,7 +168,14 @@ public class BSONStorage extends StoreFunc implements StoreMetadata {
     @SuppressWarnings("unchecked")
     protected void writeField(final BasicDBObjectBuilder builder, final ResourceFieldSchema field, final Object d) throws IOException {
         Object convertedType = getTypeForBSON(d, field, null);
-        String fieldName = field != null ? field.getName() : "value";
+        final String fieldName;
+        if (field.getName() != null && field.getName().startsWith("underscore_")) {
+            fieldName = field.getName().replace("underscore", "");
+        } else if (field.getName() != null) {
+            fieldName = field.getName();
+        } else {
+            fieldName = "value";
+        }
 
         if (convertedType instanceof Map) {
             for (Map.Entry<String, Object> mapentry : ((Map<String, Object>) convertedType).entrySet()) {
