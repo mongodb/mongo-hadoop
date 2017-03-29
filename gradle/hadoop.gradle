@@ -33,7 +33,7 @@ def execute(command, args = [], outStream = null, errStream = null, background =
 }
 
 def stopService(signal, service, name) {
-    for (String process : execute('jps')) {
+    for (String process : execute(System.getenv("JAVA_HOME") + '/bin/jps')) {
         if (process.endsWith(service)) {
             println("Shutting down ${name}")
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {

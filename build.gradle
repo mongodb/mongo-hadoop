@@ -20,12 +20,8 @@ ext.hiveHome = System.getenv("HIVE_HOME") ?: "${hadoopBinaries}/apache-hive-${hi
 ext.pigHome = System.getenv("PIG_HOME") ?: "${hadoopBinaries}/pig-${pigVersion}".toString()
 ext.dataHome = "${hadoopBinaries}/examples/data".toString()
 ext.docsHome = "${rootDir}/docs"
-ext.mongoimport = new File('/mnt/jenkins/mongodb/32/32-release/bin/mongoimport').exists() ?
-                  '/mnt/jenkins/mongodb/32/32-release/bin/mongoimport' :
-                  '/usr/local/bin/mongoimport';
-ext.mongorestore = new File('/mnt/jenkins/mongodb/32/32-release/bin/mongorestore').exists() ?
-                  '/mnt/jenkins/mongodb/32/32-release/bin/mongorestore' :
-                  '/usr/local/bin/mongorestore';
+ext.mongoimport = '/usr/local/bin/mongoimport';
+ext.mongorestore = '/usr/local/bin/mongorestore';
 ext.mongoURI = System.getenv("MONGO_INPUT_URI")
 ext.mongoAuthURI = System.getenv("MONGO_AUTH_URI")
 ext.mongoUsername = System.getenv("MONGO_USER")

@@ -33,14 +33,15 @@ public abstract class BaseHadoopTest {
             + ".version", "2.0.2");
     public static final String HADOOP_VERSION = loadProperty("hadoop.version", "2.7.2");
 
-//    public static final String HIVE_HOME;
     public static final File PROJECT_HOME;
     public static final String HADOOP_BINARIES;
     public static final String EXAMPLE_DATA_HOME;
 
     private static final boolean TEST_IN_VM = Boolean.valueOf(System.getProperty("mongo.hadoop.testInVM", "false"));
 
-    private static final String MONGO_IMPORT;
+    private static final String MONGO_IMPORT = System.getProperty("mongodb_bin_dir") == null
+                                                       ? "/usr/local/bin/mongoimport"
+                                                       : System.getProperty("mongodb_bin_dir") + "/mongoimport";
 
     private MongoClient client;
 
@@ -52,19 +53,6 @@ public abstract class BaseHadoopTest {
             }
             PROJECT_HOME = current;
 
-            String property = System.getProperty("mongodb_server");
-            String serverType = property != null ? property.replaceAll("-release", "") : "UNKNOWN";
-            if (serverType.equals("27-nightly")) {
-                serverType = "master-nightly";
-                property = serverType + "-release";
-            }
-            final String path = format("/mnt/jenkins/mongodb/%s/%s/bin/mongoimport", serverType, property);
-            MONGO_IMPORT = new File(path).exists() ? path : "/usr/local/bin/mongoimport";
-            if (!new File(MONGO_IMPORT).exists()) {
-                throw new RuntimeException(format("Can not locate mongoimport.  Tried looking in '%s' and '%s' assuming a server "
-                                                  + "type of '%s'", path, "/usr/local/bin/mongoimport", property));
-            }
-
             final File gradleProps = new File(PROJECT_HOME, ".gradle.properties");
             if (gradleProps.exists()) {
                 System.getProperties().load(new FileInputStream(gradleProps));
@@ -73,9 +61,7 @@ public abstract class BaseHadoopTest {
             EXAMPLE_DATA_HOME = new File(HADOOP_BINARIES, "examples/data").getCanonicalPath();
 
             HADOOP_HOME = new File(HADOOP_BINARIES, format("hadoop-%s", HADOOP_VERSION)).getCanonicalPath();
-//            HIVE_HOME = new File(System.getProperty("hive_home")).getCanonicalPath();
             LOG.info("HADOOP_HOME = " + HADOOP_HOME);
-//            LOG.info("HIVE_HOME = " + HIVE_HOME);
 
         } catch (final IOException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -163,9 +149,6 @@ public abstract class BaseHadoopTest {
             if (isAuthEnabled()) {
                 final List<String> list = new ArrayList<String>(asList("-u", "bob",
                                                                  "-p", "pwd123"));
-                if (!System.getProperty("mongodb_server", "").equals("22-release")) {
-                    list.addAll(asList("--authenticationDatabase", "admin"));
-                }
                 command.addAll(list);
             }
             final StringBuilder output = new StringBuilder();
