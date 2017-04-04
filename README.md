@@ -1,6 +1,6 @@
-#MongoDB Connector for Hadoop
+# MongoDB Connector for Hadoop
 
-##Purpose
+## Purpose
 
 The MongoDB Connector for Hadoop is a library which allows MongoDB (or backup files in its data format, BSON) to be used as an input source, or output destination, for Hadoop MapReduce tasks. It is designed to allow greater flexibility and performance and make it easy to integrate data in MongoDB with other parts of the Hadoop ecosystem including the following:
 * [**Pig**][pig-usage]
