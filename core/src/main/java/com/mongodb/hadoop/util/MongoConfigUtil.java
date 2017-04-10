@@ -22,6 +22,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoURI;
 import com.mongodb.hadoop.splitter.MongoSplitter;
@@ -137,7 +138,17 @@ public final class MongoConfigUtil {
      * </p>
      */
     public static final String AUTH_URI = "mongo.auth.uri";
-
+    
+    /**
+     * <p>
+     * If true then SSL connections to certificates with invalid hostnames will be allowed
+     * </p>
+     * <p>
+     * Defaults to {@code false}
+     * </p>
+     */
+    public static final String SSL_INVALID_HOSTNAME_ALLOWED = "mongo.ssl.invalid_hostname_allowed";    
+    
 
     /**
      * <p>
@@ -408,8 +419,7 @@ public final class MongoConfigUtil {
                 // Try to be forgiving with formatting.
                 connectionString = StringUtils.strip(connectionString, ", ");
                 if (!connectionString.isEmpty()) {
-                    result.add(
-                      new MongoClientURI("mongodb://" + connectionString));
+                    result.add(buildMongoClientURI(conf, "mongodb://" + connectionString));
                 }
             }
         }
@@ -434,6 +444,18 @@ public final class MongoConfigUtil {
     }
 
     /**
+     * Build a {@code MongoClientURI} with a connection URI string and any auxiliary options specified in a @{code Configuration}.
+     * @param conf the Configuration
+     * @param uri the connection URI string
+     * @return a MongoClientURI built using the specified URI and options in the Configuration
+     */
+    public static MongoClientURI buildMongoClientURI(final Configuration conf, final String uri) {
+	    MongoClientOptions.Builder optionsBuilder = MongoClientOptions.builder()
+            .sslInvalidHostNameAllowed(isSslInvalidHostNameAllowed(conf));
+        return new MongoClientURI(uri, optionsBuilder);
+    }
+
+    /**
      * Retrieve a setting as a {@code MongoClientURI}.
      * @param conf the Configuration
      * @param key the key for the setting
@@ -441,7 +463,7 @@ public final class MongoConfigUtil {
      */
     public static MongoClientURI getMongoClientURI(final Configuration conf, final String key) {
         final String raw = conf.get(key);
-        return raw != null && !raw.trim().isEmpty() ? new MongoClientURI(raw) : null;
+        return raw != null && !raw.trim().isEmpty() ? buildMongoClientURI(conf, raw) : null;
     }
 
     public static MongoClientURI getInputURI(final Configuration conf) {
@@ -450,6 +472,10 @@ public final class MongoConfigUtil {
 
     public static MongoClientURI getAuthURI(final Configuration conf) {
         return getMongoClientURI(conf, AUTH_URI);
+    }
+    
+    public static boolean isSslInvalidHostNameAllowed(final Configuration conf) {
+    	return conf.getBoolean(SSL_INVALID_HOSTNAME_ALLOWED, false);
     }
 
     public static List<DBCollection> getCollections(final List<MongoClientURI> uris, final MongoClientURI authURI) {

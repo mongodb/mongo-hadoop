@@ -134,7 +134,7 @@ public class MongoClientURIBuilder {
                 uri.append(format("%s=%s", entry.getKey(), entry.getValue()));
             }
         }
-        return new MongoClientURI(uri.toString());
+        return new MongoClientURI(uri.toString(), MongoClientOptions.builder(options));
     }
 
     public MongoClientURIBuilder readPreference(final ReadPreference readPreference) {
