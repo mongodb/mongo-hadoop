@@ -161,6 +161,8 @@ public class BSONLoader extends LoadFunc {
                     return BSONLoader.convertBSONtoPigType(obj);
                 case DataType.CHARARRAY:
                     return toChararray(obj);
+                case DataType.BOOLEAN:
+                	return obj;
                 case DataType.DATETIME:
                     return new DateTime(obj);
                 case DataType.TUPLE:
