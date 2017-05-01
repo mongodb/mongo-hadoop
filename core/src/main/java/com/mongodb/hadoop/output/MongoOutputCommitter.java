@@ -78,9 +78,11 @@ public class MongoOutputCommitter extends OutputCommitter {
                 "mapred.child.tmp",
                 config.get("hadoop.tmp.dir", "/tmp")));
         // Hadoop Paths always use "/" as a directory separator.
+        String url = config.get(MongoConfigUtil.OUTPUT_URI, "/tmp/"); //just should be unique per destination
+        
         return new Path(
-            String.format("%s/%s/%s/_out",
-                          basePath, context.getTaskAttemptID().toString(), TEMP_DIR_NAME));
+            String.format("%s/%s/%s/%s/_out",
+                          basePath, context.getTaskAttemptID().toString(), Math.abs(url.hashCode()), TEMP_DIR_NAME));
     }
 
     @Override

@@ -29,3 +29,7 @@ tags
 target
 test-*.out
 hadoop-binaries
+deploy_jars*
+.cache
+bin/
+docs/
