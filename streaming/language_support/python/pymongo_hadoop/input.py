@@ -30,7 +30,7 @@ class BSONInput(object):
                 raise InvalidBSON("Bad EOO in BSON Data")
             doc = BSON(data).decode(codec_options=STREAMING_CODEC_OPTIONS)
             return doc
-        except struct.error, e:
+        except struct.error as e:
             #print >> sys.stderr, "Parsing Length record failed: %s" % e
             self.eof = True
             raise StopIteration(e)
@@ -38,8 +38,8 @@ class BSONInput(object):
     def read(self):
         try:
             return self._read()
-        except StopIteration, e:
-            print >> sys.stderr, "Iteration Failure: %s" % e
+        except StopIteration as e:
+            print("Iteration Failure: %s" % e, file=sys.stderr)
             return None
 
     def _reads(self):
@@ -56,8 +56,8 @@ class KeyValueBSONInput(BSONInput):
     def read(self):
         try:
             doc = self._read()
-        except StopIteration, e:
-            print >> sys.stderr, "Key/Value Input iteration failed/stopped: %s" % e
+        except StopIteration as e:
+            print("Key/Value Input iteration failed/stopped: %s" % e, file=sys.stderr)
             return None
         if '_id' in doc:
             return doc['_id'], doc
@@ -66,7 +66,7 @@ class KeyValueBSONInput(BSONInput):
 
     def reads(self):
         it = self._reads()
-        n = it.next
+        n = it.__next__
         while 1:
             doc = n()
             if '_id' in doc:
