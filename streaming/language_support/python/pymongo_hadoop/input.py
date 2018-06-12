@@ -26,7 +26,7 @@ class BSONInput(object):
             data = size_bits + self.fh.read(size)
             if len(data) != size + 4:
                 raise struct.error("Unable to cleanly read expected BSON Chunk; EOF, underful buffer or invalid object size.")
-            if data[size + 4 - 1] != "\x00":
+            if data[size + 4 - 1] != 0:
                 raise InvalidBSON("Bad EOO in BSON Data")
             doc = BSON(data).decode(codec_options=STREAMING_CODEC_OPTIONS)
             return doc
