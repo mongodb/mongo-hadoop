@@ -1,5 +1,5 @@
-from input import BSONInput, KeyValueBSONInput
-from output import BSONOutput, KeyValueBSONOutput
+from .input import BSONInput, KeyValueBSONInput
+from .output import BSONOutput, KeyValueBSONOutput
 
 class BSONMapper(object):
     """Wraps BSONInput to allow writing mapper functions

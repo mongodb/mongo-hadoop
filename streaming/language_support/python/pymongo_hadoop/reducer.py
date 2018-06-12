@@ -3,8 +3,8 @@ based upon the Dumbo module at
 https://github.com/klbostee/dumbo
 """
 from itertools import groupby
-from input import BSONInput, KeyValueBSONInput
-from output import BSONOutput, KeyValueBSONOutput
+from .input import BSONInput, KeyValueBSONInput
+from .output import BSONOutput, KeyValueBSONOutput
 
 import sys
 
@@ -55,7 +55,7 @@ class KeyValueBSONReducer(BSONReducer):
 
 
 def default_reducer(data):
-    print >> sys.stderr, "*** Invoking default reducer function, this is unoptimized for your data and may be very slow."
+    print("*** Invoking default reducer function, this is unoptimized for your data and may be very slow.", file=sys.stderr)
 
 class BSONReducerInput(BSONInput):
     """Wrapper to 'roll up' the reduce data down to just
