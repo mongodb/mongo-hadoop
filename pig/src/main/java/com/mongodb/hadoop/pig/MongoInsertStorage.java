@@ -20,6 +20,8 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoConfigUtil;
+import org.bson.types.ObjectId;
+import org.bson.BsonDateTime;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,9 +37,12 @@ import org.apache.pig.StoreMetadata;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Properties;
 
 @SuppressWarnings("unchecked")
@@ -53,6 +58,9 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
     private RecordWriter out;
     private String udfcSignature = null;
     private String idField = null;
+    private boolean wrapIdWithObjectId = false;
+    private ArrayList<String> dateFields = new ArrayList<String>();
+    private ArrayList<String> objectIdFields = new ArrayList<String>();
 
     public MongoInsertStorage() {
     }
@@ -76,6 +84,17 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
      */
     public MongoInsertStorage(final String idField) {
         this.idField = idField;
+    }
+
+    public MongoInsertStorage(
+        final String idField, 
+        final boolean wrapIdWithObjectId, 
+        final String dateFields, 
+        final String objectIdFields) {
+        this.idField = idField;
+        this.wrapIdWithObjectId = wrapIdWithObjectId;
+        Collections.addAll(this.dateFields, dateFields.split(","));
+        Collections.addAll(this.objectIdFields, objectIdFields.split(","));
     }
 
     public String relToAbsPathForStoreLocation(final String location, final Path curDir) throws IOException {
@@ -149,6 +168,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
             }
             if (fields != null) {
                 for (int i = 0; i < fields.length; i++) {
+                    System.out.println("!!! The tuple and schema exists");
                     writeField(builder, fields[i], tuple.get(i));
                 }
             } else {
@@ -157,6 +177,7 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
                 if (tuple.size() != 1) {
                     throw new IOException("Could not retrieve schema, but tuples did not contain a single item: " + tuple);
                 }
+                System.out.println("!!! The tuple has size 1");
                 Object result = BSONStorage.getTypeForBSON(
                     tuple.get(0), null, null);
                 if (!(result instanceof Map)) {
@@ -193,12 +214,24 @@ public class MongoInsertStorage extends StoreFunc implements StoreMetadata {
                               final ResourceFieldSchema field,
                               final Object d) throws IOException {
         Object convertedType = BSONStorage.getTypeForBSON(d, field, null);
+
+        if (((String) d) == "drop field") {
+            return;
+        }
+
         if (field.getName() != null && field.getName().equals(idField)) {
-            builder.add("_id", convertedType);
+            if (this.wrapIdWithObjectId) {
+                builder.add("_id", new ObjectId(convertedType.toString()));
+            } else {
+                builder.add("_id", convertedType);
+            }
+        } else if (this.objectIdFields.contains(field.getName())) {
+            builder.add(field.getName(), new ObjectId(convertedType.toString()));
+        } else if (this.dateFields.contains(field.getName())) {
+            builder.add(field.getName(), new BsonDateTime(((DateTime) d).getMillis()));
         } else {
             builder.add(field.getName(), convertedType);
         }
-
     }
 
 }
