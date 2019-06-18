@@ -1,0 +1,17 @@
+language: java
+jdk:
+  - openjdk8
+script:
+  - ./gradlew jar
+  - ls pig/build/libs/
+deploy:
+  provider: s3 
+  on:
+    all_branches: true
+  skip_cleanup: true
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  bucket: "mongo-hadoop-pig"
+  region: eu-west-3
+  upload-dir: $TRAVIS_BRANCH
+  local_dir: pig/build/libs/
