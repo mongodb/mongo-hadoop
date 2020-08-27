@@ -43,6 +43,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPEqualOrGreaterThan;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPEqualOrLessThan;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPGreaterThan;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPLessThan;
+import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.ColumnProjectionUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileSplit;
@@ -136,8 +137,7 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
               IndexPredicateAnalyzer.createAnalyzer(false);
 
             // Allow all column names.
-            String columnNamesStr =
-              conf.get(ColumnProjectionUtils.READ_COLUMN_NAMES_CONF_STR);
+            String columnNamesStr = conf.get(serdeConstants.LIST_COLUMNS);
             String[] columnNames =
               StringUtils.split(columnNamesStr, '\\', StringUtils.COMMA);
             for (String colName : columnNames) {
