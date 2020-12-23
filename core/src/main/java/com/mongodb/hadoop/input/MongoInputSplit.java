@@ -278,7 +278,7 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
                 coll = MongoConfigUtil.getCollection(this.inputURI);
             }
 
-            this.cursor = coll.find(this.query, this.fields).sort(this.sort);
+            this.cursor = coll.find(this.query, this.fields).hint(new BasicDBObject("_id", 1)).sort(this.sort);
             if (this.notimeout) {
                 this.cursor.setOptions(Bytes.QUERYOPTION_NOTIMEOUT);
             }
