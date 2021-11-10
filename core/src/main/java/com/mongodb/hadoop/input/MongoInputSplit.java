@@ -210,18 +210,18 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     @Override
     public void write(final DataOutput out) throws IOException {
         BSONObject spec = BasicDBObjectBuilder.start()
-          .add("inputURI", getInputURI().toString())
-          .add("authURI", getAuthURI() != null ? getAuthURI().toString() : null)
-          .add("keyField", getKeyField())
-          .add("fields", getFields())
-          .add("query", getQuery())
-          .add("sort", getSort())
-          .add("min", getMin())
-          .add("max", getMax())
-          .add("notimeout", getNoTimeout())
-          .add("limit", limit)
-          .add("skip", skip)
-          .get();
+                .add("inputURI", getInputURI().toString())
+                .add("authURI", getAuthURI() != null ? getAuthURI().toString() : null)
+                .add("keyField", getKeyField())
+                .add("fields", getFields())
+                .add("query", getQuery())
+                .add("sort", getSort())
+                .add("min", getMin())
+                .add("max", getMax())
+                .add("notimeout", getNoTimeout())
+                .add("limit", limit)
+                .add("skip", skip)
+                .get();
         byte[] buf = _bsonEncoder.encode(spec);
         out.write(buf);
     }
@@ -301,21 +301,21 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
     @Override
     public String toString() {
         String result =
-          "MongoInputSplit{inputURI hosts=" + this.inputURI.getHosts()
-            + ", inputURI namespace=" + this.inputURI.getDatabase() + "."
-            + this.inputURI.getCollection();
+                "MongoInputSplit{inputURI hosts=" + this.inputURI.getHosts()
+                        + ", inputURI namespace=" + this.inputURI.getDatabase() + "."
+                        + this.inputURI.getCollection();
         if (authURI != null) {
             result += "authURI hosts=" + authURI.getHosts()
-              + ", authURI database=" + authURI.getDatabase();
+                    + ", authURI database=" + authURI.getDatabase();
         }
         return result
-          + ", min=" + this.min + ", max=" + this.max
-          + ", query=" + this.query
-          + ", sort=" + this.sort
-          + ", fields=" + this.fields
-          + ", limit=" + this.limit
-          + ", skip=" + this.skip
-          + ", notimeout=" + this.notimeout + '}';
+                + ", min=" + this.min + ", max=" + this.max
+                + ", query=" + this.query
+                + ", sort=" + this.sort
+                + ", fields=" + this.fields
+                + ", limit=" + this.limit
+                + ", skip=" + this.skip
+                + ", notimeout=" + this.notimeout + '}';
     }
 
     @Override
@@ -364,11 +364,11 @@ public class MongoInputSplit extends InputSplit implements Writable, org.apache.
             return false;
         }
         if (limit == null && that.getLimit() != null
-          || !limit.equals(that.getLimit())) {
+                || !limit.equals(that.getLimit())) {
             return false;
         }
         if (skip == null && that.getSkip() != null
-          || !skip.equals(that.getSkip())) {
+                || !skip.equals(that.getSkip())) {
             return false;
         }
         return true;

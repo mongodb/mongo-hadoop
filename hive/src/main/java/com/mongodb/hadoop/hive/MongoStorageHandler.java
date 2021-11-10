@@ -37,7 +37,8 @@ import org.apache.hadoop.hive.ql.plan.ExprNodeGenericFuncDesc;
 import org.apache.hadoop.hive.ql.plan.TableDesc;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.Deserializer;
-import org.apache.hadoop.hive.serde2.SerDe;
+//import org.apache.hadoop.hive.serde2.SerDe;
+import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;
@@ -57,7 +58,7 @@ import static java.lang.String.format;
  * rows in a Hive table
  */
 public class MongoStorageHandler extends DefaultStorageHandler
-  implements HiveStoragePredicateHandler {
+        implements HiveStoragePredicateHandler {
     // stores the location of the collection
     public static final String MONGO_URI = "mongo.uri";
     // get location of where meta-data is stored about the mongo collection
@@ -84,24 +85,25 @@ public class MongoStorageHandler extends DefaultStorageHandler
     }
 
     @Override
-    public Class<? extends SerDe> getSerDeClass() {
+    //public Class<? extends SerDe> getSerDeClass() {
+    public Class<? extends AbstractSerDe> getSerDeClass() {
         return BSONSerDe.class;
     }
 
     private Properties getProperties(
-      final Configuration conf, final String path) throws IOException {
+            final Configuration conf, final String path) throws IOException {
         if (properties == null) {
             properties =
-              MongoConfigUtil.readPropertiesFromFile(conf, path);
+                    MongoConfigUtil.readPropertiesFromFile(conf, path);
         }
         return properties;
     }
 
     @Override
     public DecomposedPredicate decomposePredicate(
-      final JobConf jobConf,
-      final Deserializer deserializer,
-      final ExprNodeDesc predicate) {
+            final JobConf jobConf,
+            final Deserializer deserializer,
+            final ExprNodeDesc predicate) {
         BSONSerDe serde = (BSONSerDe) deserializer;
 
         // Create a new analyzer capable of handling equality and general
@@ -110,19 +112,19 @@ public class MongoStorageHandler extends DefaultStorageHandler
         // expressions, but we could push down more than that in the future by
         // writing our own analyzer.
         IndexPredicateAnalyzer analyzer =
-          IndexPredicateAnalyzer.createAnalyzer(false);
+                IndexPredicateAnalyzer.createAnalyzer(false);
         // Predicate may contain any column.
         for (String colName : serde.columnNames) {
             analyzer.allowColumnName(colName);
         }
         List<IndexSearchCondition> searchConditions =
-          new LinkedList<IndexSearchCondition>();
+                new LinkedList<IndexSearchCondition>();
         ExprNodeDesc residual = analyzer.analyzePredicate(
-          predicate, searchConditions);
+                predicate, searchConditions);
 
         DecomposedPredicate decomposed = new DecomposedPredicate();
         decomposed.pushedPredicate =
-          analyzer.translateSearchConditions(searchConditions);
+                analyzer.translateSearchConditions(searchConditions);
         decomposed.residualPredicate = (ExprNodeGenericFuncDesc) residual;
         return decomposed;
     }
@@ -136,10 +138,10 @@ public class MongoStorageHandler extends DefaultStorageHandler
         public void preCreateTable(final Table tbl) throws MetaException {
             Map<String, String> tblParams = tbl.getParameters();
             if (!(tblParams.containsKey(MONGO_URI)
-              || tblParams.containsKey(PROPERTIES_FILE_PATH))) {
+                    || tblParams.containsKey(PROPERTIES_FILE_PATH))) {
                 throw new MetaException(
-                  format("You must specify '%s' or '%s' in TBLPROPERTIES",
-                    MONGO_URI, PROPERTIES_FILE_PATH));
+                        format("You must specify '%s' or '%s' in TBLPROPERTIES",
+                                MONGO_URI, PROPERTIES_FILE_PATH));
             }
         }
 
@@ -165,34 +167,34 @@ public class MongoStorageHandler extends DefaultStorageHandler
                 if (tblParams.containsKey(MONGO_URI)) {
                     String mongoURIStr = tblParams.get(MONGO_URI);
                     coll = MongoConfigUtil.getCollection(
-                      new MongoClientURI(mongoURIStr));
+                            new MongoClientURI(mongoURIStr));
                 } else if (tblParams.containsKey(PROPERTIES_FILE_PATH)) {
                     String propertiesPathStr =
-                      tblParams.get(PROPERTIES_FILE_PATH);
+                            tblParams.get(PROPERTIES_FILE_PATH);
                     Properties properties;
                     try {
                         properties =
-                          getProperties(getConf(), propertiesPathStr);
+                                getProperties(getConf(), propertiesPathStr);
                     } catch (IOException e) {
                         throw new MetaException(
-                          "Could not read properties file "
-                            + propertiesPathStr + ". Reason: " + e.getMessage());
+                                "Could not read properties file "
+                                        + propertiesPathStr + ". Reason: " + e.getMessage());
                     }
                     if (!properties.containsKey(MONGO_URI)) {
                         throw new MetaException(
-                          "No URI given in properties file: "
-                            + propertiesPathStr);
+                                "No URI given in properties file: "
+                                        + propertiesPathStr);
                     }
                     String uriString = properties.getProperty(MONGO_URI);
                     coll = MongoConfigUtil.getCollection(
-                      new MongoClientURI(uriString));
+                            new MongoClientURI(uriString));
                 } else {
                     throw new MetaException(
-                      format(
-                        "Could not find properties '%s' or '%s'. "
-                          + "At least one must be defined. "
-                          + "Collection not dropped.",
-                        MONGO_URI, PROPERTIES_FILE_PATH));
+                            format(
+                                    "Could not find properties '%s' or '%s'. "
+                                            + "At least one must be defined. "
+                                            + "Collection not dropped.",
+                                    MONGO_URI, PROPERTIES_FILE_PATH));
                 }
                 try {
                     coll.drop();
@@ -243,11 +245,11 @@ public class MongoStorageHandler extends DefaultStorageHandler
         // First, merge properties from the given properties file, if there
         // was one. These can be overwritten by other table properties later.
         String propertiesFilePathString =
-          from.getProperty(PROPERTIES_FILE_PATH);
+                from.getProperty(PROPERTIES_FILE_PATH);
         if (propertiesFilePathString != null) {
             try {
                 Properties properties =
-                  getProperties(getConf(), propertiesFilePathString);
+                        getProperties(getConf(), propertiesFilePathString);
                 for (Map.Entry<Object, Object> prop : properties.entrySet()) {
                     String key = (String) prop.getKey();
                     String value = (String) prop.getValue();
@@ -261,8 +263,8 @@ public class MongoStorageHandler extends DefaultStorageHandler
                 }
             } catch (IOException e) {
                 LOG.error(
-                  "Error while trying to read properties file "
-                    + propertiesFilePathString, e);
+                        "Error while trying to read properties file "
+                                + propertiesFilePathString, e);
             }
         }
 

@@ -14,10 +14,10 @@ def execute(command, args = [], outStream = null, errStream = null, background =
     env << System.getProperties()
 
     def executor = new org.zeroturnaround.exec.ProcessExecutor().command([command.toString()] + args)
-                                                                .readOutput(true)
-                                                                .environment(env)
-                                                                .redirectOutput(outStream)
-                                                                .redirectError(errStream != null ? errStream : outStream);
+            .readOutput(true)
+            .environment(env)
+            .redirectOutput(outStream)
+            .redirectError(errStream != null ? errStream : outStream);
     if (!background) {
         try {
             def result = executor.execute();
@@ -39,7 +39,7 @@ def stopService(signal, service, name) {
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                 if (signal == 'TERM') {
                     execute("taskkill", "/PID", process.split()[0])
-                 } else{
+                } else{
                     execute("taskkill", "/F", "/PID", process.split()[0])
                 }
             }else{
@@ -139,11 +139,11 @@ task historicalYield(dependsOn: startCluster) << {
 
     exec() {
         commandLine mongoimport, "-d", "mongo_hadoop", "-c", "yield_historical.in", "--drop",
-                    "examples/treasury_yield/src/main/resources/yield_historical_in.json"
+                "examples/treasury_yield/src/main/resources/yield_historical_in.json"
     }
 
     hadoop("examples/treasury_yield/build/libs/treasury_yield-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
+            "com.mongodb.hadoop.examples.treasury.TreasuryYieldXMLConfig", [
             "mongo.input.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.in",
             "mongo.output.uri=mongodb://localhost:27017/mongo_hadoop.yield_historical.out"
     ])
@@ -151,14 +151,14 @@ task historicalYield(dependsOn: startCluster) << {
 
 task sensorData(dependsOn: 'startCluster') << {
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Devices", [])
+            "com.mongodb.hadoop.examples.sensors.Devices", [])
 
     hadoop("examples/sensors/build/libs/sensors-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
+            "com.mongodb.hadoop.examples.sensors.Logs", ["io.sort.mb=100"])
 }
 
-
-task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
+//downloadEnronEmails
+task enronEmails(dependsOn: [startCluster]) << {
     // Create BSON file input directory.
     exec() {
         commandLine "${hadoopHome}/bin/hdfs", "dfs", "-mkdir", "-p", "/messages"
@@ -170,8 +170,8 @@ task enronEmails(dependsOn: [downloadEnronEmails, startCluster]) << {
              "-c", "org.apache.hadoop.io.compress.BZip2Codec",
              "-o", "hdfs://localhost:8020/messages"])
     // MR job
-    hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
-           "com.mongodb.hadoop.examples.enron.EnronMail", [])
+    //hadoop("examples/enron/build/libs/enron-${project(':core').version}.jar",
+    //       "com.mongodb.hadoop.examples.enron.EnronMail", [])
 }
 
 task shakespeare(dependsOn: [downloadShakespeare, startCluster]) << {
