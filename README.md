@@ -1,3 +1,8 @@
+# End of Life Notice
+The MongoDB Connector for Hadoop is now officially end-of-life (EOL). No further development, bugfixes, enhancements, documentation changes or maintenance will be provided by this project and pull requests will no longer be accepted.
+
+---
+
 # MongoDB Connector for Hadoop
 
 ## Purpose
