@@ -3,7 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 def downloadFile(url) {
     def tmpDir = new File(System.properties['java.io.tmpdir'])
     def file = new File(tmpDir, new File(new URL(url).getPath()).getName())
-    
+
     def count = 0;
     while (!file.exists()) {
         try {
@@ -50,6 +50,7 @@ task installPig() << {
 }
 
 task downloadEnronEmails() << {
+    //extract(dataHome, dataHome, downloadFile('https://mongodb-enron-email.s3-website-us-east-1.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'))
     extract(dataHome, dataHome, downloadFile('https://s3.amazonaws.com/mongodb-enron-email/enron_mongo.tar.bz2'))
 }
 
@@ -75,7 +76,7 @@ task copyFiles(dependsOn: [installHadoop, installHive, installPig]) << {
     safeCopy("streaming/build/libs/mongo-hadoop-streaming-${project(':core').version}.jar", hadoopLib, "mongo-hadoop-streaming.jar")
     safeCopy("hive/build/libs/mongo-hadoop-hive-${project(':core').version}.jar", hiveHome + '/lib', "mongo-hadoop-hive.jar")
     safeCopy(findJar(":core", "mongo-java-driver"), hadoopLib, "mongo-java-driver.jar")
-    
+
     println "Updating cluster configuration"
     copy {
         from 'clusterConfigs'

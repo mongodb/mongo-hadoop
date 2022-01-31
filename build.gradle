@@ -7,7 +7,7 @@ apply plugin: 'com.github.ben-manes.versions'
 
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
-ext.javaDriverVersion = '3.2.1'
+ext.javaDriverVersion = '3.12.5'
 ext.hiveVersion = System.getenv("HIVE_VERSION") ?: '1.2.1'
 ext.pigVersion = System.getenv("PIG_VERSION") ?: '0.15.0'
 ext.hadoopVersion = System.getenv("HADOOP_VERSION") ?: '2.7.2'
@@ -58,7 +58,7 @@ if(project.hasProperty("clusterVersion")) {
 }
 
 allprojects {
-    version = '2.0.2'
+    version = '2.0.3'
     group = 'org.mongodb.mongo-hadoop'
 }
 
@@ -184,7 +184,7 @@ configure(subprojects) {
         options.links 'http://hadoop.apache.org/docs/r2.7.2/api'
         options.links 'http://api.mongodb.org/java/3.2/'
         if (JavaVersion.current().isJava8Compatible()) {
-          options.addStringOption('Xdoclint:none', '-quiet')
+            options.addStringOption('Xdoclint:none', '-quiet')
         }
     }
 
@@ -196,9 +196,9 @@ configure(subprojects) {
 //        tests testJar
 //    }
 
-    test {
-        dependsOn 'jar', 'testsJar', ':startCluster', ':downloadEnronEmails'
-    }
+//    test {
+    //       dependsOn 'jar', 'testsJar', ':startCluster', ':downloadEnronEmails'
+    //   }
 
     modifyPom {
         project {

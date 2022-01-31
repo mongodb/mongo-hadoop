@@ -22,7 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hadoop.hive.serde2.SerDe;
+//import org.apache.hadoop.hive.serde2.SerDe;
+import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeStats;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -62,7 +63,8 @@ import static java.lang.String.format;
  * The BSONSerDe class deserializes (parses) and serializes object from BSON to Hive represented object. It's initialized with the hive
  * columns and hive recognized types as well as other config variables mandated by the StorageHanders.
  */
-public class BSONSerDe implements SerDe {
+//public class BSONSerDe implements SerDe {
+public class BSONSerDe extends AbstractSerDe {
     private static final Log LOG = LogFactory.getLog(BSONSerDe.class);
 
     // stores the 1-to-1 mapping of MongoDB fields to hive columns
@@ -85,7 +87,7 @@ public class BSONSerDe implements SerDe {
     public Map<String, String> hiveToMongo;
     //CHECKSTYLE:ON
 
-    // A row represents a row in the Hive table 
+    // A row represents a row in the Hive table
     private List<Object> row = new ArrayList<Object>();
 
     // BSONWritable to hold documents to be serialized.
@@ -124,9 +126,9 @@ public class BSONSerDe implements SerDe {
 
         // Get the structure and object inspector
         docTypeInfo =
-            (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
+                (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         docOI =
-            TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
+                TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(docTypeInfo);
 
         // Create the BSONWritable instance for future use.
         bsonWritable = new BSONWritable();
@@ -209,8 +211,8 @@ public class BSONSerDe implements SerDe {
                     mongoMapping = fieldName;
                 } else {
                     mongoMapping = hiveToMongo.containsKey(fieldName)
-                                   ? hiveToMongo.get(fieldName)
-                                   : fieldName;
+                            ? hiveToMongo.get(fieldName)
+                            : fieldName;
                 }
                 value = deserializeField(getValue(doc, mongoMapping), fieldTypeInfo, fieldName);
             } catch (Exception e) {
@@ -250,7 +252,7 @@ public class BSONSerDe implements SerDe {
                 case PRIMITIVE:
                     return deserializePrimitive(value, (PrimitiveTypeInfo) valueTypeInfo);
                 case STRUCT:
-                    // Supports both struct and map, but should use struct 
+                    // Supports both struct and map, but should use struct
                     return deserializeStruct(value, (StructTypeInfo) valueTypeInfo, ext);
                 case UNION:
                     // Mongo also has no union
@@ -306,7 +308,7 @@ public class BSONSerDe implements SerDe {
             for (int i = 0; i < structNames.size(); i++) {
                 String fieldName = structNames.get(i).toLowerCase();
 
-                // hiveMapping -> prefixed by parent struct names. 
+                // hiveMapping -> prefixed by parent struct names.
                 // For example, in {"wife":{"name":{"first":"Sydney"}}},
                 // the hiveMapping of "first" is "wife.name.first"
                 String hiveMapping = ext.length() == 0 ? fieldName : ext + "." + fieldName;
@@ -320,8 +322,8 @@ public class BSONSerDe implements SerDe {
                         mongoMapping = hiveToMongo.get(hiveMapping);
                     } else {
                         mongoMapping = ext.length() > 0 && hiveToMongo.containsKey(ext)
-                                       ? hiveToMongo.get(ext) + "." + fieldName
-                                       : hiveMapping;
+                                ? hiveToMongo.get(ext) + "." + fieldName
+                                : hiveMapping;
                     }
                 }
 
@@ -483,7 +485,7 @@ public class BSONSerDe implements SerDe {
     @Override
     public Writable serialize(final Object obj, final ObjectInspector oi) throws SerDeException {
         bsonWritable.setDoc(
-          (BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
+                (BSONObject) serializeStruct(obj, (StructObjectInspector) oi, ""));
         return bsonWritable;
     }
     //CHECKSTYLE:ON
@@ -555,7 +557,7 @@ public class BSONSerDe implements SerDe {
 
                 String fieldName, hiveMapping;
 
-                // get corresponding mongoDB field  
+                // get corresponding mongoDB field
                 if (ext.length() == 0) {
                     fieldName = columnNames.get(i);
                     hiveMapping = fieldName;
@@ -572,10 +574,10 @@ public class BSONSerDe implements SerDe {
                     int lastDotPos = mongoMapping.lastIndexOf(".");
                     String lastMapping = lastDotPos == -1 ? mongoMapping : mongoMapping.substring(lastDotPos + 1);
                     bsonObject.put(lastMapping,
-                                   serializeObject(fieldObj, fieldOI, hiveMapping));
+                            serializeObject(fieldObj, fieldOI, hiveMapping));
                 } else {
                     bsonObject.put(fieldName,
-                                   serializeObject(fieldObj, fieldOI, hiveMapping));
+                            serializeObject(fieldObj, fieldOI, hiveMapping));
                 }
             }
 
