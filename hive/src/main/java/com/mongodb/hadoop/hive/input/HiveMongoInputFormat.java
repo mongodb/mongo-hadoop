@@ -32,7 +32,7 @@ import com.mongodb.util.JSON;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.ql.exec.Utilities;
+import org.apache.hadoop.hive.ql.exec.SerializationUtilities;
 import org.apache.hadoop.hive.ql.index.IndexPredicateAnalyzer;
 import org.apache.hadoop.hive.ql.index.IndexSearchCondition;
 import org.apache.hadoop.hive.ql.io.HiveInputFormat;
@@ -131,7 +131,7 @@ public class HiveMongoInputFormat extends HiveInputFormat<BSONWritable, BSONWrit
         String serializedExpr = conf.get(TableScanDesc.FILTER_EXPR_CONF_STR);
         if (serializedExpr != null) {
             ExprNodeGenericFuncDesc expr =
-              Utilities.deserializeExpression(serializedExpr);
+                SerializationUtilities.deserializeExpression(serializedExpr);
             IndexPredicateAnalyzer analyzer =
               IndexPredicateAnalyzer.createAnalyzer(false);
 
