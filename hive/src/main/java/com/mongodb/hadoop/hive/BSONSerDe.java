@@ -16,6 +16,7 @@
 
 package com.mongodb.hadoop.hive;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.hadoop.io.BSONWritable;
 import com.mongodb.util.JSON;
 import org.apache.commons.logging.Log;
@@ -55,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 
@@ -223,15 +225,14 @@ public class BSONSerDe implements SerDe {
         return row;
     }
 
-    private Object getValue(final BSONObject doc, final String mongoMapping) {
-        if (mongoMapping.contains(".")) {
-            int index = mongoMapping.indexOf('.');
-            BSONObject object = (BSONObject) doc.get(mongoMapping.substring(0, index));
-            return getValue(object, mongoMapping.substring(index + 1));
-        }
-        return doc.get(mongoMapping);
+    @VisibleForTesting
+    Object getValue(final BSONObject doc, final String mongoMapping) {
+        Object res = doc;
+        String[] mappings = mongoMapping.split("(?<!\\\\)" + Pattern.quote("."));
+        for (String mapping: mappings)
+          res = ((BSONObject) res).get(mapping.replace("\\.", "."));
+        return res;
     }
-
 
     /**
      * Get the Hive representation for a value given its {@code TypeInfo}.
