@@ -8,9 +8,9 @@ apply plugin: 'com.github.ben-manes.versions'
 ext.configDir = new File(rootDir, 'config')
 ext.hadoopBinaries = "${rootDir}/hadoop-binaries".toString()
 ext.javaDriverVersion = '3.2.1'
-ext.hiveVersion = System.getenv("HIVE_VERSION") ?: '1.2.1'
+ext.hiveVersion = System.getenv("HIVE_VERSION") ?: '3.1.1'
 ext.pigVersion = System.getenv("PIG_VERSION") ?: '0.15.0'
-ext.hadoopVersion = System.getenv("HADOOP_VERSION") ?: '2.7.2'
+ext.hadoopVersion = System.getenv("HADOOP_VERSION") ?: '3.1.0'
 ext.sparkVersion = System.getenv("SPARK_VERSION") ?: '1.6.0'
 ext.scalaVersion = System.getenv("SCALA_VERSION") ?: '2.11'
 ext.isHadoopV1 = "$hadoopVersion".startsWith("1.")
