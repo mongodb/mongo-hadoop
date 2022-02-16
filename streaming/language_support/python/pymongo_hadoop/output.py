@@ -10,7 +10,7 @@ class BSONOutput(object):
     https://github.com/klbostee/typedbytes
     """
 
-    def __init__(self, fh=sys.stdout, unicode_errors='strict'):
+    def __init__(self, fh=sys.stdout.buffer, unicode_errors='strict'):
         self.fh = fh
         self.unicode_errors = unicode_errors
 
